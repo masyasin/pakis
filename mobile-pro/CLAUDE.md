@@ -62,7 +62,7 @@ Nama berkas snake_case (lint `file_names`); kelas tetap seperti di TASKS (`ApiCl
 - **Daftar mobile** wajib `PagedList` (+ `FilterSheet` otomatis dari `meta.listing.spec`). Layar cukup memberi `fetch: (q) => api.get(path, query: q.toQueryParameters(spec)).then((r) => ListingPage.fromResponse(r, Model.fromJson))` dan `itemBuilder`. Filter ber-`options_source` belum bisa diedit di HP (belum ada lookup di API v1).
 - **Status** pakai `StatusBadge(status: …)` (peta 07 §6). **Warna** dari `context.tokens` (`PakisTokens`), bukan `Color(0x…)` di layar.
 - **Penyimpanan:** token/install id/config di `SecureStore` (`StoreKeys`). Jangan log token, device_uid, atau koordinat.
-- **Android:** `allowBackup=false` + `data_extraction_rules.xml`, cleartext mati di build rilis (hanya `src/debug` mengizinkan HTTP lokal). minSdk 26. `applicationId` `com.pakisjayaabadi.pakispro` — konfirmasi ke Mas sebelum rilis pertama (T-047).
+- **Android:** `allowBackup=false` + `data_extraction_rules.xml`, cleartext mati di build rilis (hanya `src/debug` mengizinkan HTTP lokal). minSdk 26. `applicationId` **`com.pakisjayaabadi.pakispro` final** (dikonfirmasi Mas 15 Nov 2026): jangan diganti, HP yang sudah memasang tidak bisa memperbarui ke id lain.
 - **Test:** `test/helpers/` punya `FakeAdapter` (server palsu), `FakeNativeDevice`, `MemorySecureStore`, `pumpPakisPro()` (aplikasi utuh, layar 360×800 dp). Di `testWidgets`, jangan `await` request Dio langsung (zona fake-async menggantung): picu lalu `pumpAndSettle()`.
 
 ## Acuan visual: prototipe (07 §1, §5)

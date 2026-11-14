@@ -15,8 +15,8 @@ android {
     }
 
     defaultConfig {
-        // Konfirmasi ke Mas sebelum rilis pertama (T-047): applicationId tidak bisa diganti
-        // setelah APK terpasang di HP pegawai tanpa memasang ulang.
+        // Final (dikonfirmasi Mas, 15 Nov 2026). Jangan diganti: HP pegawai yang sudah memasang
+        // Pakis Pro tidak bisa memperbarui ke APK dengan applicationId lain (harus pasang ulang).
         applicationId = "com.pakisjayaabadi.pakispro"
         // Android 8.0+ (NFR-008, 03 §5).
         minSdk = 26

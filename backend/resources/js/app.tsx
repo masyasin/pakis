@@ -34,7 +34,8 @@ void createInertiaApp({
         );
     },
     progress: {
-        color: '#4B5563',
+        // Hijau primer Pakis (07 §1.1).
+        color: '#2F6B3B',
     },
 });
 

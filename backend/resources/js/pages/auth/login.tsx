@@ -1,4 +1,5 @@
 import { Form, Head } from '@inertiajs/react';
+import { FormStatus } from '@/components/form-status';
 import InputError from '@/components/input-error';
 import PasswordInput from '@/components/password-input';
 import TextLink from '@/components/text-link';
@@ -17,7 +18,7 @@ type Props = {
 export default function Login({ status, canResetPassword }: Props) {
     return (
         <>
-            <Head title="Log in" />
+            <Head title="Masuk" />
 
             <Form
                 {...store.form()}
@@ -26,20 +27,34 @@ export default function Login({ status, canResetPassword }: Props) {
             >
                 {({ processing, errors }) => (
                     <>
-                        <div className="grid gap-6">
+                        <FormStatus tone="success" message={status} />
+                        {/*
+                         * Galat kredensial & throttle dikirim Fortify di field `email`.
+                         * Teksnya generik (lang/id/auth.php), jadi tidak membocorkan
+                         * apakah akun ada. Tampil sebagai banner, bukan di bawah satu field.
+                         */}
+                        <FormStatus tone="error" message={errors.email} />
+
+                        <div className="grid gap-5">
                             <div className="grid gap-2">
-                                <Label htmlFor="email">Email address</Label>
+                                {/* Label sudah final; backend masih menerima email sampai T-013. */}
+                                <Label htmlFor="email">
+                                    Username atau email
+                                </Label>
                                 <Input
                                     id="email"
-                                    type="email"
+                                    type="text"
                                     name="email"
                                     required
                                     autoFocus
                                     tabIndex={1}
-                                    autoComplete="email"
-                                    placeholder="email@example.com"
+                                    autoComplete="username"
+                                    autoCapitalize="none"
+                                    spellCheck={false}
+                                    aria-invalid={
+                                        errors.email ? true : undefined
+                                    }
                                 />
-                                <InputError message={errors.email} />
                             </div>
 
                             <div className="grid gap-2">
@@ -51,7 +66,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                             className="ml-auto text-sm"
                                             tabIndex={5}
                                         >
-                                            Forgot your password?
+                                            Lupa password?
                                         </TextLink>
                                     )}
                                 </div>
@@ -61,7 +76,9 @@ export default function Login({ status, canResetPassword }: Props) {
                                     required
                                     tabIndex={2}
                                     autoComplete="current-password"
-                                    placeholder="Password"
+                                    aria-invalid={
+                                        errors.password ? true : undefined
+                                    }
                                 />
                                 <InputError message={errors.password} />
                             </div>
@@ -69,29 +86,24 @@ export default function Login({ status, canResetPassword }: Props) {
                             {/* Tanpa "ingat saya" (SEC-005). Input remember juga dibuang di server. */}
                             <Button
                                 type="submit"
-                                className="mt-4 w-full"
+                                size="lg"
+                                className="mt-2 w-full"
                                 tabIndex={3}
                                 disabled={processing}
                                 data-test="login-button"
                             >
                                 {processing && <Spinner />}
-                                Log in
+                                Masuk
                             </Button>
                         </div>
                     </>
                 )}
             </Form>
-
-            {status && (
-                <div className="mb-4 text-center text-sm font-medium text-green-600">
-                    {status}
-                </div>
-            )}
         </>
     );
 }
 
 Login.layout = {
-    title: 'Log in to your account',
-    description: 'Enter your email and password below to log in',
+    title: 'Masuk ke PAKIS ONE',
+    description: 'Gunakan akun yang diberikan admin atau HRD kantor.',
 };

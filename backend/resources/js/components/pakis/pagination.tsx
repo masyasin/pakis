@@ -39,35 +39,70 @@ export function Pagination({ page, lastPage, onChange, disabled }: Props) {
         return null;
     }
 
-    const nav = (target: number, label: string, icon: React.ReactNode) => (
+    const isDisabled = (target: number) =>
+        disabled || target < 1 || target > lastPage || target === page;
+
+    // Pertama/terakhir: ikon saja, hanya saat konten lebar (container query).
+    const edge = (target: number, label: string, icon: React.ReactNode) => (
         <Button
             type="button"
-            variant="ghost"
+            variant="outline"
             size="icon"
-            className="size-8"
+            className="hidden size-9 shrink-0 shadow-none @lg:inline-flex"
             aria-label={label}
-            disabled={
-                disabled || target < 1 || target > lastPage || target === page
-            }
+            disabled={isDisabled(target)}
             onClick={() => onChange(target)}
         >
             {icon}
         </Button>
     );
 
+    // Sebelumnya/berikutnya: berlabel & 40 px saat sempit (target sentuh), ikon 36 px saat lebar.
+    const step = (
+        target: number,
+        label: string,
+        text: string,
+        icon: React.ReactNode,
+        iconSide: 'left' | 'right',
+    ) => (
+        <Button
+            type="button"
+            variant="outline"
+            className="h-10 shrink-0 gap-1 px-3 shadow-none @lg:size-9 @lg:px-0"
+            aria-label={label}
+            disabled={isDisabled(target)}
+            onClick={() => onChange(target)}
+        >
+            {iconSide === 'left' && icon}
+            <span className="@lg:sr-only">{text}</span>
+            {iconSide === 'right' && icon}
+        </Button>
+    );
+
     return (
-        <nav aria-label="Navigasi halaman" className="flex items-center gap-1">
-            {nav(1, 'Halaman pertama', <ChevronsLeft className="size-4" />)}
-            {nav(
+        <nav
+            aria-label="Navigasi halaman"
+            className="flex w-full items-center gap-1.5 @lg:justify-center @3xl:w-auto @3xl:justify-end"
+        >
+            {edge(1, 'Halaman pertama', <ChevronsLeft className="size-4" />)}
+            {step(
                 page - 1,
                 'Halaman sebelumnya',
+                'Sebelumnya',
                 <ChevronLeft className="size-4" />,
+                'left',
             )}
+            {/* Konten sempit: nomor halaman diganti posisi ringkas di tengah. */}
+            <span className="flex-1 text-center text-sm text-muted-foreground tabular-nums @lg:hidden">
+                <span className="font-semibold text-foreground">{page}</span>
+                {' / '}
+                {lastPage}
+            </span>
             {pageWindow(page, lastPage).map((p, i) =>
                 p === 'gap' ? (
                     <span
                         key={`gap-${i}`}
-                        className="px-1 text-muted-foreground"
+                        className="hidden w-6 text-center text-muted-foreground @lg:inline"
                         aria-hidden
                     >
                         …
@@ -76,9 +111,9 @@ export function Pagination({ page, lastPage, onChange, disabled }: Props) {
                     <Button
                         key={p}
                         type="button"
-                        variant={p === page ? 'secondary' : 'ghost'}
+                        variant={p === page ? 'default' : 'ghost'}
                         size="sm"
-                        className="hidden h-8 min-w-8 px-2 sm:inline-flex"
+                        className="hidden h-9 min-w-9 px-2.5 tabular-nums shadow-none @lg:inline-flex"
                         aria-label={`Halaman ${p}`}
                         aria-current={p === page ? 'page' : undefined}
                         disabled={disabled}
@@ -88,12 +123,14 @@ export function Pagination({ page, lastPage, onChange, disabled }: Props) {
                     </Button>
                 ),
             )}
-            {nav(
+            {step(
                 page + 1,
                 'Halaman berikutnya',
+                'Berikutnya',
                 <ChevronRight className="size-4" />,
+                'right',
             )}
-            {nav(
+            {edge(
                 lastPage,
                 'Halaman terakhir',
                 <ChevronsRight className="size-4" />,

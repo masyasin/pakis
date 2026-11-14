@@ -1,0 +1,7 @@
+{
+    "Password updated.": "Password diperbarui.",
+    "Profile updated.": "Profil disimpan.",
+    "The provided password was incorrect.": "Password yang Anda masukkan salah.",
+    "The provided two factor authentication code was invalid.": "Kode autentikasi tidak valid. Periksa kode terbaru di aplikasi autentikator.",
+    "The provided two factor recovery code was invalid.": "Kode pemulihan tidak valid atau sudah pernah dipakai."
+}

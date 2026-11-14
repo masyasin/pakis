@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Domain\Access\Listeners\RecordLogout;
 use App\Domain\Access\Listeners\RecordSuccessfulLogin;
 use App\Domain\Access\Lookup\UserLookup;
+use App\Domain\Access\Rules\PasswordPolicy;
 use App\Domain\Access\Support\ActiveEmployeeStatus;
 use App\Domain\Access\Support\EmployeeStatus;
 use App\Domain\Audit\Listeners\RecordExportCreated;
@@ -108,14 +109,8 @@ class AppServiceProvider extends ServiceProvider
             app()->isProduction(),
         );
 
-        Password::defaults(fn (): ?Password => app()->isProduction()
-            ? Password::min(12)
-                ->mixedCase()
-                ->letters()
-                ->numbers()
-                ->symbols()
-                ->uncompromised()
-            : null,
-        );
+        // BR-011: tanpa aturan komposisi; panjang dari setting. Aturan lengkap (username, password
+        // lama, cek bocor) ada di PasswordPolicy — pakai itu untuk setiap form password.
+        Password::defaults(fn (): Password => Password::min(PasswordPolicy::minLength())->max(PasswordPolicy::MAX_LENGTH));
     }
 }

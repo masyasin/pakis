@@ -6,6 +6,7 @@ use App\Http\Middleware\EnforceSessionLifetime;
 use App\Http\Middleware\EnsureUserActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequirePasswordChange;
 use App\Http\Middleware\RequireWebMenuAccess;
 use App\Http\Middleware\SecurityHeaders;
 use App\Support\Api\ApiError;
@@ -15,6 +16,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Session\Middleware\AuthenticateSession;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -36,14 +38,21 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->web(append: [
             // Sesi login yang tidak sah lagi diakhiri sebelum halaman dirender (BR-010, BR-018).
             EnsureUserActive::class,
+            // Sesi yang hash password-nya sudah tidak cocok (password diganti di perangkat lain) keluar.
+            AuthenticateSession::class,
             EnforceSessionLifetime::class,
+            // SEC-006: akun wajib ganti password hanya boleh ke /ganti-password & keluar.
+            RequirePasswordChange::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
 
         // BR-017: route aplikasi web hanya untuk pemegang permission menu (06 §8).
-        $middleware->alias(['web.access' => RequireWebMenuAccess::class]);
+        $middleware->alias([
+            'web.access' => RequireWebMenuAccess::class,
+            'password.changed' => RequirePasswordChange::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Galat domain yang disengaja (mis. di luar radius) bukan insiden; jangan memenuhi log error.

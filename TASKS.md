@@ -212,9 +212,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Domain/Access/Rules/PasswordPolicy.php`, `Actions/ChangePassword.php`, middleware `RequirePasswordChange`, `pages/Auth/ForceChangePassword.tsx`, `pages/Profile/Password` (bagian profil)
 - Deskripsi: Satu kelas kebijakan password dipakai di semua tempat (web, API, reset, admin, import akun). Cek password bocor dengan fail-open terdokumentasi. Ubah password → keluarkan sesi lain + cabut token mobile milik sendiri kecuali token perangkat saat ini (API). Middleware memaksa ganti password.
 - Kriteria penerimaan:
-  - [ ] Password yang memuat username ditolak. Password sama dengan lama ditolak
-  - [ ] Pengguna `must_change_password` diarahkan ke `/ganti-password` dari route mana pun
-  - [ ] Event `password_changed` + email pemberitahuan
+  - [x] Password yang memuat username ditolak. Password sama dengan lama ditolak
+  - [x] Pengguna `must_change_password` diarahkan ke `/ganti-password` dari route mana pun
+  - [x] Event `password_changed` + email pemberitahuan
 - Verifikasi: `php artisan test --filter=Password`
 - Di luar lingkup: reset oleh admin (T-020)
 

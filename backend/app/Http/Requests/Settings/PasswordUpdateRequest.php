@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Settings;
 
 use App\Concerns\PasswordValidationRules;
+use App\Domain\Access\Rules\PasswordPolicy;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -19,7 +20,8 @@ class PasswordUpdateRequest extends FormRequest
     {
         return [
             'current_password' => $this->currentPasswordRules(),
-            'password' => $this->passwordRules(),
+            // BR-011: kebijakan tunggal (username, password lama, cek bocor, panjang dari setting).
+            'password' => app(PasswordPolicy::class)->rules($this->user()),
         ];
     }
 }

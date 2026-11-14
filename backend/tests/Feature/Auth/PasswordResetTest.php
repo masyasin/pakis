@@ -67,8 +67,9 @@ class PasswordResetTest extends TestCase
             $response = $this->post(route('password.update'), [
                 'token' => $notification->token,
                 'email' => $user->email,
-                'password' => 'password',
-                'password_confirmation' => 'password',
+                // BR-011: memenuhi kebijakan (≥ 10 karakter, beda dari password lama).
+                'password' => 'kopi pagi di gudang',
+                'password_confirmation' => 'kopi pagi di gudang',
             ]);
 
             $response

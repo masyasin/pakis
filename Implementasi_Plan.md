@@ -85,15 +85,15 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 |---|---|---|---|---|
 | 0A | 7 | 7 | 0 | 0 |
 | 0B | 5 | 5 | 0 | 0 |
-| 0C | 8 | 1 | 0 | 0 |
+| 0C | 8 | 2 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **13** | **0** | **0** |
+| **Total** | **48** | **14** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- (kosong) — berikutnya T-014 (ubah password & wajib ganti password). **T-030 (Flutter) dikerjakan paralel oleh agen lain** di `main` (hanya `mobile-pro/`), prompt: `konsep/prompt-agen-t030.md`.
+- (kosong) — berikutnya T-015 (lupa password: email & adapter OTP). **T-030 (Flutter) dikerjakan paralel oleh agen lain** di `main` (hanya `mobile-pro/`), prompt: `konsep/prompt-agen-t030.md`.
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -140,12 +140,15 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-15 | T-013 (perbaikan 2) | Selesai | 395ddeb | Review lanjutan: identifier tak dikenal dilipat (huruf kecil + tanpa aksen) agar varian akun yang tidak ada berperilaku sama dengan akun yang ada (anti enumerasi); IPv4 dalam format IPv6 (`::ffff:`, `::a.b.c.d`, NAT64) dihitung per IPv4, bukan satu kelompok /64 bersama (anti DoS). Keputusan Mas: setting baru `security.account_max_failures` (20, 10–100) — batas gagal per akun lintas IP (08 §2, BR-016, registri). 475 Pest |
 
+| 2026-11-15 | T-014 | Selesai | (commit T-014) | `PasswordPolicy` tunggal (BR-011: min dari setting, maks 128, tanpa komposisi, tidak memuat username/nomor pegawai, tidak sama password lama, `NotBreached` k-anonymity Pwned Passwords fail-open + log); `ChangePassword` (flag & `password_changed_at`, `password_changed`, email `PasswordChanged`); `AuthenticateSession` di grup web → sesi lain keluar saat password diganti (driver-agnostik); `RequirePasswordChange` (`password.changed`) + `/ganti-password` (`admin.password.force*`, halaman dengan indikator aturan langsung). Form ubah password & reset Fortify memakai kebijakan; `Password::defaults` diselaraskan. `TestCase`: `Http::preventStrayRequests()`. 498 Pest. Dicek CSP enforce: `/wilayah` → `/ganti-password`, username ditolak, password sah → dasbor |
+
 ### 6.5 Catatan untuk sesi berikutnya
 - **Fase 0A selesai (T-001–T-007).**
 - **T-008 selesai penuh (bag. 1 + 2).** Branding: `app/Domain/Settings/Branding/BrandTheme.php`. Warna netral (latar, kartu, `--sidebar-accent`, `--muted`) sengaja tetap palet hijau-abu desain; hanya token yang terkait warna utama yang mengikuti warna kustom. Bila Pakis ingin seluruh palet ikut, itu perubahan desain (tanyakan dulu). Pratinjau tema di `appearance-tabs.tsx` masih literal (ilustrasi tema bawaan).
 - Teks panel login "Satu tempat untuk data…" dan "Kudus, Jawa Tengah" masih teks tetap (tidak ada kunci setting di `08` §2).
 - Menu sidebar baru berisi **Dasbor** saja (`components/app-sidebar.tsx`). Halaman `/audit`, `/log-keamanan`, `/pengaturan/*` belum ada di menu → **dikerjakan di T-018** (keputusan Mas 14 Nov 2026): menu lengkap per grup `06` §8 + bagikan permission pengguna lewat Inertia. Jangan tambah menu sebelum itu.
-- **T-013 selesai.** Berikutnya T-014. Catatan: (1) `TestCase` memberi `dashboard.view` ke semua pengguna uji (`TODO(T-018)`) — hapus saat role/permission nyata ada, lalu beri role di test yang butuh. (2) `ActiveEmployeeStatus` membaca tabel `employees` mentah (`TODO(T-024)`). (3) Route aplikasi baru wajib di grup ber-`web.access`. (4) Di test, guard menyimpan objek user antar request: pakai `app('auth')->forgetGuards()` untuk meniru request baru. (5) Klik login beruntun di browser < 1 detik bisa tertelan (tombol masih memproses) — bukan bug.
+- **T-014 selesai.** Berikutnya T-015 (pakai `PasswordPolicy` + `ChangePassword`-style efek: reset sukses mencabut semua sesi; `ResetUserPassword` sudah memakai kebijakan, efek lengkap menyusul). Form ubah password masih di route starter kit `settings/password` (`user-password.update`) → dipindah ke `/profil/password` di T-017. Pencabutan token mobile saat ganti password: `TODO(T-031)` di `ChangePassword`. Cek password bocor menghubungi `api.pwnedpasswords.com` (hanya 5 karakter awal SHA-1); di test diblok `Http::preventStrayRequests()`.
+- **T-013 selesai.** Catatan: (1) `TestCase` memberi `dashboard.view` ke semua pengguna uji (`TODO(T-018)`) — hapus saat role/permission nyata ada, lalu beri role di test yang butuh. (2) `ActiveEmployeeStatus` membaca tabel `employees` mentah (`TODO(T-024)`). (3) Route aplikasi baru wajib di grup ber-`web.access`. (4) Di test, guard menyimpan objek user antar request: pakai `app('auth')->forgetGuards()` untuk meniru request baru. (5) Klik login beruntun di browser < 1 detik bisa tertelan (tombol masih memproses) — bukan bug.
 - **Fase 0B selesai (T-008–T-012).** DB dev sudah berisi wilayah lengkap (`php artisan regions:import ../konsep/region.sql`, idempoten). Staging/produksi: jalankan command yang sama setelah migrate (bukan seeder). Filter relasi berjenjang: `RelationFilter::dependsOn()` + `params()`; contoh di `RegionListing`. Sumber lookup baru: buat kelas turunan `App\Support\Lookup\LookupSource`, isi `scope()` untuk data ber-scope (T-019), daftarkan di `AppServiceProvider::register`. `RelationFilter` dengan `options_source` otomatis memakai `AsyncSelect`; sumber yang butuh parameter (mis. `references?group=`) belum bisa dipakai filter relasi — tambahkan dukungan parameter bila dibutuhkan. Saat T-021/T-024/T-040 membuat tabel pemakai referensi: tambahkan FK `RESTRICT` ke `reference_items` (cek `ReferenceUsage` otomatis aktif begitu tabelnya ada). Halaman Referensi belum di menu (T-018). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
 - `tests/Concurrency` menjalankan `migrate` di DB test tanpa RefreshDatabase dan membersihkan datanya sendiri; ikut jalan di `php artisan test` (± 5–10 detik).
 - `DocumentSequence` dikunci `FOR UPDATE` oleh generator **dan** `UpdateSequence`: jangan menambah query lain yang mengunci counter sebelum baris induk (urutan kunci = induk → counter, agar tidak deadlock).

@@ -3,6 +3,7 @@
 use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
@@ -22,6 +23,12 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         ->middleware('signed')
         ->whereNumber('file')
         ->name('exports.download');
+
+    // Wajib ganti password (05 §4.1, FR-007). Dibiarkan oleh middleware RequirePasswordChange.
+    Route::get('ganti-password', [ForcePasswordChangeController::class, 'edit'])->name('password.force');
+    Route::put('ganti-password', [ForcePasswordChangeController::class, 'update'])
+        ->middleware('throttle:6,1')
+        ->name('password.force.update');
 
     // Lookup select/autocomplete (05 §4.11, BR-006). Izin per sumber dicek di controller.
     Route::get('lookup/{source}', [LookupController::class, 'show'])

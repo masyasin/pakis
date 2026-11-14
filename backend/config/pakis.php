@@ -13,6 +13,22 @@ return [
     // TODO(T-008): DisplayTime membaca setting('general.timezone'), lalu kunci ini dihapus.
     'display_timezone' => 'Asia/Jakarta',
 
+    // Ekspor (BR-005). Penyangga sampai registri setting tersedia.
+    // TODO(T-008): baca setting('export.*') dan setting('retention.export_days').
+    'export' => [
+        'sync_max_rows' => 2000,
+        'max_rows' => 100000,
+        'mass_export_alert_rows' => 1000,
+        'retention_days' => 7,
+        // Umur signed URL unduhan (05 §4.7 "berumur pendek"); konfigurasi teknis, bukan setting bisnis.
+        'download_url_minutes' => 15,
+    ],
+
+    // Kunci listing yang bisa diekspor => kelas ExportableListing. Modul mendaftarkan listingnya di sini.
+    'exports' => [
+        // 'employees' => \App\Domain\Employee\Listings\EmployeeListing::class,
+    ],
+
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.
     // enforce = blokir pelanggaran (produksi) | report-only = hanya laporkan di konsol (staging, lokal) | off
     'csp' => [

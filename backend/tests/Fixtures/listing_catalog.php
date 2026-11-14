@@ -10,4 +10,6 @@
  * Task yang membuat daftar baru menambahkan kuncinya di sini (mis. T-006: 'export_files').
  */
 
-return [];
+return [
+    'export_files', // T-006
+];

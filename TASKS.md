@@ -90,10 +90,11 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migration `export_files`, `app/Support/Export/{XlsxExporter,FormulaEscaper,ExportColumns}.php`, `app/Jobs/RunExport.php`, `app/Http/Controllers/Admin/ExportController.php`, `app/Support/Export/ExportFileListing.php`, `resources/js/pages/Exports/Index.tsx`
 - Deskripsi: Ekspor .xlsx streaming (OpenSpout) dari `ListingSpec` + kolom ekspor. Sinkron vs antrean sesuai ambang (sementara konstanta sampai T-008). Daftar `export_files` milik sendiri (`admin.exports.index`), unduh via signed URL. Notifikasi saat siap ditambahkan di T-029 (sediakan event `ExportReady`).
 - Kriteria penerimaan:
-  - [ ] Sel `=HYPERLINK("x")` diekspor sebagai teks
-  - [ ] Ekspor memakai filter & scope yang sama dengan tampilan (test)
-  - [ ] Pengguna lain tidak bisa mengunduh berkas ekspor orang lain (404)
-  - [ ] Kunci listing `export_files` di katalog + test kontrak hijau
+  - [x] Sel `=HYPERLINK("x")` diekspor sebagai teks
+  - [x] Ekspor memakai filter & scope yang sama dengan tampilan (test)
+  - [x] Pengguna lain tidak bisa mengunduh berkas ekspor orang lain (404)
+  - [x] Kunci listing `export_files` di katalog + test kontrak hijau
+- Catatan pelaksanaan: halaman di `pages/exports/index.tsx` (kebab-case). Event `ExportCreated` disediakan untuk audit & `mass_export` di T-007.
 - Verifikasi: `php artisan test --filter=Export`
 - Di luar lingkup: kolom ekspor per modul (task modul)
 

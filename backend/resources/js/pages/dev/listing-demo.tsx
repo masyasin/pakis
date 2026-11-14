@@ -1,6 +1,7 @@
 import { Head } from '@inertiajs/react';
 import { DataTable } from '@/components/pakis/data-table';
 import type { DataTableColumn } from '@/components/pakis/data-table';
+import { ExportButton } from '@/components/pakis/export-button';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import type { ListingProps } from '@/types/listing';
 
@@ -70,6 +71,14 @@ export default function ListingDemo({ rows, listing }: ListingProps<DemoUser>) {
                     listing={listing}
                     columns={columns}
                     title="Daftar pengguna demo"
+                    toolbarActions={
+                        listing.spec.exportable ? (
+                            <ExportButton
+                                href="/dev/listing-demo/ekspor"
+                                total={listing.pagination.total}
+                            />
+                        ) : undefined
+                    }
                 />
             </div>
         </>

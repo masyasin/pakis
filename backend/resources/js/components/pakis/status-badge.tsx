@@ -28,6 +28,12 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'device.revoked': { label: 'Dicabut', tone: 'danger' },
     'device.replaced': { label: 'Diganti', tone: 'muted' },
     'device.rejected': { label: 'Ditolak', tone: 'danger' },
+    // Berkas ekspor (halaman Unduhan, T-006)
+    'export.queued': { label: 'Antre', tone: 'warning' },
+    'export.processing': { label: 'Diproses', tone: 'info' },
+    'export.ready': { label: 'Siap', tone: 'success' },
+    'export.failed': { label: 'Gagal', tone: 'danger' },
+    'export.expired': { label: 'Kedaluwarsa', tone: 'muted' },
     // Pegawai
     'employee.active': { label: 'Aktif', tone: 'success' },
     'employee.inactive': { label: 'Nonaktif', tone: 'muted' },

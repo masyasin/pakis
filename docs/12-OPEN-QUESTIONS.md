@@ -23,6 +23,10 @@ Agent **tidak boleh** menebak jawaban OQ. Task yang terblokir harus menunggu, at
 
 | Tanggal | Keputusan | Sumber |
 |---|---|---|
+| 15 Nov 2026 | Distribusi Pakis Pro: **dua APK per ABI** (arm64-v8a ±21,7 MB untuk HP 64-bit, armeabi-v7a ±18,3 MB untuk HP 32-bit/Android Go), bukan satu APK gabungan (38,9 MiB, nyaris melewati NFR-014). `mobile.download_url` menunjuk halaman unduh dengan dua pilihan, atau setting URL per ABI (diputuskan di T-046/T-047). Keystore rilis dibuat & dicadangkan offline oleh Owner; CI job `release` manual dengan environment `rilis-mobile`. Deteksi emulator/root (SEC-023) menunggu OQ-010 | Mas (T-047, persiapan mobile) |
+| 15 Nov 2026 | Antrean offline Pakis Pro (T-042): `drift` + `sqlite3` 3.x dengan **SQLCipher** (`hooks: user_defines: sqlite3: source: sqlcipher`), menggantikan `sqlcipher_flutter_libs` yang EOL. `drift_flutter` tidak dipakai (masih bergantung paket EOL). Codegen `drift_dev`/`build_runner` diputuskan saat T-042 | Mas (T-030) |
+| 15 Nov 2026 | Sesi web **produksi memakai driver `database`** (tabel `sessions`), bukan Redis; Redis tetap untuk cache & queue. Alasan: daftar & cabut sesi per pengguna (FR-003) cukup query biasa, bisa dites lokal. SEC-005 sudah mengizinkan driver ini | Mas (T-017) |
+| 15 Nov 2026 | Middleware `verified` (starter kit) **dilepas**: email opsional, jadi akses tidak digantung pada verifikasi. Email yang belum diverifikasi ditandai di Profil dan tidak dipakai untuk kanal email lupa password (BR-012). Halaman "Tampilan" & "Hapus akun" starter kit dihapus (tema lewat tombol di header; akun dikelola admin). Route tambahan 05 §4.1: `admin.profile.avatar`, `admin.profile.telegram.link`, `admin.profile.telegram.unlink`. Ganti email/HP & tautkan Telegram wajib password saat ini (kanal pemulihan akun) | Mas (T-017) |
 | 15 Nov 2026 | `applicationId` Pakis Pro = **`com.pakisjayaabadi.pakispro`** (final; tidak diganti setelah APK dibagikan) | Mas (T-030) |
 | 3 Nov 2026 | PAKIS ONE untuk Pakis saja (single-tenant) | Mas |
 | 3 Nov 2026 | Semua parameter dinamis (site setting, role, referensi, penomoran) | Mas |

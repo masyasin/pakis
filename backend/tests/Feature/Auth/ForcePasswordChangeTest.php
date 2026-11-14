@@ -22,7 +22,7 @@ beforeEach(function () {
 
 test('SEC-006 dari route mana pun diarahkan ke /ganti-password', function (string $url) {
     $this->actingAs($this->user)->get($url)->assertRedirect('/ganti-password');
-})->with(['/dashboard', '/settings/profile', '/audit', '/wilayah', '/unduhan']);
+})->with(['/dashboard', '/profil', '/audit', '/wilayah', '/unduhan']);
 
 test('SEC-006 request Inertia mendapat 409 + lokasi /ganti-password', function () {
     $this->actingAs($this->user)

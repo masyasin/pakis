@@ -1,12 +1,10 @@
 import { Link } from '@inertiajs/react';
-import { Palette, ShieldCheck, UserRound } from 'lucide-react';
+import { ShieldCheck, UserRound } from 'lucide-react';
 import type { PropsWithChildren } from 'react';
 import Heading from '@/components/heading';
 import { useCurrentUrl } from '@/hooks/use-current-url';
 import { cn, toUrl } from '@/lib/utils';
-import { edit as editAppearance } from '@/routes/appearance';
-import { edit } from '@/routes/profile';
-import { edit as editSecurity } from '@/routes/security';
+import { edit, security } from '@/routes/admin/profile';
 import type { NavItem } from '@/types';
 
 const sidebarNavItems: NavItem[] = [
@@ -17,13 +15,8 @@ const sidebarNavItems: NavItem[] = [
     },
     {
         title: 'Keamanan',
-        href: editSecurity(),
+        href: security(),
         icon: ShieldCheck,
-    },
-    {
-        title: 'Tampilan',
-        href: editAppearance(),
-        icon: Palette,
     },
 ];
 
@@ -33,8 +26,8 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     return (
         <div className="px-4 py-6 md:px-6 md:py-8">
             <Heading
-                title="Pengaturan akun"
-                description="Kelola profil, keamanan, dan tampilan akun Anda."
+                title="Profil & keamanan"
+                description="Data diri, password, verifikasi dua langkah, dan sesi yang sedang masuk."
             />
 
             <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
@@ -42,7 +35,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
                     {/* HP: baris tab gulir horizontal; desktop: daftar vertikal. */}
                     <nav
                         className="flex gap-1 overflow-x-auto px-4 pb-1 lg:sticky lg:top-24 lg:flex-col lg:overflow-visible lg:px-0 lg:pb-0"
-                        aria-label="Pengaturan akun"
+                        aria-label="Profil & keamanan"
                     >
                         {sidebarNavItems.map((item, index) => {
                             const active = isCurrentOrParentUrl(item.href);

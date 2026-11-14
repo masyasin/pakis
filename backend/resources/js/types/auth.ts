@@ -1,13 +1,14 @@
+/** Bentuk `auth.user` yang dibagikan HandleInertiaRequests::sharedUser (T-017), bukan model utuh. */
 export type User = {
     id: number;
     name: string;
-    email: string;
-    avatar?: string;
+    username: string;
+    email: string | null;
     email_verified_at: string | null;
-    two_factor_enabled?: boolean;
-    created_at: string;
-    updated_at: string;
-    [key: string]: unknown;
+    phone: string | null;
+    /** URL relatif `/profil/foto?v=…` atau null. */
+    avatar: string | null;
+    two_factor_enabled: boolean;
 };
 
 export type Auth = {

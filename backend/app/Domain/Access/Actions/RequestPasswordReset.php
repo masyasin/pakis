@@ -78,7 +78,8 @@ final class RequestPasswordReset
 
     private function sendLink(User $user): void
     {
-        if (! $user->email) {
+        // BR-012: email yang baru diganti & belum diverifikasi bisa saja milik orang lain.
+        if (! $user->email || ! $user->hasVerifiedEmail()) {
             return;
         }
 

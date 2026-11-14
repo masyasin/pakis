@@ -2,7 +2,10 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Access\Support\AvatarStore;
 use App\Domain\Settings\Branding\BrandTheme;
+use App\Models\User;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -42,9 +45,33 @@ class HandleInertiaRequests extends Middleware
             'name' => setting('general.app_name'),
             'branding' => app(BrandTheme::class)->shared(),
             'auth' => [
-                'user' => $request->user(),
+                'user' => self::sharedUser($request->user()),
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * Hanya field yang dipakai UI (T-017). Model utuh tidak dikirim: kolom seperti
+     * `telegram_chat_id`, `last_login_ip`, atau `locked_until` tidak perlu ada di browser.
+     *
+     * @return array<string, mixed>|null
+     */
+    private static function sharedUser(?Authenticatable $user): ?array
+    {
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        return [
+            'id' => $user->id,
+            'name' => $user->name,
+            'username' => $user->username,
+            'email' => $user->email,
+            'email_verified_at' => $user->email_verified_at?->toIso8601String(),
+            'phone' => $user->phone,
+            'avatar' => AvatarStore::url($user->avatar_path),
+            'two_factor_enabled' => $user->hasEnabledTwoFactorAuthentication(),
         ];
     }
 }

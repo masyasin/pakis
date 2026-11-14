@@ -254,8 +254,8 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `Http/Controllers/Admin/ProfileController.php`, `Actions/{UpdateProfile,RevokeSession,RevokeOtherSessions}.php`, `pages/Profile/{Edit,Security}.tsx`
 - Deskripsi: Ubah nama, HP, avatar (validasi gambar), email dengan verifikasi ulang. Daftar sesi web (dari tabel `sessions`/Redis: browser, IP, terakhir aktif) + perangkat mobile. Cabut satu / semua lainnya (konfirmasi password).
 - Kriteria penerimaan:
-  - [ ] Tidak bisa mencabut sesi milik pengguna lain (404)
-  - [ ] Ganti email → `email_verified_at` null + email verifikasi
+  - [x] Tidak bisa mencabut sesi milik pengguna lain (404)
+  - [x] Ganti email → `email_verified_at` null + email verifikasi
 - Verifikasi: `php artisan test --filter=Profile`
 - Di luar lingkup: —
 

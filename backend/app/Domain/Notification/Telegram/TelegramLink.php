@@ -15,6 +15,12 @@ final class TelegramLink
 {
     public const MINUTES = 10;
 
+    /** Tombol "Hubungkan Telegram" hanya berguna bila bot sungguhan aktif (driver `bot` + token). */
+    public static function available(): bool
+    {
+        return config('otp.channels.telegram.driver') === 'bot' && app(TelegramBot::class)->configured();
+    }
+
     public function create(User $user): string
     {
         $code = Str::random(40);

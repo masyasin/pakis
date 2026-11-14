@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\LookupController;
+use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\SecurityEventController;
@@ -29,6 +30,18 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     Route::put('ganti-password', [ForcePasswordChangeController::class, 'update'])
         ->middleware('throttle:6,1')
         ->name('password.force.update');
+
+    // Profil & Keamanan (05 §4.1, T-017): hanya akun sendiri, tanpa id pengguna di URL. Aksi yang
+    // memeriksa password saat ini dibatasi agar tidak bisa dipakai menebak password.
+    Route::get('profil', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::put('profil', [ProfileController::class, 'update'])->middleware('throttle:10,1')->name('profile.update');
+    Route::get('profil/foto', [ProfileController::class, 'avatar'])->name('profile.avatar');
+    Route::put('profil/password', [ProfileController::class, 'password'])->middleware('throttle:6,1')->name('profile.password');
+    Route::get('profil/keamanan', [ProfileController::class, 'security'])->middleware(RequirePassword::class)->name('profile.security');
+    Route::delete('profil/sesi', [ProfileController::class, 'destroyOtherSessions'])->middleware('throttle:10,1')->name('profile.sessions.destroy-others');
+    Route::delete('profil/sesi/{session}', [ProfileController::class, 'destroySession'])->middleware('throttle:10,1')->name('profile.sessions.destroy');
+    Route::post('profil/telegram', [ProfileController::class, 'linkTelegram'])->middleware('throttle:10,1')->name('profile.telegram.link');
+    Route::delete('profil/telegram', [ProfileController::class, 'unlinkTelegram'])->name('profile.telegram.unlink');
 
     // Lookup select/autocomplete (05 §4.11, BR-006). Izin per sumber dicek di controller.
     Route::get('lookup/{source}', [LookupController::class, 'show'])

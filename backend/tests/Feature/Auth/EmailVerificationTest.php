@@ -30,13 +30,17 @@ class EmailVerificationTest extends TestCase
         $response->assertOk();
     }
 
-    public function test_unverified_users_are_redirected_to_the_email_verification_prompt(): void
+    /**
+     * Keputusan Mas (T-017): email opsional, jadi akses tidak digantung pada verifikasi email.
+     */
+    public function test_unverified_and_emailless_users_can_open_the_app(): void
     {
-        $user = User::factory()->unverified()->create();
+        $unverified = User::factory()->unverified()->create();
+        $this->actingAs($unverified)->get(route('dashboard'))->assertOk();
+        $this->actingAs($unverified)->get(route('admin.profile.edit'))->assertOk();
 
-        $response = $this->actingAs($user)->get(route('appearance.edit'));
-
-        $response->assertRedirect(route('verification.notice'));
+        $emailless = User::factory()->create(['email' => null, 'email_verified_at' => null]);
+        $this->actingAs($emailless)->get(route('dashboard'))->assertOk();
     }
 
     public function test_email_can_be_verified()

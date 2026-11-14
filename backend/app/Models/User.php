@@ -35,6 +35,8 @@ use Laravel\Fortify\TwoFactorAuthenticatable;
  * @property Carbon|null $locked_until
  * @property Carbon|null $last_login_at
  * @property string|null $last_login_ip
+ * @property string|null $telegram_chat_id
+ * @property Carbon|null $telegram_linked_at
  * @property int|null $created_by
  * @property int|null $updated_by
  * @property Carbon|null $created_at
@@ -83,6 +85,7 @@ class User extends Authenticatable implements MustVerifyEmail
             'is_active' => 'boolean',
             'locked_until' => 'datetime',
             'last_login_at' => 'datetime',
+            'telegram_linked_at' => 'datetime',
         ];
     }
 

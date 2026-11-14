@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Notification;
 
 /*
- * FR-004 / BR-011: ubah password sendiri (form Pengaturan akun; route dipindah ke /profil di T-017).
+ * FR-004 / BR-011: ubah password sendiri di Profil -> Keamanan (PUT /profil/password).
  */
 
 beforeEach(function () {
@@ -23,7 +23,7 @@ function loginWeb(string $password = 'password'): void
 
 function changeOwnPassword(string $current, string $new)
 {
-    return test()->put(route('user-password.update'), [
+    return test()->put('/profil/password', [
         'current_password' => $current,
         'password' => $new,
         'password_confirmation' => $new,

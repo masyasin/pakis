@@ -27,11 +27,10 @@ Route::post('telegram/webhook', TelegramWebhookController::class)
     ->middleware('throttle:60,1')
     ->name('telegram.webhook');
 
-Route::middleware(['auth', 'verified', 'web.access'])->group(function () {
+Route::middleware(['auth', 'web.access'])->group(function () {
     Route::inertia('dashboard', 'dashboard')->name('dashboard');
 });
 
-require __DIR__.'/settings.php';
 require __DIR__.'/admin.php';
 
 // Halaman uji visual komponen (T-005). Tidak pernah terdaftar di staging/produksi.

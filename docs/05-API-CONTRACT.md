@@ -137,17 +137,20 @@ Kolom **Daftar** = harus mematuhi §3. Rincian kolom/cari/filter/sort tiap dafta
 |---|---|---|---|---|
 | `login` | GET/POST | `/login` | tamu | Field `login` (username/email) + `password` (FR-001) |
 | `logout` | POST | `/logout` | auth | |
-| `password.request` / `password.email` | GET/POST | `/forgot-password` | tamu | Field `login` + `channel` (`email`/`whatsapp`, hanya kanal aktif). Respons selalu generik (FR-005, FR-006) |
+| `password.request` / `password.email` | GET/POST | `/forgot-password` | tamu | Field `login` + `channel` (`email`/`whatsapp`/`telegram`, hanya kanal aktif). Respons selalu generik (FR-005, FR-006) |
 | `password.reset` / `password.update` | GET/POST | `/reset-password/{token}` | tamu | |
 | `password.otp` / `password.otp.update` | GET/POST | `/reset-password-otp` | tamu | Reset dengan OTP WhatsApp/Telegram (FR-006) |
 | `telegram.webhook` | POST | `/telegram/webhook` | header `X-Telegram-Bot-Api-Secret-Token` | Update bot Telegram: `/start <kode>` menautkan akun (kode dibuat dari Profil, T-017). Tanpa CSRF, throttle |
 | `two-factor.login` | GET/POST | `/two-factor-challenge` | tamu | |
 | `admin.password.force` / `admin.password.force.update` | GET/PUT | `/ganti-password` | auth | Wajib ganti password (FR-007) |
-| `admin.profile.edit` / `admin.profile.update` | GET/PUT | `/profil` | auth | FR-010 |
-| `admin.profile.password` | PUT | `/profil/password` | auth | FR-004 |
-| `admin.profile.security` | GET | `/profil/keamanan` | auth | MFA (endpoint Fortify `user/two-factor-*`), daftar sesi |
-| `admin.profile.sessions.destroy` | DELETE | `/profil/sesi/{session}` | auth | Hanya sesi milik sendiri |
-| `admin.profile.sessions.destroy-others` | DELETE | `/profil/sesi` | auth | Wajib password saat ini |
+| `admin.profile.edit` / `admin.profile.update` | GET/PUT | `/profil` | auth | FR-010: `name`, `phone`, `email`, `avatar` (berkas) / `remove_avatar`. Mengubah `email` atau `phone` (kanal pemulihan) wajib `current_password`. Email berubah → `email_verified_at` null + email verifikasi ke alamat baru + pemberitahuan ke alamat lama |
+| `admin.profile.avatar` | GET | `/profil/foto` | auth | Stream avatar milik sendiri dari disk privat (404 bila tidak ada) |
+| `admin.profile.password` | PUT | `/profil/password` | auth | FR-004, throttle 6/menit |
+| `admin.profile.security` | GET | `/profil/keamanan` | auth + konfirmasi password | MFA (endpoint Fortify `user/two-factor-*`), daftar sesi web, perangkat mobile, Telegram |
+| `admin.profile.sessions.destroy` | DELETE | `/profil/sesi/{session}` | auth | Wajib `current_password`. `{session}` = kunci buram (HMAC ID sesi), bukan ID sesi asli. Bukan sesi milik sendiri atau sesi yang sedang dipakai → 404 |
+| `admin.profile.sessions.destroy-others` | DELETE | `/profil/sesi` | auth | Wajib `current_password` |
+| `admin.profile.telegram.link` | POST | `/profil/telegram` | auth | Wajib `current_password`. Balikan tautan `t.me/<bot>?start=<kode>` (sekali pakai, 10 menit). Hanya bila driver Telegram `bot` aktif |
+| `admin.profile.telegram.unlink` | DELETE | `/profil/telegram` | auth | Putuskan tautan Telegram |
 
 ### 4.2 Dasbor & Notifikasi
 

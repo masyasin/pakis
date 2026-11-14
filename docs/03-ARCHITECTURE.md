@@ -19,7 +19,7 @@ flowchart LR
     WRK["Queue worker (Supervisor)"]
     SCH["Scheduler (cron)"]
     DB[("MariaDB 11.8")]
-    RDS[("Redis - cache, queue, session")]
+    RDS[("Redis - cache, queue")]
     STG[("Storage privat - selfie, import, export")]
   end
   MAIL["SMTP / layanan email"]
@@ -155,9 +155,10 @@ Dibawa starter kit `laravel/react-starter-kit` (dev-main, Laravel 13): `laravel/
 | Excel | `openspout/openspout` | Baca/tulis streaming, hemat memori untuk import/export besar. |
 | Test | Pest, Larastan (level 7), Pint, Playwright (E2E web) | CI: `.github/workflows/backend.yml`. Secret: gitleaks 8.30.1 (`secrets.yml` + pre-commit). |
 | Database | **MariaDB 11.8** (keputusan 14 Nov 2026, menggantikan MySQL 8.4) | Lokal: XAMPP port 3307. CI: image `mariadb:11.8.9`. Produksi: MariaDB 11.8. utf8mb4, `Asia/Jakarta` di sisi aplikasi, kolom waktu disimpan UTC. |
-| Cache/Queue/Session | Redis (paket stabil OS, ≥ 7) | Queue `redis`, driver `database` tidak dipakai di produksi. **Lokal** memakai driver `database` (PHP XAMPP tanpa phpredis). |
+| Cache/Queue | Redis (paket stabil OS, ≥ 7) | Queue `redis`, driver `database` tidak dipakai di produksi. **Lokal** memakai driver `database` (PHP XAMPP tanpa phpredis). |
+| Session | Driver **`database`** (tabel `sessions`) di semua lingkungan | Keputusan Mas 15 Nov 2026 (T-017): daftar & pencabutan sesi per pengguna cukup query biasa dan sama lokal–produksi. Beban ≤ 20 pengguna web bersamaan ringan. |
 | Mobile | Flutter stable terbaru (dikunci dengan FVM `.fvmrc`): **3.50.0** / Dart 3.14 (T-030, 15 Nov 2026) | Android minSdk 26. Proyek Android saja. |
-| Paket Flutter | `dio`, `flutter_riverpod`, `go_router`, `drift` + `sqlcipher_flutter_libs`, `flutter_secure_storage`, `camera`, `geolocator`, `flutter_image_compress`, `device_info_plus`, `package_info_plus`, `connectivity_plus`, `uuid`, `intl`, **`material_ui`** (disetujui Mas 15 Nov 2026: `package:flutter/material.dart` deprecated sejak Flutter 3.47) | Penambahan paket lain wajib lewat `12-OPEN-QUESTIONS.md`. `sqlcipher_flutter_libs` sudah EOL (0.7.0+eol) → pengganti diputuskan sebelum T-042 (antrean offline). ANDROID_ID, SHA-256, dan buka URL lewat kanal native kecil (`MainActivity.kt`), bukan paket `crypto`/`url_launcher` (keputusan Mas 15 Nov 2026). |
+| Paket Flutter | `dio`, `flutter_riverpod`, `go_router`, `drift` + `sqlite3` 3.x (SQLCipher), `flutter_secure_storage`, `camera`, `geolocator`, `flutter_image_compress`, `device_info_plus`, `package_info_plus`, `connectivity_plus`, `uuid`, `intl`, **`material_ui`** (disetujui Mas 15 Nov 2026: `package:flutter/material.dart` deprecated sejak Flutter 3.47) | Penambahan paket lain wajib lewat `12-OPEN-QUESTIONS.md`. `sqlcipher_flutter_libs` EOL → diganti `sqlite3` 3.x + SQLCipher (keputusan Mas 15 Nov 2026). ANDROID_ID, SHA-256, dan buka URL lewat kanal native kecil (`MainActivity.kt`), bukan paket `crypto`/`url_launcher` (keputusan Mas 15 Nov 2026). |
 
 **Versi terkunci T-030 (15 Nov 2026, `mobile-pro/pubspec.lock`):** dio 5.11.1 · flutter_riverpod 3.5.0 · go_router 18.1.4 · flutter_secure_storage 11.2.0 · package_info_plus 10.2.2 · uuid 4.6.0 · intl 0.20.3 · material_ui 1.11.0 · flutter_lints 6.0.0 (dev). Paket lain di tabel dipasang (dan dikunci) di task pemakainya: `camera`, `geolocator`, `flutter_image_compress`, `connectivity_plus`, `drift` + enkripsi (T-042), `device_info_plus` (T-032).
 

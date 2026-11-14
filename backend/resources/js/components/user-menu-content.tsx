@@ -10,7 +10,7 @@ import { UserInfo } from '@/components/user-info';
 import { useMobileNavigation } from '@/hooks/use-mobile-navigation';
 import { logout } from '@/routes';
 import { index as exportsIndex } from '@/routes/admin/exports';
-import { edit } from '@/routes/profile';
+import { edit } from '@/routes/admin/profile';
 import type { User } from '@/types';
 
 type Props = {
@@ -42,7 +42,7 @@ export function UserMenuContent({ user }: Props) {
                         onClick={cleanup}
                     >
                         <UserRoundCog />
-                        Pengaturan akun
+                        Profil & keamanan
                     </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>

@@ -156,3 +156,12 @@ test('kanal yang tidak aktif ditolak', function () {
     requestReset('siti.aminah', 'whatsapp')->assertSessionHasErrors('channel');
     Notification::assertNothingSent();
 });
+
+test('BR-012 email belum terverifikasi tidak dikirimi tautan reset; respons tetap generik', function () {
+    $this->user->forceFill(['email_verified_at' => null])->save();
+
+    requestReset('siti.aminah')->assertSessionHas('status', GENERIC_SENT)->assertSessionHasNoErrors();
+
+    Notification::assertNothingSent();
+    expect(SecurityEvent::query()->where('event', 'password_reset_requested')->count())->toBe(1);
+});

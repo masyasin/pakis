@@ -1,0 +1,13 @@
+# Root monorepo PAKIS ONE. Aturan per proyek ada di backend/.gitignore dan mobile-pro/.gitignore (T-001, T-030).
+
+# Arsip konsep: zip, gambar, HTML besar, dan dump wilayah 7,5 MB tidak perlu ada di riwayat git
+/konsep/
+
+# Data lokal alat bantu sesi agent
+/.remember/
+
+# OS & editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/

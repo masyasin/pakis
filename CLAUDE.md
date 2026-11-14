@@ -36,7 +36,7 @@ composer install && npm ci
 cp .env.example .env && php artisan key:generate
 php artisan migrate:fresh --seed              # dev + data demo (DITOLAK di production)
 composer run dev                              # server + vite + queue
-php artisan test --parallel
+php artisan test                              # serial; --parallel rusak di Pest 5.3.5 (lihat backend/CLAUDE.md)
 php artisan test tests/Contract               # test kontrak listing & format API
 ./vendor/bin/pint --test && ./vendor/bin/phpstan analyse
 npm run lint && npm run types && npm run test

@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Domain\Settings\Branding\BrandTheme;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -37,7 +38,9 @@ class HandleInertiaRequests extends Middleware
     {
         return [
             ...parent::share($request),
-            'name' => config('app.name'),
+            // Nama & branding dari Pengaturan (T-008), juga untuk tamu di halaman login.
+            'name' => setting('general.app_name'),
+            'branding' => app(BrandTheme::class)->shared(),
             'auth' => [
                 'user' => $request->user(),
             ],

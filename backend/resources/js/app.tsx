@@ -6,7 +6,11 @@ import AppLayout from '@/layouts/app-layout';
 import AuthLayout from '@/layouts/auth-layout';
 import SettingsLayout from '@/layouts/settings/layout';
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+/** Nama aplikasi dari Pengaturan, dicetak app.blade.php di <meta name="application-name"> (T-008). */
+const appName =
+    document
+        .querySelector<HTMLMetaElement>('meta[name="application-name"]')
+        ?.content.trim() || 'PAKIS ONE';
 
 void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
@@ -34,8 +38,8 @@ void createInertiaApp({
         );
     },
     progress: {
-        // Hijau primer Pakis (07 §1.1).
-        color: '#2F6B3B',
+        // Ikut warna utama dari Pengaturan (token CSS, terang & gelap).
+        color: 'var(--primary)',
     },
 });
 

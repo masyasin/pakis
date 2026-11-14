@@ -83,7 +83,7 @@ final class ContrastRatio
     /**
      * @return array{0: float, 1: float, 2: float}
      */
-    private static function toHsl(string $hex): array
+    public static function toHsl(string $hex): array
     {
         [$r, $g, $b] = array_map(fn (int $c) => $c / 255, self::rgb($hex));
         $max = max($r, $g, $b);
@@ -105,7 +105,7 @@ final class ContrastRatio
         return [$h / 6, $s, $l];
     }
 
-    private static function fromHsl(float $h, float $s, float $l): string
+    public static function fromHsl(float $h, float $s, float $l): string
     {
         if ($s == 0.0) {
             $r = $g = $b = $l;

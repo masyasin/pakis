@@ -15,15 +15,18 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 /**
  * Halaman Pengaturan (05 §4.3, 07 §4): satu tab per grup registri, form dibuat otomatis.
  */
 class SettingController extends Controller
 {
+    /** Grup yang nilainya dicetak di dokumen HTML awal (judul, favicon, CSS warna). */
+    private const DOCUMENT_GROUPS = ['general', 'branding'];
+
     public function edit(Request $request, SettingStore $store, ?string $group = null): Response|RedirectResponse
     {
         $group ??= array_key_first(SettingRegistry::GROUPS);
@@ -45,7 +48,7 @@ class SettingController extends Controller
         ]);
     }
 
-    public function update(Request $request, string $group, UpdateSettingGroup $action): RedirectResponse
+    public function update(Request $request, string $group, UpdateSettingGroup $action): RedirectResponse|SymfonyResponse
     {
         abort_unless(isset(SettingRegistry::GROUPS[$group]), 404);
 
@@ -65,6 +68,12 @@ class SettingController extends Controller
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengaturan disimpan.']);
+
+        // Nama aplikasi, favicon, dan warna utama ada di dokumen HTML awal (app.blade.php), bukan
+        // di props Inertia; muat ulang penuh agar perubahan langsung terlihat (T-008).
+        if (in_array($group, self::DOCUMENT_GROUPS, true) && $request->header('X-Inertia')) {
+            return Inertia::location(route('admin.settings.edit', ['group' => $group]));
+        }
 
         return to_route('admin.settings.edit', ['group' => $group]);
     }
@@ -121,7 +130,7 @@ class SettingController extends Controller
             'nullable' => $d->nullable,
             'public' => $d->isPublic,
             'image_url' => $d->type === SettingType::Image && is_string($value)
-                ? Storage::disk(ImageProcessor::DISK)->url($value)
+                ? ImageProcessor::publicUrl($value)
                 : null,
         ];
     }

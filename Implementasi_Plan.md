@@ -84,16 +84,16 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
 | 0A | 7 | 7 | 0 | 0 |
-| 0B | 5 | 1 | 1 | 0 |
+| 0B | 5 | 2 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **8** | **1** | **0** |
+| **Total** | **48** | **9** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- **T-008** bagian 2 (penerapan branding ke tema): tidak terblokir lagi (desain sudah di `main`), dikerjakan berikutnya.
+- (kosong) — berikutnya T-010 (referensi dinamis).
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -126,11 +126,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-14 | T-009 | Selesai | ff5cdbb | Migration `document_sequences` + counters, `app/Domain/Numbering` (`PatternParser` BR-025, `PeriodKey` tanggal lokal, `NumberGenerator::next/preview/lastNumber`, `UpdateSequence` + audit `sequence.updated`, `SequenceListing`), `SequenceSeeder` (employee, attendance_correction), halaman `/pengaturan/penomoran` (DataTable + dialog ubah pola: token klik-sisip, pratinjau langsung 3 nomor, galat per baris). Param `{group}` Pengaturan dibatasi ke grup registri. Izin `sequences.*` deny-by-default (`TODO(T-018)`). Suite baru `tests/Concurrency` (50 proses PHP sungguhan, tanpa RefreshDatabase): awalnya **deadlock 1213** (INSERT IGNORE → shared lock, lalu FOR UPDATE saling tunggu) → diperbaiki dengan mengunci baris induk `document_sequences` dulu (sesuai `03` §4.4). Label sr-only dialog/sheet "Close" → "Tutup". Dicek CSP enforce 360/768/1440 px terang & gelap. 334 Pest + 22 Vitest |
 
+| 2026-11-15 | T-008 (bag. 2) | Selesai | (commit T-008b) | `BrandTheme`: warna kustom → token terang/gelap (`--primary`, `--ring`, `--chart-1`, `--sidebar-primary/-ring`, `--primary-strong`, `--logo-from`, `--brand-panel-*`) di `<style nonce>` setelah `@vite` (selector `html:root`/`html.dark`), dicetak dengan `{{ }}`; warna default = **tanpa override** (token desain dipakai apa adanya). Varian gelap dinaikkan lagi bila teks gelap di atas tombol < 4.5:1 (ditemukan test: ungu `#5B2C83` = 4.48). Panel login digelapkan bertahap sampai teks redup ≥ 4.5:1. `name`/`branding` dibagikan ke Inertia (URL logo relatif `/storage/...` → lolos `img-src 'self'`), judul tab & favicon dari setting, logo unggahan menggantikan lencana daun, nama perusahaan & tagline login dari setting. Simpan grup `general`/`branding` → `Inertia::location` (muat ulang penuh agar CSS/judul ikut). 356 Pest + 25 Vitest. Dicek CSP enforce: biru `#1F4E79` + logo dummy di login 1440 gelap / 360 terang, dasbor 768 (drawer), 0 galat konsol; data dev dikembalikan default |
+
 ### 6.5 Catatan untuk sesi berikutnya
 - **Fase 0A selesai (T-001–T-007).**
-- **T-008 bagian 2 (sisa, kini tidak terblokir — desain sudah di `main`):** bagikan branding (`general.app_name`, `branding.*`) lewat `HandleInertiaRequests::share`. Titik sambung di frontend: logo → `components/app-logo-icon.tsx` (placeholder daun Lucide; `app-logo-mark.tsx` = lencana), tagline login hardcode di `layouts/auth/auth-split-layout.tsx` → `branding.login_tagline`, nama → prop `name`. `--primary` override (nonce CSP!) juga harus mengisi `--ring`, `--sidebar-primary`, `--chart-1`, dan varian gelap (`ContrastRatio::darkVariant`); warna latar awal di `<style nonce>` `app.blade.php` dan warna progress di `app.tsx` masih literal #2F6B3B.
+- **T-008 selesai penuh (bag. 1 + 2).** Branding: `app/Domain/Settings/Branding/BrandTheme.php`. Warna netral (latar, kartu, `--sidebar-accent`, `--muted`) sengaja tetap palet hijau-abu desain; hanya token yang terkait warna utama yang mengikuti warna kustom. Bila Pakis ingin seluruh palet ikut, itu perubahan desain (tanyakan dulu). Pratinjau tema di `appearance-tabs.tsx` masih literal (ilustrasi tema bawaan).
+- Teks panel login "Satu tempat untuk data…" dan "Kudus, Jawa Tengah" masih teks tetap (tidak ada kunci setting di `08` §2).
 - Menu sidebar baru berisi **Dasbor** saja (`components/app-sidebar.tsx`). Halaman `/audit`, `/log-keamanan`, `/pengaturan/*` belum ada di menu → **dikerjakan di T-018** (keputusan Mas 14 Nov 2026): menu lengkap per grup `06` §8 + bagikan permission pengguna lewat Inertia. Jangan tambah menu sebelum itu.
-- **T-009 selesai.** Berikutnya: T-008 bagian 2 (branding), lalu T-010–T-012. Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
+- **T-009 selesai.** Berikutnya: T-010–T-012 (referensi, lookup, wilayah). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
 - `tests/Concurrency` menjalankan `migrate` di DB test tanpa RefreshDatabase dan membersihkan datanya sendiri; ikut jalan di `php artisan test` (± 5–10 detik).
 - `DocumentSequence` dikunci `FOR UPDATE` oleh generator **dan** `UpdateSequence`: jangan menambah query lain yang mengunci counter sebelum baris induk (urutan kunci = induk → counter, agar tidak deadlock).
 - Lokal: `php artisan storage:link` sudah dijalankan (logo di disk `public`). Nilai demo yang diubah saat cek browser: `attendance.default_radius_m` = 150 (bisa dikembalikan di Pengaturan → Absensi).

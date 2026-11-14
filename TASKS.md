@@ -127,7 +127,7 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
   - [x] Kunci tak dikenal → 422. Nilai di luar batas → 422 dengan pesan per field
   - [x] `/api/v1/config` hanya memuat kunci `is_public` (SEC-062)
   - [x] Warna `#9BE59B` ditolak (kontras rendah)
-  - [ ] **Sisa (setelah `feat/ui-desain` digabung):** branding dibagikan ke Inertia (logo, nama, warna) dan diterapkan ke CSS variable `--primary` (+ varian gelap dari `ContrastRatio::darkVariant`), logo/favicon di layout & login.
+  - [x] **Sisa (setelah `feat/ui-desain` digabung):** branding dibagikan ke Inertia (logo, nama, warna) dan diterapkan ke CSS variable `--primary` (+ varian gelap dari `ContrastRatio::darkVariant`), logo/favicon di layout & login.
 - Catatan pelaksanaan: halaman `pages/site-settings/edit.tsx` (bukan `pages/Settings/Edit.tsx`: folder `pages/settings/` milik pengaturan pengguna starter kit). Nama field form `grup__kunci`.
 - Verifikasi: `php artisan test --filter=Setting`
 - Di luar lingkup: gate versi di middleware API (T-031)

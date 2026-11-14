@@ -64,6 +64,21 @@ final class ImageProcessor
         return $path;
     }
 
+    /**
+     * URL RELATIF (`/storage/...`) untuk path di disk public. Relatif agar lolos CSP `img-src 'self'`
+     * walau APP_URL berbeda host dengan alamat yang dibuka (mis. 127.0.0.1 vs localhost).
+     */
+    public static function publicUrl(?string $path): ?string
+    {
+        if ($path === null || $path === '') {
+            return null;
+        }
+
+        $url = Storage::disk(self::DISK)->url($path);
+
+        return (string) (parse_url($url, PHP_URL_PATH) ?: $url);
+    }
+
     private static function encode(GdImage $image, string $extension): string
     {
         // Pertahankan transparansi PNG/WebP.

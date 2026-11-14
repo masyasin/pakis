@@ -31,16 +31,31 @@
             }
         </style>
 
-        <link rel="icon" href="/favicon.ico" sizes="any">
-        <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-        <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        {{-- Nama aplikasi dari Pengaturan; dibaca app.tsx untuk judul tab (T-008). --}}
+        <meta name="application-name" content="{{ $brand['title'] }}">
+
+        @if ($brand['favicon'])
+            <link rel="icon" href="{{ $brand['favicon'] }}">
+        @else
+            <link rel="icon" href="/favicon.ico" sizes="any">
+            <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+            <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+        @endif
 
         @fonts
 
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
+
+        {{-- Warna utama kustom (BR-021). Hanya ada bila admin mengganti warna; selector html:root /
+             html.dark lebih spesifik dari :root / .dark di app.css. Dicetak dengan {{ }}: isinya hanya
+             hex & tanda CSS (BrandTheme::css), tanpa < > & " '. --}}
+        @if ($brand['css'])
+            <style nonce="{{ Vite::cspNonce() }}">{{ $brand['css'] }}</style>
+        @endif
+
         <x-inertia::head>
-            <title>{{ config('app.name', 'Laravel') }}</title>
+            <title>{{ $brand['title'] }}</title>
         </x-inertia::head>
     </head>
     <body class="font-sans antialiased">

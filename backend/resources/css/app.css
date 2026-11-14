@@ -68,6 +68,11 @@
     --color-chart-5: var(--chart-5);
 
     --color-primary-strong: var(--primary-strong);
+    --color-logo-from: var(--logo-from);
+    --color-brand-panel-from: var(--brand-panel-from);
+    --color-brand-panel-via: var(--brand-panel-via);
+    --color-brand-panel-to: var(--brand-panel-to);
+    --color-brand-panel-muted: var(--brand-panel-muted);
     --color-amber: var(--amber);
     --color-amber-foreground: var(--amber-foreground);
     --color-info: var(--info);
@@ -112,6 +117,13 @@
     --primary: #2f6b3b;
     --primary-foreground: #ffffff;
     --primary-strong: #24552f;
+    /* Branding (T-008): awal gradien lencana logo + panel login. Warna kustom di-override
+       BrandTheme lewat <style nonce> (app.blade.php); nilai ini = desain bawaan. */
+    --logo-from: #2f6b3b;
+    --brand-panel-from: #2a6036;
+    --brand-panel-via: #24552f;
+    --brand-panel-to: #163a20;
+    --brand-panel-muted: #cfe3d4;
     --secondary: #e8eee9;
     --secondary-foreground: #16241b;
     --muted: #ebf0ec;
@@ -170,6 +182,11 @@
     --primary: #79b98b;
     --primary-foreground: #0e1a11;
     --primary-strong: #2c5a37;
+    --logo-from: #3b7a4a;
+    --brand-panel-from: #2c5a37;
+    --brand-panel-via: #1f4329;
+    --brand-panel-to: #11271a;
+    --brand-panel-muted: #cfe3d4;
     --secondary: #232d26;
     --secondary-foreground: #e5ede7;
     --muted: #222b25;

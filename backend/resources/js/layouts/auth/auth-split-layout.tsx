@@ -6,19 +6,22 @@ import type { AuthLayoutProps } from '@/types';
 /**
  * Layout auth PAKIS ONE. Desktop: panel hijau tua (identitas) + area form.
  * HP: panel menyusut jadi pita header hijau seperti prototipe Pakis Pro,
- * kartu form menumpang di atasnya. Teks putih di panel ≥ 8.69:1.
+ * kartu form menumpang di atasnya. Teks putih di panel ≥ 8.69:1 (warna kustom: dijaga
+ * BrandTheme ≥ 4.5:1). Warna panel dari token `--brand-panel-*`.
  */
 export default function AuthSplitLayout({
     children,
     title,
     description,
 }: AuthLayoutProps) {
-    const { name } = usePage().props;
+    const { name, branding } = usePage().props;
     const appName = name || 'PAKIS ONE';
+    const company = branding?.company || 'CV Pakis Jaya Abadi';
+    const tagline = branding?.loginTagline;
 
     return (
         <div className="grid min-h-svh bg-background lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-            <aside className="relative isolate overflow-hidden bg-linear-160 from-[#2a6036] via-[#24552f] to-[#163a20] px-6 pt-8 pb-20 text-white sm:px-10 lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16 dark:from-[#2c5a37] dark:via-[#1f4329] dark:to-[#11271a]">
+            <aside className="relative isolate overflow-hidden bg-linear-160 from-brand-panel-from via-brand-panel-via to-brand-panel-to px-6 pt-8 pb-20 text-white sm:px-10 lg:flex lg:flex-col lg:justify-between lg:p-12 xl:p-16">
                 <div
                     aria-hidden="true"
                     className="absolute -top-32 -right-24 -z-10 size-96 rounded-full bg-[radial-gradient(circle,rgb(224_172_99/0.28),transparent_65%)]"
@@ -35,23 +38,25 @@ export default function AuthSplitLayout({
                         <p className="text-lg font-semibold tracking-tight">
                             {appName}
                         </p>
-                        <p className="text-sm text-[#cfe3d4]">
-                            CV Pakis Jaya Abadi
+                        <p className="text-sm text-brand-panel-muted">
+                            {company}
                         </p>
                     </div>
                 </div>
 
                 <div className="mt-8 max-w-md lg:mt-0">
-                    <p className="text-2xl leading-tight font-semibold tracking-tight text-balance sm:text-3xl lg:text-[2.75rem] lg:leading-[1.1]">
-                        Distribusi pestisida &amp; alat pertanian
-                    </p>
-                    <p className="mt-4 hidden max-w-sm text-base leading-relaxed text-[#cfe3d4] lg:block">
+                    {tagline && (
+                        <p className="text-2xl leading-tight font-semibold tracking-tight text-balance sm:text-3xl lg:text-[2.75rem] lg:leading-[1.1]">
+                            {tagline}
+                        </p>
+                    )}
+                    <p className="mt-4 hidden max-w-sm text-base leading-relaxed text-brand-panel-muted lg:block">
                         Satu tempat untuk data organisasi, pegawai, dan
                         kehadiran tim di kantor maupun di lapangan.
                     </p>
                 </div>
 
-                <p className="hidden text-sm text-[#cfe3d4] lg:block">
+                <p className="hidden text-sm text-brand-panel-muted lg:block">
                     Kudus, Jawa Tengah
                 </p>
             </aside>
@@ -73,7 +78,7 @@ export default function AuthSplitLayout({
                     </div>
 
                     <p className="mt-8 text-center text-sm text-muted-foreground lg:text-left">
-                        Akses khusus pegawai CV Pakis Jaya Abadi.
+                        Akses khusus pegawai {company}.
                     </p>
                 </div>
             </main>

@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Domain\Audit\Listeners\RecordExportCreated;
+use App\Domain\Settings\Branding\BrandTheme;
 use App\Domain\Settings\SettingStore;
 use App\Models\User;
 use App\Support\Auth\PasswordConfirmation;
@@ -15,6 +16,7 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -43,6 +45,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureTemporaryAbilities();
+
+        // Branding di dokumen HTML awal (judul, favicon, override warna ber-nonce) — T-008.
+        View::composer('app', fn ($view) => $view->with('brand', app(BrandTheme::class)->forView()));
 
         // Alur konfirmasi Fortify (status "masih terkonfirmasi") membaca config ini.
         config(['auth.password_timeout' => PasswordConfirmation::timeoutSeconds()]);

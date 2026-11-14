@@ -2,7 +2,7 @@ import { usePage } from '@inertiajs/react';
 import { AppLogoMark } from '@/components/app-logo-mark';
 
 export default function AppLogo() {
-    const { name } = usePage().props;
+    const { name, branding } = usePage().props;
 
     return (
         <>
@@ -12,7 +12,7 @@ export default function AppLogo() {
                     {name || 'PAKIS ONE'}
                 </span>
                 <span className="truncate text-xs text-muted-foreground">
-                    CV Pakis Jaya Abadi
+                    {branding?.company || 'CV Pakis Jaya Abadi'}
                 </span>
             </div>
         </>

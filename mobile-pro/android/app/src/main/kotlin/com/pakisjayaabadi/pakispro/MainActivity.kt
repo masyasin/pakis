@@ -35,6 +35,9 @@ class MainActivity : FlutterActivity() {
                     }
                 }
 
+                // Folder privat yang tidak ikut cadangan Android: DB antrean offline (T-042).
+                "noBackupDir" -> result.success(noBackupFilesDir.absolutePath)
+
                 // Hanya https: URL unduh APK berasal dari setting server, jangan sampai membuka
                 // skema lain (intent://, file://) bila nilainya dirusak.
                 "openUrl" -> {

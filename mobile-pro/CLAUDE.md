@@ -28,7 +28,7 @@ CI: `../.github/workflows/mobile.yml` (format, analyze, test, `pub outdated`, AP
 Terpasang di T-030 (versi di `pubspec.lock`): `dio` 5.11.1, `flutter_riverpod` 3.5.0, `go_router` 18.1.4, `flutter_secure_storage` 11.2.0, `package_info_plus` 10.2.2, `uuid` 4.6.0, `intl` 0.20.3, **`material_ui` 1.11.0** (disetujui: `package:flutter/material.dart` deprecated sejak Flutter 3.47). Dev: `flutter_lints` 6.0.0.
 
 - Import Material **selalu** `package:material_ui/material_ui.dart`, bukan `package:flutter/material.dart`. Lokalisasi: `GlobalMaterialLocalizations.delegates` dari `material_ui` (bukan `flutter_localizations`).
-- Menyusul di task pemakainya (agar izin kamera/lokasi tidak ikut sebelum dipakai): `camera`, `geolocator`, `flutter_image_compress`, `connectivity_plus` (T-042), `device_info_plus` (model/OS untuk login, T-032).
+- **Bagian lokal T-042 (dikerjakan awal, 15 Nov 2026, keputusan Mas):** `camera` 0.12.2, `geolocator` 14.0.1, `flutter_image_compress` 2.5.1, `connectivity_plus` 7.3.2, `sqlite3` 3.9.1 (SQLCipher lewat `hooks:` di pubspec). Antrean memakai `sqlite3` langsung, **tanpa drift/codegen** (keputusan Mas: satu tabel). `device_info_plus` menyusul di T-032. Plugin kamera/kompresi menyisipkan `RECORD_AUDIO` & `READ_EXTERNAL_STORAGE`: dibuang dengan `tools:node="remove"` di manifest; setelah menambah plugin, cek `build/app/intermediates/merged_manifests/debug/processDebugManifest/AndroidManifest.xml`. `libsqlcipher.so` ±5 MB per ABI → APK rilis wajib `--split-per-abi` atau ABI terbatas (T-047, NFR-014).
 - **Antrean offline T-042 (keputusan Mas 15 Nov 2026): `drift` + `sqlite3` 3.x dengan SQLCipher**, menggantikan `sqlcipher_flutter_libs` yang EOL (0.7.0+eol). Cek 15 Nov 2026: `sqlite3` 3.9.1, `drift` 2.35.4 (butuh `sqlite3 ^3.4.0`). SQLCipher dipilih lewat pubspec `hooks: user_defines: sqlite3: source: sqlcipher` (biner diunduh dari rilis GitHub sqlite3.dart saat build, jadi CI butuh jaringan). Catatan untuk T-042: (1) **jangan pakai `drift_flutter`**, karena masih bergantung pada `sqlite3_flutter_libs`/`sqlcipher_flutter_libs` EOL; buka DB lewat `NativeDatabase` dari `package:drift/native.dart`. (2) Build SQLCipher menautkan OpenSSL di Android dan bisa membawa SQLite lebih lama: ukur APK rilis terhadap NFR-014 (< 40 MB). (3) `drift_dev` + `build_runner` (codegen tabel) tidak ada di 03 §5, jadi minta persetujuan Mas dulu. (4) Kunci DB acak 32 byte disimpan di `SecureStore`, diterapkan dengan `PRAGMA key` saat membuka DB; lalu cek `PRAGMA cipher_version` tidak kosong agar DB tak terenkripsi tidak lolos diam-diam.
 - Tanpa `crypto`/`url_launcher`: ANDROID_ID, SHA-256, dan membuka URL unduh lewat kanal native `pakis_pro/device` di `android/app/src/main/kotlin/.../MainActivity.kt` (keputusan Mas). Fungsi native baru ditambah di kanal yang sama + `NativeDevice`, bukan paket baru.
 
@@ -43,11 +43,13 @@ lib/
 │   ├── config/            # AppConfig (/config), ConfigRepository (cache offline), Semver
 │   ├── device/            # DeviceId (SHA-256(ANDROID_ID + install id)), NativeDevice
 │   ├── listing/           # ListingSpec/ListingQuery/ListingPage (05 §3)
+│   ├── location/          # LocationService (GPS 15 s, akurasi dari config, isMocked → server)
+│   ├── offline/           # QueueDb (SQLCipher), SyncService (FIFO, idempoten, backoff), provider
 │   ├── storage/           # SecureStore + StoreKeys
 │   ├── theme/             # token 07 §1.1, BrandColor (port BrandTheme.php), AppTheme
 │   ├── format.dart        # tanggal/jam/angka Indonesia (07 §7)
 │   └── providers.dart     # provider inti (override di main() & test)
-├── features/<fitur>/      # startup (splash, wajib update), auth (T-032), attendance, …
+├── features/<fitur>/      # startup (splash, wajib update), auth (T-032), attendance/capture (selfie), …
 └── shared/widgets/        # PagedList, FilterSheet, EmptyState, StatusBadge
 ```
 
@@ -82,3 +84,12 @@ Bila prototipe berbeda dari spesifikasi, **dokumen spesifikasi yang berlaku**:
 - Label status mengikuti **07 §6** ("Hadir", "Telat"), bukan teks prototipe ("Tepat waktu", "Terlambat 11 mnt"). Selisih menit boleh tampil sebagai keterangan, bukan sebagai label.
 - Isi tab bawah mengikuti **07 §5** (Absen, Riwayat, Koreksi, Persetujuan bila berhak, Notifikasi, Profil). "Slip gaji" dan "cuti" di prototipe di luar Fase 0,5.
 - Login, lupa password, wajib ganti password, splash, dan wajib update **tidak ada** di prototipe: pakai token + gaya header di atas, perilaku dari 07 §5.
+
+## Absen offline & selfie (bagian lokal T-042)
+
+- **Antrean:** `QueueDb.open()` gagal keras bila SQLCipher tidak aktif (`PRAGMA cipher_version`) atau kunci salah. Kunci 256 bit di `StoreKeys.queueDbKey`; DB di `noBackupFilesDir` (kanal native `noBackupDir`). Selfie disimpan sebagai BLOB di DB terenkripsi, dibuang saat baris `rejected`.
+- **Sinkron:** `SyncService.sync()` FIFO, berhenti di baris pertama yang masih backoff (absen pulang tidak mendahului absen masuk). 2xx/`replayed` = selesai; jaringan/5xx/429 = backoff 30 s × 2ⁿ (maks 15 menit, jitter); 401/426/perangkat/wajib ganti password = berhenti tanpa menandai baris; galat lain = `rejected`. `start(online:)` memicu saat koneksi kembali (abaikan backoff) + timer 1 menit (NFR-007). **Belum dinyalakan di `app.dart`**: panggil `start()` setelah login (T-032), `stop()` saat keluar.
+- **`device_clock_offset_s`:** `ApiClient.onServerClock` membaca header `Date` setiap respons → `clockOffsetProvider` (disimpan di `SecureStore`).
+- **Lokasi:** `LocationService.acquire(maxAccuracyM: config.attendance.maxAccuracyM)`. `isMock` **tidak** ditolak di HP, tetap dikirim agar server mencatat & memberi tahu (BR-065).
+- **Selfie:** `SelfieCaptureScreen.open(context)` → JPEG ≤ 100 KB, sisi terpanjang 720 px. `flutter_image_compress` mengecilkan sampai sisi **pendek** = `minWidth`, jadi `SelfieCompressor` menghitung `minSide = 720 × pendek/panjang`.
+- **Menunggu T-036:** beranda absen (kartu shift dari `attendance/today`), layar hasil, `AttendanceRecorder` (kirim online dulu, bila galat jaringan → `SyncService.enqueue` dengan `is_offline`), integration test di HP Android 8 nyata.

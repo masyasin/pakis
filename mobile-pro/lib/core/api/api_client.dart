@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:dio/dio.dart';
 
 import '../env.dart';
@@ -38,8 +40,10 @@ class ApiClient {
     required DeviceIdReader deviceId,
     TokenReader? token,
     this.onUpdateRequired,
+    this.onServerClock,
     HttpClientAdapter? adapter,
     String Function() requestId = newUlid,
+    DateTime Function() now = DateTime.now,
   }) : _dio = Dio(
          BaseOptions(
            baseUrl: baseUrl,
@@ -70,6 +74,17 @@ class ApiClient {
             handler.reject(DioException(requestOptions: options, error: e));
           }
         },
+        onResponse: (response, handler) {
+          _readServerClock(response.headers, now);
+          handler.next(response);
+        },
+        onError: (error, handler) {
+          final headers = error.response?.headers;
+          if (headers != null) {
+            _readServerClock(headers, now);
+          }
+          handler.next(error);
+        },
       ),
     );
   }
@@ -79,6 +94,24 @@ class ApiClient {
   /// Dipanggil setiap kali server menjawab `426 APP_UPDATE_REQUIRED` (BR-027), dari endpoint
   /// mana pun, agar aplikasi langsung pindah ke layar wajib update.
   final void Function(ApiError error)? onUpdateRequired;
+
+  /// Selisih detik jam server − jam HP dari header `Date` setiap respons (termasuk galat).
+  /// Dikirim sebagai `device_clock_offset_s` saat absen (05 §5.4, BR-067).
+  final void Function(int offsetSeconds)? onServerClock;
+
+  void _readServerClock(Headers headers, DateTime Function() now) {
+    final date = headers.value('date');
+    if (date == null || onServerClock == null) {
+      return;
+    }
+    try {
+      onServerClock!(HttpDate.parse(date).difference(now()).inSeconds);
+    } on FormatException {
+      // Header rusak dari proxy: abaikan, pakai selisih terakhir yang diketahui.
+    } on HttpException {
+      // Sama seperti di atas (HttpDate.parse melempar HttpException untuk format salah).
+    }
+  }
 
   Future<ApiResponse> get(String path, {Map<String, Object>? query}) =>
       _send(() => _dio.get<Object?>(path, queryParameters: query));

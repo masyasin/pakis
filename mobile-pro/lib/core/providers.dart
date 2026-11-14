@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -42,6 +44,7 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     token: () => store.read(StoreKeys.authToken),
     adapter: ref.watch(httpAdapterProvider),
     onUpdateRequired: (error) => ref.read(updateGateProvider.notifier).require(error),
+    onServerClock: (seconds) => ref.read(clockOffsetProvider.notifier).set(seconds),
   );
 });
 
@@ -71,3 +74,28 @@ class ThemeModeController extends Notifier<ThemeMode> {
 }
 
 final themeModeProvider = NotifierProvider<ThemeModeController, ThemeMode>(ThemeModeController.new);
+
+/// Selisih detik jam server − jam HP terakhir yang diketahui (header `Date`), untuk
+/// `device_clock_offset_s` (05 §5.4, BR-067). Disimpan agar tetap ada saat HP dibuka offline.
+class ClockOffset extends Notifier<int?> {
+  @override
+  int? build() {
+    final store = ref.watch(secureStoreProvider);
+    store.read(StoreKeys.clockOffset).then((value) {
+      if (state == null && value != null) {
+        state = int.tryParse(value);
+      }
+    }, onError: (Object _) {});
+    return null;
+  }
+
+  void set(int seconds) {
+    if (state == seconds) {
+      return;
+    }
+    state = seconds;
+    unawaited(ref.read(secureStoreProvider).write(StoreKeys.clockOffset, '$seconds'));
+  }
+}
+
+final clockOffsetProvider = NotifierProvider<ClockOffset, int?>(ClockOffset.new);

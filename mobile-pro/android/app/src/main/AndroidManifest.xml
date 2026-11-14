@@ -1,5 +1,16 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Absen (T-042): selfie kamera depan + lokasi saat tombol ditekan saja. Tanpa
+         ACCESS_BACKGROUND_LOCATION: lokasi tidak dilacak di latar (09 §8, PDP). -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <uses-feature android:name="android.hardware.camera.front" android:required="false"/>
+    <!-- Dibawa plugin kamera/kompresi tetapi tidak dipakai: tanpa rekam suara (enableAudio
+         false) dan tanpa akses berkas/galeri (SEC-022, PDP). Dibuang dari manifest gabungan. -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" tools:node="remove"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" tools:node="remove"/>
 
     <!-- SEC-067: tanpa cadangan otomatis (token & install id tidak boleh ikut dipulihkan ke HP
          lain) dan tanpa HTTP polos. Build debug mengizinkan HTTP lewat src/debug. -->

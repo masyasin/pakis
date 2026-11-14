@@ -13,13 +13,18 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  camera: ^0.12.2
+  connectivity_plus: ^7.3.2
   dio: ^5.11.1
+  flutter_image_compress: ^2.5.1
   flutter_riverpod: ^3.5.0
   flutter_secure_storage: ^11.2.0
+  geolocator: ^14.0.1
   go_router: ^18.1.4
   intl: ^0.20.3
   material_ui: ^1.11.0
   package_info_plus: ^10.2.2
+  sqlite3: ^3.9.1
   uuid: ^4.6.0
 
 dev_dependencies:
@@ -29,3 +34,10 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+# SQLite dengan SQLCipher untuk antrean offline terenkripsi (keputusan Mas 15 Nov 2026,
+# pengganti sqlcipher_flutter_libs yang EOL). Biner diunduh build hook paket sqlite3.
+hooks:
+  user_defines:
+    sqlite3:
+      source: sqlcipher

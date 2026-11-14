@@ -13,6 +13,10 @@ abstract interface class NativeDevice {
 
   /// Membuka URL `https` di aplikasi lain (browser/pengunduh). `false` bila gagal.
   Future<bool> openUrl(String url);
+
+  /// Folder privat aplikasi yang **tidak** ikut cadangan Android (`noBackupFilesDir`), untuk DB
+  /// antrean offline. Pengganti `path_provider` (tidak ada di 03 §5).
+  Future<String> privateDir();
 }
 
 class MethodChannelNativeDevice implements NativeDevice {
@@ -30,6 +34,15 @@ class MethodChannelNativeDevice implements NativeDevice {
       throw PlatformException(code: 'NO_RESULT', message: 'sha256Hex tidak mengembalikan nilai');
     }
     return hex;
+  }
+
+  @override
+  Future<String> privateDir() async {
+    final dir = await _channel.invokeMethod<String>('noBackupDir');
+    if (dir == null || dir.isEmpty) {
+      throw PlatformException(code: 'NO_RESULT', message: 'noBackupDir tidak mengembalikan folder');
+    }
+    return dir;
   }
 
   @override

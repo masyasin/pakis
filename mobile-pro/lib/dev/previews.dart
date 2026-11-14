@@ -237,6 +237,9 @@ class _PreviewNative implements NativeDevice {
 
   @override
   Future<bool> openUrl(String url) async => false; // tidak ada browser native di pratinjau
+
+  @override
+  Future<String> privateDir() async => '';
 }
 
 class _PreviewStartup extends StartupController {

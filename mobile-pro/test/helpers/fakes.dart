@@ -66,6 +66,9 @@ class FakeNativeDevice implements NativeDevice {
   }
 
   @override
+  Future<String> privateDir() async => 'memory';
+
+  @override
   Future<bool> openUrl(String url) async {
     openedUrls.add(url);
     return openSucceeds;

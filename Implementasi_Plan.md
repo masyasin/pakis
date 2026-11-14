@@ -93,7 +93,7 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | **Total** | **48** | **16** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- (kosong) — berikutnya T-017 (profil & sesi; termasuk tombol "Hubungkan Telegram"), lalu T-018, T-016 (urutan §3). **T-030 (Flutter) selesai** (d0dcfa1, agen paralel). Mobile berikutnya T-032 (butuh T-031).
+- (kosong) — berikutnya T-017 (profil & sesi; termasuk tombol "Hubungkan Telegram"), lalu T-018, T-016 (urutan §3). **T-030 (Flutter) selesai** (d0dcfa1, agen paralel). Mobile berikutnya T-032 (butuh T-031). **T-042 bagian lokal dikerjakan awal** (keputusan Mas 15 Nov 2026, hanya `mobile-pro/`): antrean SQLCipher, sinkron, lokasi, selfie; task tetap terbuka sampai T-032 & T-036.
 
 ### 6.3 Blocker aktif
 - (kosong)

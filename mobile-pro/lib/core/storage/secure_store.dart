@@ -13,6 +13,12 @@ abstract final class StoreKeys {
 
   /// Token Sanctum (SEC-020). Diisi oleh alur login T-032.
   static const authToken = 'auth.token';
+
+  /// Kunci SQLCipher antrean offline (64 hex = 256 bit), dibuat sekali (T-042).
+  static const queueDbKey = 'offline.queue_key';
+
+  /// Selisih detik jam server − jam HP terakhir, dari header `Date` (05 §5.4, BR-067).
+  static const clockOffset = 'clock.offset_s';
 }
 
 /// Penyimpanan kunci-nilai terenkripsi.

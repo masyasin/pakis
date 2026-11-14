@@ -1,0 +1,31 @@
+# Lint Pakis Pro (NFR-012: `flutter analyze` bersih). Info juga dianggap gagal di CI.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  language:
+    # JSON dari API selalu dicast eksplisit: salah bentuk respons jadi galat jelas, bukan
+    # `dynamic` yang diam-diam lolos.
+    strict-casts: true
+    strict-inference: true
+    strict-raw-types: true
+  errors:
+    # TODO wajib ber-ID task/OQ (CLAUDE.md §7), tidak dihitung sebagai temuan analyzer.
+    todo: ignore
+  exclude:
+    - build/**
+    - android/**
+
+formatter:
+  page_width: 120
+
+linter:
+  rules:
+    - prefer_single_quotes
+    - prefer_final_locals
+    - prefer_final_in_for_each
+    - unawaited_futures
+    - directives_ordering
+    - avoid_dynamic_calls
+    - cancel_subscriptions
+    - always_declare_return_types
+    - require_trailing_commas

@@ -59,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureTemporaryAbilities(): void
     {
         // TODO(T-018): hapus; `can:audit.view` dijawab permission Spatie lewat Gate::before.
-        foreach (['audit.view', 'audit.export', 'settings.view', 'settings.update'] as $ability) {
+        foreach (['audit.view', 'audit.export', 'settings.view', 'settings.update', 'sequences.view', 'sequences.update'] as $ability) {
             Gate::define($ability, fn (User $user): bool => app()->isLocal());
         }
     }

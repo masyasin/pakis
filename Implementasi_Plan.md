@@ -84,16 +84,16 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
 | 0A | 7 | 7 | 0 | 0 |
-| 0B | 5 | 0 | 1 | 0 |
+| 0B | 5 | 1 | 1 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **7** | **1** | **0** |
+| **Total** | **48** | **8** | **1** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- **T-008** bagian 2 (penerapan branding ke tema) menunggu branch `feat/ui-desain` (agen desain, chat terpisah) ditinjau & digabung.
+- **T-008** bagian 2 (penerapan branding ke tema): tidak terblokir lagi (desain sudah di `main`), dikerjakan berikutnya.
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -122,11 +122,17 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-14 | UI (desain) | Selesai | c723b0e, merge 61e5994 | Rombak tampilan di branch `feat/ui-desain`: token 07 §1.1 terang/gelap di `app.css` (kontras terukur; amber 07 = `--amber` karena `--accent` shadcn = hover; batas input ≥ 3:1; `--status-*` tetap), layout auth split (panel hijau + SVG alur tanam, pita header di HP), copy Indonesia semua auth & Pengaturan akun, `lang/id/{auth,passwords}.php` + `lang/id.json` (galat login generik), logo placeholder satu komponen, header: Unduhan + toggle tema ikon + menu profil kanan atas, sidebar drawer < 1024 px (`useIsSidebarDrawer`), dasbor kerangka tanpa data palsu, paging DataTable rapi di semua lebar (container query; gaya saja, API/test tetap). Dicek CSP enforce 360–1440 px terang/gelap, 0 error CSP. 283 Pest + 22 Vitest setelah merge |
 
+| 2026-11-14 | T-008 (perbaikan) | Selesai | 6282f69 | Temuan review keamanan: berkas ke field non-gambar ditolak 422 (sebelumnya path gambar → `retention.audit_years` = 0 → purge menghapus seluruh audit) + `audit:purge` dijepit ke batas minimal registri; konfirmasi password memakai `security.password_confirm_minutes` (`PasswordConfirmation`, `RequirePassword` di-bind ulang) |
+
+| 2026-11-14 | T-009 | Selesai | (commit T-009) | Migration `document_sequences` + counters, `app/Domain/Numbering` (`PatternParser` BR-025, `PeriodKey` tanggal lokal, `NumberGenerator::next/preview/lastNumber`, `UpdateSequence` + audit `sequence.updated`, `SequenceListing`), `SequenceSeeder` (employee, attendance_correction), halaman `/pengaturan/penomoran` (DataTable + dialog ubah pola: token klik-sisip, pratinjau langsung 3 nomor, galat per baris). Param `{group}` Pengaturan dibatasi ke grup registri. Izin `sequences.*` deny-by-default (`TODO(T-018)`). Suite baru `tests/Concurrency` (50 proses PHP sungguhan, tanpa RefreshDatabase): awalnya **deadlock 1213** (INSERT IGNORE → shared lock, lalu FOR UPDATE saling tunggu) → diperbaiki dengan mengunci baris induk `document_sequences` dulu (sesuai `03` §4.4). Label sr-only dialog/sheet "Close" → "Tutup". Dicek CSP enforce 360/768/1440 px terang & gelap. 334 Pest + 22 Vitest |
+
 ### 6.5 Catatan untuk sesi berikutnya
 - **Fase 0A selesai (T-001–T-007).**
 - **T-008 bagian 2 (sisa, kini tidak terblokir — desain sudah di `main`):** bagikan branding (`general.app_name`, `branding.*`) lewat `HandleInertiaRequests::share`. Titik sambung di frontend: logo → `components/app-logo-icon.tsx` (placeholder daun Lucide; `app-logo-mark.tsx` = lencana), tagline login hardcode di `layouts/auth/auth-split-layout.tsx` → `branding.login_tagline`, nama → prop `name`. `--primary` override (nonce CSP!) juga harus mengisi `--ring`, `--sidebar-primary`, `--chart-1`, dan varian gelap (`ContrastRatio::darkVariant`); warna latar awal di `<style nonce>` `app.blade.php` dan warna progress di `app.tsx` masih literal #2F6B3B.
 - Menu sidebar baru berisi **Dasbor** saja (`components/app-sidebar.tsx`). Halaman `/audit`, `/log-keamanan`, `/pengaturan/*` belum ada di menu → **dikerjakan di T-018** (keputusan Mas 14 Nov 2026): menu lengkap per grup `06` §8 + bagikan permission pengguna lewat Inertia. Jangan tambah menu sebelum itu.
-- **Bisa dikerjakan paralel sekarang (tidak menyentuh berkas desain): T-009 (penomoran dokumen)**, lalu T-010–T-012.
+- **T-009 selesai.** Berikutnya: T-008 bagian 2 (branding), lalu T-010–T-012. Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
+- `tests/Concurrency` menjalankan `migrate` di DB test tanpa RefreshDatabase dan membersihkan datanya sendiri; ikut jalan di `php artisan test` (± 5–10 detik).
+- `DocumentSequence` dikunci `FOR UPDATE` oleh generator **dan** `UpdateSequence`: jangan menambah query lain yang mengunci counter sebelum baris induk (urutan kunci = induk → counter, agar tidak deadlock).
 - Lokal: `php artisan storage:link` sudah dijalankan (logo di disk `public`). Nilai demo yang diubah saat cek browser: `attendance.default_radius_m` = 150 (bisa dikembalikan di Pengaturan → Absensi).
 - **Desain UI sudah digabung** (`feat/ui-desain`, worktree `..\pakis-ui` boleh dihapus: `git worktree remove ..\pakis-ui`). Preferensi Mas: toggle tema satu ikon, profil di kanan atas, cek 360 & 768 px sebelum lapor; komponen yang lebarnya bergantung sidebar pakai container query (`@container`). Panel judul kartu bagian Pengaturan: `components/settings-section.tsx`; banner galat/sukses form: `components/form-status.tsx`.
 - Purge berkas ekspor kedaluwarsa (status `expired` + hapus berkas) belum ada → T-045 (job retensi). Saat ini berkas lewat `expires_at` sudah tidak bisa diunduh (404).

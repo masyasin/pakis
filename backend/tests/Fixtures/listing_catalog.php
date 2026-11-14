@@ -14,4 +14,5 @@ return [
     'export_files', // T-006
     'audit_logs', // T-007
     'security_events', // T-007
+    'sequences', // T-009
 ];

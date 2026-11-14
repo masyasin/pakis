@@ -33,6 +33,9 @@ final class ListingRouteFixtures
             // Ability sementara (deny-by-default) dibuka hanya untuk aktor uji ini.
             Gate::define('audit.view', fn () => true);
         }
+        if ($routeName === 'admin.sequences.index') {
+            Gate::define('sequences.view', fn () => true);
+        }
 
         return match ($routeName) {
             default => User::factory()->create(),

@@ -140,10 +140,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migrations, `app/Domain/Numbering/{NumberGenerator,PatternParser,PeriodKey}.php`, `SequenceSeeder`, `Listings/SequenceListing`, controller + `pages/Sequences/Index.tsx` (dialog ubah + pratinjau)
 - Deskripsi: Parser pola + validasi konsistensi periode. Generator dengan `lockForUpdate` di transaksi pemanggil, dukungan `{LOC}`, retry bila tabrakan (maks 50). Pratinjau tanpa menaikkan counter.
 - Kriteria penerimaan:
-  - [ ] Test konkurensi: 50 proses paralel → 50 nomor unik berurutan
-  - [ ] Pola `monthly` tanpa `{MM}` ditolak
-  - [ ] Reset bulanan menghasilkan `KOR-202612-0001` setelah `KOR-202611-0042`
-  - [ ] Listing `sequences` lolos test kontrak
+  - [x] Test konkurensi: 50 proses paralel → 50 nomor unik berurutan
+  - [x] Pola `monthly` tanpa `{MM}` ditolak
+  - [x] Reset bulanan menghasilkan `KOR-202612-0001` setelah `KOR-202611-0042`
+  - [x] Listing `sequences` lolos test kontrak
 - Verifikasi: `php artisan test --filter=Numbering`
 - Di luar lingkup: pemakaian di pegawai (T-024) & koreksi (T-040)
 

@@ -138,7 +138,7 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-15 | T-013 (perbaikan) | Selesai | 96c561e | Temuan review keamanan: (1) penghitung gagal kini per AKUN yang ditemukan (`user:<id>`), bukan teks identifier — collation tidak membedakan huruf/aksen, sehingga `sití.aminah` dulu mendapat jatah baru; (2) IPv6 dihitung per /64 (`ClientNetwork`) di penghitung gagal & limiter 30/menit; (3) User-Agent di email perangkat baru dibersihkan dari Markdown/HTML (anti tautan palsu). Penghitung per akun lintas IP **tidak** ditambah: BR-016 menetapkan per identifier+IP, batas baru = kunci setting baru → ditanyakan ke Mas. 472 Pest |
 
-| 2026-11-15 | T-013 (perbaikan 2) | Selesai | (commit T-013c) | Review lanjutan: identifier tak dikenal dilipat (huruf kecil + tanpa aksen) agar varian akun yang tidak ada berperilaku sama dengan akun yang ada (anti enumerasi); IPv4 dalam format IPv6 (`::ffff:`, `::a.b.c.d`, NAT64) dihitung per IPv4, bukan satu kelompok /64 bersama (anti DoS). Keputusan Mas: setting baru `security.account_max_failures` (20, 10–100) — batas gagal per akun lintas IP (08 §2, BR-016, registri). 475 Pest |
+| 2026-11-15 | T-013 (perbaikan 2) | Selesai | 395ddeb | Review lanjutan: identifier tak dikenal dilipat (huruf kecil + tanpa aksen) agar varian akun yang tidak ada berperilaku sama dengan akun yang ada (anti enumerasi); IPv4 dalam format IPv6 (`::ffff:`, `::a.b.c.d`, NAT64) dihitung per IPv4, bukan satu kelompok /64 bersama (anti DoS). Keputusan Mas: setting baru `security.account_max_failures` (20, 10–100) — batas gagal per akun lintas IP (08 §2, BR-016, registri). 475 Pest |
 
 ### 6.5 Catatan untuk sesi berikutnya
 - **Fase 0A selesai (T-001–T-007).**

@@ -38,9 +38,11 @@ export default function RegionsIndex({ rows, listing, imported }: Props) {
     return (
         <>
             <Head title="Wilayah" />
-            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Wilayah</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        Wilayah
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         Provinsi, kab/kota, kecamatan, dan desa/kelurahan untuk
                         alamat lokasi & pegawai. Saring berjenjang lewat Filter.

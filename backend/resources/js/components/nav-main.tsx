@@ -113,8 +113,9 @@ export function NavMain() {
                                         asChild
                                         isActive={item.href === activeHref}
                                         tooltip={{ children: item.title }}
-                                        // Item aktif (prototipe): tint hijau + teks hijau tua + garis tipis hijau. Item lain abu-abu.
-                                        className="h-9 text-muted-foreground transition-colors duration-150 hover:text-sidebar-foreground data-[active=true]:font-semibold data-[active=true]:ring-1 data-[active=true]:ring-sidebar-primary/30 [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-sidebar-accent-foreground"
+                                        // Seperti tab layar prototipe: tinggi 44 px, sudut 10 px, item aktif tint hijau + teks
+                                        // hijau tebal + garis tipis hijau. Item lain abu-abu.
+                                        className="h-11 gap-2.5 rounded-[10px] px-3 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-sidebar-foreground data-[active=true]:font-bold data-[active=true]:ring-1 data-[active=true]:ring-sidebar-primary/30 [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-sidebar-accent-foreground"
                                     >
                                         <Link href={item.href} prefetch>
                                             <Icon />

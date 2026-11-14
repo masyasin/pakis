@@ -50,7 +50,7 @@ export function FilterSheet({ spec, state, onApply, onReset }: Props) {
             }}
         >
             <SheetTrigger asChild>
-                <Button type="button" variant="outline" size="sm">
+                <Button type="button" variant="outline">
                     <SlidersHorizontal className="size-4" aria-hidden />
                     Filter{active > 0 ? ` (${active})` : ''}
                 </Button>

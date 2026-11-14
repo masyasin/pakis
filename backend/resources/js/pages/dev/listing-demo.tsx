@@ -59,9 +59,11 @@ export default function ListingDemo({ rows, listing }: ListingProps<DemoUser>) {
     return (
         <>
             <Head title="Demo daftar" />
-            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Demo daftar</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        Demo daftar
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         Halaman uji komponen DataTable (hanya lingkungan lokal).
                     </p>

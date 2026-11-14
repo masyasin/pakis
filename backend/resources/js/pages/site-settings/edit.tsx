@@ -63,7 +63,7 @@ export default function SiteSettingsEdit({
     return (
         <>
             <Head title={`Pengaturan · ${groupLabel}`} />
-            <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
                 <PageTabs
                     label="Grup pengaturan"
                     active={group}
@@ -76,7 +76,9 @@ export default function SiteSettingsEdit({
 
                 <section className="min-w-0 space-y-4">
                     <div>
-                        <h1 className="text-xl font-semibold">{groupLabel}</h1>
+                        <h1 className="text-[1.4rem] leading-tight font-bold">
+                            {groupLabel}
+                        </h1>
                         <p className="text-sm text-muted-foreground">
                             Perubahan berlaku tanpa deploy dan tercatat di audit
                             log.

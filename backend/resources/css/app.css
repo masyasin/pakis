@@ -8,9 +8,10 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+    /* Font sistem seperti prototipe (07 §1: tanpa CDN). */
     --font-sans:
-        'Instrument Sans', ui-sans-serif, system-ui, sans-serif,
-        'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
+        'Segoe UI', Roboto, 'Helvetica Neue', Arial, ui-sans-serif, system-ui,
+        sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol',
         'Noto Color Emoji';
 
     --radius-lg: var(--radius);

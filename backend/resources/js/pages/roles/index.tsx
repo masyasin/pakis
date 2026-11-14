@@ -119,9 +119,11 @@ export default function RolesIndex({ rows, listing, canManage }: Props) {
     return (
         <>
             <Head title="Role & Hak Akses" />
-            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Role & Hak Akses</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        Role & Hak Akses
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         Kumpulan hak akses yang bisa ditetapkan ke pengguna.
                         Permission dibuat sistem; di sini Anda memilih

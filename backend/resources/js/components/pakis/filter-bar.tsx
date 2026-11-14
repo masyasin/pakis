@@ -67,7 +67,7 @@ export function FilterBar({ spec, state, listing, canReset, actions }: Props) {
             {spec.sorts.length > 0 && (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button type="button" variant="outline" size="sm">
+                        <Button type="button" variant="outline">
                             <ArrowUpDown className="size-4" aria-hidden />
                             Urutkan
                         </Button>
@@ -112,12 +112,7 @@ export function FilterBar({ spec, state, listing, canReset, actions }: Props) {
             )}
 
             {canReset && (
-                <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={listing.reset}
-                >
+                <Button type="button" variant="ghost" onClick={listing.reset}>
                     <RotateCcw className="size-4" aria-hidden />
                     Reset
                 </Button>

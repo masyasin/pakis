@@ -109,9 +109,11 @@ export default function SequencesIndex({
     return (
         <>
             <Head title="Penomoran" />
-            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Penomoran</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        Penomoran
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         Pola nomor dokumen yang dibuat otomatis oleh sistem.
                         Nomor yang sudah terbit tidak ikut berubah.

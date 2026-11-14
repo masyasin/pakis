@@ -64,7 +64,8 @@ export function StatusBadge({ status, label, tone, className }: Props) {
         <span
             data-status={status}
             className={cn(
-                'inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap',
+                // Pil tebal seperti `.badge` prototipe.
+                'inline-flex items-center rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap',
                 TONE_CLASS[resolvedTone],
                 className,
             )}

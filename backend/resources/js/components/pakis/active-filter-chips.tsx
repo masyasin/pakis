@@ -19,7 +19,8 @@ export function ActiveFilterChips({ chips, onRemove }: Props) {
                 <li
                     key={chip.key}
                     className={cn(
-                        'inline-flex items-center gap-1 rounded-full border bg-muted/60 py-0.5 pl-3 text-xs',
+                        // Chip "terpilih" ala prototipe: hijau muda + garis tipis hijau (sama dengan menu aktif).
+                        'inline-flex min-h-7 items-center gap-1 rounded-full border border-primary/30 bg-sidebar-accent py-0.5 pl-3 text-xs font-medium text-sidebar-accent-foreground',
                         chip.removable ? 'pr-1' : 'pr-3',
                     )}
                 >
@@ -27,7 +28,7 @@ export function ActiveFilterChips({ chips, onRemove }: Props) {
                     {chip.removable && (
                         <button
                             type="button"
-                            className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            className="rounded-full p-0.5 text-sidebar-accent-foreground/80 hover:bg-primary/10 hover:text-sidebar-accent-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                             aria-label={`Hapus filter ${chip.label}`}
                             onClick={() => onRemove(chip.key)}
                         >

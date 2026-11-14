@@ -57,7 +57,7 @@ export default function AuditShow({ log, changes }: Props) {
     return (
         <>
             <Head title={`Audit #${log.id}`} />
-            <div className="mx-auto w-full max-w-[1440px] space-y-6 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-6 p-4 md:px-7 md:py-6">
                 <div className="flex items-center gap-3">
                     <Button
                         asChild
@@ -69,7 +69,9 @@ export default function AuditShow({ log, changes }: Props) {
                             <ArrowLeft className="size-4" />
                         </Link>
                     </Button>
-                    <h1 className="text-xl font-semibold">Audit #{log.id}</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        Audit #{log.id}
+                    </h1>
                 </div>
 
                 <dl className="grid gap-x-6 gap-y-3 rounded-xl border bg-card p-4 text-sm sm:grid-cols-[max-content_1fr]">

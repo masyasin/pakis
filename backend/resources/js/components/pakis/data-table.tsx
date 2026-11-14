@@ -276,14 +276,27 @@ export function DataTable<Row>({
         );
     })();
 
+    // Kartu seperti prototipe (konsep/PAKIS_ONE_Prototipe_v1.0.html, layar Gudang): judul + aksi di
+    // kepala kartu, toolbar, lalu tabel berbingkai sendiri di dalamnya.
     return (
-        <section className="@container space-y-3" aria-label={title}>
+        <section
+            className="@container space-y-3 rounded-xl border bg-card p-3 shadow-md @lg:p-4"
+            aria-label={title}
+        >
+            <div className="flex flex-wrap items-center gap-2">
+                <h2 className="mr-auto text-base font-bold">{title}</h2>
+                {toolbarActions && (
+                    <div className="flex items-center gap-2">
+                        {toolbarActions}
+                    </div>
+                )}
+            </div>
+
             <FilterBar
                 spec={spec}
                 state={state}
                 listing={controls}
                 canReset={canReset}
-                actions={toolbarActions}
             />
 
             <ActiveFilterChips chips={chips} onRemove={controls.removeFilter} />
@@ -314,7 +327,7 @@ export function DataTable<Row>({
 
             <div
                 className={cn(
-                    'overflow-hidden rounded-xl border bg-card transition-opacity',
+                    'overflow-hidden rounded-lg border transition-opacity',
                     controls.isLoading &&
                         rows.length > 0 &&
                         'pointer-events-none opacity-60',
@@ -326,11 +339,10 @@ export function DataTable<Row>({
 
             {/*
              * HP: ringkasan + per halaman di baris pertama, navigasi halaman selebar layar di bawahnya.
-             * Konten sempit dibungkus satu kartu footer agar menyatu dengan daftar.
-             * Konten lebar (≥ 48rem, container query, bukan lebar layar): satu baris tanpa kartu.
-             * Satu instance tiap kontrol.
+             * Konten lebar (≥ 48rem, container query, bukan lebar layar): satu baris.
+             * Sudah di dalam kartu daftar, jadi tanpa kartu footer sendiri. Satu instance tiap kontrol.
              */}
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 rounded-xl border bg-card p-3 text-sm shadow-xs @3xl:flex @3xl:gap-4 @3xl:border-0 @3xl:bg-transparent @3xl:p-0 @3xl:shadow-none">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 pt-1 text-sm @3xl:flex @3xl:gap-4">
                 <p
                     className="text-muted-foreground tabular-nums @3xl:mr-auto"
                     aria-live="polite"

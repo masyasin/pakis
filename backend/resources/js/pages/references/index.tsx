@@ -16,6 +16,7 @@ import InputError from '@/components/input-error';
 import { DataTable } from '@/components/pakis/data-table';
 import type { DataTableColumn } from '@/components/pakis/data-table';
 import { NativeSelect } from '@/components/pakis/native-select';
+import { tabChipClass } from '@/components/pakis/page-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -134,9 +135,11 @@ export default function ReferencesIndex({
     return (
         <>
             <Head title={`Referensi · ${groupLabel}`} />
-            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Referensi</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        Referensi
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         Pilihan yang dipakai di form (tipe lokasi, status kerja,
                         alasan). Item bergembok dipakai program: kodenya
@@ -170,7 +173,7 @@ export default function ReferencesIndex({
 
                 <nav
                     aria-label="Grup referensi"
-                    className="hidden gap-1 sm:flex sm:flex-wrap"
+                    className="hidden gap-1.5 sm:flex sm:flex-wrap"
                 >
                     {groups.map((g) => (
                         <Link
@@ -180,12 +183,7 @@ export default function ReferencesIndex({
                             aria-current={
                                 g.value === group ? 'page' : undefined
                             }
-                            className={cn(
-                                'rounded-md px-3 py-2 text-sm whitespace-nowrap transition-colors hover:bg-muted',
-                                g.value === group &&
-                                    'bg-muted font-medium text-foreground',
-                                g.value !== group && 'text-muted-foreground',
-                            )}
+                            className={tabChipClass(g.value === group)}
                         >
                             {g.label}
                         </Link>

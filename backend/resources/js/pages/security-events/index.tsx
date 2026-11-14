@@ -75,9 +75,11 @@ export default function SecurityEventsIndex({
     return (
         <>
             <Head title="Log keamanan" />
-            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4">
+            <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
                 <div>
-                    <h1 className="text-xl font-semibold">Log keamanan</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        Log keamanan
+                    </h1>
                     <p className="text-sm text-muted-foreground">
                         Login, perubahan akses, perangkat, dan ekspor besar.
                     </p>

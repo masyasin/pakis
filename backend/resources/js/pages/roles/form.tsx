@@ -124,7 +124,9 @@ export default function RoleForm({
                             Daftar role
                         </Link>
                     </Button>
-                    <h1 className="text-xl font-semibold">{title}</h1>
+                    <h1 className="text-[1.4rem] leading-tight font-bold">
+                        {title}
+                    </h1>
                 </div>
 
                 {readOnly && (

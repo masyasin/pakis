@@ -23,6 +23,7 @@ Agent **tidak boleh** menebak jawaban OQ. Task yang terblokir harus menunggu, at
 
 | Tanggal | Keputusan | Sumber |
 |---|---|---|
+| 15 Nov 2026 | `applicationId` Pakis Pro = **`com.pakisjayaabadi.pakispro`** (final; tidak diganti setelah APK dibagikan) | Mas (T-030) |
 | 3 Nov 2026 | PAKIS ONE untuk Pakis saja (single-tenant) | Mas |
 | 3 Nov 2026 | Semua parameter dinamis (site setting, role, referensi, penomoran) | Mas |
 | 3 Nov 2026 | Wajib ubah password & lupa password | Mas |

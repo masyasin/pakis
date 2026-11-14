@@ -83,14 +83,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
-| 0A | 7 | 0 | 0 | 0 |
+| 0A | 7 | 1 | 0 | 0 |
 | 0B | 5 | 0 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **0** | **0** | **0** |
+| **Total** | **48** | **1** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
 - (kosong)
@@ -103,10 +103,18 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | Tanggal | Task | Status | Commit | Catatan |
 |---|---|---|---|---|
 | 2026-11-03 | — | Paket dokumen v1.0 dibuat | — | Siap mulai T-001 |
-| 2026-11-14 | — | Persiapan lingkungan | — | Root repo dipindah ke `D:\program\pakis` + `git init`. Keputusan: MariaDB 11.8 (ADR-012 direvisi, OQ-014 baru), driver `database` lokal, OQ-003 terjawab (`konsep/region.sql`) |
+| 2026-11-14 | — | Persiapan lingkungan | d41aac6 | Root repo dipindah ke `D:\program\pakis` + `git init`. Keputusan: MariaDB 11.8 (ADR-012 direvisi, OQ-014 baru), driver `database` lokal, OQ-003 terjawab (`konsep/region.sql`) |
+| 2026-11-14 | T-001 | Selesai | branch `feat/T-001-scaffold` | Laravel 13.42 + React starter kit (dev-main) di `backend/`. Spatie 8.5, Sanctum 4.4, OpenSpout 5.13, Pest 5.3, Larastan 3.15. OQ-013 terjawab (PHP 8.5 OK). Registrasi mandiri & passkeys dimatikan, "ingat saya" dihapus (SEC-005). 49 test hijau, Pint/Larastan/lint/tsc/build bersih |
 
 ### 6.5 Catatan untuk sesi berikutnya
-- Mulai dari T-001. Baca `CLAUDE.md` §2 untuk perintah dan `docs/03-ARCHITECTURE.md` §5 untuk versi.
-- Lingkungan lokal (dicek 14 Nov 2026): PHP 8.5.12 XAMPP (ekstensi lengkap kecuali `redis`, `sodium`), MariaDB 11.8.9 di `127.0.0.1:3307` user `root` tanpa password, Node 22.21.1, npm 10.9.4, Composer 2.9.5, Git 2.52. Installer `laravel` belum ada → pakai `composer create-project laravel/react-starter-kit backend`. Flutter/FVM belum terpasang (baru perlu di T-030).
-- `.env.example` T-001: `DB_CONNECTION=mariadb`, `DB_PORT=3307`, `CACHE_STORE=database`, `QUEUE_CONNECTION=database`, `SESSION_DRIVER=database`.
+- **Berikutnya T-002 (CI & pre-commit).** Hal yang sudah diketahui dari T-001:
+  - Starter kit sudah membawa `backend/phpstan.neon` **level 7** (spesifikasi minta level 6). Putuskan di T-002: turunkan ke 6 sesuai NFR-012 atau pertahankan 7 (lebih ketat).
+  - `backend/.github/` bawaan starter kit sudah dihapus. Workflow dibuat di `.github/workflows/` root dengan path filter `backend/**`.
+  - Service DB di CI menunggu OQ-014 (asumsi: MariaDB 11.8).
+  - CI wajib `php artisan wayfinder:generate --with-form` sebelum `npm run types` (berkas Wayfinder di-gitignore).
+  - Script npm: `lint` = `vp check`, `types` = `tsc --noEmit`. Belum ada `npm run test` (Vitest datang di T-005).
+- Lingkungan lokal: PHP 8.5.12 XAMPP (tanpa ekstensi `redis`, `sodium`), MariaDB 11.8.9 `127.0.0.1:3307` root tanpa password, DB `pakis_one` + `pakis_one_test`. Node 22.21.1, Composer 2.9.5, installer `laravel` 5.33 global. Flutter/FVM belum terpasang (perlu di T-030).
+- Shell PowerShell 5.1: here-string tidak bisa dipipe ke `git commit -F -`; tulis pesan ke file lalu `git commit -F <file>`.
+- Dibiarkan untuk task nanti: halaman settings starter kit masih punya **hapus akun sendiri** (`profile.destroy`) → tangani di T-017 (pegawai dinonaktifkan lewat offboarding, bukan dihapus). Teks UI auth masih Bahasa Inggris → T-013/T-014/T-015.
+- `config/pakis.php` `display_timezone` adalah penyangga sementara (`TODO(T-008)`), dihapus saat `setting('general.timezone')` tersedia.
 - Sumber master wilayah untuk T-012: `konsep/region.sql` (pemetaan di OQ-003).

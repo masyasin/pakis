@@ -19,10 +19,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `backend/` (starter kit React), `backend/CLAUDE.md`, `.gitignore`, `.editorconfig`, `backend/.env.example`, `docs/03-ARCHITECTURE.md` §5 (isi versi terkunci)
 - Deskripsi: Buat struktur monorepo. `laravel new backend` dengan React starter kit. Pasang `spatie/laravel-permission`, `laravel/sanctum`, `openspout/openspout`, Larastan, Pest. Pastikan berjalan di PHP 8.5. Bila ada dependency yang belum kompatibel, berhenti dan laporkan (OQ-013). Buat struktur `app/Domain/*` kosong sesuai `03` §3. Konfigurasi `APP_TIMEZONE=UTC` (penyimpanan) + helper tampilan zona waktu dari setting. Hapus `remember_token` & fitur "ingat saya" dari starter kit (SEC-005).
 - Kriteria penerimaan:
-  - [ ] `composer install`, `npm ci`, `php artisan test`, `npm run build` sukses di PHP 8.5
-  - [ ] Tabel versi di `03` §5 diisi versi terkunci (Laravel, Inertia, React, Tailwind, Spatie, Sanctum, OpenSpout, Pest, Larastan)
-  - [ ] `.env.example` lengkap tanpa nilai rahasia (termasuk `NIK_HASH_KEY`, `SUPERADMIN_*`, `OTP_DRIVER=log`)
-  - [ ] `backend/CLAUDE.md` berisi perintah khusus backend dan merujuk ke root `CLAUDE.md`
+  - [x] `composer install`, `npm ci`, `php artisan test`, `npm run build` sukses di PHP 8.5
+  - [x] Tabel versi di `03` §5 diisi versi terkunci (Laravel, Inertia, React, Tailwind, Spatie, Sanctum, OpenSpout, Pest, Larastan)
+  - [x] `.env.example` lengkap tanpa nilai rahasia (termasuk `NIK_HASH_KEY`, `SUPERADMIN_*`, `OTP_DRIVER=log`)
+  - [x] `backend/CLAUDE.md` berisi perintah khusus backend dan merujuk ke root `CLAUDE.md`
 - Verifikasi: `php -v` → 8.5.x · `php artisan about` · `php artisan test`
 - Di luar lingkup: fitur apa pun
 

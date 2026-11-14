@@ -124,11 +124,29 @@ Masalah yang diselesaikan: fitur paging/pencarian/filter sering terlewat di seba
 
 Versi di bawah sudah diverifikasi per 3 November 2026. Versi patch dikunci di `composer.lock`, `package-lock.json`, dan `pubspec.lock` saat T-001/T-030, lalu dicatat ulang di tabel ini.
 
+**Versi terkunci T-001 (14 Nov 2026, PHP 8.5.12):**
+
+| Paket | Versi | | Paket npm | Versi |
+|---|---|---|---|---|
+| laravel/framework | 13.42.0 | | react / react-dom | 19.3.1 |
+| inertiajs/inertia-laravel | 3.7.0 | | @inertiajs/react | 3.11.0 |
+| laravel/fortify | 1.42.0 | | tailwindcss | 4.3.5 |
+| laravel/wayfinder | 0.1.23 | | typescript | 5.9.3 |
+| laravel/sanctum | 4.4.0 | | vite-plus (`vp`, pengganti Vite di starter kit) | 1.4.0 |
+| spatie/laravel-permission | 8.5.0 | | @laravel/vite-plugin-wayfinder | 0.1.11 |
+| openspout/openspout | 5.13.0 | | | |
+| pestphp/pest (+ plugin laravel 5.0.1) | 5.3.5 | | | |
+| larastan/larastan (phpstan 2.3.5) | 3.15.0 | | | |
+| laravel/pint | 1.32.3 | | | |
+| pragmarx/google2fa | 9.1.0 | | | |
+
+Dibawa starter kit `laravel/react-starter-kit` (dev-main, Laravel 13): `laravel/wayfinder` (route TS bertipe), `laravel/chisel` 0.1.1, `laravel/pao` 1.1.5 (output alat dev ringkas untuk agent), dan `laravel/passkeys` 0.2.1 (dependency wajib Fortify; **fitur passkey dimatikan**, lihat `12` log 14 Nov 2026). Laravel Boost tidak dipasang.
+
 | Komponen | Versi | Catatan |
 |---|---|---|
 | PHP | **8.5.x** (patch terbaru) | Laravel 13 mendukung 8.3–8.5. Bila ada dependency wajib yang belum kompatibel dengan 8.5, turun ke 8.4 dan catat di ADR-003. |
 | Laravel | **13.x** | Rilis 17 Maret 2026, bug fix s.d. Q3 2027, security fix s.d. 17 Maret 2028. |
-| Starter kit | Laravel React starter kit resmi (Inertia + React + TypeScript + Tailwind + shadcn/ui) | Autentikasi web via Laravel Fortify bawaan starter kit. |
+| Starter kit | Laravel React starter kit resmi (Inertia + React + TypeScript + Tailwind + shadcn/ui) | Autentikasi web via Laravel Fortify bawaan starter kit. Fitur `registration` dan `passkeys` dimatikan, "ingat saya" dihapus (T-001). |
 | Otorisasi | `spatie/laravel-permission` **^8** | Mendukung Laravel 12–13, PHP 8.3–8.5. |
 | Token API | `laravel/sanctum` | Versi kompatibel Laravel 13 dari starter/composer. |
 | TOTP mobile | `pragmarx/google2fa` | Sudah menjadi dependency Fortify, dipakai juga untuk verifikasi MFA di API. |

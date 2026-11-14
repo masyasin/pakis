@@ -50,9 +50,17 @@ final class OtpService
         Cache::add(self::attemptsKey($user), 0, $ttl);
         $attempts = (int) Cache::increment(self::attemptsKey($user));
 
+        // Penghitung TIDAK pernah dihapus di sini (hanya di-reset saat issue()): kalau dihapus,
+        // permintaan paralel yang sudah membaca kode bisa memulai penghitung baru dari 0.
         if ($attempts > self::MAX_ATTEMPTS) {
-            $this->consume($user);
+            Cache::forget(self::key($user));
 
+            return false;
+        }
+
+        // Kode bisa sudah dihanguskan/dipakai permintaan lain di antara baca & increment.
+        $current = Cache::get(self::key($user));
+        if (! is_array($current) || ! hash_equals((string) $current['hash'], (string) $entry['hash'])) {
             return false;
         }
 
@@ -61,17 +69,19 @@ final class OtpService
         }
 
         if ($attempts >= self::MAX_ATTEMPTS) {
-            $this->consume($user);
+            Cache::forget(self::key($user));
         }
 
         return false;
     }
 
-    /** Kode sekali pakai: hapus setelah reset berhasil (atau jatah habis). */
+    /**
+     * Kode sekali pakai: hapus setelah reset berhasil. Penghitung dibiarkan sampai kedaluwarsa
+     * (di-reset oleh issue() berikutnya).
+     */
     public function consume(User $user): void
     {
         Cache::forget(self::key($user));
-        Cache::forget(self::attemptsKey($user));
     }
 
     private static function key(User $user): string

@@ -170,17 +170,38 @@ test('BR-011 kode benar tapi password melanggar kebijakan → kode tetap bisa di
     resetWithOtp('siti.aminah', $code)->assertSessionHasNoErrors();
 });
 
-test('verifikasi OTP dibatasi per identifier walau berganti IP (pesan sama untuk identifier tak ada)', function () {
+test('verifikasi OTP dibatasi per identifier + jaringan; jaringan lain (pemilik akun) tidak ikut tertahan', function () {
+    // Jeda 7 dtk per permintaan: throttle route (10/menit per IP) tidak mendahului batas
+    // identifier+jaringan (10 per 15 menit) yang sedang diuji.
+    $post = function (string $login, string $ip) {
+        test()->travel(7)->seconds();
+
+        return test()->withServerVariables(['REMOTE_ADDR' => $ip])->from('/reset-password-otp')
+            ->post('/reset-password-otp', ['login' => $login, 'code' => '000000', 'password' => 'x', 'password_confirmation' => 'x']);
+    };
+
     foreach (['siti.aminah', 'tidak.ada'] as $login) {
         foreach (range(1, 10) as $i) {
-            test()->withServerVariables(['REMOTE_ADDR' => "10.9.{$i}.1"])->from('/reset-password-otp')
-                ->post('/reset-password-otp', ['login' => $login, 'code' => '000000', 'password' => 'x', 'password_confirmation' => 'x']);
+            $post($login, '10.9.0.1');
         }
-
-        test()->withServerVariables(['REMOTE_ADDR' => '10.9.99.1'])->from('/reset-password-otp')
-            ->post('/reset-password-otp', ['login' => $login, 'code' => '000000', 'password' => 'x', 'password_confirmation' => 'x'])
-            ->assertSessionHasErrors(['code' => 'Terlalu banyak percobaan. Coba lagi nanti.']);
+        $post($login, '10.9.0.1')->assertSessionHasErrors(['code' => 'Terlalu banyak percobaan. Coba lagi nanti.']);
     }
+
+    // Penyerang tidak bisa mengunci pemilik akun dari jaringan lain.
+    $post('siti.aminah', '192.168.7.7')->assertSessionHasErrors(['code' => 'Kode salah atau sudah tidak berlaku.']);
+});
+
+test('BR-013 jatah habis: penghitung tidak di-reset sampai kode baru diterbitkan', function () {
+    requestOtp('siti.aminah', 'whatsapp');
+    $code = $this->otp->lastCode();
+    $service = app(OtpService::class);
+
+    foreach (range(1, 5) as $i) {
+        $service->check($this->user, '000000');
+    }
+
+    expect(Cache::get('otp:password-reset:'.$this->user->id.':attempts'))->toBe(5)
+        ->and($service->check($this->user, $code))->toBeFalse();
 });
 
 test('BR-013 jatah percobaan dihitung atomik: kode benar setelah 5 pemeriksaan tetap ditolak', function () {

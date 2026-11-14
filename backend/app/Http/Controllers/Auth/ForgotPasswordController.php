@@ -11,6 +11,7 @@ use App\Domain\Notification\Otp\OtpManager;
 use App\Domain\Notification\Otp\OtpService;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Http\ClientNetwork;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -111,13 +112,13 @@ class ForgotPasswordController extends Controller
 
         $identifier = AttemptLogin::normalize($request->input('login'));
 
-        // Batas percobaan per identifier (dilipat), selain throttle per IP di route: penebak yang
-        // berganti IP tetap tertahan. Berlaku sama untuk identifier yang tidak ada.
-        $attemptKey = 'pw-otp-verify:'.sha1(Str::lower(Str::ascii($identifier)));
-        if (RateLimiter::tooManyAttempts($attemptKey, 10)) {
+        // Batas per (identifier + jaringan). Sengaja BUKAN per identifier saja: itu bisa dipakai
+        // orang lain untuk menahan pemilik akun. Tebakan sudah dibatasi OtpService (5/kode) dan
+        // RequestPasswordReset (3 kode/identifier/jam). Berlaku sama untuk identifier yang tidak ada.
+        $attemptKey = 'pw-otp-verify:'.sha1(Str::lower(Str::ascii($identifier)).'|'.ClientNetwork::key($request->ip()));
+        if (RateLimiter::hit($attemptKey, 900) > 10) {
             throw ValidationException::withMessages(['code' => 'Terlalu banyak percobaan. Coba lagi nanti.']);
         }
-        RateLimiter::hit($attemptKey, 900);
 
         $user = User::query()
             ->where(fn ($q) => $q->where('username', $identifier)->orWhere('email', $identifier))

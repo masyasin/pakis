@@ -64,3 +64,21 @@ Nama berkas snake_case (lint `file_names`); kelas tetap seperti di TASKS (`ApiCl
 - **Penyimpanan:** token/install id/config di `SecureStore` (`StoreKeys`). Jangan log token, device_uid, atau koordinat.
 - **Android:** `allowBackup=false` + `data_extraction_rules.xml`, cleartext mati di build rilis (hanya `src/debug` mengizinkan HTTP lokal). minSdk 26. `applicationId` `com.pakisjayaabadi.pakispro` — konfirmasi ke Mas sebelum rilis pertama (T-047).
 - **Test:** `test/helpers/` punya `FakeAdapter` (server palsu), `FakeNativeDevice`, `MemorySecureStore`, `pumpPakisPro()` (aplikasi utuh, layar 360×800 dp). Di `testWidgets`, jangan `await` request Dio langsung (zona fake-async menggantung): picu lalu `pumpAndSettle()`.
+
+## Acuan visual: prototipe (07 §1, §5)
+
+`konsep/PAKIS_ONE_Prototipe_Mobile_v1.0.html` (di luar git, minta ke Mas bila tidak ada). Buka langsung di browser; peran **Pegawai** = Pakis Pro Fase 0,5. Peran Sales/Driver/Gudang/Owner dan aplikasi Pakis Mitra adalah Fase 1+: **jangan dibangun tanpa task**.
+
+Sudah sama dengan T-030: semua token warna (= 07 §1.1 = `PakisTokens`), header `primaryStrong` + teks putih, kartu putih radius 12 bergaris tepi, badge pil berlatar lembut (`StatusBadge`).
+
+Pola untuk layar berikutnya:
+- **Header:** judul tebal + subjudul kecil (nama · jabatan/lokasi), lonceng notifikasi di kanan (T-043).
+- **Beranda Absen (T-042):** kartu shift (jam, `— → —` masuk/pulang, lokasi · radius), tombol bulat besar berikon sidik jari "Absen Masuk"/"Absen Pulang" dengan cincin lembut, kartu status Perangkat / Lokasi (GPS) / Acuan waktu (waktu server, ADR-010).
+- **Item daftar (T-043):** ikon dalam kotak radius lembut di kiri (latar warna nada status), judul tebal, keterangan abu-abu, `StatusBadge` di kanan. Judul bagian huruf kapital kecil abu-abu ("MINGGU INI").
+- **Token lembut** prototipe belum ada di 07 §1.1: `--primary-soft` `#E2EFE4`/`#21352A`, `--accent-soft` `#FBEFDC`/`#3A2D1A`, `--danger-soft` `#FBE6E4`/`#3A201E`, `--info-soft` `#E4EEF8`/`#1C2A38`. Untuk latar nada status pakai `tokens.statusBg` (sudah AA, sama dengan web); tambah token lain hanya bila perlu, dengan cek kontras.
+- **Tab bawah:** tinggi ≥ 52 dp, ikon + label, aktif = `primary` tebal.
+
+Bila prototipe berbeda dari spesifikasi, **dokumen spesifikasi yang berlaku**:
+- Label status mengikuti **07 §6** ("Hadir", "Telat"), bukan teks prototipe ("Tepat waktu", "Terlambat 11 mnt"). Selisih menit boleh tampil sebagai keterangan, bukan sebagai label.
+- Isi tab bawah mengikuti **07 §5** (Absen, Riwayat, Koreksi, Persetujuan bila berhak, Notifikasi, Profil). "Slip gaji" dan "cuti" di prototipe di luar Fase 0,5.
+- Login, lupa password, wajib ganti password, splash, dan wajib update **tidak ada** di prototipe: pakai token + gaya header di atas, perilaku dari 07 §5.

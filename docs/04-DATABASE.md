@@ -584,6 +584,28 @@ CREATE TABLE attendance_corrections (
 );
 ```
 
+### 2.14 Notifikasi
+
+`notifications` = tabel database notification Laravel (§2.1), kolom bawaan: `id CHAR(36)` (UUID), `type` (jenis notifikasi, mis. `export_ready`, lewat `databaseType()`), `notifiable_type`/`notifiable_id`, `data` (JSON: `title`, `body`, `url`), `read_at`, `created_at`/`updated_at`. Index tambahan `notif_owner_time_idx (notifiable_type, notifiable_id, created_at)` untuk daftar & jumlah belum dibaca milik sendiri.
+
+```sql
+CREATE TABLE notification_deliveries (       -- upaya kirim kanal luar (BR-070), tanpa isi pesan
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  notification_id CHAR(36) NOT NULL,          -- = notifications.id (tidak di-FK: email bisa tanpa baris aplikasi)
+  user_id BIGINT UNSIGNED NULL REFERENCES users(id) ON DELETE SET NULL,
+  kind VARCHAR(40) NOT NULL,                  -- jenis notifikasi, mis. 'account_locked'
+  channel ENUM('email','telegram','whatsapp') NOT NULL,
+  status ENUM('sent','failed','skipped_quota','skipped_paused') NOT NULL,
+  fallback_from ENUM('email','telegram','whatsapp') NULL, -- dicoba karena kanal ini dilewati/gagal
+  error VARCHAR(60) NULL,                     -- kode pendek ('http_502', 'timeout'), tanpa token/isi
+  created_at TIMESTAMP NOT NULL,
+  KEY notif_deliv_notification_idx (notification_id),
+  KEY notif_deliv_channel_idx (channel, status, created_at),
+  KEY notif_deliv_time_idx (created_at)
+);
+```
+Retensi `notification_deliveries` mengikuti `retention.security_days`; purge dijadwalkan bersama job retensi (T-045).
+
 ## 3. Index ↔ Query yang Dilayani
 
 | Index | Query |
@@ -604,6 +626,8 @@ CREATE TABLE attendance_corrections (
 | `att_corr_one_pending` | Satu koreksi `pending` per pegawai per tanggal (BR-069) |
 | `audit_obj_idx` | Riwayat perubahan satu objek (tab "Riwayat" di halaman detail) |
 | `sec_event_idx`, `sec_ip_idx` | Deteksi lonjakan login gagal per IP/waktu |
+| `notif_owner_time_idx` | Daftar notifikasi milik sendiri (sort waktu) & jumlah belum dibaca (polling lonceng) |
+| `notif_deliv_channel_idx` | Pemantauan kanal: kegagalan/kuota per kanal dalam rentang waktu |
 
 Pencarian teks memakai `LIKE 'kata%'` di kolom ber-index untuk nama/kode. `LIKE '%kata%'` hanya dipakai di tabel kecil (< 50.000 baris) atau dikombinasikan dengan filter tanggal (BR-002).
 

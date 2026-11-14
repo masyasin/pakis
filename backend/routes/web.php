@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\NotificationController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Dev\ListingDemoController;
 use App\Http\Controllers\TelegramWebhookController;
@@ -30,9 +31,15 @@ Route::post('telegram/webhook', TelegramWebhookController::class)
     ->middleware('throttle:60,1')
     ->name('telegram.webhook');
 
-Route::middleware(['auth', 'web.access'])->group(function () {
+Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     // 05 §4.2: path Bahasa Indonesia, nama admin.<modul>.
-    Route::inertia('dasbor', 'dashboard')->name('admin.dashboard');
+    Route::inertia('dasbor', 'dashboard')->name('dashboard');
+
+    // Notifikasi milik sendiri (05 §4.2, T-029). Jumlah belum dibaca dipolling lonceng tiap 60 detik.
+    Route::get('notifikasi', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('notifikasi/jumlah', [NotificationController::class, 'unreadCount'])->middleware('throttle:120,1')->name('notifications.unread-count');
+    Route::post('notifikasi/baca-semua', [NotificationController::class, 'readAll'])->middleware('throttle:30,1')->name('notifications.read-all');
+    Route::post('notifikasi/{id}/baca', [NotificationController::class, 'read'])->whereUuid('id')->middleware('throttle:60,1')->name('notifications.read');
 });
 
 require __DIR__.'/admin.php';

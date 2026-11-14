@@ -34,6 +34,9 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'export.ready': { label: 'Siap', tone: 'success' },
     'export.failed': { label: 'Gagal', tone: 'danger' },
     'export.expired': { label: 'Kedaluwarsa', tone: 'muted' },
+    // Notifikasi (T-029)
+    'notification.unread': { label: 'Belum dibaca', tone: 'info' },
+    'notification.read': { label: 'Sudah dibaca', tone: 'muted' },
     // Pegawai
     'employee.active': { label: 'Aktif', tone: 'success' },
     'employee.inactive': { label: 'Nonaktif', tone: 'muted' },

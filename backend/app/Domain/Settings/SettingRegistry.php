@@ -2,6 +2,8 @@
 
 namespace App\Domain\Settings;
 
+use App\Domain\Notification\Channels\ChannelAvailability;
+use App\Domain\Notification\Enums\DeliveryChannel;
 use App\Domain\Notification\Otp\OtpManager;
 use App\Domain\Settings\Validation\ContrastRatio;
 use App\Domain\Settings\Validation\Semver;
@@ -144,6 +146,18 @@ final class SettingRegistry
             $t('import.max_file_mb', SettingType::Int, 5, 'Ukuran berkas impor maks (MB)', min: 1, max: 20),
             $t('import.max_rows', SettingType::Int, 2000, 'Baris impor maks', min: 50, max: 10000),
             $t('notification.mail_from_name', SettingType::String, 'PAKIS ONE', 'Nama pengirim email', max: 60),
+            // BR-070 (T-029): notifikasi aplikasi selalu aktif; kanal luar = kanal jenis ∩ kanal global ∩ alamat penerima.
+            $t('notification.channels', SettingType::MultiEnum, ['email'], 'Kanal notifikasi aktif', 'Notifikasi di aplikasi (lonceng) selalu aktif. Matikan WhatsApp/Telegram di sini bila kuota habis atau nomor/bot diblokir; notifikasi dialihkan ke kanal cadangan.',
+                nullable: true, options: DeliveryChannel::values(), check: self::checkNotificationChannels(...)),
+            $t('notification.on_export_ready', SettingType::MultiEnum, [], 'Kanal: ekspor siap', 'Kosong = hanya di aplikasi.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_import_done', SettingType::MultiEnum, [], 'Kanal: impor selesai', 'Kosong = hanya di aplikasi.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_password_changed', SettingType::MultiEnum, ['email'], 'Kanal: password diganti', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_new_device_login', SettingType::MultiEnum, ['email'], 'Kanal: login perangkat baru', 'Hanya terkirim bila "Email saat login dari perangkat baru" (Keamanan) aktif.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_account_locked', SettingType::MultiEnum, ['email'], 'Kanal: akun dikunci', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.whatsapp_daily_limit', SettingType::Int, 300, 'Batas WhatsApp per hari', 'Lebih dari ini notifikasi dialihkan ke Telegram/Email. 0 = WhatsApp tidak dipakai untuk notifikasi.', min: 0, max: 10000),
+            $t('notification.whatsapp_hourly_per_user', SettingType::Int, 5, 'Batas WhatsApp per orang per jam', 'Mencegah nomor dianggap spam dan diblokir.', min: 1, max: 50),
+            $t('notification.circuit_failures', SettingType::Int, 5, 'Jeda kanal setelah gagal berturut-turut', 'Kanal yang gagal sebanyak ini dijeda sementara dan notifikasi dialihkan ke cadangan.', min: 3, max: 20),
+            $t('notification.circuit_minutes', SettingType::Int, 15, 'Lama jeda kanal (menit)', min: 5, max: 120),
             $t('monitoring.alert_emails', SettingType::EmailList, [], 'Email penerima peringatan keamanan', 'Maksimal 5 alamat, satu per baris.', nullable: true, max: 5, check: self::checkEmailList(...)),
             $t('retention.audit_years', SettingType::Int, 5, 'Masa simpan audit (tahun)', min: 1, max: 10),
             $t('retention.security_days', SettingType::Int, 365, 'Masa simpan log keamanan (hari)', min: 90, max: 1825),
@@ -166,6 +180,37 @@ final class SettingRegistry
         foreach (['whatsapp' => 'WhatsApp', 'telegram' => 'Telegram'] as $channel => $label) {
             if (in_array($channel, $value, true) && ! OtpManager::available($channel)) {
                 return "{$label} belum bisa dipakai: penyedia OTP belum dikonfigurasi.";
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Opsi multi enum TIDAK divalidasi otomatis per item: nilai di luar daftar kanal ditolak di sini.
+     *
+     * @param  array<string, mixed>  $group
+     */
+    private static function checkChannelSubset(mixed $value, array $group): ?string
+    {
+        return array_diff((array) $value, DeliveryChannel::values()) === [] ? null : 'Kanal tidak dikenal.';
+    }
+
+    /**
+     * Kanal tanpa driver yang tersedia = notifikasi yang tak pernah sampai; tolak sejak di Pengaturan.
+     *
+     * @param  array<string, mixed>  $group
+     */
+    private static function checkNotificationChannels(mixed $value, array $group): ?string
+    {
+        if (($problem = self::checkChannelSubset($value, $group)) !== null) {
+            return $problem;
+        }
+
+        foreach ((array) $value as $raw) {
+            $channel = DeliveryChannel::from((string) $raw);
+            if (! ChannelAvailability::available($channel)) {
+                return "{$channel->label()} belum bisa dipakai: penyedia/bot belum dikonfigurasi.";
             }
         }
 

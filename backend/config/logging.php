@@ -63,6 +63,15 @@ return [
             'replace_placeholders' => true,
         ],
 
+        // Driver WhatsApp `log` untuk notifikasi (T-029), lokal/staging saja.
+        'notify' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/notify.log'),
+            'level' => 'debug',
+            'days' => 3,
+            'replace_placeholders' => true,
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),

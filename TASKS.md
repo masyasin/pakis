@@ -423,10 +423,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Dependensi: T-006, T-013
 - Konteks wajib: `docs/08-BUSINESS-RULES.md` BR-070, `docs/05-API-CONTRACT.md` §4.2
 - File: tabel `notifications`, `app/Domain/Notification/{Notifications/*,NotificationRouter}.php`, `Listings/NotificationListing`, controller, komponen lonceng (polling 60 s), `pages/Notifications/Index.tsx`
-- Deskripsi: Notifikasi database + email (antrean) untuk ekspor siap, impor selesai, password berubah/direset, login perangkat baru, akun terkunci. Router penerima yang dipakai event absensi nanti.
+- Deskripsi: Notifikasi database + email (antrean) untuk ekspor siap, impor selesai, password berubah/direset, login perangkat baru, akun terkunci. Router penerima yang dipakai event absensi nanti. **Diperluas (keputusan Mas 15 Nov 2026, `12`):** kanal Telegram & WhatsApp (driver WA menunggu OQ-004), saklar global + kanal per jenis (admin saja), kuota & jeda WA, cadangan WhatsApp → Telegram → Email, tabel `notification_deliveries` (BR-070, 08 §2.5).
 - Kriteria penerimaan:
-  - [ ] Listing `notifications` lolos test kontrak. Tidak bisa membaca notifikasi orang lain (404)
-  - [ ] Email lewat antrean (test `Queue::fake`)
+  - [x] Listing `notifications` lolos test kontrak. Tidak bisa membaca notifikasi orang lain (404)
+  - [x] Email lewat antrean (test `Queue::fake`)
 - Verifikasi: `php artisan test --filter=Notification`
 - Di luar lingkup: notifikasi absensi (T-040, T-036)
 

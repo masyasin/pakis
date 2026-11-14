@@ -2,6 +2,7 @@ import { Link } from '@inertiajs/react';
 import { Download } from 'lucide-react';
 import { Breadcrumbs } from '@/components/breadcrumbs';
 import { HeaderUserMenu } from '@/components/header-user-menu';
+import { NotificationBell } from '@/components/pakis/notification-bell';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -31,8 +32,9 @@ export function AppSidebarHeader({
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
 
-            {/* Lonceng notifikasi (07 §1.2) menyusul bersama modul notifikasi. */}
             <div className="ml-auto flex items-center gap-1">
+                {/* Lonceng notifikasi (07 §1.2, T-029). */}
+                <NotificationBell />
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <Button

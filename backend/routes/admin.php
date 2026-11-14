@@ -3,6 +3,7 @@
 use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
@@ -20,6 +21,12 @@ Route::middleware(['auth'])->name('admin.')->group(function () {
         ->middleware('signed')
         ->whereNumber('file')
         ->name('exports.download');
+
+    // Lookup select/autocomplete (05 §4.11, BR-006). Izin per sumber dicek di controller.
+    Route::get('lookup/{source}', [LookupController::class, 'show'])
+        ->where('source', '[a-z_]+')
+        ->middleware('throttle:120,1')
+        ->name('lookup.show');
 
     // Penomoran (05 §4.3). Didaftarkan sebelum Pengaturan; `{group}` juga dibatasi ke grup registri.
     Route::get('pengaturan/penomoran', [SequenceController::class, 'index'])

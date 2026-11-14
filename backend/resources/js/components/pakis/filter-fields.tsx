@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { AsyncSelect } from '@/components/pakis/async-select';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
@@ -29,14 +30,16 @@ export function FilterField({ filter, value, onChange, error }: FieldProps) {
         switch (filter.type) {
             case 'select':
                 if (usesLookup) {
-                    // TODO(T-011): ganti dengan pencarian dari endpoint lookup `options_source`.
                     return (
-                        <Input
+                        <AsyncSelect
                             id={id}
-                            inputMode="numeric"
-                            placeholder="ID"
-                            value={(value as string | number | undefined) ?? ''}
-                            onChange={(e) => onChange(e.target.value || null)}
+                            source={filter.options_source as string}
+                            value={
+                                value === undefined || value === null
+                                    ? []
+                                    : [value as string | number]
+                            }
+                            onChange={(next) => onChange(next[0] ?? null)}
                         />
                     );
                 }
@@ -62,19 +65,15 @@ export function FilterField({ filter, value, onChange, error }: FieldProps) {
                 );
 
                 if (usesLookup) {
-                    // TODO(T-011): pemilih multi dari lookup.
                     return (
-                        <Input
+                        <AsyncSelect
                             id={id}
-                            placeholder="ID, pisahkan dengan koma"
-                            value={selected.join(',')}
-                            onChange={(e) => {
-                                const ids = e.target.value
-                                    .split(',')
-                                    .map((s) => s.trim())
-                                    .filter(Boolean);
-                                onChange(ids.length ? ids : null);
-                            }}
+                            source={filter.options_source as string}
+                            multiple
+                            value={(value as Array<string | number>) ?? []}
+                            onChange={(next) =>
+                                onChange(next.length ? next : null)
+                            }
                         />
                     );
                 }

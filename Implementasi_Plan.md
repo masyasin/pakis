@@ -84,16 +84,16 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
 | 0A | 7 | 7 | 0 | 0 |
-| 0B | 5 | 3 | 0 | 0 |
+| 0B | 5 | 4 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **10** | **0** | **0** |
+| **Total** | **48** | **11** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- (kosong) — berikutnya T-011 (lookup).
+- (kosong) — berikutnya T-012 (master wilayah).
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -130,18 +130,19 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-15 | T-010 | Selesai | 6bf3fc7 | Migration `reference_items` (04 §2.6), `app/Domain/Reference` (`ReferenceGroup` + `usages()` dari 08 §3, model, `ReferenceUsage`, Actions tambah/ubah/hapus/urutkan + audit `reference.*`, `ReferenceListing`), `ReferenceSeeder` (19 item sistem, idempoten `firstOrCreate`), `ReferenceItemRequest`, halaman `/referensi` (tab grup ≥ sm / select di HP, DataTable, dialog tambah/ubah/hapus, dialog **Atur Urutan**: seret HTML5 + tombol naik/turun, tanpa dependency). Mesin listing: `Filter::required()` (kosong/tidak sah → default, chip tanpa tombol hapus, select tanpa "Semua"). Test "sudah dipakai" memakai `CREATE TEMPORARY TABLE` + `ReferenceUsage` eksplisit (DDL biasa memutus transaksi RefreshDatabase). Larastan menangkap `ids` bukan `list` → aturan `list`. 387 Pest + 26 Vitest. Dicek CSP enforce 1440/768 gelap, 360 terang; data dev dikembalikan |
 
+| 2026-11-15 | T-011 | Selesai | (commit T-011) | `app/Support/Lookup` (`LookupSource` abstrak: authorize/query aktif/`TextSearch`/order/option/rules + hook `scope()` `TODO(T-019)`; `LookupRegistry` didaftarkan di `AppServiceProvider`), `LookupController` (`GET /lookup/{source}` `admin.lookup.show`, 404/403/422, `LIMIT` ≤ 20 di SQL, `ids[]` untuk label terpilih, `throttle:120,1`). Sumber `references` (grup wajib, aktif) & **`users`** (keputusan Mas: hanya `audit.view`/`users.view`, akun nonaktif ikut; 05 §4.11 + 12 diperbarui). Frontend: `AsyncSelect` (combobox ARIA tanpa dependency, tunggal/multi, debounce 250 ms), cache label `lib/lookup.ts` + `useLookupLabels` → chip "Pelaku: Demo Admin" juga dari URL yang dibagikan; isian ID di `filter-fields.tsx` diganti. Larastan: generik `LookupSource<*>` tidak bisa dipakai dengan `get()` → `Builder<covariant Model>` + guard `instanceof`. 403 Pest + 32 Vitest. Dicek CSP enforce di `/audit` 1440 gelap & 360 terang, 0 galat konsol |
+
 ### 6.5 Catatan untuk sesi berikutnya
 - **Fase 0A selesai (T-001–T-007).**
 - **T-008 selesai penuh (bag. 1 + 2).** Branding: `app/Domain/Settings/Branding/BrandTheme.php`. Warna netral (latar, kartu, `--sidebar-accent`, `--muted`) sengaja tetap palet hijau-abu desain; hanya token yang terkait warna utama yang mengikuti warna kustom. Bila Pakis ingin seluruh palet ikut, itu perubahan desain (tanyakan dulu). Pratinjau tema di `appearance-tabs.tsx` masih literal (ilustrasi tema bawaan).
 - Teks panel login "Satu tempat untuk data…" dan "Kudus, Jawa Tengah" masih teks tetap (tidak ada kunci setting di `08` §2).
 - Menu sidebar baru berisi **Dasbor** saja (`components/app-sidebar.tsx`). Halaman `/audit`, `/log-keamanan`, `/pengaturan/*` belum ada di menu → **dikerjakan di T-018** (keputusan Mas 14 Nov 2026): menu lengkap per grup `06` §8 + bagikan permission pengguna lewat Inertia. Jangan tambah menu sebelum itu.
-- **T-010 selesai.** Berikutnya: T-011 (lookup, termasuk sumber `references` dengan `group`, hanya item aktif) lalu T-012 (wilayah). Saat T-021/T-024/T-040 membuat tabel pemakai referensi: tambahkan FK `RESTRICT` ke `reference_items` (cek `ReferenceUsage` otomatis aktif begitu tabelnya ada). Halaman Referensi belum di menu (T-018). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
+- **T-010 & T-011 selesai.** Berikutnya: T-012 (wilayah; daftarkan sumber lookup `regions` dengan `level` & `parent` di `AppServiceProvider`). Sumber lookup baru: buat kelas turunan `App\Support\Lookup\LookupSource`, isi `scope()` untuk data ber-scope (T-019), daftarkan di `AppServiceProvider::register`. `RelationFilter` dengan `options_source` otomatis memakai `AsyncSelect`; sumber yang butuh parameter (mis. `references?group=`) belum bisa dipakai filter relasi — tambahkan dukungan parameter bila dibutuhkan. Saat T-021/T-024/T-040 membuat tabel pemakai referensi: tambahkan FK `RESTRICT` ke `reference_items` (cek `ReferenceUsage` otomatis aktif begitu tabelnya ada). Halaman Referensi belum di menu (T-018). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
 - `tests/Concurrency` menjalankan `migrate` di DB test tanpa RefreshDatabase dan membersihkan datanya sendiri; ikut jalan di `php artisan test` (± 5–10 detik).
 - `DocumentSequence` dikunci `FOR UPDATE` oleh generator **dan** `UpdateSequence`: jangan menambah query lain yang mengunci counter sebelum baris induk (urutan kunci = induk → counter, agar tidak deadlock).
 - Lokal: `php artisan storage:link` sudah dijalankan (logo di disk `public`). Nilai demo yang diubah saat cek browser: `attendance.default_radius_m` = 150 (bisa dikembalikan di Pengaturan → Absensi).
 - **Desain UI sudah digabung** (`feat/ui-desain`, worktree `..\pakis-ui` boleh dihapus: `git worktree remove ..\pakis-ui`). Preferensi Mas: toggle tema satu ikon, profil di kanan atas, cek 360 & 768 px sebelum lapor; komponen yang lebarnya bergantung sidebar pakai container query (`@container`). Panel judul kartu bagian Pengaturan: `components/settings-section.tsx`; banner galat/sukses form: `components/form-status.tsx`.
 - Purge berkas ekspor kedaluwarsa (status `expired` + hapus berkas) belum ada → T-045 (job retensi). Saat ini berkas lewat `expires_at` sudah tidak bisa diunduh (404).
-- Filter relasi di UI masih input ID (`TODO(T-011)` di `filter-fields.tsx`), menunggu endpoint lookup.
 - **Logo Pakis** (dari Mas, 15 Nov 2026): https://katalog.pakisjayaabadi.com/aset/img/pakis2.png (kop; logo = lingkaran hijau kiri). Sudah dipotong (512×512, luar lingkaran transparan, goresan dalam putih — di berkas asli goresan itu transparan) dan diunggah ke **DB dev** lewat Pengaturan → Branding sebagai `branding.logo_light` (tercatat audit). Unggahan ada di `storage/app/public` (tidak di git): staging/produksi perlu unggah ulang lewat layar yang sama, atau jadikan aset default di repo bila Mas setuju. Favicon belum diisi.
 - Vitest belum terpasang; `vitest` termasuk kebutuhan T-005 (`10` §1). Periksa apakah ada di dependency starter kit sebelum menambah (aturan berhenti `CLAUDE.md` §5 bila belum ada di `03` §5).
 - Saat menambah endpoint API: lempar `ApiError` untuk galat domain; jangan membuat JSON galat manual (lihat `backend/CLAUDE.md`).

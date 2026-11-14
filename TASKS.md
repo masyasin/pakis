@@ -168,8 +168,8 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Http/Controllers/Admin/LookupController.php`, `app/Support/Lookup/{LookupSource,LookupRegistry}.php`, `resources/js/components/pakis/AsyncSelect.tsx`
 - Deskripsi: Endpoint `admin.lookup.{source}` dengan pencarian wajib, limit 20, aktif saja, dan hook scope (diisi T-019). Sumber didaftarkan oleh modul masing-masing. Komponen select async dipakai `FilterBar` untuk `options_source`.
 - Kriteria penerimaan:
-  - [ ] Tanpa `q` → maksimal 20 hasil teratas (tidak pernah seluruh tabel)
-  - [ ] Sumber tak dikenal → 404
+  - [x] Tanpa `q` → maksimal 20 hasil teratas (tidak pernah seluruh tabel)
+  - [x] Sumber tak dikenal → 404
 - Verifikasi: `php artisan test --filter=Lookup`
 - Di luar lingkup: sumber spesifik (task modul)
 

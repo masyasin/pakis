@@ -15,6 +15,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import { useLookupLabels } from '@/hooks/use-lookup-labels';
 import { useListing } from '@/hooks/use-listing';
 import { useIsMobile } from '@/hooks/use-mobile';
 import {
@@ -84,6 +85,8 @@ export function DataTable<Row>({
     const isMobile = useIsMobile();
 
     const sortableKeys = new Set(spec.sorts.map((s) => s.key));
+    // Label filter relasi (lookup) dimuat dulu agar chip berisi nama, bukan ID.
+    useLookupLabels(spec, state.filters);
     const chips = filterChips(spec, state.filters);
     const isFiltered =
         state.q !== '' || !sameFilters(state.filters, defaultFilters(spec));

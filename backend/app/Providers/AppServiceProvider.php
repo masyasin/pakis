@@ -2,12 +2,15 @@
 
 namespace App\Providers;
 
+use App\Domain\Access\Lookup\UserLookup;
 use App\Domain\Audit\Listeners\RecordExportCreated;
+use App\Domain\Reference\Lookup\ReferenceLookup;
 use App\Domain\Settings\Branding\BrandTheme;
 use App\Domain\Settings\SettingStore;
 use App\Models\User;
 use App\Support\Auth\PasswordConfirmation;
 use App\Support\Export\Events\ExportCreated;
+use App\Support\Lookup\LookupRegistry;
 use Carbon\CarbonImmutable;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Contracts\Routing\ResponseFactory;
@@ -29,6 +32,15 @@ class AppServiceProvider extends ServiceProvider
     {
         // Scoped: direset tiap request & tiap job antrean, jadi nilai setting tidak basi di worker.
         $this->app->scoped(SettingStore::class);
+
+        // Sumber lookup (05 §4.11). Modul baru menambahkan sumbernya di sini.
+        $this->app->singleton(LookupRegistry::class, function () {
+            $registry = new LookupRegistry;
+            $registry->register('references', ReferenceLookup::class);
+            $registry->register('users', UserLookup::class);
+
+            return $registry;
+        });
 
         // RequirePassword dibuat per request dengan masa berlaku dari setting (bukan 3 jam bawaan).
         $this->app->bind(RequirePassword::class, fn ($app) => new RequirePassword(

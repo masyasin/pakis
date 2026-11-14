@@ -1,3 +1,4 @@
+import { cachedLabel } from '@/lib/lookup';
 import type {
     DateRangeValue,
     FilterSpec,
@@ -155,10 +156,12 @@ function optionLabel(spec: FilterSpec, value: string | number): string {
         }
     }
 
-    // Filter relasi: opsi ada di lookup (T-011); sementara tampilkan ID.
-    return 'options_source' in spec && spec.options_source
-        ? `#${value}`
-        : String(value);
+    // Filter relasi: label dari cache lookup (diisi AsyncSelect / useLookupLabels), ID bila belum ada.
+    if ('options_source' in spec && spec.options_source) {
+        return cachedLabel(spec.options_source, value) ?? `#${value}`;
+    }
+
+    return String(value);
 }
 
 export function describeFilterValue(

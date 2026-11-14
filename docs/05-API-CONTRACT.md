@@ -294,7 +294,7 @@ Semua route `*.export`: bila baris ≤ `export.sync_max_rows` → unduh langsung
 | `admin.attendance-corrections.export` | GET | `/koreksi-absen/ekspor` | `attendance_corrections.view` | |
 
 ### 4.11 Lookup (untuk select/autocomplete)
-Nama `admin.lookup.<sumber>`, GET `/lookup/<sumber>?q=&parent=&limit=`. Mengembalikan `[{value,label}]`, maksimum 20 hasil, hanya entri aktif dan **dalam scope data** pemanggil. Sumber: `regions` (dengan `level` & `parent`), `locations`, `departments`, `positions`, `employees`, `shifts`, `roles`, `references` (dengan `group`). Lookup **bukan** daftar `*.index`, jadi dikecualikan dari test kontrak listing. Lookup tetap wajib pencarian + limit (BR-006).
+Satu route `admin.lookup.show`, GET `/lookup/<sumber>?q=&parent=&limit=&ids[]=` (sumber terdaftar di `LookupRegistry`; tak dikenal → 404, tanpa izin sumber → 403, parameter salah → 422, `throttle:120,1`). Mengembalikan `[{value,label,hint?}]`, maksimum 20 hasil (`limit` 1–20, `LIMIT` di SQL), hanya entri aktif dan **dalam scope data** pemanggil. `ids[]` (≤ 20) mengembalikan label nilai yang sudah terpilih (chip filter), tetap aktif & ber-scope. Sumber: `regions` (dengan `level` & `parent`), `locations`, `departments`, `positions`, `employees`, `shifts`, `roles`, `references` (dengan `group`, semua pengguna login), `users` (pemegang `audit.view` atau `users.view`; akun nonaktif ikut tampil untuk menyaring pelaku audit lama — keputusan 15 Nov 2026). Lookup **bukan** daftar `*.index`, jadi dikecualikan dari test kontrak listing. Lookup tetap wajib pencarian + limit (BR-006).
 
 ## 5. API v1 (Pakis Pro)
 

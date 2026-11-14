@@ -100,6 +100,7 @@ final class SettingRegistry
             $t('security.password_check_breached', SettingType::Bool, true, 'Tolak password yang pernah bocor', 'Butuh koneksi internet ke layanan pengecekan. Bila layanan tidak bisa dihubungi, pengecekan dilewati.'),
             $t('security.login_max_attempts', SettingType::Int, 5, 'Batas percobaan login', 'Lebih dari ini akun dikunci sementara.', min: 3, max: 20),
             $t('security.lockout_minutes', SettingType::Int, 15, 'Lama kunci akun (menit)', min: 1, max: 1440),
+            $t('security.account_max_failures', SettingType::Int, 20, 'Batas gagal per akun (semua IP)', 'Total login gagal dari jaringan mana pun dalam rentang lama kunci; mencapai batas ini akun dikunci. Menahan penyerang yang berganti-ganti IP.', min: 10, max: 100),
             $t('security.session_idle_minutes', SettingType::Int, 120, 'Sesi berakhir bila tidak aktif (menit)', min: 15, max: 720),
             $t('security.session_absolute_hours', SettingType::Int, 12, 'Batas umur sesi (jam)', min: 1, max: 72),
             $t('security.password_confirm_minutes', SettingType::Int, 15, 'Konfirmasi ulang password berlaku (menit)', min: 5, max: 120),

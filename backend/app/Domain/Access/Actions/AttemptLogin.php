@@ -73,7 +73,7 @@ final class AttemptLogin
             throw ValidationException::withMessages([Fortify::username() => WebAccess::MESSAGE]);
         }
 
-        RecordLoginFailure::clear($subject, $ip);
+        RecordLoginFailure::clear($subject, $ip, $user);
 
         return $user;
     }

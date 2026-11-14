@@ -5,6 +5,7 @@ use App\Domain\Access\Notifications\NewDeviceLogin;
 use App\Domain\Access\Support\EmployeeStatus;
 use App\Domain\Audit\Models\SecurityEvent;
 use App\Models\User;
+use App\Support\Http\ClientNetwork;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
@@ -171,6 +172,41 @@ test('BR-016 alamat IPv6 dalam satu blok /64 berbagi penghitung', function () {
     }
 
     attemptLogin('siti.aminah', ip: '2001:db8:abcd:12::ffff')->assertSessionHasErrors(['login' => THROTTLED]);
+});
+
+test('BR-016 batas per akun lintas IP: account_max_failures gagal dari IP mana pun → akun terkunci', function () {
+    setSetting('security.account_max_failures', 10);
+
+    foreach (range(1, 10) as $i) {
+        attemptLogin('siti.aminah', 'salah', ip: "203.0.113.{$i}"); // tiap IP hanya 1 percobaan
+    }
+
+    expect($this->user->refresh()->locked_until)->not->toBeNull()
+        ->and(SecurityEvent::query()->where('event', 'lockout')->where('user_id', $this->user->id)->count())->toBe(1);
+    Notification::assertSentTo($this->user, AccountLocked::class);
+
+    // Password benar dari IP baru pun ditolak dengan pesan generik selama terkunci.
+    attemptLogin('siti.aminah', ip: '198.51.100.7')->assertSessionHasErrors(['login' => GENERIC_FAILURE]);
+});
+
+test('SEC-003 varian huruf/aksen identifier yang tidak ada juga berbagi penghitung (tidak membedakan akun)', function () {
+    foreach (['budi.tak.ada', 'BÚDI.tak.ada', 'búdi.TAK.ada', 'budí.tak.ada', 'Budi.Tak.Ada'] as $variant) {
+        attemptLogin($variant, 'salah');
+    }
+
+    attemptLogin('budi.tak.ada')->assertSessionHasErrors(['login' => THROTTLED]);
+});
+
+test('BR-016 IPv4 dalam format IPv6 dihitung per alamat IPv4, bukan satu kelompok bersama', function () {
+    foreach (range(1, 5) as $i) {
+        attemptLogin('siti.aminah', "salah-{$i}", ip: '::ffff:192.0.2.10');
+    }
+
+    // Klien lain dengan alamat IPv4-mapped berbeda tidak ikut tertahan.
+    expect(ClientNetwork::key('::ffff:192.0.2.10'))->toBe('192.0.2.10')
+        ->and(ClientNetwork::key('::ffff:198.51.100.20'))->toBe('198.51.100.20')
+        ->and(ClientNetwork::key('64:ff9b::c000:20a'))->toBe('192.0.2.10')
+        ->and(ClientNetwork::key('2001:db8:abcd:12::1'))->toBe(ClientNetwork::key('2001:db8:abcd:12:ffff::9'));
 });
 
 test('email perangkat baru tidak meneruskan Markdown dari User-Agent (anti tautan palsu)', function () {

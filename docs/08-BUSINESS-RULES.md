@@ -42,6 +42,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `security.password_check_breached` | bool | true | — (butuh internet ke layanan cek password bocor) | ❌ |
 | `security.login_max_attempts` | int | 5 | 3–20 | ❌ |
 | `security.lockout_minutes` | int | 15 | 1–1440 | ❌ |
+| `security.account_max_failures` | int | 20 | 10–100 | ❌ |
 | `security.session_idle_minutes` | int | 120 | 15–720 | ❌ |
 | `security.session_absolute_hours` | int | 12 | 1–72 | ❌ |
 | `security.password_confirm_minutes` | int | 15 | 5–120 | ❌ |
@@ -116,7 +117,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | BR-013 | **Lupa password via OTP WhatsApp**: kanal harus ada di `auth.forgot_channels` dan akun harus punya `phone`. OTP numerik `auth.otp_length` digit, berlaku `auth.otp_minutes`, disimpan sebagai hash di cache, maksimal 5 kali salah per OTP, jeda kirim ulang 60 detik. Respons permintaan selalu generik. Setelah reset: sama dengan BR-012. |
 | BR-014 | **Reset password oleh admin**: password sementara 12 karakter acak (tanpa karakter ambigu `0 O 1 l I`) ditampilkan **sekali** ke admin, `must_change_password = true`, semua sesi & token pengguna dicabut, `security_events.password_reset_by_admin`. Admin tidak bisa mereset dirinya sendiri lewat menu ini. Hanya Owner yang bisa mereset Owner lain, dan Super Admin tidak bisa mereset Owner. |
 | BR-015 | **MFA**: pengguna yang salah satu rolenya `mfa_required` dan belum mengaktifkan MFA → setelah login web langsung diarahkan ke halaman aktivasi MFA, menu lain terkunci. Di API login mendapat `403 MFA_SETUP_REQUIRED`. Kode pemulihan sekali pakai. Reset MFA oleh admin → `two_factor_*` dikosongkan, sesi dicabut. |
-| BR-016 | **Pembatasan percobaan**: per (identifier + IP) maksimal `security.login_max_attempts` gagal dalam `security.lockout_minutes` → akun `locked_until` = sekarang + `security.lockout_minutes`, `security_events.lockout`, email ke pemilik bila ada. Per IP maksimal 30 percobaan login/menit. Lupa password: 3 per identifier per jam dan 10 per IP per jam. OTP MFA salah 5 kali → sesi tantangan dibatalkan. |
+| BR-016 | **Pembatasan percobaan**: per (identifier + IP) maksimal `security.login_max_attempts` gagal dalam `security.lockout_minutes`, **dan** per akun dari IP mana pun maksimal `security.account_max_failures` gagal dalam rentang yang sama → akun `locked_until` = sekarang + `security.lockout_minutes`, `security_events.lockout`, email ke pemilik bila ada. "Identifier" = akun yang ditemukan (varian huruf/aksen dihitung sama); IP = alamat IPv4 (termasuk IPv4 di dalam format IPv6) atau blok /64 untuk IPv6. Per IP maksimal 30 percobaan login/menit. Lupa password: 3 per identifier per jam dan 10 per IP per jam. OTP MFA salah 5 kali → sesi tantangan dibatalkan. |
 | BR-017 | Login **web** ditolak dengan pesan "Akun Anda hanya untuk aplikasi Pakis Pro." bila pengguna tidak punya satu pun permission yang membuka menu web (`06` §8). |
 | BR-018 | **Sesi**: idle timeout `security.session_idle_minutes`, absolute timeout `security.session_absolute_hours`. Login berhasil → regenerasi session ID. Login dari perangkat/browser baru (sidik jari UA + IP /24 belum pernah dalam 90 hari) → `security_events.new_device_login` + email bila `security.notify_new_device_login`. Token mobile berlaku `mobile.token_days` sejak dibuat. |
 

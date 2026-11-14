@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Domain\Settings\SettingRegistry;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;
@@ -18,8 +19,12 @@ class PurgeAuditLogs extends Command
 {
     public function handle(): int
     {
-        $auditCutoff = now()->subYears((int) setting('retention.audit_years'));
-        $securityCutoff = now()->subDays((int) setting('retention.security_days'));
+        // Batas bawah dari registri: nilai rusak/terlalu kecil tidak boleh menghapus audit terbaru.
+        $years = max((int) SettingRegistry::get('retention.audit_years')->min, (int) setting('retention.audit_years'));
+        $days = max((int) SettingRegistry::get('retention.security_days')->min, (int) setting('retention.security_days'));
+
+        $auditCutoff = now()->subYears($years);
+        $securityCutoff = now()->subDays($days);
 
         DB::statement('SET @audit_purge = 1');
 

@@ -5,8 +5,12 @@ namespace App\Providers;
 use App\Domain\Audit\Listeners\RecordExportCreated;
 use App\Domain\Settings\SettingStore;
 use App\Models\User;
+use App\Support\Auth\PasswordConfirmation;
 use App\Support\Export\Events\ExportCreated;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Middleware\RequirePassword;
+use Illuminate\Contracts\Routing\ResponseFactory;
+use Illuminate\Contracts\Routing\UrlGenerator;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -23,6 +27,13 @@ class AppServiceProvider extends ServiceProvider
     {
         // Scoped: direset tiap request & tiap job antrean, jadi nilai setting tidak basi di worker.
         $this->app->scoped(SettingStore::class);
+
+        // RequirePassword dibuat per request dengan masa berlaku dari setting (bukan 3 jam bawaan).
+        $this->app->bind(RequirePassword::class, fn ($app) => new RequirePassword(
+            $app->make(ResponseFactory::class),
+            $app->make(UrlGenerator::class),
+            PasswordConfirmation::timeoutSeconds(),
+        ));
     }
 
     /**
@@ -32,6 +43,9 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureTemporaryAbilities();
+
+        // Alur konfirmasi Fortify (status "masih terkonfirmasi") membaca config ini.
+        config(['auth.password_timeout' => PasswordConfirmation::timeoutSeconds()]);
 
         // Listener di app/Domain tidak ikut auto-discovery (hanya app/Listeners).
         Event::listen(ExportCreated::class, RecordExportCreated::class);

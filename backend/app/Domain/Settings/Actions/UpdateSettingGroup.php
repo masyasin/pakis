@@ -49,6 +49,15 @@ final class UpdateSettingGroup
             );
         }
 
+        // Berkas hanya untuk field gambar. Tanpa ini, path gambar bisa menjadi nilai setting angka
+        // (mis. retention.audit_years → 0) dan audit:purge menghapus seluruh audit.
+        $notImage = array_filter(array_keys($files), fn ($field) => $byField[$field]->type !== SettingType::Image);
+        if ($notImage !== []) {
+            throw ValidationException::withMessages(
+                collect($notImage)->mapWithKeys(fn ($f) => [$f => 'Field ini tidak menerima berkas.'])->all(),
+            );
+        }
+
         $current = $this->store->group($group);
         $values = [];
         foreach ($input as $field => $value) {

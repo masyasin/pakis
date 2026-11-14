@@ -10,6 +10,7 @@ use App\Domain\Settings\SettingRegistry;
 use App\Domain\Settings\SettingStore;
 use App\Domain\Settings\SettingType;
 use App\Http\Controllers\Controller;
+use App\Support\Auth\PasswordConfirmation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -95,9 +96,7 @@ class SettingController extends Controller
             return false;
         }
 
-        $confirmedAt = (int) $request->session()->get('auth.password_confirmed_at', 0);
-
-        return time() - $confirmedAt > (int) config('auth.password_timeout', 10800);
+        return ! PasswordConfirmation::isRecent($request);
     }
 
     /**

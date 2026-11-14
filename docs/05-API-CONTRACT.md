@@ -59,7 +59,13 @@ Pesan untuk pengguna akhir berbahasa Indonesia. Stack trace, nama tabel, dan SQL
 | `CORRECTION_NOT_ALLOWED` | 422 | Tanggal di masa depan atau lebih tua dari `attendance.correction_max_days` |
 | `CORRECTION_SELF_APPROVAL` | 403 | Menyetujui koreksi milik sendiri (SEC-031) |
 | `CHANNEL_UNAVAILABLE` | 503 | Kanal OTP/WA tidak aktif |
+| `BAD_REQUEST` | 400 | Request rusak (mis. JSON tidak valid). Ditambah 14 Nov 2026 (T-003) |
+| `METHOD_NOT_ALLOWED` | 405 | Method HTTP tidak didukung route ini. Ditambah 14 Nov 2026 (T-003) |
+| `PAYLOAD_TOO_LARGE` | 413 | Unggahan/body melebihi batas server (selfie, berkas impor). Ditambah 14 Nov 2026 (T-003) |
+| `SERVICE_UNAVAILABLE` | 503 | Server sedang maintenance (deploy). Klien mencoba lagi nanti. Ditambah 14 Nov 2026 (T-003) |
 | `SERVER_ERROR` | 500 | Galat tak terduga (dicatat dengan `request_id`) |
+
+Tabel ini dicocokkan dua arah dengan enum `App\Support\Api\ErrorCode` oleh `tests/Contract/ApiErrorFormatTest.php`. Menambah kode berarti mengubah keduanya.
 
 ### 2.4 Header
 

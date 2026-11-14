@@ -98,7 +98,7 @@
 | SEC-060 | Secret hanya di `.env`/secret CI: `APP_KEY`, `NIK_HASH_KEY`, `DB_*`, `REDIS_PASSWORD`, `MAIL_*`, `OTP_PROVIDER_*`, `SUPERADMIN_*`, keystore Android. Tidak pernah di `settings`, repo, log, atau dokumen. gitleaks di pre-commit & CI. Kredensial berbeda per lingkungan. | CI gitleaks hijau |
 | SEC-061 | Produksi: `APP_DEBUG=false`, `APP_ENV=production`, halaman galat generik (web) dan format §2.2 (API) tanpa stack trace. Telescope/Debugbar tidak terpasang di produksi (`require-dev`). | Checklist rilis + test |
 | SEC-062 | `GET /api/v1/config` hanya mengeluarkan kunci `is_public` (test membandingkan dengan registri). | Test |
-| SEC-063 | Security headers: `Content-Security-Policy` (mulai report-only di staging, enforce di produksi, nonce untuk Vite), `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), geolocation=(), microphone=()` (web admin tidak butuh). Header `X-Powered-By`/versi server disembunyikan. | Test middleware + cek securityheaders |
+| SEC-063 | Security headers: `Content-Security-Policy` (mulai report-only di staging, enforce di produksi, nonce untuk script; style memakai `'unsafe-inline'` karena library menyisipkan `<style>` saat runtime tanpa nonce, keputusan T-003), `Strict-Transport-Security: max-age=31536000; includeSubDomains`, `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy: camera=(), geolocation=(), microphone=()` (web admin tidak butuh). Header `X-Powered-By`/versi server disembunyikan. | Test middleware + cek securityheaders |
 | SEC-064 | Backup harian terenkripsi, salinan di luar server, uji restore bulanan (NFR-006). Kunci backup tidak disimpan di server yang sama. | Log uji restore |
 | SEC-065 | Server: SSH key-only, root login mati, UFW, fail2ban, unattended-upgrades. MariaDB & Redis hanya localhost. User DB aplikasi tanpa `DROP`/`GRANT`/`TRIGGER`, dan user migrasi terpisah. PHP-FPM & worker berjalan sebagai user non-root. | Checklist hardening |
 | SEC-066 | Dependency: `composer audit`, `npm audit --audit-level=high`, `flutter pub outdated` di CI. High/Critical memblokir rilis kecuali ada justifikasi tertulis di `12-OPEN-QUESTIONS.md`. | CI |
@@ -141,7 +141,8 @@ Kontak darurat & pembagian tanggung jawab Sintech ↔ Pakis: diisi di manual adm
 
 ### 7.2 Checklist keamanan sebelum rilis
 - [ ] `APP_DEBUG=false`, galat generik, Telescope/Debugbar tidak ada di produksi
-- [ ] HTTPS + HSTS, security headers (SEC-063) terpasang, CSP enforce
+- [ ] HTTPS + HSTS, security headers (SEC-063) terpasang, CSP enforce (`CSP_MODE=enforce` di `.env` produksi; cek konsol browser halaman login & dasbor tanpa pelanggaran CSP)
+- [ ] `expose_php = Off` di php.ini produksi dan header `Server` Nginx tanpa versi (`server_tokens off`)
 - [ ] `.env`, `.git`, `vendor`, `storage` tidak bisa diakses dari web. `storage/` tidak mengeksekusi PHP
 - [ ] `ListingContractTest` + matriks test otorisasi/IDOR hijau
 - [ ] MFA aktif untuk semua Owner/Administrator/HRD. Akun Super Admin sudah ganti password. Tidak ada akun demo

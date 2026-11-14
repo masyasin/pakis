@@ -30,6 +30,8 @@ Agent **tidak boleh** menebak jawaban OQ. Task yang terblokir harus menunggu, at
 | 3 Nov 2026 | Setiap CRUD wajib paging, pencarian, filter (ditegakkan test kontrak) | Mas |
 | 3 Nov 2026 | Fondasi = core HR (pegawai & struktur) + absensi sebagai pintu masuk adopsi, payroll belakangan | Diskusi |
 | 14 Nov 2026 | Database memakai **MariaDB 11.8** bawaan XAMPP (port 3307), menggantikan MySQL 8.4 di ADR-012. Berlaku juga untuk CI dan produksi (OQ-014) | Mas |
+| 14 Nov 2026 | Kontrak API `05` §2.3 ditambah `BAD_REQUEST` 400, `METHOD_NOT_ALLOWED` 405, `PAYLOAD_TOO_LARGE` 413, `SERVICE_UNAVAILABLE` 503 | Mas (T-003) |
+| 14 Nov 2026 | CSP: script wajib nonce; style `'self' 'unsafe-inline'` tanpa nonce, karena progress bar Inertia/Sonner/React menyisipkan `<style>` saat runtime dan terbukti diblokir Chromium dalam mode enforce | Agent (T-003), teknis |
 | 14 Nov 2026 | Larastan **level 7** (bawaan starter kit, sudah 0 error) dipertahankan. NFR-012 menjadi "≥ level 6, saat ini 7" | Mas (T-002) |
 | 14 Nov 2026 | Lokal: cache/queue/session memakai driver `database` (PHP XAMPP tanpa ekstensi phpredis, `predis` tidak ditambah). Produksi tetap Redis | Mas |
 | 14 Nov 2026 | Fitur starter kit dimatikan: pendaftaran mandiri (05 §1 tanpa `/register`) dan **passkeys** (di luar alur login + lockout + MFA, tabel tidak ada di 04). Mengaktifkan passkey kelak = OQ baru | Mas (T-001) |

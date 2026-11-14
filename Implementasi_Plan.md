@@ -83,14 +83,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
-| 0A | 7 | 2 | 0 | 0 |
+| 0A | 7 | 3 | 0 | 0 |
 | 0B | 5 | 0 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **2** | **0** | **0** |
+| **Total** | **48** | **3** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
 - (kosong)
@@ -108,8 +108,11 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-14 | T-002 | Selesai | e2cc0da, ebf9ca1, da56ed8 | CI `backend.yml` (Pint, Larastan 7, Pest di `mariadb:11.8.9`, lint/tsc/build, audit), `secrets.yml` (gitleaks 8.30.1, riwayat penuh), `mobile.yml` kerangka. Pre-commit gitleaks + Pint. OQ-014 terjawab (MariaDB di semua lingkungan). Kanari PR #2 merah di gitleaks lalu ditutup. Perbaikan: Pest serial (bug `--parallel`), `withoutVite()` di `TestCase` |
 
+| 2026-11-14 | T-003 | Selesai | (commit T-003) | Request ID ULID (header, body galat, log via Context), log JSON harian, `ErrorCode` (33 kode, sinkron dua arah dengan `05` §2.3 lewat test) + `ApiError` + `ApiExceptionRenderer`, halaman galat web Inertia, `SecurityHeaders` + CSP nonce (`CSP_MODE`). 4 kode galat baru disetujui Mas. CSP diuji di Chromium mode enforce: style runtime library terblokir → style `'unsafe-inline'`. 89 test hijau |
+
 ### 6.5 Catatan untuk sesi berikutnya
-- **Berikutnya T-003 (infrastruktur lintas modul):** request ID, log JSON, renderer galat API (`05` §2.2–2.3), security headers SEC-063. Dependensi T-001 sudah selesai.
+- **Berikutnya T-004 (mesin listing backend):** `app/Support/Listing/*`, konteks `03` §4.3, `05` §3, `08` §1. `ui.max_per_page` sementara konstanta 100 sampai T-008. Respons API daftar memakai `meta.request_id` dari `RequestId::current()`.
+- Saat menambah endpoint API: lempar `ApiError` untuk galat domain; jangan membuat JSON galat manual (lihat `backend/CLAUDE.md`).
 - CI aktif di setiap push ke `main` (commit langsung ke `main`, tanpa PR — keputusan Mas 14 Nov 2026). Pantau dengan `gh run list` / `gh run watch <id> --exit-status`.
 - **Diketahui rusak:** `php artisan test --parallel` (Pest 5.3.5 + paratest 7.28.0 + PHPUnit 13.4.5, `TypeError` di `WrapperRunner::getTestFiles()`). CI & lokal serial. Cek rilis Pest baru sesekali, lalu aktifkan kembali di `backend.yml`.
 - Test HTTP memakai `withoutVite()` (di `tests/TestCase.php`). Jangan dihapus: job Pest di CI tidak membangun aset.

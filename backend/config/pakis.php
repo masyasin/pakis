@@ -13,4 +13,12 @@ return [
     // TODO(T-008): DisplayTime membaca setting('general.timezone'), lalu kunci ini dihapus.
     'display_timezone' => 'Asia/Jakarta',
 
+    // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.
+    // enforce = blokir pelanggaran (produksi) | report-only = hanya laporkan di konsol (staging, lokal) | off
+    'csp' => [
+        'mode' => in_array(env('CSP_MODE'), ['enforce', 'report-only', 'off'], true)
+            ? env('CSP_MODE')
+            : 'report-only',
+    ],
+
 ];

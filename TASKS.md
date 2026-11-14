@@ -47,9 +47,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Http/Middleware/{AssignRequestId,SecurityHeaders}.php`, `app/Exceptions/ApiExceptionRenderer.php`, `app/Support/Api/{ApiError,ErrorCode}.php`, `config/logging.php`, `bootstrap/app.php`, `tests/Contract/ApiErrorFormatTest.php`
 - Deskripsi: Request ID (ULID) di log & header. Log JSON. Renderer galat API sesuai `05` §2.2 dengan enum `ErrorCode` (semua kode di `05` §2.3). Halaman galat web generik. Middleware security headers (CSP report-only bisa diaktifkan via env, nonce Vite). `PreventRequestForgery` aktif.
 - Kriteria penerimaan:
-  - [ ] Galat validasi API → format `05` §2.2 dengan `details` per field
-  - [ ] Exception tak terduga di produksi → `SERVER_ERROR` tanpa stack trace, `request_id` sama di log & respons
-  - [ ] Semua header SEC-063 ada di respons web
+  - [x] Galat validasi API → format `05` §2.2 dengan `details` per field
+  - [x] Exception tak terduga di produksi → `SERVER_ERROR` tanpa stack trace, `request_id` sama di log & respons
+  - [x] Semua header SEC-063 ada di respons web
 - Verifikasi: `php artisan test --filter=ApiErrorFormat`
 - Di luar lingkup: rate limiter spesifik (task masing-masing)
 

@@ -11,3 +11,6 @@
 Thumbs.db
 .idea/
 .vscode/
+
+# Artefak alat uji browser (Playwright MCP)
+/.playwright-mcp/

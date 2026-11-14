@@ -51,7 +51,7 @@ test('branding dibagikan ke Inertia dengan URL logo relatif (lolos CSP img-src s
     setSetting('branding.login_tagline', 'Tagline uji');
     setSetting('branding.logo_light', 'branding/logo-terang.png');
 
-    $this->actingAs(User::factory()->create())->get('/dashboard')
+    $this->actingAs(User::factory()->create())->get('/dasbor')
         ->assertInertia(fn (Assert $page) => $page
             ->where('name', 'Pakis Demo')
             ->where('branding.company', 'CV Contoh Tani')

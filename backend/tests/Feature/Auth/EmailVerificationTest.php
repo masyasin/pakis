@@ -36,11 +36,11 @@ class EmailVerificationTest extends TestCase
     public function test_unverified_and_emailless_users_can_open_the_app(): void
     {
         $unverified = User::factory()->unverified()->create();
-        $this->actingAs($unverified)->get(route('dashboard'))->assertOk();
+        $this->actingAs($unverified)->get(route('admin.dashboard'))->assertOk();
         $this->actingAs($unverified)->get(route('admin.profile.edit'))->assertOk();
 
         $emailless = User::factory()->create(['email' => null, 'email_verified_at' => null]);
-        $this->actingAs($emailless)->get(route('dashboard'))->assertOk();
+        $this->actingAs($emailless)->get(route('admin.dashboard'))->assertOk();
     }
 
     public function test_email_can_be_verified()
@@ -60,7 +60,7 @@ class EmailVerificationTest extends TestCase
         Event::assertDispatched(Verified::class);
 
         $this->assertTrue($user->fresh()->hasVerifiedEmail());
-        $response->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+        $response->assertRedirect(route('admin.dashboard', absolute: false).'?verified=1');
     }
 
     public function test_email_is_not_verified_with_invalid_hash()
@@ -108,7 +108,7 @@ class EmailVerificationTest extends TestCase
         $response = $this->actingAs($user)->get(route('verification.notice'));
 
         Event::assertNotDispatched(Verified::class);
-        $response->assertRedirect(route('dashboard', absolute: false));
+        $response->assertRedirect(route('admin.dashboard', absolute: false));
     }
 
     public function test_already_verified_user_visiting_verification_link_is_redirected_without_firing_event_again(): void
@@ -124,7 +124,7 @@ class EmailVerificationTest extends TestCase
         );
 
         $this->actingAs($user)->get($verificationUrl)
-            ->assertRedirect(route('dashboard', absolute: false).'?verified=1');
+            ->assertRedirect(route('admin.dashboard', absolute: false).'?verified=1');
 
         Event::assertNotDispatched(Verified::class);
         $this->assertTrue($user->fresh()->hasVerifiedEmail());

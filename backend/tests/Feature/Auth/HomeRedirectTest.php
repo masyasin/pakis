@@ -9,7 +9,7 @@ it('mengarahkan tamu dari / ke halaman masuk', function () {
 it('mengarahkan pengguna yang sudah masuk dari / ke dasbor', function () {
     $this->actingAs(User::factory()->create())
         ->get('/')
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('admin.dashboard'));
 });
 
 it('setelah keluar berakhir di halaman masuk, bukan halaman welcome bawaan', function () {

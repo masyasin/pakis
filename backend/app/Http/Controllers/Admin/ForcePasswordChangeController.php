@@ -18,7 +18,7 @@ class ForcePasswordChangeController extends Controller
     {
         $user = $request->user();
         if (! $user instanceof User || ! $user->must_change_password) {
-            return to_route('dashboard');
+            return to_route('admin.dashboard');
         }
 
         return Inertia::render('auth/force-change-password', [
@@ -34,7 +34,7 @@ class ForcePasswordChangeController extends Controller
         /** @var User $user */
         $user = $request->user();
         if (! $user->must_change_password) {
-            return to_route('dashboard');
+            return to_route('admin.dashboard');
         }
 
         $data = $request->validate(['password' => $policy->rules($user)], [], ['password' => 'password']);
@@ -43,6 +43,6 @@ class ForcePasswordChangeController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Password diganti. Selamat bekerja.']);
 
-        return to_route('dashboard');
+        return to_route('admin.dashboard');
     }
 }

@@ -24,7 +24,7 @@ function newRequest(): void
 function loginAs(string $login = 'siti.aminah'): void
 {
     test()->post(route('login.store'), ['login' => $login, 'password' => 'password'])
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('admin.dashboard', absolute: false));
 }
 
 test('SEC-005 ID sesi berganti saat login dan tidak ada cookie "ingat saya"', function () {
@@ -43,10 +43,10 @@ test('BR-018 tidak aktif melewati session_idle_minutes → keluar otomatis', fun
     loginAs();
 
     $this->travel(119)->minutes();
-    $this->get('/dashboard')->assertOk();
+    $this->get('/dasbor')->assertOk();
 
     $this->travel(121)->minutes();
-    $this->get('/dashboard')->assertRedirect('/login');
+    $this->get('/dasbor')->assertRedirect('/login');
     $this->assertGuest();
     expect(session('status'))->toBe('Sesi Anda berakhir karena tidak aktif. Silakan masuk lagi.');
 });
@@ -56,7 +56,7 @@ test('BR-018 batas idle mengikuti setting', function () {
     loginAs();
 
     $this->travel(31)->minutes();
-    $this->get('/dashboard')->assertRedirect('/login');
+    $this->get('/dasbor')->assertRedirect('/login');
 });
 
 test('BR-018 walau aktif terus, sesi berakhir setelah session_absolute_hours', function () {
@@ -64,11 +64,11 @@ test('BR-018 walau aktif terus, sesi berakhir setelah session_absolute_hours', f
 
     foreach (range(1, 11) as $hour) {
         $this->travel(60)->minutes();
-        $this->get('/dashboard')->assertOk();
+        $this->get('/dasbor')->assertOk();
     }
 
     $this->travel(61)->minutes();
-    $this->get('/dashboard')->assertRedirect('/login');
+    $this->get('/dasbor')->assertRedirect('/login');
     $this->assertGuest();
     expect(session('status'))->toBe('Sesi Anda sudah terlalu lama. Silakan masuk lagi.');
 });
@@ -79,7 +79,7 @@ test('akun yang dinonaktifkan di tengah sesi langsung keluar', function () {
     $this->user->update(['is_active' => false]);
     newRequest();
 
-    $this->get('/dashboard')->assertRedirect('/login');
+    $this->get('/dasbor')->assertRedirect('/login');
     $this->assertGuest();
 });
 
@@ -92,7 +92,7 @@ test('akun yang dihapus atau dikunci di tengah sesi langsung keluar', function (
     };
     newRequest();
 
-    $this->get('/dashboard')->assertRedirect('/login');
+    $this->get('/dasbor')->assertRedirect('/login');
     $this->assertGuest();
 })->with(['dihapus', 'dikunci']);
 
@@ -101,7 +101,7 @@ test('BR-017 sesi berjalan yang kehilangan semua permission menu → keluar deng
 
     Gate::define('dashboard.view', fn () => false);
 
-    $this->get('/dashboard')->assertRedirect('/login');
+    $this->get('/dasbor')->assertRedirect('/login');
     $this->assertGuest();
     expect(session('status'))->toBe('Akun Anda hanya untuk aplikasi Pakis Pro.');
 });

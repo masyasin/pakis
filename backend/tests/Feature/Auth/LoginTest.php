@@ -47,7 +47,7 @@ function employeeInactive(): void
 // --- BR-010 -----------------------------------------------------------------------------------
 
 test('BR-010 login dengan username atau email, huruf besar & spasi diabaikan', function (string $login) {
-    attemptLogin($login)->assertRedirect(route('dashboard', absolute: false));
+    attemptLogin($login)->assertRedirect(route('admin.dashboard', absolute: false));
 
     $this->assertAuthenticatedAs($this->user);
 })->with(['siti.aminah', '  SITI.Aminah ', 'siti@pakis-demo.test', 'Siti@Pakis-Demo.TEST']);
@@ -133,7 +133,7 @@ test('BR-016 setelah terkunci: IP sama dapat pesan throttle, IP lain pesan gener
     $this->assertGuest();
 
     $this->travel(16)->minutes();
-    attemptLogin('siti.aminah', ip: '172.16.9.9')->assertRedirect(route('dashboard', absolute: false));
+    attemptLogin('siti.aminah', ip: '172.16.9.9')->assertRedirect(route('admin.dashboard', absolute: false));
     $this->assertAuthenticatedAs($this->user);
 });
 
@@ -242,7 +242,7 @@ test('BR-017 pemegang salah satu permission menu boleh masuk', function () {
     Gate::define('dashboard.view', fn () => false);
     Gate::define('regions.view', fn () => true);
 
-    attemptLogin('siti.aminah')->assertRedirect(route('dashboard', absolute: false));
+    attemptLogin('siti.aminah')->assertRedirect(route('admin.dashboard', absolute: false));
 });
 
 // --- Perangkat baru (BR-018) ------------------------------------------------------------------

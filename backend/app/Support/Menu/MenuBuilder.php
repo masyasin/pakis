@@ -20,7 +20,7 @@ final class MenuBuilder
      * @var list<array{0: string|null, 1: string, 2: string, 3: string, 4: string}>
      */
     public const ITEMS = [
-        [null, 'Dasbor', 'dashboard', 'dashboard.view', 'dashboard'],
+        [null, 'Dasbor', 'dashboard', 'dashboard.view', 'admin.dashboard'],
         ['Absensi', 'Absensi Harian', 'attendance', 'attendance.view', 'admin.attendance.index'],
         ['Absensi', 'Rekap Bulanan', 'recap', 'attendance.view', 'admin.attendance.recap'],
         ['Absensi', 'Koreksi Absen', 'correction', 'attendance_corrections.view', 'admin.corrections.index'],

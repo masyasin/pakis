@@ -22,12 +22,12 @@ beforeEach(function () {
 
 test('SEC-006 dari route mana pun diarahkan ke /ganti-password', function (string $url) {
     $this->actingAs($this->user)->get($url)->assertRedirect('/ganti-password');
-})->with(['/dashboard', '/profil', '/audit', '/wilayah', '/unduhan']);
+})->with(['/dasbor', '/profil', '/audit', '/wilayah', '/unduhan']);
 
 test('SEC-006 request Inertia mendapat 409 + lokasi /ganti-password', function () {
     $this->actingAs($this->user)
         ->withHeaders(['X-Inertia' => 'true'])
-        ->get('/dashboard')
+        ->get('/dasbor')
         ->assertStatus(409)
         ->assertHeader('X-Inertia-Location', url('/ganti-password'));
 });
@@ -47,14 +47,14 @@ test('halaman ganti password tampil dan logout tetap bisa', function () {
 test('akun tanpa kewajiban tidak dipaksa dan tidak bisa membuka /ganti-password', function () {
     $this->user->update(['must_change_password' => false]);
 
-    $this->actingAs($this->user)->get('/dashboard')->assertOk();
-    $this->actingAs($this->user)->get('/ganti-password')->assertRedirect(route('dashboard'));
+    $this->actingAs($this->user)->get('/dasbor')->assertOk();
+    $this->actingAs($this->user)->get('/ganti-password')->assertRedirect(route('admin.dashboard'));
 });
 
 test('FR-007 simpan password baru: kewajiban selesai, event password_changed, email, ke dasbor', function () {
     $this->actingAs($this->user)
         ->put('/ganti-password', ['password' => 'kopi pagi di gudang', 'password_confirmation' => 'kopi pagi di gudang'])
-        ->assertRedirect(route('dashboard'));
+        ->assertRedirect(route('admin.dashboard'));
 
     $this->user->refresh();
     expect($this->user->must_change_password)->toBeFalse()
@@ -66,7 +66,7 @@ test('FR-007 simpan password baru: kewajiban selesai, event password_changed, em
         ->and(json_encode($event->context))->not->toContain('kopi pagi');
     Notification::assertSentTo($this->user, PasswordChanged::class);
 
-    $this->actingAs($this->user)->get('/dashboard')->assertOk();
+    $this->actingAs($this->user)->get('/dasbor')->assertOk();
 });
 
 test('BR-011 di halaman ganti password: username atau password lama ditolak', function () {

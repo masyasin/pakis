@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Route;
 // Sistem internal tanpa halaman publik: `/` (tujuan Fortify setelah logout) langsung ke dasbor bila sudah
 // masuk, atau ke halaman masuk bila belum. Langsung ke `login` (bukan lewat dasbor) agar tidak ada
 // url.intended palsu.
-Route::get('/', fn (Request $request) => redirect()->route($request->user() ? 'dashboard' : 'login'))->name('home');
+Route::get('/', fn (Request $request) => redirect()->route($request->user() ? 'admin.dashboard' : 'login'))->name('home');
 
 // Lupa password (05 §4.1, T-015). Pembatas BR-016 ada di RequestPasswordReset; verifikasi OTP juga dibatasi.
 Route::middleware('guest')->group(function () {
@@ -31,7 +31,8 @@ Route::post('telegram/webhook', TelegramWebhookController::class)
     ->name('telegram.webhook');
 
 Route::middleware(['auth', 'web.access'])->group(function () {
-    Route::inertia('dashboard', 'dashboard')->name('dashboard');
+    // 05 §4.2: path Bahasa Indonesia, nama admin.<modul>.
+    Route::inertia('dasbor', 'dashboard')->name('admin.dashboard');
 });
 
 require __DIR__.'/admin.php';

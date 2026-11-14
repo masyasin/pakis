@@ -18,7 +18,7 @@ beforeEach(function () {
 function loginWeb(string $password = 'password'): void
 {
     test()->post(route('login.store'), ['login' => 'siti.aminah', 'password' => $password])
-        ->assertRedirect(route('dashboard', absolute: false));
+        ->assertRedirect(route('admin.dashboard', absolute: false));
 }
 
 function changeOwnPassword(string $current, string $new)
@@ -54,11 +54,11 @@ test('ubah password: sesi ini tetap masuk, sesi lain (hash password lama) dikelu
     changeOwnPassword('password', 'kopi pagi di gudang')->assertSessionHasNoErrors();
 
     // Sesi ini tetap aktif setelah mengganti password.
-    $this->get('/dashboard')->assertOk();
+    $this->get('/dasbor')->assertOk();
 
     // Sesi lain: masih menyimpan sidik jari hash password LAMA → keluar di request berikutnya.
     $oldHash = auth()->guard('web')->hashPasswordForCookie(User::factory()->make()->password);
     app('auth')->forgetGuards();
-    $this->withSession(['password_hash_web' => $oldHash])->get('/dashboard')->assertRedirect('/login');
+    $this->withSession(['password_hash_web' => $oldHash])->get('/dasbor')->assertRedirect('/login');
     $this->assertGuest();
 });

@@ -1,6 +1,6 @@
 import { Head, usePage } from '@inertiajs/react';
 import { ClipboardCheck } from 'lucide-react';
-import { dashboard } from '@/routes';
+import { dashboard } from '@/routes/admin';
 
 /*
  * Kerangka dasbor (07 §4). Angka & daftar diisi saat modul absensi tersedia

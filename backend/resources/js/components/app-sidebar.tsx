@@ -24,7 +24,7 @@ const mainNavItems: NavItem[] = [
 
 export function AppSidebar() {
     return (
-        <Sidebar collapsible="icon" variant="inset">
+        <Sidebar collapsible="icon" variant="sidebar">
             <SidebarHeader className="pt-3">
                 <SidebarMenu>
                     <SidebarMenuItem>

@@ -147,13 +147,13 @@
     --chart-4: #6fa77d;
     --chart-5: #b3261e;
     --radius: 0.75rem;
-    --sidebar: #e8eee9;
+    --sidebar: #ffffff;
     --sidebar-foreground: #16241b;
     --sidebar-primary: #2f6b3b;
     --sidebar-primary-foreground: #ffffff;
-    --sidebar-accent: #dce8de;
-    --sidebar-accent-foreground: #24552f;
-    --sidebar-border: #d3ddd5;
+    --sidebar-accent: #e5f0e7;
+    --sidebar-accent-foreground: #2f6b3b;
+    --sidebar-border: #d8e2da;
     --sidebar-ring: #2f6b3b;
 
     /* Bayangan berlapis bernada hijau-gelap, bukan abu netral, agar menyatu dengan latar. */

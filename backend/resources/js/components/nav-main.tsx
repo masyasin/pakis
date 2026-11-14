@@ -22,8 +22,8 @@ export function NavMain({ items }: { items: NavItem[] }) {
                             asChild
                             isActive={isCurrentUrl(item.href)}
                             tooltip={{ children: item.title }}
-                            // Item aktif: tint hijau + teks hijau tua (6.89:1 terang, 7.71:1 gelap).
-                            className="h-9 transition-colors duration-150 data-[active=true]:font-semibold [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-sidebar-accent-foreground"
+                            // Item aktif (prototipe): tint hijau + teks hijau tua + garis tipis hijau. Item lain abu-abu.
+                            className="h-9 text-muted-foreground transition-colors duration-150 hover:text-sidebar-foreground data-[active=true]:font-semibold data-[active=true]:ring-1 data-[active=true]:ring-sidebar-primary/30 [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-sidebar-accent-foreground"
                         >
                             <Link href={item.href} prefetch>
                                 {item.icon && <item.icon />}

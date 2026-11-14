@@ -2,12 +2,12 @@
 
 namespace App\Domain\Access\Notifications;
 
+use App\Domain\Access\Support\UserAgentLabel;
 use App\Domain\Notification\Enums\NotificationKind;
 use App\Domain\Notification\Notifications\PakisNotification;
 use App\Support\Time\DisplayTime;
 use Carbon\CarbonInterface;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Support\Str;
 
 /**
  * BR-018: login dari browser/perangkat yang belum pernah dipakai dalam 90 hari.
@@ -21,16 +21,16 @@ class NewDeviceLogin extends PakisNotification
     ) {}
 
     /**
-     * User-Agent dikirim penyerang dan email dirender sebagai Markdown: buang karakter Markdown/HTML
-     * agar tidak bisa menyisipkan tautan atau format palsu ke email keamanan korban. Teks yang sama
-     * dipakai untuk notifikasi aplikasi, Telegram, dan WhatsApp.
+     * User-Agent dikirim oleh si penyerang sendiri (yang sudah memegang password korban). Teks
+     * mentahnya — bahkan tanpa Markdown — tetap bisa memuat domain/URL yang dijadikan tautan otomatis
+     * oleh Telegram, WhatsApp, dan klien email, sehingga peringatan keamanan resmi berubah menjadi
+     * umpan phishing. Karena itu hanya label hasil pencocokan daftar tetap yang ditampilkan.
      */
-    public static function plain(string $value): string
+    public function device(): string
     {
-        $clean = (string) preg_replace('/[\[\]()<>*_`#|!~\\\\]+/', ' ', $value);
-        $clean = trim((string) preg_replace('/\s+/', ' ', $clean));
+        ['browser' => $browser, 'platform' => $platform] = UserAgentLabel::parse($this->userAgent);
 
-        return Str::limit($clean, 120);
+        return "{$browser} · {$platform}";
     }
 
     public function kind(): NotificationKind
@@ -45,7 +45,7 @@ class NewDeviceLogin extends PakisNotification
 
     public function body(): string
     {
-        return 'Akun Anda dipakai masuk pada '.$this->when()." dari perangkat atau jaringan baru (IP {$this->ip}, ".self::plain($this->userAgent).'). Bila bukan Anda, segera ganti password dan hubungi admin/HRD.';
+        return 'Akun Anda dipakai masuk pada '.$this->when()." dari perangkat atau jaringan baru ({$this->device()}, IP {$this->ip}). Bila bukan Anda, segera ganti password dan hubungi admin/HRD.";
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -58,7 +58,7 @@ class NewDeviceLogin extends PakisNotification
             ->line("Akun Anda baru saja dipakai masuk ke {$app} dari perangkat atau jaringan yang belum pernah dipakai sebelumnya.")
             ->line('Waktu: '.$this->when())
             ->line("Alamat IP: {$this->ip}")
-            ->line('Perangkat: '.self::plain($this->userAgent))
+            ->line('Perangkat: '.$this->device())
             ->line('Bila itu Anda, abaikan email ini. Bila bukan, segera ganti password dan hubungi admin/HRD.');
     }
 

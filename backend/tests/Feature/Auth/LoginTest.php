@@ -209,15 +209,22 @@ test('BR-016 IPv4 dalam format IPv6 dihitung per alamat IPv4, bukan satu kelompo
         ->and(ClientNetwork::key('2001:db8:abcd:12::1'))->toBe(ClientNetwork::key('2001:db8:abcd:12:ffff::9'));
 });
 
-test('email perangkat baru tidak meneruskan Markdown dari User-Agent (anti tautan palsu)', function () {
-    $mail = (new NewDeviceLogin(now(), '10.0.0.5', 'Mozilla [Klik di sini](https://contoh-jahat.test) <b>x</b> `kode` *tebal*'))
-        ->toMail($this->user);
+test('peringatan perangkat baru tidak meneruskan teks User-Agent (anti tautan/phishing) di semua kanal', function () {
+    $notice = new NewDeviceLogin(now(), '10.0.0.5', 'Mozilla/5.0 (Windows NT 10.0) Chrome/150 [Klik di sini](https://contoh-jahat.test) verifikasi di pakis-verifikasi.com <b>x</b>');
 
-    $text = implode("\n", $mail->introLines);
-    expect($text)->not->toContain('](')
-        ->not->toContain('<b>')
-        ->not->toContain('`')
-        ->toContain('Mozilla Klik di sini https://contoh-jahat.test');
+    $texts = [
+        implode("\n", $notice->toMail($this->user)->introLines),
+        $notice->body(),
+        $notice->toText($this->user),
+    ];
+
+    foreach ($texts as $text) {
+        expect($text)->toContain('Chrome · Windows')
+            ->not->toContain('contoh-jahat')
+            ->not->toContain('pakis-verifikasi')
+            ->not->toContain('Klik di sini')
+            ->not->toContain('<b>');
+    }
 });
 
 test('BR-016 lebih dari 30 percobaan per menit dari satu IP → 429', function () {

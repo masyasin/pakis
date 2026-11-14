@@ -16,7 +16,10 @@ use Tests\TestCase;
 
 pest()->extend(TestCase::class)
     ->use(RefreshDatabase::class)
-    ->in('Feature', 'Contract');
+    // Unit/Listing butuh DB sungguhan: escape LIKE & collation hanya bisa diuji di MariaDB.
+    ->in('Feature', 'Contract', 'Unit/Listing');
+
+require_once __DIR__.'/Fixtures/Listing/helpers.php';
 
 /*
 |--------------------------------------------------------------------------

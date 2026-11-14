@@ -61,9 +61,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Support/Listing/{ListingSpec,ListingQuery,HasListing,UsesListing,ListingResult}.php`, `app/Support/Listing/Filters/{SelectFilter,MultiSelectFilter,BooleanFilter,DateRangeFilter,NumberRangeFilter,RelationFilter}.php`, `app/Support/Listing/Search/TextSearch.php`, `tests/Unit/Listing/*`
 - Deskripsi: Implementasi spec, penerapan pencarian (escape wildcard, multi-kata AND, prefix vs contains), filter bertipe dengan validasi & `invalid_filters`, sort allowlist + tie-breaker `id desc`, paging dengan opsi & batas `ui.max_per_page` (sementara konstanta 100 sampai T-008), serialisasi `listing` untuk Inertia & API, `options_source` untuk lookup.
 - Kriteria penerimaan:
-  - [ ] Unit test semua tipe filter, termasuk nilai tidak valid
-  - [ ] `sort=password` dan `filter[x]=1 OR 1=1` tidak memengaruhi SQL (cek query log)
-  - [ ] `q` dengan `%` dan `_` dicari sebagai literal
+  - [x] Unit test semua tipe filter, termasuk nilai tidak valid
+  - [x] `sort=password` dan `filter[x]=1 OR 1=1` tidak memengaruhi SQL (cek query log)
+  - [x] `q` dengan `%` dan `_` dicari sebagai literal
 - Verifikasi: `php artisan test tests/Unit/Listing`
 - Di luar lingkup: komponen frontend (T-005)
 

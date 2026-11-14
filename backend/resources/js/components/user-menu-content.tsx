@@ -1,5 +1,5 @@
 import { Link, router } from '@inertiajs/react';
-import { Download, LogOut, Settings } from 'lucide-react';
+import { Download, LogOut, UserRoundCog } from 'lucide-react';
 import {
     DropdownMenuGroup,
     DropdownMenuItem,
@@ -28,7 +28,7 @@ export function UserMenuContent({ user }: Props) {
     return (
         <>
             <DropdownMenuLabel className="p-0 font-normal">
-                <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                <div className="flex items-center gap-2.5 px-2 py-2 text-left text-sm">
                     <UserInfo user={user} showEmail={true} />
                 </div>
             </DropdownMenuLabel>
@@ -36,37 +36,37 @@ export function UserMenuContent({ user }: Props) {
             <DropdownMenuGroup>
                 <DropdownMenuItem asChild>
                     <Link
-                        className="block w-full cursor-pointer"
-                        href={exportsIndex()}
-                        onClick={cleanup}
-                    >
-                        <Download className="mr-2" />
-                        Unduhan
-                    </Link>
-                </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                    <Link
-                        className="block w-full cursor-pointer"
+                        className="flex w-full cursor-pointer items-center gap-2"
                         href={edit()}
                         prefetch
                         onClick={cleanup}
                     >
-                        <Settings className="mr-2" />
-                        Settings
+                        <UserRoundCog />
+                        Pengaturan akun
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                    <Link
+                        className="flex w-full cursor-pointer items-center gap-2"
+                        href={exportsIndex()}
+                        onClick={cleanup}
+                    >
+                        <Download />
+                        Unduhan
                     </Link>
                 </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
                 <Link
-                    className="block w-full cursor-pointer"
+                    className="flex w-full cursor-pointer items-center gap-2"
                     href={logout()}
                     as="button"
                     onClick={handleLogout}
                     data-test="logout-button"
                 >
-                    <LogOut className="mr-2" />
-                    Log out
+                    <LogOut />
+                    Keluar
                 </Link>
             </DropdownMenuItem>
         </>

@@ -1,7 +1,7 @@
 import { Form } from '@inertiajs/react';
 import { ShieldCheck } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import Heading from '@/components/heading';
+import { SettingsSection } from '@/components/settings-section';
 import TwoFactorRecoveryCodes from '@/components/two-factor-recovery-codes';
 import TwoFactorSetupModal from '@/components/two-factor-setup-modal';
 import { Button } from '@/components/ui/button';
@@ -45,18 +45,19 @@ export default function ManageTwoFactor(props: Props) {
     }
 
     return (
-        <div className="space-y-6">
-            <Heading
-                variant="small"
-                title="Two-factor authentication"
-                description="Manage your two-factor authentication settings"
-            />
+        <SettingsSection
+            title="Autentikasi dua faktor"
+            description="Lapisan pengaman tambahan setiap kali masuk ke PAKIS ONE."
+        >
             {twoFactorEnabled ? (
                 <div className="flex flex-col items-start justify-start space-y-4">
+                    <p className="inline-flex items-center gap-2 rounded-full bg-status-success-bg px-3 py-1 text-sm font-medium text-status-success">
+                        <ShieldCheck className="size-4" aria-hidden="true" />
+                        Aktif
+                    </p>
                     <p className="text-sm text-muted-foreground">
-                        You will be prompted for a secure, random pin during
-                        login, which you can retrieve from the TOTP-supported
-                        application on your phone.
+                        Setiap kali masuk, Anda akan diminta kode 6 digit dari
+                        aplikasi autentikator (mis. Google Authenticator).
                     </p>
 
                     <div className="relative inline">
@@ -67,7 +68,7 @@ export default function ManageTwoFactor(props: Props) {
                                     type="submit"
                                     disabled={processing}
                                 >
-                                    Disable 2FA
+                                    Nonaktifkan 2FA
                                 </Button>
                             )}
                         </Form>
@@ -82,17 +83,16 @@ export default function ManageTwoFactor(props: Props) {
             ) : (
                 <div className="flex flex-col items-start justify-start space-y-4">
                     <p className="text-sm text-muted-foreground">
-                        When you enable two-factor authentication, you will be
-                        prompted for a secure pin during login. This pin can be
-                        retrieved from a TOTP-supported application on your
-                        phone.
+                        Setelah diaktifkan, Anda akan diminta kode 6 digit dari
+                        aplikasi autentikator (mis. Google Authenticator) setiap
+                        kali masuk.
                     </p>
 
                     <div>
                         {hasSetupData ? (
                             <Button onClick={() => setShowSetupModal(true)}>
                                 <ShieldCheck />
-                                Continue setup
+                                Lanjutkan pengaturan
                             </Button>
                         ) : (
                             <Form
@@ -101,7 +101,8 @@ export default function ManageTwoFactor(props: Props) {
                             >
                                 {({ processing }) => (
                                     <Button type="submit" disabled={processing}>
-                                        Enable 2FA
+                                        <ShieldCheck />
+                                        Aktifkan 2FA
                                     </Button>
                                 )}
                             </Form>
@@ -121,6 +122,6 @@ export default function ManageTwoFactor(props: Props) {
                 fetchSetupData={fetchSetupData}
                 errors={errors}
             />
-        </div>
+        </SettingsSection>
     );
 }

@@ -1,32 +1,29 @@
 import { Head } from '@inertiajs/react';
 import AppearanceTabs from '@/components/appearance-tabs';
-import Heading from '@/components/heading';
+import { SettingsSection } from '@/components/settings-section';
 import { edit as editAppearance } from '@/routes/appearance';
+import { edit as editProfile } from '@/routes/profile';
 
 export default function Appearance() {
     return (
         <>
-            <Head title="Appearance settings" />
+            <Head title="Tampilan" />
 
-            <h1 className="sr-only">Appearance settings</h1>
+            <h1 className="sr-only">Tampilan</h1>
 
-            <div className="space-y-6">
-                <Heading
-                    variant="small"
-                    title="Appearance settings"
-                    description="Update the appearance settings for your account"
-                />
+            <SettingsSection
+                title="Tema"
+                description="Pilih terang, gelap, atau ikuti pengaturan perangkat. Pilihan diingat di browser ini."
+            >
                 <AppearanceTabs />
-            </div>
+            </SettingsSection>
         </>
     );
 }
 
 Appearance.layout = {
     breadcrumbs: [
-        {
-            title: 'Appearance settings',
-            href: editAppearance(),
-        },
+        { title: 'Pengaturan akun', href: editProfile() },
+        { title: 'Tampilan', href: editAppearance() },
     ],
 };

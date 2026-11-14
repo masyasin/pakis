@@ -14,7 +14,7 @@ export function PerPageSelect({ value, options, onChange }: Props) {
         <div className="flex items-center gap-2 text-sm">
             <NativeSelect
                 id={id}
-                className="h-8 w-auto"
+                className="h-10 w-auto tabular-nums sm:h-9"
                 value={value}
                 onChange={(e) => onChange(Number(e.target.value))}
             >

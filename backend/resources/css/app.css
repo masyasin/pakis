@@ -17,6 +17,22 @@
     --radius-md: calc(var(--radius) - 2px);
     --radius-sm: calc(var(--radius) - 4px);
 
+    /* Bayangan lembut berlapis (07 §1: tenang). Nada dari --shadow-color per tema. */
+    --shadow-xs: 0 1px 2px 0 hsl(var(--shadow-color) / 0.06);
+    --shadow-sm:
+        0 1px 2px 0 hsl(var(--shadow-color) / 0.05),
+        0 2px 6px -1px hsl(var(--shadow-color) / 0.06);
+    --shadow-md:
+        0 1px 2px 0 hsl(var(--shadow-color) / 0.04),
+        0 4px 12px -2px hsl(var(--shadow-color) / 0.08),
+        0 12px 24px -8px hsl(var(--shadow-color) / 0.06);
+    --shadow-lg:
+        0 2px 4px 0 hsl(var(--shadow-color) / 0.04),
+        0 12px 28px -6px hsl(var(--shadow-color) / 0.12),
+        0 24px 48px -12px hsl(var(--shadow-color) / 0.1);
+
+    --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
     --color-background: var(--background);
     --color-foreground: var(--foreground);
 
@@ -51,6 +67,12 @@
     --color-chart-4: var(--chart-4);
     --color-chart-5: var(--chart-5);
 
+    --color-primary-strong: var(--primary-strong);
+    --color-amber: var(--amber);
+    --color-amber-foreground: var(--amber-foreground);
+    --color-info: var(--info);
+    --color-success: var(--success);
+
     --color-sidebar: var(--sidebar);
     --color-sidebar-foreground: var(--sidebar-foreground);
     --color-sidebar-primary: var(--sidebar-primary);
@@ -74,39 +96,56 @@
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --destructive-foreground: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.87 0 0);
-    --chart-1: oklch(0.646 0.222 41.116);
-    --chart-2: oklch(0.6 0.118 184.704);
-    --chart-3: oklch(0.398 0.07 227.392);
-    --chart-4: oklch(0.828 0.189 84.429);
-    --chart-5: oklch(0.769 0.188 70.08);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.87 0 0);
+    /*
+     * Palet PAKIS ONE (07 §1.1). Kontras diukur (WCAG relatif-luminans):
+     * teks/latar 14.80, muted/latar 5.53, putih/primer 6.39, primer/kartu 6.39.
+     * Catatan nama: `--accent` shadcn = latar hover ghost/dropdown (tint hijau halus),
+     * BUKAN amber 07. Amber 07 ada di `--amber` (teks amber hanya di atas kartu putih:
+     * 4.56, di atas `--background` cuma 4.19 → gagal AA).
+     */
+    --background: #f3f6f2;
+    --foreground: #16241b;
+    --card: #ffffff;
+    --card-foreground: #16241b;
+    --popover: #ffffff;
+    --popover-foreground: #16241b;
+    --primary: #2f6b3b;
+    --primary-foreground: #ffffff;
+    --primary-strong: #24552f;
+    --secondary: #e8eee9;
+    --secondary-foreground: #16241b;
+    --muted: #ebf0ec;
+    --muted-foreground: #56675b;
+    --accent: #e6eee7;
+    --accent-foreground: #16241b;
+    --amber: #a9661a;
+    --amber-foreground: #ffffff;
+    --info: #24609b;
+    --success: #2e7d4f;
+    /* Konvensi starter kit: `--destructive` = isian (teks putih), `-foreground` = warna teks galat. */
+    --destructive: #b3261e;
+    --destructive-foreground: #b3261e;
+    --border: #d8e2da;
+    /* Batas input ≥ 3:1 (WCAG 1.4.11): 3.28 di kartu, 3.01 di latar. Penting untuk HP di cahaya terang. */
+    --input: #7f9384;
+    --ring: #2f6b3b;
+    --chart-1: #2f6b3b;
+    --chart-2: #a9661a;
+    --chart-3: #24609b;
+    --chart-4: #6fa77d;
+    --chart-5: #b3261e;
+    --radius: 0.75rem;
+    --sidebar: #e8eee9;
+    --sidebar-foreground: #16241b;
+    --sidebar-primary: #2f6b3b;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #dce8de;
+    --sidebar-accent-foreground: #24552f;
+    --sidebar-border: #d3ddd5;
+    --sidebar-ring: #2f6b3b;
+
+    /* Bayangan berlapis bernada hijau-gelap, bukan abu netral, agar menyatu dengan latar. */
+    --shadow-color: 140 25% 12%;
 
     --status-success: #22603c;
     --status-success-bg: #e3f1e8;
@@ -121,38 +160,47 @@
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.145 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.145 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.985 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.396 0.141 25.723);
-    --destructive-foreground: oklch(0.637 0.237 25.331);
-    --border: oklch(0.269 0 0);
-    --input: oklch(0.269 0 0);
-    --ring: oklch(0.439 0 0);
-    --chart-1: oklch(0.488 0.243 264.376);
-    --chart-2: oklch(0.696 0.17 162.48);
-    --chart-3: oklch(0.769 0.188 70.08);
-    --chart-4: oklch(0.627 0.265 303.9);
-    --chart-5: oklch(0.645 0.246 16.439);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.985 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(0.269 0 0);
-    --sidebar-ring: oklch(0.439 0 0);
+    /* Hijau-gelap, bukan hitam pekat. teks/latar 15.09, muted/kartu 7.42, teks gelap/primer 7.77. */
+    --background: #121814;
+    --foreground: #e5ede7;
+    --card: #1a221d;
+    --card-foreground: #e5ede7;
+    --popover: #1a221d;
+    --popover-foreground: #e5ede7;
+    --primary: #79b98b;
+    --primary-foreground: #0e1a11;
+    --primary-strong: #2c5a37;
+    --secondary: #232d26;
+    --secondary-foreground: #e5ede7;
+    --muted: #222b25;
+    --muted-foreground: #a3b3a8;
+    --accent: #253029;
+    --accent-foreground: #e5ede7;
+    --amber: #e0ac63;
+    --amber-foreground: #1a1206;
+    --info: #85b7e8;
+    --success: #6fc28d;
+    /* Isian merah tua agar teks putih tetap 5.59:1; teks galat memakai #F08A80 (6.70 di kartu). */
+    --destructive: #b3423a;
+    --destructive-foreground: #f08a80;
+    --border: #2f3c33;
+    --input: #6b7e71;
+    --ring: #79b98b;
+    --chart-1: #79b98b;
+    --chart-2: #e0ac63;
+    --chart-3: #85b7e8;
+    --chart-4: #4f8a5f;
+    --chart-5: #f08a80;
+    --sidebar: #0e1410;
+    --sidebar-foreground: #e5ede7;
+    --sidebar-primary: #79b98b;
+    --sidebar-primary-foreground: #0e1a11;
+    --sidebar-accent: #1e3325;
+    --sidebar-accent-foreground: #9bd0aa;
+    --sidebar-border: #232d26;
+    --sidebar-ring: #79b98b;
+
+    --shadow-color: 150 30% 2%;
 
     --status-success: #8fd3a6;
     --status-success-bg: #17301f;
@@ -173,5 +221,21 @@
 
     body {
         @apply bg-background text-foreground;
+    }
+
+    ::selection {
+        background-color: color-mix(in oklab, var(--primary) 22%, transparent);
+    }
+}
+
+/* Hormati preferensi gerak minimal: semua animasi & transisi praktis dimatikan. */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
     }
 }

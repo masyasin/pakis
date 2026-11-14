@@ -25,9 +25,16 @@ export function Breadcrumbs({
 
                             return (
                                 <Fragment key={index}>
-                                    <BreadcrumbItem>
+                                    {/* HP: hanya halaman aktif agar header tidak terbungkus dua baris. */}
+                                    <BreadcrumbItem
+                                        className={
+                                            isLast
+                                                ? 'min-w-0'
+                                                : 'hidden sm:inline-flex'
+                                        }
+                                    >
                                         {isLast ? (
-                                            <BreadcrumbPage>
+                                            <BreadcrumbPage className="truncate font-medium">
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (
@@ -38,7 +45,9 @@ export function Breadcrumbs({
                                             </BreadcrumbLink>
                                         )}
                                     </BreadcrumbItem>
-                                    {!isLast && <BreadcrumbSeparator />}
+                                    {!isLast && (
+                                        <BreadcrumbSeparator className="hidden sm:list-item" />
+                                    )}
                                 </Fragment>
                             );
                         })}

@@ -97,10 +97,22 @@ export function DataTable<Row>({
         }
     };
 
+    // Rentang & total dibungkus nowrap agar "21–30" tidak terpotong di layar sempit.
     const summary =
-        pagination.total === 0
-            ? 'Tidak ada data'
-            : `Menampilkan ${formatNumber(pagination.from ?? 0)}–${formatNumber(pagination.to ?? 0)} dari ${formatNumber(pagination.total)}`;
+        pagination.total === 0 ? (
+            'Tidak ada data'
+        ) : (
+            <>
+                Menampilkan{' '}
+                <span className="whitespace-nowrap">
+                    {formatNumber(pagination.from ?? 0)}–
+                    {formatNumber(pagination.to ?? 0)}
+                </span>{' '}
+                <span className="whitespace-nowrap">
+                    dari {formatNumber(pagination.total)}
+                </span>
+            </>
+        );
 
     const body = (() => {
         if (rows.length === 0 && controls.isLoading) {
@@ -262,7 +274,7 @@ export function DataTable<Row>({
     })();
 
     return (
-        <section className="space-y-3" aria-label={title}>
+        <section className="@container space-y-3" aria-label={title}>
             <FilterBar
                 spec={spec}
                 state={state}
@@ -309,20 +321,26 @@ export function DataTable<Row>({
                 {body}
             </div>
 
-            <div className="flex flex-col-reverse items-center justify-between gap-3 text-sm sm:flex-row">
+            {/*
+             * HP: ringkasan + per halaman di baris pertama, navigasi halaman selebar layar di bawahnya.
+             * Konten sempit dibungkus satu kartu footer agar menyatu dengan daftar.
+             * Konten lebar (≥ 48rem, container query, bukan lebar layar): satu baris tanpa kartu.
+             * Satu instance tiap kontrol.
+             */}
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-3 rounded-xl border bg-card p-3 text-sm shadow-xs @3xl:flex @3xl:gap-4 @3xl:border-0 @3xl:bg-transparent @3xl:p-0 @3xl:shadow-none">
                 <p
-                    className="text-muted-foreground"
+                    className="text-muted-foreground tabular-nums @3xl:mr-auto"
                     aria-live="polite"
                     data-testid="listing-summary"
                 >
                     {summary}
                 </p>
-                <div className="flex items-center gap-3">
-                    <PerPageSelect
-                        value={pagination.per_page}
-                        options={spec.per_page_options}
-                        onChange={controls.setPerPage}
-                    />
+                <PerPageSelect
+                    value={pagination.per_page}
+                    options={spec.per_page_options}
+                    onChange={controls.setPerPage}
+                />
+                <div className="col-span-2 border-t pt-3 empty:hidden @lg:border-t-0 @lg:pt-0 @3xl:col-span-1">
                     <Pagination
                         page={pagination.page}
                         lastPage={pagination.last_page}

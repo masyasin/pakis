@@ -165,6 +165,10 @@ jobs:
       # Komponen DataTable & logika URL listing (T-005), DOM dari happy-dom.
       - name: Vitest
         run: npm run test
+        # Vitest memakai server Vite internal untuk transformasi test (bukan HMR untuk pengguna);
+        # laravel-vite-plugin menolaknya bila CI=true tanpa variabel ini. Hanya untuk langkah ini.
+        env:
+          LARAVEL_BYPASS_ENV_CHECK: '1'
 
       - name: Build
         run: npm run build

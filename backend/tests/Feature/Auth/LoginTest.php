@@ -154,6 +154,36 @@ test('SEC-003 identifier yang tidak ada mendapat pesan throttle yang sama (tidak
     Notification::assertNotSentTo($this->user, AccountLocked::class);
 });
 
+test('BR-016 variasi penulisan identifier untuk akun yang sama berbagi satu penghitung', function () {
+    // Collation DB tidak membedakan aksen/huruf: semua variasi ini menemukan akun yang sama,
+    // jadi tidak boleh masing-masing mendapat jatah percobaan baru.
+    foreach (['siti.aminah', 'sití.aminah', 'SÍTI.AMINAH', 'siti@pakis-demo.test', 'sitì.aminah'] as $variant) {
+        attemptLogin($variant, 'salah');
+    }
+
+    expect($this->user->refresh()->locked_until)->not->toBeNull();
+    attemptLogin('siti.aminah')->assertSessionHasErrors(['login' => THROTTLED]);
+});
+
+test('BR-016 alamat IPv6 dalam satu blok /64 berbagi penghitung', function () {
+    foreach (range(1, 5) as $i) {
+        attemptLogin('siti.aminah', "salah-{$i}", ip: "2001:db8:abcd:12::{$i}");
+    }
+
+    attemptLogin('siti.aminah', ip: '2001:db8:abcd:12::ffff')->assertSessionHasErrors(['login' => THROTTLED]);
+});
+
+test('email perangkat baru tidak meneruskan Markdown dari User-Agent (anti tautan palsu)', function () {
+    $mail = (new NewDeviceLogin(now(), '10.0.0.5', 'Mozilla [Klik di sini](https://contoh-jahat.test) <b>x</b> `kode` *tebal*'))
+        ->toMail($this->user);
+
+    $text = implode("\n", $mail->introLines);
+    expect($text)->not->toContain('](')
+        ->not->toContain('<b>')
+        ->not->toContain('`')
+        ->toContain('Mozilla Klik di sini https://contoh-jahat.test');
+});
+
 test('BR-016 lebih dari 30 percobaan per menit dari satu IP → 429', function () {
     foreach (range(1, 30) as $i) {
         attemptLogin("orang{$i}", 'salah');

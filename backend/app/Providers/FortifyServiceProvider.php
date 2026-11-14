@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Actions\Fortify\ResetUserPassword;
 use App\Domain\Access\Actions\AttemptLogin;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Support\Http\ClientNetwork;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
@@ -87,6 +88,6 @@ class FortifyServiceProvider extends ServiceProvider
 
         // BR-016: maksimal 30 percobaan login per menit per IP (lapisan kasar). Lockout per
         // identifier + IP (`security.login_max_attempts`) ada di RecordLoginFailure.
-        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(30)->by((string) $request->ip()));
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(30)->by(ClientNetwork::key($request->ip())));
     }
 }

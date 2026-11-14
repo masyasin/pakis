@@ -38,16 +38,19 @@ final class AttemptLogin
         $password = (string) $request->input('password');
         $ip = (string) $request->ip();
 
-        if (RecordLoginFailure::tooManyAttempts($identifier, $ip)) {
-            throw ValidationException::withMessages([
-                Fortify::username() => 'Terlalu banyak percobaan. Coba lagi dalam '.RecordLoginFailure::minutesLeft($identifier, $ip).' menit.',
-            ]);
-        }
-
         // Dikelompokkan agar `OR` tidak lolos dari syarat soft delete (`deleted_at IS NULL`).
         $user = $identifier === '' ? null : User::query()
             ->where(fn ($q) => $q->where('username', $identifier)->orWhere('email', $identifier))
             ->first();
+
+        // Penghitung berbasis AKUN yang ditemukan, bukan teks yang diketik: variasi huruf/aksen
+        // yang menemukan akun sama tidak mendapat jatah percobaan baru (lihat RecordLoginFailure).
+        $subject = RecordLoginFailure::subject($user, $identifier);
+        if (RecordLoginFailure::tooManyAttempts($subject, $ip)) {
+            throw ValidationException::withMessages([
+                Fortify::username() => 'Terlalu banyak percobaan. Coba lagi dalam '.RecordLoginFailure::minutesLeft($subject, $ip).' menit.',
+            ]);
+        }
 
         $passwordOk = Hash::check($password, $user->password ?? self::DUMMY_HASH);
         $reason = match (true) {
@@ -70,7 +73,7 @@ final class AttemptLogin
             throw ValidationException::withMessages([Fortify::username() => WebAccess::MESSAGE]);
         }
 
-        RecordLoginFailure::clear($identifier, $ip);
+        RecordLoginFailure::clear($subject, $ip);
 
         return $user;
     }

@@ -27,6 +27,18 @@ class NewDeviceLogin extends Notification
         return ['mail'];
     }
 
+    /**
+     * User-Agent dikirim penyerang dan email dirender sebagai Markdown: buang karakter Markdown/HTML
+     * agar tidak bisa menyisipkan tautan atau format palsu ke email keamanan korban.
+     */
+    public static function plain(string $value): string
+    {
+        $clean = (string) preg_replace('/[\[\]()<>*_`#|!~\\\\]+/', ' ', $value);
+        $clean = trim((string) preg_replace('/\s+/', ' ', $clean));
+
+        return Str::limit($clean, 120);
+    }
+
     public function toMail(object $notifiable): MailMessage
     {
         $app = (string) setting('general.app_name');
@@ -37,7 +49,7 @@ class NewDeviceLogin extends Notification
             ->line("Akun Anda baru saja dipakai masuk ke {$app} dari perangkat atau jaringan yang belum pernah dipakai sebelumnya.")
             ->line('Waktu: '.DisplayTime::toLocal($this->at)->translatedFormat('j M Y H.i'))
             ->line("Alamat IP: {$this->ip}")
-            ->line('Perangkat: '.Str::limit($this->userAgent, 120))
+            ->line('Perangkat: '.self::plain($this->userAgent))
             ->line('Bila itu Anda, abaikan email ini. Bila bukan, segera ganti password dan hubungi admin/HRD.');
     }
 }

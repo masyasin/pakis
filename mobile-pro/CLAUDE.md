@@ -93,3 +93,24 @@ Bila prototipe berbeda dari spesifikasi, **dokumen spesifikasi yang berlaku**:
 - **Lokasi:** `LocationService.acquire(maxAccuracyM: config.attendance.maxAccuracyM)`. `isMock` **tidak** ditolak di HP, tetap dikirim agar server mencatat & memberi tahu (BR-065).
 - **Selfie:** `SelfieCaptureScreen.open(context)` → JPEG ≤ 100 KB, sisi terpanjang 720 px. `flutter_image_compress` mengecilkan sampai sisi **pendek** = `minWidth`, jadi `SelfieCompressor` menghitung `minSide = 720 × pendek/panjang`.
 - **Menunggu T-036:** beranda absen (kartu shift dari `attendance/today`), layar hasil, `AttendanceRecorder` (kirim online dulu, bila galat jaringan → `SyncService.enqueue` dengan `is_offline`), integration test di HP Android 8 nyata.
+
+## Rilis APK (persiapan T-047, SEC-067)
+
+**Distribusi (keputusan Mas 15 Nov 2026): dua APK per ABI**, bukan satu APK gabungan. Ukuran terukur 15 Nov 2026 (obfuscated, R8): `app-arm64-v8a-release.apk` 21,7 MB (HP 64-bit) dan `app-armeabi-v7a-release.apk` 18,3 MB (HP 32-bit / Android Go). Gabungan ARM = 38,9 MiB (40,8 juta byte), nyaris melewati NFR-014, sehingga ditolak. x86_64 tidak dibagikan. **Sisi server (T-046/T-047, bukan sesi mobile):** `mobile.download_url` harus menunjuk halaman unduh dengan dua pilihan ("HP baru 64-bit" / "HP lama 32-bit"), atau tambah setting URL per ABI (perubahan registri `08` §2 + `05` §5.2, tanya Mas).
+
+**Kunci rilis.** `android/app/build.gradle.kts` membaca `android/key.properties` (lokal, di-ignore git: `storeFile`, `storePassword`, `keyAlias`, `keyPassword`) atau env `PAKIS_KEYSTORE_PATH` / `PAKIS_KEYSTORE_PASSWORD` / `PAKIS_KEY_ALIAS` / `PAKIS_KEY_PASSWORD`. Tanpa itu build rilis **gagal** (fail-closed). `PAKIS_DEBUG_SIGN_RELEASE=true` hanya untuk uji/ukur lokal & CI: APK bertanda tangan debug, jangan dibagikan.
+
+**Sekali, oleh Owner (agent tidak membuat/menyimpan keystore produksi):**
+1. `"C:\Program Files\Android\Android Studio\jbr\bin\keytool.exe" -genkeypair -v -keystore pakis-release.jks -keyalg RSA -keysize 4096 -validity 10000 -alias pakis-pro`
+2. Cadangkan `pakis-release.jks` + kata sandinya offline di ≥ 2 tempat aman milik Owner. **Keystore hilang = HP pegawai tidak bisa memperbarui aplikasi (wajib hapus & pasang ulang).**
+3. GitHub → Settings → Environments → `rilis-mobile` (tambahkan reviewer wajib) → secrets `PAKIS_KEYSTORE_BASE64` (`base64 -w0 pakis-release.jks`), `PAKIS_KEYSTORE_PASSWORD`, `PAKIS_KEY_ALIAS`, `PAKIS_KEY_PASSWORD`; variable `PAKIS_API_BASE_URL` (wajib `https://`).
+
+**Setiap rilis:**
+1. Naikkan `version:` di `pubspec.yaml` (`x.y.z+N`, N selalu naik; Flutter menambah 1000×ABI ke versionCode per APK).
+2. Commit & push ke `main`, CI hijau (job `flutter` sudah memeriksa ukuran APK rilis < 40 MB).
+3. Actions → **mobile** → Run workflow (main) → setujui environment `rilis-mobile`. Job `release` memeriksa secret & URL https, membangun `--split-per-abi --target-platform android-arm,android-arm64 --obfuscate --split-debug-info`, menolak tanda tangan debug, mencetak SHA-256 sertifikat & `SHA256SUMS.txt`.
+4. Unduh artefak `pakis-pro-release-apk`; simpan `pakis-pro-release-symbols` (simbol Dart + `mapping.txt` R8) **offline per versi**, karena tanpa itu stack trace build obfuscated tidak terbaca.
+5. Unggah kedua APK ke server unduh, lalu di Pengaturan → Mobile isi `mobile.latest_version` (dan `mobile.min_version` bila wajib update).
+6. Checklist `09` §7.2: APK rilis bertanda tangan, `allowBackup=false` (manifest), cleartext mati (manifest rilis), obfuscation aktif, versi minimum di setting benar.
+
+Deteksi emulator/root (SEC-023 "best effort") **belum** dibuat: bertentangan dengan arah OQ-010 (tandai anomali, tidak menolak). Tunggu jawaban Owner.

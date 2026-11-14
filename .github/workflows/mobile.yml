@@ -1,5 +1,6 @@
-# Pipeline Pakis Pro (Flutter, T-030): format, analyze, test, audit dependency (SEC-066),
-# lalu APK debug. APK rilis bertanda tangan + obfuscation menyusul di T-047 (SEC-067).
+# Pipeline Pakis Pro (Flutter): format, analyze, test, audit dependency (SEC-066), APK debug,
+# dan cek ukuran APK rilis (NFR-014). Job `release` (manual) membangun APK rilis bertanda
+# tangan + obfuscated (SEC-067). Prosedur: mobile-pro/CLAUDE.md "Rilis APK".
 name: mobile
 
 on:
@@ -13,19 +14,28 @@ on:
       - 'mobile-pro/**'
       - 'docs/05-API-CONTRACT.md'
       - '.github/workflows/mobile.yml'
+  # Rilis APK: Actions → mobile → Run workflow (hanya dari main).
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# Event dipisah agar push biasa tidak membatalkan rilis manual yang sedang berjalan.
 concurrency:
-  group: mobile-${{ github.ref }}
-  cancel-in-progress: true
+  group: mobile-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name != 'workflow_dispatch' }}
+
+env:
+  # Rilis hanya untuk HP pegawai (ARM). x86_64 (emulator) tidak dibagikan: APK lebih kecil.
+  RELEASE_TARGETS: android-arm,android-arm64
+  # NFR-014: APK < 40 MB.
+  MAX_APK_BYTES: '41943040'
 
 jobs:
   flutter:
-    name: Flutter (analyze, test, APK debug)
+    name: Flutter (analyze, test, APK)
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 40
     defaults:
       run:
         working-directory: mobile-pro
@@ -73,3 +83,130 @@ jobs:
           name: pakis-pro-debug-apk
           path: mobile-pro/build/app/outputs/flutter-apk/app-debug.apk
           retention-days: 7
+
+      # NFR-014 dijaga di setiap perubahan, bukan baru ketahuan saat rilis. APK di sini
+      # bertanda tangan DEBUG (PAKIS_DEBUG_SIGN_RELEASE) dan tidak diunggah.
+      - name: Ukuran APK rilis (NFR-014)
+        env:
+          PAKIS_DEBUG_SIGN_RELEASE: 'true'
+        run: |
+          flutter build apk --release --split-per-abi --target-platform "$RELEASE_TARGETS" \
+            --obfuscate --split-debug-info=build/symbols \
+            --dart-define=API_BASE_URL=https://ci.invalid
+          status=0
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            size=$(stat -c %s "$apk")
+            echo "$(basename "$apk"): $((size / 1024 / 1024)) MB ($size byte)"
+            if [ "$size" -ge "$MAX_APK_BYTES" ]; then
+              echo "::error file=$apk::APK rilis $((size / 1024 / 1024)) MB, batas NFR-014 40 MB"
+              status=1
+            fi
+          done
+          exit $status
+
+  release:
+    name: Rilis APK (bertanda tangan)
+    needs: flutter
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    environment: rilis-mobile
+    defaults:
+      run:
+        working-directory: mobile-pro
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Periksa secret & URL API
+        env:
+          KEYSTORE_B64: ${{ secrets.PAKIS_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.PAKIS_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.PAKIS_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.PAKIS_KEY_PASSWORD }}
+          API_BASE_URL: ${{ vars.PAKIS_API_BASE_URL }}
+        run: |
+          missing=0
+          for name in KEYSTORE_B64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then echo "::error::Secret PAKIS_${name/KEYSTORE_B64/KEYSTORE_BASE64} belum diisi"; missing=1; fi
+          done
+          case "$API_BASE_URL" in
+            https://*) ;;
+            *) echo "::error::Variabel PAKIS_API_BASE_URL wajib https:// (cleartext ditolak di rilis, SEC-067)"; missing=1 ;;
+          esac
+          exit $missing
+
+      - name: Baca versi Flutter dari .fvmrc
+        id: fvm
+        run: echo "flutter=$(jq -r .flutter .fvmrc)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-java@v6.3.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: subosito/flutter-action@v2.23.0
+        with:
+          channel: stable
+          flutter-version: ${{ steps.fvm.outputs.flutter }}
+          cache: true
+
+      - name: Dependency (lockfile wajib cocok)
+        run: flutter pub get --enforce-lockfile
+
+      - name: Pasang keystore (hanya di runner, dihapus di akhir)
+        env:
+          KEYSTORE_B64: ${{ secrets.PAKIS_KEYSTORE_BASE64 }}
+        run: |
+          umask 077
+          echo "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/pakis-release.jks"
+
+      - name: Build APK rilis (obfuscated, per ABI)
+        env:
+          PAKIS_KEYSTORE_PATH: ${{ runner.temp }}/pakis-release.jks
+          PAKIS_KEYSTORE_PASSWORD: ${{ secrets.PAKIS_KEYSTORE_PASSWORD }}
+          PAKIS_KEY_ALIAS: ${{ secrets.PAKIS_KEY_ALIAS }}
+          PAKIS_KEY_PASSWORD: ${{ secrets.PAKIS_KEY_PASSWORD }}
+          API_BASE_URL: ${{ vars.PAKIS_API_BASE_URL }}
+        run: |
+          flutter build apk --release --split-per-abi --target-platform "$RELEASE_TARGETS" \
+            --obfuscate --split-debug-info=build/symbols \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
+
+      - name: Verifikasi tanda tangan, ukuran, checksum
+        run: |
+          apksigner=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -1)
+          status=0
+          cd build/app/outputs/flutter-apk
+          for apk in app-*-release.apk; do
+            echo "== $apk"
+            "$apksigner" verify --print-certs "$apk" | grep -E "Signer #1 certificate (DN|SHA-256)"
+            if "$apksigner" verify --print-certs "$apk" | grep -q "CN=Android Debug"; then
+              echo "::error::$apk bertanda tangan DEBUG"; status=1
+            fi
+            size=$(stat -c %s "$apk")
+            [ "$size" -lt "$MAX_APK_BYTES" ] || { echo "::error::$apk melewati 40 MB"; status=1; }
+          done
+          sha256sum app-*-release.apk | tee SHA256SUMS.txt
+          exit $status
+
+      - name: Hapus keystore dari runner
+        if: always()
+        run: rm -f "$RUNNER_TEMP/pakis-release.jks"
+
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: pakis-pro-release-apk
+          path: |
+            mobile-pro/build/app/outputs/flutter-apk/app-*-release.apk
+            mobile-pro/build/app/outputs/flutter-apk/SHA256SUMS.txt
+          retention-days: 30
+
+      # Simbol untuk membaca stack trace dari build ter-obfuscate. Simpan juga salinan offline
+      # per versi (artefak Actions kedaluwarsa).
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: pakis-pro-release-symbols
+          path: |
+            mobile-pro/build/symbols
+            mobile-pro/build/app/outputs/mapping/release/mapping.txt
+          retention-days: 90

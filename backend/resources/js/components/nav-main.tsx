@@ -62,13 +62,36 @@ const ICONS: Record<string, LucideIcon> = {
 };
 
 /**
+ * Href menu yang paling cocok dengan URL sekarang: sama persis, atau awalan per SEGMEN path
+ * (`/role` cocok untuk `/role/3/ubah`, tidak untuk `/roleX`). Bila beberapa cocok, yang
+ * terpanjang menang — `/pengaturan/penomoran` tidak ikut menandai `/pengaturan`.
+ */
+export function bestMatch(hrefs: string[], path: string): string | null {
+    let best: string | null = null;
+    for (const href of hrefs) {
+        const matches =
+            path === href ||
+            path.startsWith(href.endsWith('/') ? href : `${href}/`);
+        if (matches && (best === null || href.length > best.length)) {
+            best = href;
+        }
+    }
+
+    return best;
+}
+
+/**
  * Menu sidebar dari `auth.menu` (sudah difilter server menurut permission & modul yang ada,
  * 06 §8/§10). Item aktif juga untuk halaman turunan (mis. /role/baru menandai "Role & Hak Akses").
  */
 export function NavMain() {
     const { auth } = usePage<{ auth: Auth }>().props;
-    const { isCurrentOrParentUrl } = useCurrentUrl();
+    const { currentUrl } = useCurrentUrl();
     const groups: MenuGroup[] = auth.menu ?? [];
+    const activeHref = bestMatch(
+        groups.flatMap((g) => g.items.map((i) => i.href)),
+        currentUrl,
+    );
 
     return (
         <>
@@ -88,9 +111,7 @@ export function NavMain() {
                                 <SidebarMenuItem key={item.href}>
                                     <SidebarMenuButton
                                         asChild
-                                        isActive={isCurrentOrParentUrl(
-                                            item.href,
-                                        )}
+                                        isActive={item.href === activeHref}
                                         tooltip={{ children: item.title }}
                                         // Item aktif (prototipe): tint hijau + teks hijau tua + garis tipis hijau. Item lain abu-abu.
                                         className="h-9 text-muted-foreground transition-colors duration-150 hover:text-sidebar-foreground data-[active=true]:font-semibold data-[active=true]:ring-1 data-[active=true]:ring-sidebar-primary/30 [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-sidebar-accent-foreground"

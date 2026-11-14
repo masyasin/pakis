@@ -1,13 +1,13 @@
-import { Head, Link, router, usePage } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { Lock, Mail } from 'lucide-react';
 import { useState } from 'react';
+import { PageTabs } from '@/components/pakis/page-tabs';
 import { SettingField } from '@/components/pakis/setting-field';
 import type {
     SettingFieldDef,
     SettingValue,
 } from '@/components/pakis/setting-field';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 
 type Props = {
     groups: Array<{ key: string; label: string }>;
@@ -63,26 +63,16 @@ export default function SiteSettingsEdit({
     return (
         <>
             <Head title={`Pengaturan · ${groupLabel}`} />
-            <div className="mx-auto grid w-full max-w-[1440px] gap-6 p-4 lg:grid-cols-[220px_1fr]">
-                <nav
-                    aria-label="Grup pengaturan"
-                    className="flex gap-1 overflow-x-auto lg:flex-col"
-                >
-                    {groups.map((g) => (
-                        <Link
-                            key={g.key}
-                            href={`/pengaturan/${g.key}`}
-                            preserveScroll
-                            className={cn(
-                                'rounded-md px-3 py-2 text-sm whitespace-nowrap hover:bg-muted',
-                                g.key === group && 'bg-muted font-medium',
-                            )}
-                            aria-current={g.key === group ? 'page' : undefined}
-                        >
-                            {g.label}
-                        </Link>
-                    ))}
-                </nav>
+            <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4">
+                <PageTabs
+                    label="Grup pengaturan"
+                    active={group}
+                    tabs={groups.map((g) => ({
+                        key: g.key,
+                        label: g.label,
+                        href: `/pengaturan/${g.key}`,
+                    }))}
+                />
 
                 <section className="min-w-0 space-y-4">
                     <div>

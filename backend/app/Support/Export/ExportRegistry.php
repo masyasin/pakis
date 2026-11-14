@@ -24,21 +24,21 @@ final class ExportRegistry
 
     public static function syncMaxRows(): int
     {
-        return (int) config('pakis.export.sync_max_rows');
+        return (int) setting('export.sync_max_rows');
     }
 
     public static function maxRows(): int
     {
-        return (int) config('pakis.export.max_rows');
+        return (int) setting('export.max_rows');
     }
 
     public static function massExportAlertRows(): int
     {
-        return (int) config('pakis.export.mass_export_alert_rows');
+        return (int) setting('export.mass_export_alert_rows');
     }
 
     public static function retentionDays(): int
     {
-        return (int) config('pakis.export.retention_days');
+        return (int) setting('retention.export_days');
     }
 }

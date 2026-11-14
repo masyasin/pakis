@@ -84,16 +84,16 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
 | 0A | 7 | 7 | 0 | 0 |
-| 0B | 5 | 0 | 0 | 0 |
+| 0B | 5 | 0 | 1 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **7** | **0** | **0** |
+| **Total** | **48** | **7** | **1** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- (kosong)
+- **T-008** bagian 2 (penerapan branding ke tema) menunggu branch `feat/ui-desain` (agen desain, chat terpisah) ditinjau & digabung.
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -116,11 +116,15 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-14 | T-006 | Selesai | c476229 | Migration `export_files`, `app/Support/Export/*` (`ExportableListing`, `ExportColumns<TModel>` dengan guard model, `FormulaEscaper`, `XlsxExporter` streaming `lazy(1000)`, `ExportRunner` dipakai sinkron & job, `StartExport`, `ExportRegistry`, event `ExportCreated`/`ExportReady`), job `RunExport`, `ExportController` (Unduhan milik sendiri + signed download, bukan pemilik → 404), halaman `/unduhan`, `ExportButton`, menu Unduhan. Temuan: OpenSpout otomatis menjadikan string `=…` formula → escaping wajib sebelum OpenSpout. Angka `export.*` di `config/pakis.php` (`TODO(T-008)`). Dicek di browser: ekspor demo 16 baris = tampilan, Unduhan, unduh signed. 191 Pest + 22 Vitest |
 
-| 2026-11-14 | T-007 | Selesai | (commit T-007) | Migration `audit_logs`/`security_events` + 4 trigger append-only (`@audit_purge`), `app/Domain/Audit` (`AuditLogger`, `SecurityLogger`, `Redactor`, enum, model dengan guard, 2 listing exportable, listener `ExportCreated` → `export.created` + `mass_export`), command `audit:purge` (dijadwal 02.30 WIB), halaman `/audit`, `/audit/{log}` (diff), `/log-keamanan`, ekspor dengan `audit.export` + konfirmasi password. Izin `audit.*` sementara deny-by-default (lokal saja). Uji mutasi trigger & reset flag. 230 Pest + 22 Vitest. **Fase 0A selesai.** |
+| 2026-11-14 | T-007 | Selesai | 3b95b2f | Migration `audit_logs`/`security_events` + 4 trigger append-only (`@audit_purge`), `app/Domain/Audit` (`AuditLogger`, `SecurityLogger`, `Redactor`, enum, model dengan guard, 2 listing exportable, listener `ExportCreated` → `export.created` + `mass_export`), command `audit:purge` (dijadwal 02.30 WIB), halaman `/audit`, `/audit/{log}` (diff), `/log-keamanan`, ekspor dengan `audit.export` + konfirmasi password. Izin `audit.*` sementara deny-by-default (lokal saja). Uji mutasi trigger & reset flag. 230 Pest + 22 Vitest. **Fase 0A selesai.** |
+
+| 2026-11-14 | T-008 (bag. 1) | Sebagian | (commit T-008a) | Migration `settings`, `app/Domain/Settings` (registri 55 kunci = `08` §2, `SettingStore` scoped + cache per grup, helper `setting()`, `Semver`, `ContrastRatio` + varian gelap, `ImageProcessor` re-encode GD, `UpdateSettingGroup` + audit per kunci, `TestMail`), halaman `/pengaturan/{group}` (12 tab, form otomatis, kembalikan default, grup security/auth minta konfirmasi password), `/api/v1/config` (peta eksplisit = kunci publik). Semua `TODO(T-008)` diganti `setting()`. 283 Pest. Dicek di browser (Chrome DevTools, profil terpisah karena Playwright dipakai agen desain) |
 
 ### 6.5 Catatan untuk sesi berikutnya
-- **Fase 0A selesai (T-001–T-007).** Exit gate: CI hijau ✅, `ListingContractTest` aktif & menolak route tanpa standar ✅, trigger audit append-only teruji ✅.
-- **Berikutnya T-008 (registri site setting, halaman Pengaturan, `/api/v1/config`):** ganti semua penyangga `config/pakis.php` bertanda `TODO(T-008)` (`display_timezone`, `export.*`, `retention.*`) dan `ListingDefaults` (`ui.*`) dengan `setting()`. Perubahan setting → audit `setting.updated` (BR-023) lewat `AuditLogger`. Branding (`branding.*`, logo) bersinggungan dengan pekerjaan agen desain → tinjau/gabung branch `feat/ui-desain` dulu bila sudah selesai.
+- **Fase 0A selesai (T-001–T-007).**
+- **T-008 bagian 2 (sisa):** setelah `feat/ui-desain` digabung — bagikan branding (`general.app_name`, `branding.*`) lewat `HandleInertiaRequests::share`, terapkan `--primary` + varian gelap (`ContrastRatio::darkVariant`) sebagai CSS variable (nonce CSP!), ganti logo/favicon di `app-logo` & halaman login dengan `branding.logo_*` (fallback logo bawaan).
+- **Bisa dikerjakan paralel sekarang (tidak menyentuh berkas desain): T-009 (penomoran dokumen)**, lalu T-010–T-012.
+- Lokal: `php artisan storage:link` sudah dijalankan (logo di disk `public`). Nilai demo yang diubah saat cek browser: `attendance.default_radius_m` = 150 (bisa dikembalikan di Pengaturan → Absensi).
 - **Agen desain UI (chat terpisah):** prompt di `konsep/prompt-desain-ui.md`, bekerja di branch `feat/ui-desain` (worktree `..\pakis-ui`). Tinjau & gabungkan ke `main` dari sesi utama (cek test/lint/screenshot) — jangan gabung bila mengubah logika/route/test PHP.
 - Purge berkas ekspor kedaluwarsa (status `expired` + hapus berkas) belum ada → T-045 (job retensi). Saat ini berkas lewat `expires_at` sudah tidak bisa diunduh (404).
 - Filter relasi di UI masih input ID (`TODO(T-011)` di `filter-fields.tsx`), menunggu endpoint lookup.

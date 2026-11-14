@@ -28,13 +28,11 @@ final class ListingDefaults
 
     public static function webDefaultPerPage(): int
     {
-        // TODO(T-008): setting('ui.default_per_page'), default 25 (08 §2).
-        return 25;
+        return (int) setting('ui.default_per_page');
     }
 
     public static function maxPerPage(): int
     {
-        // TODO(T-008): setting('ui.max_per_page'), default 100 (08 §2).
-        return 100;
+        return (int) setting('ui.max_per_page');
     }
 }

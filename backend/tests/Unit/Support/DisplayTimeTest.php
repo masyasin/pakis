@@ -2,13 +2,15 @@
 
 use App\Support\Time\DisplayTime;
 use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
-uses(TestCase::class);
+// Zona tampilan dibaca dari setting (DB) sejak T-008.
+uses(TestCase::class, RefreshDatabase::class);
 
 test('waktu UTC ditampilkan dalam zona tampilan', function () {
-    config(['pakis.display_timezone' => 'Asia/Jakarta']);
+    setSetting('general.timezone', 'Asia/Jakarta');
 
     $stored = CarbonImmutable::parse('2026-01-01 00:00:00', 'UTC');
     $local = DisplayTime::toLocal($stored);
@@ -18,7 +20,7 @@ test('waktu UTC ditampilkan dalam zona tampilan', function () {
 });
 
 test('konversi tidak mengubah objek asal (nilai simpanan tetap UTC)', function () {
-    config(['pakis.display_timezone' => 'Asia/Jayapura']);
+    setSetting('general.timezone', 'Asia/Jayapura');
 
     $stored = CarbonImmutable::parse('2026-01-01 00:00:00', 'UTC');
     DisplayTime::toLocal($stored);

@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Settings\SettingRegistry;
+use App\Domain\Settings\SettingStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,6 +22,17 @@ pest()->extend(TestCase::class)
     ->in('Feature', 'Contract', 'Unit/Listing');
 
 require_once __DIR__.'/Fixtures/Listing/helpers.php';
+
+/**
+ * Setel nilai setting untuk test. Sengaja MELEWATI validasi registri (mis. sync_max_rows = 2 untuk
+ * menguji jalur antrean dengan data kecil); hanya untuk test.
+ */
+function setSetting(string $key, mixed $value): void
+{
+    $store = app(SettingStore::class);
+    $store->write([$key => $value]);
+    $store->forget(SettingRegistry::get($key)->group());
+}
 
 /*
 |--------------------------------------------------------------------------

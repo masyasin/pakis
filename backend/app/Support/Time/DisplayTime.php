@@ -16,8 +16,7 @@ final class DisplayTime
 {
     public static function timezone(): string
     {
-        // TODO(T-008): ganti dengan setting('general.timezone').
-        return (string) config('pakis.display_timezone', 'Asia/Jakarta');
+        return (string) setting('general.timezone');
     }
 
     /**

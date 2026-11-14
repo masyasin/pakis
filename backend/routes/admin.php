@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\SecurityEventController;
+use App\Http\Controllers\Admin\SettingController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -16,6 +17,19 @@ Route::middleware(['auth'])->name('admin.')->group(function () {
         ->middleware('signed')
         ->whereNumber('file')
         ->name('exports.download');
+
+    // Pengaturan (05 §4.3). Grup sensitif minta konfirmasi password di controller.
+    Route::post('pengaturan/uji-email', [SettingController::class, 'testMail'])
+        ->middleware(['can:settings.update', 'throttle:3,1'])
+        ->name('settings.test-mail');
+    Route::get('pengaturan/{group?}', [SettingController::class, 'edit'])
+        ->middleware('can:settings.view')
+        ->whereAlpha('group')
+        ->name('settings.edit');
+    Route::put('pengaturan/{group}', [SettingController::class, 'update'])
+        ->middleware('can:settings.update')
+        ->whereAlpha('group')
+        ->name('settings.update');
 
     // Audit & log keamanan (05 §4.4). Ekspor audit = aksi sensitif → konfirmasi ulang password (06 §1.6).
     Route::middleware('can:audit.view')->group(function () {

@@ -123,10 +123,12 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migration `settings`, `app/Domain/Settings/{SettingRegistry,SettingDefinition,SettingStore,SettingType,Branding}.php`, helper `setting()`, `Actions/UpdateSettingGroup`, `Http/Controllers/Admin/SettingController`, `Api/V1/ConfigController`, `resources/js/pages/Settings/Edit.tsx`, `components/pakis/SettingField.tsx`, `tests/Contract/PublicConfigTest.php`
 - Deskripsi: Registri berisi **semua** kunci di `08` §2 (tipe, default, validasi, publik). Form dibuat otomatis per grup. Unggah logo/favicon (tanpa SVG, buang metadata). Validasi kontras warna. Cache + invalidasi. Audit per kunci. "Kembalikan default". Grup `security` minta konfirmasi password. Kirim email uji. Ganti konstanta sementara di T-004/T-006 dengan `setting()`. Branding dibagikan ke Inertia (logo, nama, warna) dan diterapkan ke CSS variable.
 - Kriteria penerimaan:
-  - [ ] Test memastikan setiap kunci di `08` §2 ada di registri dengan default & validasi yang sama (tabel fixture)
-  - [ ] Kunci tak dikenal → 422. Nilai di luar batas → 422 dengan pesan per field
-  - [ ] `/api/v1/config` hanya memuat kunci `is_public` (SEC-062)
-  - [ ] Warna `#9BE59B` ditolak (kontras rendah)
+  - [x] Test memastikan setiap kunci di `08` §2 ada di registri dengan default & validasi yang sama (fixture = tabel dokumen yang di-parse)
+  - [x] Kunci tak dikenal → 422. Nilai di luar batas → 422 dengan pesan per field
+  - [x] `/api/v1/config` hanya memuat kunci `is_public` (SEC-062)
+  - [x] Warna `#9BE59B` ditolak (kontras rendah)
+  - [ ] **Sisa (setelah `feat/ui-desain` digabung):** branding dibagikan ke Inertia (logo, nama, warna) dan diterapkan ke CSS variable `--primary` (+ varian gelap dari `ContrastRatio::darkVariant`), logo/favicon di layout & login.
+- Catatan pelaksanaan: halaman `pages/site-settings/edit.tsx` (bukan `pages/Settings/Edit.tsx`: folder `pages/settings/` milik pengaturan pengguna starter kit). Nama field form `grup__kunci`.
 - Verifikasi: `php artisan test --filter=Setting`
 - Di luar lingkup: gate versi di middleware API (T-031)
 

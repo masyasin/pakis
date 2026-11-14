@@ -107,7 +107,7 @@ test('SEC-051 sel =HYPERLINK diekspor sebagai teks, bukan formula', function () 
 
 test('BR-005 di atas batas sinkron masuk antrean, lalu job menghasilkan berkas yang sama', function () {
     Queue::fake();
-    config(['pakis.export.sync_max_rows' => 2]);
+    setSetting('export.sync_max_rows', 2);
     User::factory()->count(3)->create();
 
     $this->actingAs($this->user)->from('/admin/asal')->get('/admin/__uji/ekspor')
@@ -129,7 +129,7 @@ test('BR-005 di atas batas sinkron masuk antrean, lalu job menghasilkan berkas y
 
 test('BR-005 job memakai filter default yang dimatikan pengguna, bukan default', function () {
     Queue::fake();
-    config(['pakis.export.sync_max_rows' => 0]);
+    setSetting('export.sync_max_rows', 0);
 
     // Filter `name` diberi default lewat registry khusus test.
     $listing = new class extends UserExportListing
@@ -158,7 +158,7 @@ test('BR-005 job memakai filter default yang dimatikan pengguna, bukan default',
 });
 
 test('BR-005 di atas batas maksimum ditolak tanpa membuat berkas', function () {
-    config(['pakis.export.max_rows' => 1]);
+    setSetting('export.max_rows', 1);
     User::factory()->count(2)->create();
 
     $this->actingAs($this->user)->from('/admin/asal')->get('/admin/__uji/ekspor')

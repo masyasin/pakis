@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Domain\Audit\Listeners\RecordExportCreated;
+use App\Domain\Settings\SettingStore;
 use App\Models\User;
 use App\Support\Export\Events\ExportCreated;
 use Carbon\CarbonImmutable;
@@ -20,7 +21,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Scoped: direset tiap request & tiap job antrean, jadi nilai setting tidak basi di worker.
+        $this->app->scoped(SettingStore::class);
     }
 
     /**
@@ -43,7 +45,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureTemporaryAbilities(): void
     {
         // TODO(T-018): hapus; `can:audit.view` dijawab permission Spatie lewat Gate::before.
-        foreach (['audit.view', 'audit.export'] as $ability) {
+        foreach (['audit.view', 'audit.export', 'settings.view', 'settings.update'] as $ability) {
             Gate::define($ability, fn (User $user): bool => app()->isLocal());
         }
     }

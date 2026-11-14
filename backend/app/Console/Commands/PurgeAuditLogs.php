@@ -18,9 +18,8 @@ class PurgeAuditLogs extends Command
 {
     public function handle(): int
     {
-        // TODO(T-008): setting('retention.audit_years') & setting('retention.security_days').
-        $auditCutoff = now()->subYears((int) config('pakis.retention.audit_years'));
-        $securityCutoff = now()->subDays((int) config('pakis.retention.security_days'));
+        $auditCutoff = now()->subYears((int) setting('retention.audit_years'));
+        $securityCutoff = now()->subDays((int) setting('retention.security_days'));
 
         DB::statement('SET @audit_purge = 1');
 

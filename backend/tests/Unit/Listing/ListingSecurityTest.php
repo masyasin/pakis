@@ -26,6 +26,9 @@ function capturedSql(array $query): array
 
 beforeEach(function () {
     User::factory()->count(3)->create();
+
+    // Panaskan memo setting (ui.*) agar query log hanya berisi SQL listing yang dibandingkan.
+    setting('ui.default_per_page');
 });
 
 test('SEC-032 parameter jahat tidak mengubah SQL dibanding baseline', function (array $malicious) {

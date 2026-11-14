@@ -64,7 +64,6 @@ test('BR-003 rentang tanggal pada kolom timestamp memakai hari lokal', function 
     // 2026-11-03 00:30 WIB = 2026-11-02 17:30 UTC → sudah hari 3 Nov lokal.
     User::factory()->create(['name' => 'Luar', 'created_at' => CarbonImmutable::parse('2026-11-02 17:30:00', 'UTC')]);
 
-    config(['pakis.display_timezone' => 'Asia/Jakarta']);
     $names = listedNames(['filter' => ['created_at' => ['from' => '2026-11-02', 'to' => '2026-11-02']]]);
 
     expect($names)->toBe([$inside->name]);

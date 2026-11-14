@@ -35,7 +35,7 @@ test('BR-005 ekspor dicatat di audit export.created dengan jumlah baris', functi
 });
 
 test('BR-005 ekspor di atas ambang mencatat security event mass_export', function () {
-    config(['pakis.export.mass_export_alert_rows' => 2]);
+    setSetting('export.mass_export_alert_rows', 2);
     User::factory()->count(2)->create();
 
     $this->actingAs($this->user)->get('/admin/__uji/ekspor')->assertOk();

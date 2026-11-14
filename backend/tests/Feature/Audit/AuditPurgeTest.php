@@ -13,8 +13,6 @@ use Illuminate\Support\Facades\DB;
  */
 
 beforeEach(function () {
-    config(['pakis.retention.audit_years' => 5, 'pakis.retention.security_days' => 365]);
-
     $this->travelTo(now()->subYears(6));
     app(AuditLogger::class)->record('lama.sekali');
     $this->travelBack();

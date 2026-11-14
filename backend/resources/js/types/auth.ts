@@ -11,8 +11,25 @@ export type User = {
     two_factor_enabled: boolean;
 };
 
+/** Item menu web (MenuBuilder, 06 §8): sudah difilter server. */
+export type MenuItem = {
+    title: string;
+    href: string;
+    /** Kunci ikon, dipetakan di `nav-main.tsx`. */
+    icon: string;
+};
+
+export type MenuGroup = {
+    /** null = tanpa judul grup (Dasbor). */
+    title: string | null;
+    items: MenuItem[];
+};
+
 export type Auth = {
     user: User;
+    /** Nama permission milik pengguna (06 §10); hanya untuk UX, server tetap memeriksa. */
+    permissions: string[];
+    menu: MenuGroup[];
 };
 
 export type TwoFactorSetupData = {

@@ -1,5 +1,4 @@
 import { Link } from '@inertiajs/react';
-import { LayoutDashboard } from 'lucide-react';
 import AppLogo from '@/components/app-logo';
 import { NavMain } from '@/components/nav-main';
 import {
@@ -11,16 +10,6 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import type { NavItem } from '@/types';
-
-// Grup menu lengkap mengikuti 06 §8, ditambah per task saat modulnya dibangun.
-const mainNavItems: NavItem[] = [
-    {
-        title: 'Dasbor',
-        href: dashboard(),
-        icon: LayoutDashboard,
-    },
-];
 
 export function AppSidebar() {
     return (
@@ -42,7 +31,8 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent className="pt-2">
-                <NavMain items={mainNavItems} />
+                {/* Menu dari server (06 §8): permission + modul yang sudah ada. */}
+                <NavMain />
             </SidebarContent>
         </Sidebar>
     );

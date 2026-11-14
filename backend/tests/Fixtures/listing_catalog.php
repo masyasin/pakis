@@ -17,4 +17,5 @@ return [
     'sequences', // T-009
     'references', // T-010
     'regions', // T-012
+    'roles', // T-018
 ];

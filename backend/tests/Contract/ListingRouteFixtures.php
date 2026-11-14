@@ -2,10 +2,12 @@
 
 namespace Tests\Contract;
 
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Region\Models\Province;
 use App\Models\User;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Contracts\Auth\Authenticatable;
-use Illuminate\Support\Facades\Gate;
 
 /**
  * Data pendukung uji HTTP ListingContractTest per route (10 §3.3).
@@ -29,19 +31,14 @@ final class ListingRouteFixtures
      */
     public static function actor(string $routeName): Authenticatable
     {
-        // TODO(T-018): super_admin untuk admin.*; TODO(T-031): pengguna + perangkat aktif untuk api.v1.*.
-        if (in_array($routeName, ['admin.audit.index', 'admin.security-events.index'], true)) {
-            // Ability sementara (deny-by-default) dibuka hanya untuk aktor uji ini.
-            Gate::define('audit.view', fn () => true);
-        }
-        if ($routeName === 'admin.sequences.index') {
-            Gate::define('sequences.view', fn () => true);
-        }
-        if ($routeName === 'admin.references.index') {
-            Gate::define('references.view', fn () => true);
-        }
-        if ($routeName === 'admin.regions.index') {
-            Gate::define('regions.view', fn () => true);
+        // TODO(T-031): pengguna + perangkat aktif untuk api.v1.*.
+        if (str_starts_with($routeName, 'admin.')) {
+            // Web: super_admin (lolos semua permission) — kontrak listing menguji bentuk daftar,
+            // bukan otorisasi (itu harness T-019).
+            (new PermissionSeeder)->run();
+            (new RoleSeeder)->run();
+
+            return User::factory()->create()->assignRole(RoleCatalog::SUPER_ADMIN);
         }
 
         return match ($routeName) {

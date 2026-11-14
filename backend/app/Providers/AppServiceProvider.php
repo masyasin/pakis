@@ -4,10 +4,12 @@ namespace App\Providers;
 
 use App\Domain\Access\Listeners\RecordLogout;
 use App\Domain\Access\Listeners\RecordSuccessfulLogin;
+use App\Domain\Access\Lookup\RoleLookup;
 use App\Domain\Access\Lookup\UserLookup;
 use App\Domain\Access\Rules\PasswordPolicy;
 use App\Domain\Access\Support\ActiveEmployeeStatus;
 use App\Domain\Access\Support\EmployeeStatus;
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Audit\Listeners\RecordExportCreated;
 use App\Domain\Notification\Otp\OtpManager;
 use App\Domain\Reference\Lookup\ReferenceLookup;
@@ -50,6 +52,7 @@ class AppServiceProvider extends ServiceProvider
             $registry = new LookupRegistry;
             $registry->register('references', ReferenceLookup::class);
             $registry->register('users', UserLookup::class);
+            $registry->register('roles', RoleLookup::class);
             $registry->register('regions', RegionLookup::class);
 
             return $registry;
@@ -69,7 +72,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
-        $this->configureTemporaryAbilities();
+        $this->configureAuthorization();
 
         // Branding di dokumen HTML awal (judul, favicon, override warna ber-nonce) — T-008.
         View::composer('app', fn ($view) => $view->with('brand', app(BrandTheme::class)->forView()));
@@ -91,16 +94,14 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Ability sementara sampai permission Spatie ada (T-018). DENY-BY-DEFAULT: hanya environment
-     * `local` yang diizinkan, untuk mencoba halaman di mesin developer. Staging, produksi, dan test
-     * ditolak; test memberi izin eksplisit dengan Gate::define.
+     * Super Admin (vendor) lolos semua permission (06 §2). Batasnya (tidak bisa mengubah Owner)
+     * ditegakkan di Action, bukan lewat permission: role `owner`/`super_admin` terkunci penuh.
+     * Pengguna lain: Spatie menjawab dari permission role-nya (Gate::before miliknya mengembalikan
+     * null bila tidak punya, sehingga ability yang didefinisikan biasa tetap berlaku).
      */
-    protected function configureTemporaryAbilities(): void
+    protected function configureAuthorization(): void
     {
-        // TODO(T-018): hapus; `can:audit.view` dijawab permission Spatie lewat Gate::before.
-        foreach (['dashboard.view', 'audit.view', 'audit.export', 'settings.view', 'settings.update', 'sequences.view', 'sequences.update', 'references.view', 'references.manage', 'regions.view'] as $ability) {
-            Gate::define($ability, fn (User $user): bool => app()->isLocal());
-        }
+        Gate::before(fn (User $user): ?bool => $user->hasRole(RoleCatalog::SUPER_ADMIN) ? true : null);
     }
 
     /**

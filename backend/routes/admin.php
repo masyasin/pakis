@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
+use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
@@ -42,6 +43,17 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     Route::delete('profil/sesi/{session}', [ProfileController::class, 'destroySession'])->middleware('throttle:10,1')->name('profile.sessions.destroy');
     Route::post('profil/telegram', [ProfileController::class, 'linkTelegram'])->middleware('throttle:10,1')->name('profile.telegram.link');
     Route::delete('profil/telegram', [ProfileController::class, 'unlinkTelegram'])->name('profile.telegram.unlink');
+
+    // Role & Hak Akses (05 §4, FR-017). Ubah role/permission = aksi sensitif → konfirmasi password
+    // (06 §1.6). Aturan terkunci/role sendiri/role terpakai ada di SaveRole & DeleteRole.
+    Route::get('role', [RoleController::class, 'index'])->middleware('can:roles.view')->name('roles.index');
+    Route::middleware(['can:roles.manage', RequirePassword::class])->group(function () {
+        Route::get('role/baru', [RoleController::class, 'create'])->name('roles.create');
+        Route::post('role', [RoleController::class, 'store'])->name('roles.store');
+        Route::get('role/{role}/ubah', [RoleController::class, 'edit'])->whereNumber('role')->name('roles.edit');
+        Route::put('role/{role}', [RoleController::class, 'update'])->whereNumber('role')->name('roles.update');
+        Route::delete('role/{role}', [RoleController::class, 'destroy'])->whereNumber('role')->name('roles.destroy');
+    });
 
     // Lookup select/autocomplete (05 §4.11, BR-006). Izin per sumber dicek di controller.
     Route::get('lookup/{source}', [LookupController::class, 'show'])

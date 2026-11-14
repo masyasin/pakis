@@ -84,7 +84,7 @@ Notasi filter: **S** select, **MS** multi select, **B** boolean, **DR** rentang 
 | `sequences` | `admin.sequences.index` | Kode, nama, pola, periode reset, nomor terakhir, contoh berikut | kode, nama | periode reset (MS) | **code**, name | ❌ |
 | `references` | `admin.references.index` | Urutan, kode, nama, deskripsi, aktif, sistem | kode, nama | grup (S, wajib), aktif (B), sistem (B) | **sort_order**, name, code | ❌ |
 | `users` | `admin.users.index` | Nama, username, email, role, pegawai terkait, aktif, MFA, login terakhir | nama, username, email, HP | role (MS), aktif (B), MFA aktif (B), punya pegawai (B), login terakhir (DR) | **name**, username, last_login_at | ✅ |
-| `roles` | `admin.roles.index` | Nama, deskripsi, scope, wajib MFA, jumlah permission, jumlah pengguna, sistem | nama, deskripsi | scope (MS), wajib MFA (B), sistem (B) | **sort_order**, name | ❌ |
+| `roles` | `admin.roles.index` | Nama (+ kode), deskripsi, scope, wajib MFA, jumlah permission, jumlah pengguna, sistem | nama (`label`), kode, deskripsi | scope (MS), wajib MFA (B), sistem (B) | **sort_order**, label | ❌ |
 | `audit_logs` | `admin.audit.index` | Waktu, pelaku, event, objek, IP | event, objek (tipe#id), IP, nama pelaku | pelaku (R users), event (MS), modul (MS), waktu (DR, default 7 hari) | **-occurred_at** | ✅ |
 | `security_events` | `admin.security-events.index` | Waktu, event, pengguna/identifier, kanal, IP, perangkat | identifier, IP, nama pengguna | event (MS), kanal (MS), pengguna (R users), waktu (DR, default 7 hari) | **-occurred_at** | ✅ |
 | `regions` | `admin.regions.index` | Kode desa, desa/kelurahan, kecamatan, kab/kota, provinsi | nama desa, kode | provinsi (R), kab/kota (R, bergantung provinsi), kecamatan (R, bergantung kab/kota) | **code**, name | ❌ |

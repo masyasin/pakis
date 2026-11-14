@@ -126,7 +126,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | ID | Aturan |
 |---|---|
 | BR-030 | Permission hanya dibuat oleh `PermissionSeeder` dari `06` §3. UI hanya bisa menetapkan permission yang ada ke role. Kode role regex `^[a-z0-9_]{3,40}$`, unik. Nama role 3–60 karakter. |
-| BR-031 | Role `is_system` tidak bisa dihapus atau diganti kodenya. Permission role `owner` dan `super_admin` terkunci penuh. Role yang masih dipegang pengguna tidak bisa dihapus. Pengguna tidak bisa mengubah role miliknya sendiri. Setiap perubahan role/permission/penetapan role mencatat `security_events` dan audit, lalu membersihkan cache permission. |
+| BR-031 | Role `is_system` tidak bisa dihapus atau diganti kodenya. Permission role `owner` dan `super_admin` terkunci penuh. Role yang masih dipegang pengguna tidak bisa dihapus. Pengguna tidak bisa mengubah role miliknya sendiri: role yang sedang ia pegang tampil baca-saja (permission, scope, MFA tidak bisa ia ubah) dan ia tidak bisa mengubah daftar role akunnya sendiri (T-020) — mencegah menaikkan hak sendiri (keputusan Mas 15 Nov 2026). Setiap perubahan role/permission/penetapan role mencatat `security_events` dan audit, lalu membersihkan cache permission. |
 | BR-032 | Scope data efektif pengguna = scope terluas dari semua role-nya (`all` > `location` > `team` > `self`), dihitung sesuai definisi `06` §5 dan diterapkan di semua listing, lookup, Policy, dan route-model binding resource ber-scope. |
 
 ## 5. Setting, Penomoran, Referensi

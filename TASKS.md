@@ -267,11 +267,11 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migration kolom `roles`, `PermissionSeeder` (50 permission persis `06` §3), `RoleSeeder` (matriks `06` §4), `SuperAdminSeeder`, `app/Domain/Access/{Actions/SaveRole,DeleteRole}.php`, `Listings/RoleListing`, `Support/Menu/MenuBuilder.php` (dari `06` §8), `HandleInertiaRequests` (`auth.permissions`, `auth.menu`), `pages/Roles/{Index,Form}.tsx`
 - Deskripsi: Kelola role (non-sistem) + matriks permission per modul. Role `owner`/`super_admin` terkunci. Menu web dibangun server dari matriks `06` §8. Perubahan → event `role_changed`/`permission_changed` + bersihkan cache Spatie.
 - Kriteria penerimaan:
-  - [ ] Jumlah permission di DB = 50 dan namanya identik dengan `06` §3 (test)
-  - [ ] Seeder role menghasilkan matriks identik `06` §4 (test dari `tests/Fixtures/permission_matrix.php`)
-  - [ ] `SuperAdminSeeder` gagal bila password env < 16 karakter. Demo seeder gagal di produksi (SEC-008)
-  - [ ] Role dipakai pengguna tidak bisa dihapus
-  - [ ] Listing `roles` lolos test kontrak
+  - [x] Jumlah permission di DB = 50 dan namanya identik dengan `06` §3 (test)
+  - [x] Seeder role menghasilkan matriks identik `06` §4 (test dari `tests/Fixtures/permission_matrix.php`)
+  - [x] `SuperAdminSeeder` gagal bila password env < 16 karakter. Demo seeder gagal di produksi (SEC-008)
+  - [x] Role dipakai pengguna tidak bisa dihapus
+  - [x] Listing `roles` lolos test kontrak
 - Verifikasi: `php artisan test --filter=Role`
 - Di luar lingkup: scope data (T-019)
 

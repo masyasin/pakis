@@ -21,9 +21,10 @@ abstract class TestCase extends BaseTestCase
         // tidak di-fake gagal → kode yang fail-open melewatinya, kode lain gagal dengan jelas.
         Http::preventStrayRequests();
 
-        // BR-017 memeriksa permission menu web. Sampai role/permission nyata ada (T-018), semua
-        // pengguna uji dianggap punya menu Dasbor; test BR-017 mencabutnya dengan Gate::define.
-        // TODO(T-018): ganti dengan role/permission dari seeder.
+        // BR-017 memeriksa permission menu web. Agar test yang tidak menguji otorisasi tidak perlu
+        // menyiapkan role, semua pengguna uji dianggap punya menu Dasbor (Spatie mengembalikan null
+        // bila pengguna tidak punya permission, sehingga ability ini yang menjawab). Test BR-017
+        // mencabutnya dengan Gate::define. TODO(T-019): harness otorisasi berbasis role seeder.
         Gate::define('dashboard.view', fn () => true);
     }
 

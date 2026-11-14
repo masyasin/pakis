@@ -11,6 +11,15 @@ use App\Domain\Audit\Listings\SecurityEventListing;
  */
 
 return [
+    /*
+     * Akun Super Admin awal (SEC-008, SuperAdminSeeder). Dibaca lewat config, bukan env() langsung,
+     * agar tetap terbaca saat `config:cache` di produksi. Kosong = seeder gagal (tidak ada akun default).
+     */
+    'superadmin' => [
+        'username' => env('SUPERADMIN_USERNAME', ''),
+        'email' => env('SUPERADMIN_EMAIL', ''),
+        'password' => env('SUPERADMIN_PASSWORD', ''),
+    ],
 
     'export' => [
         // Umur signed URL unduhan (05 §4.7 "berumur pendek").

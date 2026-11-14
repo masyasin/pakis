@@ -3,8 +3,11 @@
 namespace App\Http\Middleware;
 
 use App\Domain\Access\Support\AvatarStore;
+use App\Domain\Access\Support\PermissionCatalog;
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Settings\Branding\BrandTheme;
 use App\Models\User;
+use App\Support\Menu\MenuBuilder;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -46,6 +49,10 @@ class HandleInertiaRequests extends Middleware
             'branding' => app(BrandTheme::class)->shared(),
             'auth' => [
                 'user' => self::sharedUser($request->user()),
+                // 06 §10: permission & menu sudah difilter server. Menyembunyikan menu hanya UX;
+                // setiap route tetap dijaga middleware `can:`.
+                'permissions' => fn () => self::permissions($request->user()),
+                'menu' => fn () => $request->user() instanceof User ? app(MenuBuilder::class)->for($request->user()) : [],
             ],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
@@ -73,5 +80,20 @@ class HandleInertiaRequests extends Middleware
             'avatar' => AvatarStore::url($user->avatar_path),
             'two_factor_enabled' => $user->hasEnabledTwoFactorAuthentication(),
         ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    private static function permissions(?Authenticatable $user): array
+    {
+        if (! $user instanceof User) {
+            return [];
+        }
+
+        // Super Admin lolos lewat Gate::before, bukan lewat daftar permission role-nya.
+        return $user->hasRole(RoleCatalog::SUPER_ADMIN)
+            ? PermissionCatalog::names()
+            : array_values($user->getAllPermissions()->map(fn ($permission): string => (string) $permission->name)->sort()->all());
     }
 }

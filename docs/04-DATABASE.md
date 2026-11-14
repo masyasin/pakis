@@ -100,13 +100,14 @@ CREATE TABLE users (
 
 ```sql
 ALTER TABLE roles
+  ADD COLUMN label VARCHAR(60) NOT NULL,                  -- nama tampilan ("Kepala Lokasi"); `name` Spatie = kode (BR-030)
   ADD COLUMN description VARCHAR(255) NULL,
   ADD COLUMN data_scope ENUM('all','location','team','self') NOT NULL DEFAULT 'self',
   ADD COLUMN mfa_required BOOLEAN NOT NULL DEFAULT FALSE,
   ADD COLUMN is_system BOOLEAN NOT NULL DEFAULT FALSE,   -- tidak bisa dihapus/diganti nama
   ADD COLUMN sort_order SMALLINT UNSIGNED NOT NULL DEFAULT 0;
 ```
-Kolom `permissions` dan `roles` lain mengikuti Spatie. `guard_name` = `web` untuk semua (API memakai guard `sanctum` dengan pemeriksaan permission yang sama lewat `Gate`).
+`name` adalah **kode** role (`^[a-z0-9_]{3,40}$`, dipakai `hasRole`), `label` nama yang tampil di layar (keputusan Mas 15 Nov 2026). Kolom `permissions` dan `roles` lain mengikuti Spatie. `guard_name` = `web` untuk semua (API memakai guard `sanctum` dengan pemeriksaan permission yang sama lewat `Gate`).
 
 ### 2.4 settings
 
@@ -609,7 +610,8 @@ Pencarian teks memakai `LIKE 'kata%'` di kolom ber-index untuk nama/kode. `LIKE 
 ## 4. Data Awal (Seeder)
 
 ### 4.1 Wajib (semua lingkungan, idempoten)
-- `PermissionSeeder`: semua permission dari `06` §3.
+- Urutan `DatabaseSeeder`: Permission → Role → SuperAdmin → Sequence → Reference.
+- `PermissionSeeder`: semua permission dari `06` §3 (sumber di kode: `App\Domain\Access\Support\PermissionCatalog`).
 - `RoleSeeder`: role dari `06` §2 (`is_system` sesuai tabel), permission default sesuai matriks `06` §4.
 - `ReferenceSeeder`:
   - `location_type`: `office` Kantor, `warehouse` Gudang, `store` Toko, `other` Lainnya.

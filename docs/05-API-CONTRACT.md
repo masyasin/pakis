@@ -192,9 +192,9 @@ Kolom **Daftar** = harus mematuhi §3. Rincian kolom/cari/filter/sort tiap dafta
 | `admin.users.revoke-sessions` | POST | `/pengguna/{user}/cabut-sesi` | `users.update` | |
 | `admin.users.export` | GET | `/pengguna/ekspor` | `users.export` | |
 | `admin.roles.index` | GET | `/role` | `roles.view` | ✅ |
-| `admin.roles.create` / `store` | GET/POST | `/role/baru` · `/role` | `roles.manage` | |
-| `admin.roles.edit` / `update` | GET/PUT | `/role/{role}/ubah` · `/role/{role}` | `roles.manage` | Matriks permission |
-| `admin.roles.destroy` | DELETE | `/role/{role}` | `roles.manage` | Ditolak bila `is_system` atau masih dipakai pengguna |
+| `admin.roles.create` / `store` | GET/POST | `/role/baru` · `/role` | `roles.manage` + konfirmasi password | |
+| `admin.roles.edit` / `update` | GET/PUT | `/role/{role}/ubah` · `/role/{role}` | `roles.manage` + konfirmasi password | Matriks permission. `owner`/`super_admin` dan role yang dipegang pengguna sendiri: baca-saja (update → 403) |
+| `admin.roles.destroy` | DELETE | `/role/{role}` | `roles.manage` + konfirmasi password | Ditolak bila `is_system` atau masih dipakai pengguna |
 | `admin.audit.index` | GET | `/audit` | `audit.view` | ✅ |
 | `admin.audit.show` | GET | `/audit/{log}` | `audit.view` | Diff lama/baru |
 | `admin.audit.export` | GET | `/audit/ekspor` | `audit.export` | |

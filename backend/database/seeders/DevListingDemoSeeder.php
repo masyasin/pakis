@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Access\Support\RoleCatalog;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use RuntimeException;
@@ -24,10 +25,11 @@ class DevListingDemoSeeder extends Seeder
         $faker = fake('id_ID');
         $domains = ['pakis-demo.test', 'gudang-demo.test', 'toko-demo.test'];
 
+        // Akun demo utama memegang Owner agar seluruh menu bisa dicoba (T-018). Lokal saja.
         User::factory()->create([
             'name' => 'Demo Admin',
             'email' => 'demo@pakis-demo.test',
-        ]);
+        ])->assignRole(RoleCatalog::OWNER);
 
         foreach (range(1, 59) as $i) {
             User::factory()

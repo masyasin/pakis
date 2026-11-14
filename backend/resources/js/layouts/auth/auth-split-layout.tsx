@@ -1,4 +1,5 @@
 import { usePage } from '@inertiajs/react';
+import { ShieldCheck } from 'lucide-react';
 import { AppLogoMark } from '@/components/app-logo-mark';
 import { AuthFieldArt } from '@/components/auth-field-art';
 import type { AuthLayoutProps } from '@/types';
@@ -63,23 +64,31 @@ export default function AuthSplitLayout({
 
             <main className="relative -mt-12 flex flex-col items-center px-4 pb-10 sm:px-6 lg:mt-0 lg:justify-center lg:px-12 lg:py-12">
                 <div className="w-full max-w-[420px] animate-in duration-500 ease-out fade-in slide-in-from-bottom-2">
-                    <div className="rounded-2xl border bg-card p-6 text-card-foreground shadow-lg sm:p-9">
-                        <header className="mb-7 space-y-2">
-                            <h1 className="text-2xl font-semibold tracking-tight">
-                                {title}
-                            </h1>
-                            {description && (
-                                <p className="text-[15px] leading-relaxed text-muted-foreground">
-                                    {description}
-                                </p>
-                            )}
-                        </header>
-                        {children}
+                    {/* Catatan akses jadi kaki kartu: kartu satu-satunya blok yang dipusatkan, dan semua
+                        teks berbagi tepi kiri/tengah yang sama dengan isi kartu. */}
+                    <div className="rounded-2xl border bg-card text-card-foreground shadow-lg">
+                        {/* Isian setinggi tombol utama (size lg, 44 px) di semua halaman auth. */}
+                        <div className="p-6 sm:p-9 [&_input[data-slot=input]]:h-11">
+                            <header className="mb-7 space-y-2">
+                                <h1 className="text-2xl leading-tight font-bold tracking-tight">
+                                    {title}
+                                </h1>
+                                {description && (
+                                    <p className="text-[15px] leading-relaxed text-pretty text-muted-foreground">
+                                        {description}
+                                    </p>
+                                )}
+                            </header>
+                            {children}
+                        </div>
+                        <p className="flex items-center justify-center gap-2 border-t px-6 py-4 text-center text-[13px] text-muted-foreground sm:px-9">
+                            <ShieldCheck
+                                className="size-4 shrink-0 text-primary"
+                                aria-hidden="true"
+                            />
+                            Akses khusus pegawai {company}.
+                        </p>
                     </div>
-
-                    <p className="mt-8 text-center text-sm text-muted-foreground lg:text-left">
-                        Akses khusus pegawai {company}.
-                    </p>
                 </div>
             </main>
         </div>

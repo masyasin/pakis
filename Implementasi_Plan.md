@@ -83,14 +83,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
-| 0A | 7 | 1 | 0 | 0 |
+| 0A | 7 | 2 | 0 | 0 |
 | 0B | 5 | 0 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **1** | **0** | **0** |
+| **Total** | **48** | **2** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
 - (kosong)
@@ -106,13 +106,15 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | 2026-11-14 | — | Persiapan lingkungan | d41aac6 | Root repo dipindah ke `D:\program\pakis` + `git init`. Keputusan: MariaDB 11.8 (ADR-012 direvisi, OQ-014 baru), driver `database` lokal, OQ-003 terjawab (`konsep/region.sql`) |
 | 2026-11-14 | T-001 | Selesai | 263cf01 (PR #1) | Laravel 13.42 + React starter kit (dev-main) di `backend/`. Spatie 8.5, Sanctum 4.4, OpenSpout 5.13, Pest 5.3, Larastan 3.15. OQ-013 terjawab (PHP 8.5 OK). Registrasi mandiri & passkeys dimatikan, "ingat saya" dihapus (SEC-005). 49 test hijau, Pint/Larastan/lint/tsc/build bersih |
 
+| 2026-11-14 | T-002 | Selesai | e2cc0da, ebf9ca1, da56ed8 | CI `backend.yml` (Pint, Larastan 7, Pest di `mariadb:11.8.9`, lint/tsc/build, audit), `secrets.yml` (gitleaks 8.30.1, riwayat penuh), `mobile.yml` kerangka. Pre-commit gitleaks + Pint. OQ-014 terjawab (MariaDB di semua lingkungan). Kanari PR #2 merah di gitleaks lalu ditutup. Perbaikan: Pest serial (bug `--parallel`), `withoutVite()` di `TestCase` |
+
 ### 6.5 Catatan untuk sesi berikutnya
-- **Berikutnya T-002 (CI & pre-commit).** Hal yang sudah diketahui dari T-001:
-  - Starter kit sudah membawa `backend/phpstan.neon` **level 7** (spesifikasi minta level 6). Putuskan di T-002: turunkan ke 6 sesuai NFR-012 atau pertahankan 7 (lebih ketat).
-  - `backend/.github/` bawaan starter kit sudah dihapus. Workflow dibuat di `.github/workflows/` root dengan path filter `backend/**`.
-  - Service DB di CI menunggu OQ-014 (asumsi: MariaDB 11.8).
-  - CI wajib `php artisan wayfinder:generate --with-form` sebelum `npm run types` (berkas Wayfinder di-gitignore).
-  - Script npm: `lint` = `vp check`, `types` = `tsc --noEmit`. Belum ada `npm run test` (Vitest datang di T-005).
+- **Berikutnya T-003 (infrastruktur lintas modul):** request ID, log JSON, renderer galat API (`05` §2.2–2.3), security headers SEC-063. Dependensi T-001 sudah selesai.
+- CI aktif di setiap push ke `main` (commit langsung ke `main`, tanpa PR — keputusan Mas 14 Nov 2026). Pantau dengan `gh run list` / `gh run watch <id> --exit-status`.
+- **Diketahui rusak:** `php artisan test --parallel` (Pest 5.3.5 + paratest 7.28.0 + PHPUnit 13.4.5, `TypeError` di `WrapperRunner::getTestFiles()`). CI & lokal serial. Cek rilis Pest baru sesekali, lalu aktifkan kembali di `backend.yml`.
+- Test HTTP memakai `withoutVite()` (di `tests/TestCase.php`). Jangan dihapus: job Pest di CI tidak membangun aset.
+- Pre-commit terpasang di clone ini (`.git/hooks/pre-commit`). `pre-commit` (pip --user) dan `gitleaks` (`go install`, di `%GOPATH%\bin`) belum ada di PATH PowerShell. Hook tetap jalan tanpa PATH.
+- Script npm: `lint` = `vp check`, `types` = `tsc --noEmit`. Belum ada `npm run test` (Vitest datang di T-005, tambahkan ke job `frontend`).
 - Lingkungan lokal: PHP 8.5.12 XAMPP (tanpa ekstensi `redis`, `sodium`), MariaDB 11.8.9 `127.0.0.1:3307` root tanpa password, DB `pakis_one` + `pakis_one_test`. Node 22.21.1, Composer 2.9.5, installer `laravel` 5.33 global. Flutter/FVM belum terpasang (perlu di T-030).
 - Shell PowerShell 5.1: here-string tidak bisa dipipe ke `git commit -F -`; tulis pesan ke file lalu `git commit -F <file>`.
 - Dibiarkan untuk task nanti: halaman settings starter kit masih punya **hapus akun sendiri** (`profile.destroy`) → tangani di T-017 (pegawai dinonaktifkan lewat offboarding, bukan dihapus). Teks UI auth masih Bahasa Inggris → T-013/T-014/T-015.

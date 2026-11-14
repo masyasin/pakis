@@ -75,9 +75,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `resources/js/components/pakis/{DataTable,FilterBar,FilterSheet,ActiveFilterChips,PerPageSelect,Pagination,EmptyState,TableSkeleton,StatusBadge}.tsx`, `resources/js/hooks/useListing.ts`, `resources/js/types/listing.ts`, `tests/Contract/{ListingContractTest,ListingRouteFixtures}.php`, `tests/Fixtures/listing_catalog.php`, `resources/js/components/pakis/__tests__/DataTable.test.tsx`
 - Deskripsi: Komponen daftar standar sesuai `07` §3.1–§3.2 (sinkron URL, debounce, chip filter, reset, dua jenis empty state, skeleton, mode kartu < 768 px, aksesibilitas). Test kontrak menelusuri route `*.index` dan katalog dua arah (route & katalog harus cocok). Untuk sementara katalog fixture hanya berisi kunci yang sudah dibuat, dan setiap task berikutnya menambah kuncinya. Buat satu halaman contoh internal (`/dev/listing-demo`, hanya `local`) untuk uji visual.
 - Kriteria penerimaan:
-  - [ ] Vitest: perubahan pencarian/filter mengubah URL & kembali ke halaman 1
-  - [ ] Route `*.index` tanpa `#[UsesListing]` membuat test kontrak gagal dengan pesan jelas
-  - [ ] Tema terang & gelap, kontras AA
+  - [x] Vitest: perubahan pencarian/filter mengubah URL & kembali ke halaman 1
+  - [x] Route `*.index` tanpa `#[UsesListing]` membuat test kontrak gagal dengan pesan jelas
+  - [x] Tema terang & gelap, kontras AA (token status terukur 6,4–8,8:1; dicek di browser)
+- Catatan pelaksanaan: nama file mengikuti konvensi kebab-case starter kit (`data-table.tsx`, `hooks/use-listing.ts`, `__tests__/data-table.test.tsx`), export tetap PascalCase.
 - Verifikasi: `npm run test`, `php artisan test tests/Contract`
 - Di luar lingkup: ekspor (T-006)
 

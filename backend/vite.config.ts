@@ -56,6 +56,14 @@ export default defineConfig({
             typeAware: true,
         },
     },
+    // Test komponen (T-005): Vitest bawaan vite-plus, DOM dari happy-dom.
+    test: {
+        environment: 'happy-dom',
+        include: ['resources/js/**/__tests__/**/*.test.{ts,tsx}'],
+        alias: { '@': '/resources/js' },
+        setupFiles: ['resources/js/test/setup.ts'],
+        restoreMocks: true,
+    },
     fmt: {
         printWidth: 80,
         tabWidth: 4,

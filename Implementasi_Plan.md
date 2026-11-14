@@ -83,14 +83,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
-| 0A | 7 | 4 | 0 | 0 |
+| 0A | 7 | 5 | 0 | 0 |
 | 0B | 5 | 0 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **4** | **0** | **0** |
+| **Total** | **48** | **5** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
 - (kosong)
@@ -110,10 +110,15 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-14 | T-003 | Selesai | 4be1152 | Request ID ULID (header, body galat, log via Context), log JSON harian, `ErrorCode` (33 kode, sinkron dua arah dengan `05` §2.3 lewat test) + `ApiError` + `ApiExceptionRenderer`, halaman galat web Inertia, `SecurityHeaders` + CSP nonce (`CSP_MODE`). 4 kode galat baru disetujui Mas. CSP diuji di Chromium mode enforce: style runtime library terblokir → style `'unsafe-inline'`. 89 test hijau |
 
-| 2026-11-14 | T-004 | Selesai | (commit T-004) | `app/Support/Listing`: `ListingSpec`, `ListingQuery`, `ListingResult` (`toInertia`/`toApi` sesuai `05` §3.2–3.3, `query()` untuk ekspor), 6 tipe filter + `TextSearch` + `Sort`, `HasListing`, `#[UsesListing]`. `ui.default_per_page`/`ui.max_per_page` sementara di `ListingDefaults` (`TODO(T-008)`). 63 test listing di MariaDB (fixture tabel `users`), uji mutasi escape & tie-breaker. 152 test hijau |
+| 2026-11-14 | T-004 | Selesai | 0e299a9 | `app/Support/Listing`: `ListingSpec`, `ListingQuery`, `ListingResult` (`toInertia`/`toApi` sesuai `05` §3.2–3.3, `query()` untuk ekspor), 6 tipe filter + `TextSearch` + `Sort`, `HasListing`, `#[UsesListing]`. `ui.default_per_page`/`ui.max_per_page` sementara di `ListingDefaults` (`TODO(T-008)`). 63 test listing di MariaDB (fixture tabel `users`), uji mutasi escape & tie-breaker. 152 test hijau |
+
+| 2026-11-14 | T-005 | Selesai | (commit T-005) | `DataTable` + `FilterBar`/`FilterSheet`/`FilterField`/`ActiveFilterChips`/`Pagination`/`PerPageSelect`/`EmptyState`/`TableSkeleton`/`StatusBadge`, `hooks/use-listing.ts`, `lib/listing-query.ts`, `types/listing.ts`, `ui/table.tsx`. Token `--status-*` AA. `ListingContractTest` (+ meta-test route patuh/tidak patuh, katalog dua arah dengan 07 §3.4). Demo `/dev/listing-demo` (local). Vitest via vite-plus + happy-dom + RTL (disetujui Mas). Dicek di Chromium (CSP enforce): cari, sort, Back, filter, chip default, empty state, HP 375 px, gelap — 0 error konsol. 159 Pest + 22 Vitest hijau |
 
 ### 6.5 Catatan untuk sesi berikutnya
-- **Berikutnya T-005 (DataTable frontend + `ListingContractTest`):** komponen di `resources/js/components/pakis/`, tipe TS mengikuti `ListingSpec::toArray()` / `ListingResult::toInertia()` (lihat `tests/Unit/Listing/SerializationTest.php` untuk bentuk persisnya). `state.filters` & `state.invalid_filters` dikirim sebagai objek JSON `{}`. Filter relasi bertipe `select`/`multi_select` + `options_source` (tanpa `options`). Halaman demo `/dev/listing-demo` (hanya `local`) bisa memakai `tests/Fixtures/Listing/UserTestListing` sebagai contoh spec atau spec baru di `app/`.
+- **Berikutnya T-006 (mesin ekspor & Unduhan):** daftar pertama sungguhan (`admin.exports.index`, kunci `export_files`) → tambahkan kunci ke `tests/Fixtures/listing_catalog.php`; `ListingContractTest` akan menguji route itu otomatis (aktor sementara user factory sampai T-018). Ekspor memakai `ListingResult::query()` (filter & sort sama dengan tampilan). Tombol ekspor di `DataTable` lewat prop `toolbarActions` bila `spec.exportable`.
+- Filter relasi di UI masih input ID (`TODO(T-011)` di `filter-fields.tsx`), menunggu endpoint lookup.
+- Palet hijau Pakis (07 §1.1) & logo belum diterapkan; tema masih netral bawaan starter kit (T-008 branding).
+- **Logo Pakis** (dari Mas, 14 Nov 2026): https://lh3.googleusercontent.com/gps-cs-s/ANWiy9QlS9Cg26PaMh2N-p9tMxIJH5YQfGht9FvzJ-uuydmO80oSFArOXrS7MGTy_0gHzx8XpcgzQellpEjnpXCUpJj3gyh_p5gM4tQPQHZ7nk7c86Xx4bkW_FGJxv-7UVOMIfqLs0Y=s1360-w1360-h1020-rw . Untuk default `branding.logo_light/logo_dark/favicon` (T-008) dan halaman login (T-013), menggantikan logo Laravel. Ini foto Google Maps: tanyakan berkas asli (SVG/PNG transparan) dulu, lalu simpan sebagai aset di repo (bukan hotlink).
 - Vitest belum terpasang; `vitest` termasuk kebutuhan T-005 (`10` §1). Periksa apakah ada di dependency starter kit sebelum menambah (aturan berhenti `CLAUDE.md` §5 bila belum ada di `03` §5).
 - Saat menambah endpoint API: lempar `ApiError` untuk galat domain; jangan membuat JSON galat manual (lihat `backend/CLAUDE.md`).
 - CI aktif di setiap push ke `main` (commit langsung ke `main`, tanpa PR — keputusan Mas 14 Nov 2026). Pantau dengan `gh run list` / `gh run watch <id> --exit-status`.

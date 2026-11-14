@@ -162,6 +162,10 @@ jobs:
       - name: TypeScript
         run: npm run types
 
+      # Komponen DataTable & logika URL listing (T-005), DOM dari happy-dom.
+      - name: Vitest
+        run: npm run test
+
       - name: Build
         run: npm run build
 

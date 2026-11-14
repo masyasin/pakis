@@ -140,6 +140,8 @@ Versi di bawah sudah diverifikasi per 3 November 2026. Versi patch dikunci di `c
 | laravel/pint | 1.32.3 | | | |
 | pragmarx/google2fa | 9.1.0 | | | |
 
+**Test frontend (T-005, disetujui 14 Nov 2026):** Vitest 5.0.5 (sudah dibawa `vite-plus`, dijalankan `vp test`), devDependency `happy-dom` 21.0.4 dan `@testing-library/react` 16.3.3. Tanpa `jest-dom`/`user-event` langsung (memakai assertion Vitest & `fireEvent`).
+
 Dibawa starter kit `laravel/react-starter-kit` (dev-main, Laravel 13): `laravel/wayfinder` (route TS bertipe), `laravel/chisel` 0.1.1, `laravel/pao` 1.1.5 (output alat dev ringkas untuk agent), dan `laravel/passkeys` 0.2.1 (dependency wajib Fortify; **fitur passkey dimatikan**, lihat `12` log 14 Nov 2026). Laravel Boost tidak dipasang.
 
 | Komponen | Versi | Catatan |

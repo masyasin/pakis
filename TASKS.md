@@ -440,9 +440,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `mobile-pro/` (FVM `.fvmrc`, `pubspec.yaml` dengan paket `03` §5), `lib/core/{api/ApiClient,api/ApiError,config/AppConfig,theme/*,storage/SecureStore,device/DeviceId}.dart`, `lib/shared/widgets/{PagedList,FilterSheet,EmptyState,StatusBadge}.dart`, `mobile-pro/CLAUDE.md`, `.github/workflows/mobile.yml` (analyze + test + build APK debug)
 - Deskripsi: Struktur fitur, tema terang/gelap dari token `07` §1.1 + warna dari config, klien API (header `X-Device-Id`, `X-App-Version`, `X-Request-Id`, pemetaan kode galat `05` §2.3 ke pesan Indonesia), penyimpanan aman, splash yang mengambil `/config` + gerbang versi (layar wajib update), komponen daftar paging + filter + cari untuk dipakai semua layar daftar mobile.
 - Kriteria penerimaan:
-  - [ ] `flutter analyze` bersih, `flutter test` hijau, APK debug terbangun di CI
-  - [ ] `device_uid` = SHA-256(ANDROID_ID + install id) stabil antar restart
-  - [ ] Versi < `min_version` → layar update, tidak bisa lanjut
+  - [x] `flutter analyze` bersih, `flutter test` hijau, APK debug terbangun di CI
+  - [x] `device_uid` = SHA-256(ANDROID_ID + install id) stabil antar restart
+  - [x] Versi < `min_version` → layar update, tidak bisa lanjut
 - Verifikasi: `fvm flutter test`
 - Di luar lingkup: layar login (T-032)
 

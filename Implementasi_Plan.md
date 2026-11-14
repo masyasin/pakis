@@ -87,13 +87,13 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | 0B | 5 | 5 | 0 | 0 |
 | 0C | 8 | 3 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
-| 0E | 3 | 0 | 0 | 0 |
+| 0E | 3 | 1 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **15** | **0** | **0** |
+| **Total** | **48** | **16** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- (kosong) — berikutnya T-017 (profil & sesi; termasuk tombol "Hubungkan Telegram"), lalu T-018, T-016 (urutan §3). **T-030 (Flutter) dikerjakan paralel oleh agen lain** di `main` (hanya `mobile-pro/`), prompt: `konsep/prompt-agen-t030.md`.
+- (kosong) — berikutnya T-017 (profil & sesi; termasuk tombol "Hubungkan Telegram"), lalu T-018, T-016 (urutan §3). **T-030 (Flutter) selesai** (d0dcfa1, agen paralel). Mobile berikutnya T-032 (butuh T-031).
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -144,7 +144,10 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-15 | T-015 | Selesai | (commit T-015) | Lupa password 3 kanal (keputusan Mas): **Email** (tautan, broker token hash sekali pakai, masa berlaku dari setting, URL dari `APP_URL`, notifikasi diantrikan), **WhatsApp** & **Telegram** (OTP: HMAC di cache, salah 5× hangus, jeda 60 dtk, panjang/umur dari setting). Respons selalu generik; pembatas 3/identifier(dilipat)/jam & 10/jaringan/jam; token/OTP diperiksa SEBELUM kebijakan password (cegah tebak password lama). `CompletePasswordReset` (BR-012). `config/otp.php` driver per kanal (`none`/`log`/`bot`), `log` di produksi → boot exception; `TelegramBot` (Bot API via Http, token tak pernah dicatat), penautan `/start <kode>` via webhook `/telegram/webhook` (secret header) atau `telegram:poll`; kolom `users.telegram_chat_id`/`telegram_linked_at`, event `telegram_linked`. Route reset sendiri (fitur reset Fortify dimatikan, `ResetUserPassword` & test lama dihapus). 529 Pest. Dicek CSP enforce: OTP Telegram (driver log) & tautan email end-to-end, tautan 2× ditolak, 360 px |
 
+| 2026-11-15 | T-030 | Selesai | d0dcfa1, 8c110f1 | `mobile-pro/` Flutter **3.50.0** (FVM `.fvmrc`, FVM 4.3.2 di `D:	ools`), Android saja, minSdk 26, `com.pakisjayaabadi.pakispro`, `allowBackup=false` + `data_extraction_rules`, cleartext hanya debug. `ApiClient` (header 05 §2.4, ULID), `ApiError` (semua kode 05 §2.3 → pesan Indonesia, test dua arah membaca tabel dokumen), 426 di endpoint mana pun → layar wajib update. `DeviceId` = SHA-256(ANDROID_ID + install id) lewat **kanal native** `MainActivity.kt` (keputusan Mas: tanpa `crypto`/`url_launcher`; device_info_plus 13 tidak punya ANDROID_ID). `/config` + cache offline, `Semver` cermin backend, gerbang versi di `redirect` go_router. Tema token 07 §1.1 + port `BrandTheme.php` (nilai identik, diuji dengan keluaran PHP). `PagedList`/`FilterSheet`/`EmptyState`/`StatusBadge`. Keputusan Mas: **`material_ui` ditambah** (`flutter/material.dart` deprecated sejak 3.47), drift ditunda (sqlcipher_flutter_libs EOL) — 03 §5 diperbarui. CI `mobile.yml` hijau (format, analyze, test, pub outdated, APK debug artefak). Pratinjau `lib/dev/previews.dart` (Widget Preview). 77 test |
+
 ### 6.5 Catatan untuk sesi berikutnya
+- **Mobile (T-030 selesai).** Baca `mobile-pro/CLAUDE.md`. Flutter lewat `fvm flutter` (FVM di `D:	oolsvm-binvm`, belum di PATH). Developer Mode Windows mati → jangan tambah platform desktop; `kotlin.incremental=false` wajib (pub cache C: vs proyek D:). **Sebelum T-042:** putuskan pengganti `sqlcipher_flutter_libs` (EOL; kemungkinan `sqlite3` 3.x + SQLCipher) bersama Mas; camera/geolocator/image_compress/connectivity dipasang di T-042, `device_info_plus` di T-032. `applicationId` dikonfirmasi Mas sebelum rilis (T-047). Log persetujuan `material_ui` belum masuk `12` (berkas sedang diubah sesi backend saat itu) — tambahkan. Workflow `mobile` ikut jalan saat `docs/05` berubah (test kontrak kode galat) dan `cancel-in-progress` bisa membatalkan run sebelumnya: lihat run terbaru.
 - **Fase 0A selesai (T-001–T-007).**
 - **T-008 selesai penuh (bag. 1 + 2).** Branding: `app/Domain/Settings/Branding/BrandTheme.php`. Warna netral (latar, kartu, `--sidebar-accent`, `--muted`) sengaja tetap palet hijau-abu desain; hanya token yang terkait warna utama yang mengikuti warna kustom. Bila Pakis ingin seluruh palet ikut, itu perubahan desain (tanyakan dulu). Pratinjau tema di `appearance-tabs.tsx` masih literal (ilustrasi tema bawaan).
 - Teks panel login "Satu tempat untuk data…" dan "Kudus, Jawa Tengah" masih teks tetap (tidak ada kunci setting di `08` §2).

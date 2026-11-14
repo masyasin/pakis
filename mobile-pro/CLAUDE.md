@@ -18,6 +18,7 @@ fvm flutter analyze                      # info pun dihitung gagal
 fvm flutter test                         # unit + widget
 fvm flutter build apk --debug
 fvm flutter run --dart-define=API_BASE_URL=http://10.0.2.2:8000
+fvm flutter widget-preview start          # pratinjau komponen di Chrome (lib/dev/previews.dart)
 ```
 
 CI: `../.github/workflows/mobile.yml` (format, analyze, test, `pub outdated`, APK debug sebagai artefak). Berjalan bila `mobile-pro/**` atau `docs/05-API-CONTRACT.md` berubah.

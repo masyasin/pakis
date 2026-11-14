@@ -45,7 +45,8 @@ return [
     |
     */
 
-    'username' => 'email',
+    // Satu field untuk username ATAU email (BR-010); dicocokkan di AttemptLogin.
+    'username' => 'login',
 
     'email' => 'email',
 

@@ -3,12 +3,12 @@
 namespace App\Providers;
 
 use App\Actions\Fortify\ResetUserPassword;
+use App\Domain\Access\Actions\AttemptLogin;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
@@ -42,6 +42,9 @@ class FortifyServiceProvider extends ServiceProvider
     private function configureActions(): void
     {
         Fortify::resetUserPasswordsUsing(ResetUserPassword::class);
+
+        // Login username/email + lockout + gerbang web (BR-010, BR-016, BR-017, SEC-001).
+        Fortify::authenticateUsing(fn (Request $request) => app(AttemptLogin::class)->handle($request));
     }
 
     /**
@@ -82,10 +85,8 @@ class FortifyServiceProvider extends ServiceProvider
             return Limit::perMinute(5)->by($request->session()->get('login.id'));
         });
 
-        RateLimiter::for('login', function (Request $request) {
-            $throttleKey = Str::transliterate(Str::lower($request->input(Fortify::username())).'|'.$request->ip());
-
-            return Limit::perMinute(5)->by($throttleKey);
-        });
+        // BR-016: maksimal 30 percobaan login per menit per IP (lapisan kasar). Lockout per
+        // identifier + IP (`security.login_max_attempts`) ada di RecordLoginFailure.
+        RateLimiter::for('login', fn (Request $request) => Limit::perMinute(30)->by((string) $request->ip()));
     }
 }

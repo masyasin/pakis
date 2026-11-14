@@ -2,7 +2,11 @@
 
 namespace App\Providers;
 
+use App\Domain\Access\Listeners\RecordLogout;
+use App\Domain\Access\Listeners\RecordSuccessfulLogin;
 use App\Domain\Access\Lookup\UserLookup;
+use App\Domain\Access\Support\ActiveEmployeeStatus;
+use App\Domain\Access\Support\EmployeeStatus;
 use App\Domain\Audit\Listeners\RecordExportCreated;
 use App\Domain\Reference\Lookup\ReferenceLookup;
 use App\Domain\Region\Lookup\RegionLookup;
@@ -13,6 +17,8 @@ use App\Support\Auth\PasswordConfirmation;
 use App\Support\Export\Events\ExportCreated;
 use App\Support\Lookup\LookupRegistry;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Contracts\Routing\UrlGenerator;
@@ -33,6 +39,9 @@ class AppServiceProvider extends ServiceProvider
     {
         // Scoped: direset tiap request & tiap job antrean, jadi nilai setting tidak basi di worker.
         $this->app->scoped(SettingStore::class);
+
+        // Status pegawai untuk login (BR-010); TODO(T-024): implementasi berbasis model Employee.
+        $this->app->bind(EmployeeStatus::class, ActiveEmployeeStatus::class);
 
         // Sumber lookup (05 §4.11). Modul baru menambahkan sumbernya di sini.
         $this->app->singleton(LookupRegistry::class, function () {
@@ -68,6 +77,11 @@ class AppServiceProvider extends ServiceProvider
 
         // Listener di app/Domain tidak ikut auto-discovery (hanya app/Listeners).
         Event::listen(ExportCreated::class, RecordExportCreated::class);
+        Event::listen(Login::class, RecordSuccessfulLogin::class);
+        Event::listen(Logout::class, RecordLogout::class);
+
+        // Cookie sesi ikut batas idle dari setting (BR-018); penegakan di EnforceSessionLifetime.
+        config(['session.lifetime' => (int) setting('security.session_idle_minutes')]);
     }
 
     /**
@@ -78,7 +92,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureTemporaryAbilities(): void
     {
         // TODO(T-018): hapus; `can:audit.view` dijawab permission Spatie lewat Gate::before.
-        foreach (['audit.view', 'audit.export', 'settings.view', 'settings.update', 'sequences.view', 'sequences.update', 'references.view', 'references.manage', 'regions.view'] as $ability) {
+        foreach (['dashboard.view', 'audit.view', 'audit.export', 'settings.view', 'settings.update', 'sequences.view', 'sequences.update', 'references.view', 'references.manage', 'regions.view'] as $ability) {
             Gate::define($ability, fn (User $user): bool => app()->isLocal());
         }
     }

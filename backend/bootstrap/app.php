@@ -2,8 +2,11 @@
 
 use App\Exceptions\ApiExceptionRenderer;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnforceSessionLifetime;
+use App\Http\Middleware\EnsureUserActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RequireWebMenuAccess;
 use App\Http\Middleware\SecurityHeaders;
 use App\Support\Api\ApiError;
 use App\Support\Api\RequestId;
@@ -31,10 +34,16 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            // Sesi login yang tidak sah lagi diakhiri sebelum halaman dirender (BR-010, BR-018).
+            EnsureUserActive::class,
+            EnforceSessionLifetime::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
         ]);
+
+        // BR-017: route aplikasi web hanya untuk pemegang permission menu (06 §8).
+        $middleware->alias(['web.access' => RequireWebMenuAccess::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Galat domain yang disengaja (mis. di luar radius) bukan insiden; jangan memenuhi log error.

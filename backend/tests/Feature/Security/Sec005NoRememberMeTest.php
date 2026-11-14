@@ -16,7 +16,7 @@ test('SEC-005 login dengan remember=on tidak menerbitkan cookie recaller', funct
     $user = User::factory()->create();
 
     $response = $this->post(route('login.store'), [
-        'email' => $user->email,
+        'login' => $user->email,
         'password' => 'password',
         'remember' => 'on',
     ]);

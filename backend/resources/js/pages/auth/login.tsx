@@ -29,22 +29,22 @@ export default function Login({ status, canResetPassword }: Props) {
                     <>
                         <FormStatus tone="success" message={status} />
                         {/*
-                         * Galat kredensial & throttle dikirim Fortify di field `email`.
+                         * Galat kredensial, lockout, dan gerbang Pakis Pro dikirim di field `login`.
                          * Teksnya generik (lang/id/auth.php), jadi tidak membocorkan
                          * apakah akun ada. Tampil sebagai banner, bukan di bawah satu field.
                          */}
-                        <FormStatus tone="error" message={errors.email} />
+                        <FormStatus tone="error" message={errors.login} />
 
                         <div className="grid gap-5">
                             <div className="grid gap-2">
-                                {/* Label sudah final; backend masih menerima email sampai T-013. */}
-                                <Label htmlFor="email">
+                                {/* Satu field untuk username ATAU email (BR-010). */}
+                                <Label htmlFor="login">
                                     Username atau email
                                 </Label>
                                 <Input
-                                    id="email"
+                                    id="login"
                                     type="text"
-                                    name="email"
+                                    name="login"
                                     required
                                     autoFocus
                                     tabIndex={1}
@@ -52,7 +52,7 @@ export default function Login({ status, canResetPassword }: Props) {
                                     autoCapitalize="none"
                                     spellCheck={false}
                                     aria-invalid={
-                                        errors.email ? true : undefined
+                                        errors.login ? true : undefined
                                     }
                                 />
                             </div>

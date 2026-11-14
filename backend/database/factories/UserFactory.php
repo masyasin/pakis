@@ -25,6 +25,8 @@ class UserFactory extends Factory
     {
         return [
             'name' => fake()->name(),
+            // Username 04 §2.2: huruf kecil, angka, titik/garis; unik.
+            'username' => fake()->unique()->regexify('[a-z]{5,10}\.[a-z0-9]{3,6}'),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
             'password' => static::$password ??= Hash::make('password'),

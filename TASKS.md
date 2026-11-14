@@ -197,10 +197,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migration modifikasi `users`, `app/Domain/Access/Actions/{AttemptLogin,RecordLoginFailure}.php`, konfigurasi Fortify (`authenticateUsing`), `app/Http/Middleware/{EnsureUserActive,EnforceSessionLifetime,RequireWebMenuAccess}.php`, rate limiter `login`, notifikasi `NewDeviceLogin`, `AccountLocked`, halaman `auth/login.tsx`
 - Deskripsi: Login dengan username/email (case-insensitive). Respons generik + waktu konstan. Lockout akun + throttle IP. Idle/absolute timeout dari setting. Deteksi browser/perangkat baru. Gerbang web untuk akun mobile-only (BR-017). Catat semua event ke `security_events`.
 - Kriteria penerimaan:
-  - [ ] 4 kasus gagal (user tak ada, salah password, akun nonaktif, pegawai nonaktif) → respons identik (SEC-001)
-  - [ ] Salah 5× → `locked_until`, event `lockout`, email (fake) terkirim
-  - [ ] Sesi idle > batas → logout otomatis
-  - [ ] Akun dengan hanya role `pegawai` ditolak login web dengan pesan BR-017
+  - [x] 4 kasus gagal (user tak ada, salah password, akun nonaktif, pegawai nonaktif) → respons identik (SEC-001)
+  - [x] Salah 5× → `locked_until`, event `lockout`, email (fake) terkirim
+  - [x] Sesi idle > batas → logout otomatis
+  - [x] Akun dengan hanya role `pegawai` ditolak login web dengan pesan BR-017
 - Verifikasi: `php artisan test --filter=Login`
 - Di luar lingkup: MFA (T-016), API login (T-031)
 

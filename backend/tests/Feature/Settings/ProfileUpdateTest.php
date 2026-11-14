@@ -60,7 +60,7 @@ class ProfileUpdateTest extends TestCase
         $this->post(route('logout'));
 
         $this->post(route('login.store'), [
-            'email' => 'Test@Example.com',
+            'login' => 'Test@Example.com',
             'password' => 'password',
         ]);
 
@@ -119,7 +119,8 @@ class ProfileUpdateTest extends TestCase
             ->assertRedirect(route('home'));
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+        // Akun memakai soft delete (04 §2.2); penghapusan akun sendiri ditinjau ulang di T-017.
+        $this->assertSoftDeleted($user);
     }
 
     public function test_correct_password_must_be_provided_to_delete_account()

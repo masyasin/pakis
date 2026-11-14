@@ -1,6 +1,6 @@
 # 04 — Database (Fase 0 + 0,5)
 
-MySQL 8.4, `utf8mb4_0900_ai_ci`, InnoDB. Semua kolom `DATETIME`/`TIMESTAMP` disimpan dalam **UTC** dan ditampilkan sesuai setting `general.timezone`. Kolom `DATE` (mis. `work_date`) adalah tanggal lokal operasional. Nama tabel jamak, snake_case (konvensi Laravel).
+MariaDB 11.8 (ADR-012, revisi 14 Nov 2026), `utf8mb4_0900_ai_ci`, InnoDB. Semua kolom `DATETIME`/`TIMESTAMP` disimpan dalam **UTC** dan ditampilkan sesuai setting `general.timezone`. Kolom `DATE` (mis. `work_date`) adalah tanggal lokal operasional. Nama tabel jamak, snake_case (konvensi Laravel).
 
 Kolom audit standar (ditulis singkat sebagai **[audit]**): `created_by BIGINT UNSIGNED NULL FK users`, `updated_by BIGINT UNSIGNED NULL FK users`, `created_at`, `updated_at`. **[soft]** = `deleted_at TIMESTAMP NULL`.
 

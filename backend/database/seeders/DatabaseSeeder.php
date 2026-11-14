@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         // Data sistem: dibutuhkan di semua lingkungan.
-        $this->call(SequenceSeeder::class);
+        $this->call([SequenceSeeder::class, ReferenceSeeder::class]);
 
         // Data contoh hanya untuk mesin developer (CLAUDE.md §6: tidak ada data demo di produksi).
         if (app()->isLocal()) {

@@ -126,6 +126,30 @@ describe('chip & bantuan', () => {
         ]);
     });
 
+    it('chip filter wajib tidak bisa dihapus, filter biasa bisa', () => {
+        const chips = filterChips(
+            {
+                ...spec,
+                filters: [
+                    {
+                        key: 'group',
+                        label: 'Grup',
+                        type: 'select',
+                        required: true,
+                        options: [{ value: 'a', label: 'Grup A' }],
+                    },
+                    { key: 'is_active', label: 'Aktif', type: 'boolean' },
+                ],
+            },
+            { group: 'a', is_active: true },
+        );
+
+        expect(chips.map((c) => [c.key, c.removable])).toEqual([
+            ['group', false],
+            ['is_active', true],
+        ]);
+    });
+
     it('tanggal format 07 §7', () => {
         expect(formatDate('2026-11-03')).toBe('3 Nov 2026');
     });

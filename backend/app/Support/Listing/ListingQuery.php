@@ -81,6 +81,11 @@ final class ListingQuery
                 $invalid[$key] = (string) $result->error;
             }
 
+            // Filter wajib tidak boleh kosong: pakai default (galat tetap dilaporkan di atas).
+            if ($filter->isRequired() && ! $result->hasValue()) {
+                $result = $filter->parse($filter->defaultValue());
+            }
+
             if ($result->hasValue()) {
                 $filter->apply($query, $result->value);
                 $active[$key] = $result->value;

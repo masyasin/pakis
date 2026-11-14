@@ -1,7 +1,11 @@
 <?php
 
 use App\Models\User;
+use App\Support\Listing\Filters\SelectFilter;
+use App\Support\Listing\HasListing;
 use App\Support\Listing\ListingQuery;
+use App\Support\Listing\ListingSpec;
+use App\Support\Listing\Sort;
 use App\Support\Time\DisplayTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
@@ -143,4 +147,43 @@ test('BR-003 nilai default dipakai bila key tidak ada, dan bisa dimatikan dengan
     $cleared = $run(['filter' => ['name' => '']]);
     expect($cleared->paginator()->total())->toBe(3)
         ->and($cleared->state()['filters'])->toBe([]);
+});
+
+/** Listing kecil dengan filter wajib (pola `filter[group]` daftar referensi, 07 §3.4). */
+function requiredFilterListing(): HasListing
+{
+    return new class implements HasListing
+    {
+        public function spec(): ListingSpec
+        {
+            return ListingSpec::make('uji_wajib')
+                ->filters([
+                    SelectFilter::make('name', 'Nama')
+                        ->options(['Agus' => 'Agus', 'Budi' => 'Budi'])
+                        ->default('Agus')
+                        ->required(),
+                ])
+                ->sorts([Sort::make('name', 'Nama')])
+                ->defaultSort('name');
+        }
+    };
+}
+
+test('BR-003 filter wajib: kosong atau tidak sah kembali ke default, bukan "semua"', function (array $query, array $expectedNames, bool $reportedInvalid) {
+    $result = ListingQuery::apply(User::query(), requiredFilterListing(), Request::create('/', 'GET', $query));
+
+    expect($result->query()->pluck('name')->all())->toBe($expectedNames)
+        ->and($result->state()['filters'])->toBe(['name' => $expectedNames[0]])
+        ->and(array_key_exists('name', $result->state()['invalid_filters']))->toBe($reportedInvalid);
+})->with([
+    'tanpa filter' => [[], ['Agus'], false],
+    'dikosongkan' => [['filter' => ['name' => '']], ['Agus'], false],
+    'tidak sah' => [['filter' => ['name' => 'Penyusup']], ['Agus'], true],
+    'dipilih' => [['filter' => ['name' => 'Budi']], ['Budi'], false],
+]);
+
+test('BR-003 filter wajib ditandai di spec agar UI tidak menawarkan "Semua"', function () {
+    $filter = requiredFilterListing()->spec()->toArray()['filters'][0];
+
+    expect($filter['required'])->toBeTrue();
 });

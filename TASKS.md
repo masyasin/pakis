@@ -154,9 +154,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/04-DATABASE.md` §2.6, §4.1, `docs/08-BUSINESS-RULES.md` §3
 - File: migration, `app/Domain/Reference/{Models/ReferenceItem,Enums/ReferenceGroup,Actions/*}`, `ReferenceSeeder`, `Listings/ReferenceListing`, controller + `pages/References/Index.tsx` (tab grup, drag urutan)
 - Kriteria penerimaan:
-  - [ ] Item `is_system` tidak bisa dihapus/ganti kode (test)
-  - [ ] Item yang dipakai tidak bisa dihapus (test memakai tabel dummy di test sampai T-021 ada)
-  - [ ] Listing `references` lolos test kontrak dengan `filter[group]`
+  - [x] Item `is_system` tidak bisa dihapus/ganti kode (test)
+  - [x] Item yang dipakai tidak bisa dihapus (test memakai tabel dummy di test sampai T-021 ada)
+  - [x] Listing `references` lolos test kontrak dengan `filter[group]`
 - Verifikasi: `php artisan test --filter=Reference`
 - Di luar lingkup: —
 

@@ -15,4 +15,5 @@ return [
     'audit_logs', // T-007
     'security_events', // T-007
     'sequences', // T-009
+    'references', // T-010
 ];

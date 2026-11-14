@@ -47,7 +47,7 @@ export function FilterField({ filter, value, onChange, error }: FieldProps) {
                         value={(value as string | undefined) ?? ''}
                         onChange={(e) => onChange(e.target.value || null)}
                     >
-                        <option value="">Semua</option>
+                        {!filter.required && <option value="">Semua</option>}
                         {filter.options?.map((o) => (
                             <option key={o.value} value={o.value}>
                                 {o.label}

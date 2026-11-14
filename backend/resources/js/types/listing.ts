@@ -5,7 +5,12 @@
 
 export type ListingOption = { value: string; label: string };
 
-type FilterBase = { key: string; label: string };
+type FilterBase = {
+    key: string;
+    label: string;
+    /** Filter wajib (mis. grup referensi): tidak bisa dikosongkan, tidak ada opsi "Semua". */
+    required?: boolean;
+};
 
 export type SelectFilterSpec = FilterBase & {
     type: 'select';

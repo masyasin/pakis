@@ -36,6 +36,9 @@ final class ListingRouteFixtures
         if ($routeName === 'admin.sequences.index') {
             Gate::define('sequences.view', fn () => true);
         }
+        if ($routeName === 'admin.references.index') {
+            Gate::define('references.view', fn () => true);
+        }
 
         return match ($routeName) {
             default => User::factory()->create(),

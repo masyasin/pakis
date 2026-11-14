@@ -19,6 +19,8 @@ abstract class Filter
     /** @var mixed|Closure(): mixed */
     protected mixed $default = null;
 
+    protected bool $required = false;
+
     final public function __construct(
         public readonly string $key,
         public readonly string $label,
@@ -73,6 +75,22 @@ abstract class Filter
         return $this;
     }
 
+    /**
+     * Filter wajib (mis. grup referensi, 07 §3.4 "S, wajib"): nilai kosong atau tidak sah jatuh
+     * kembali ke default, tidak pernah berarti "semua". Wajib dipasangkan dengan default().
+     */
+    public function required(): static
+    {
+        $this->required = true;
+
+        return $this;
+    }
+
+    public function isRequired(): bool
+    {
+        return $this->required;
+    }
+
     public function defaultValue(): mixed
     {
         return $this->default instanceof Closure ? ($this->default)() : $this->default;
@@ -103,6 +121,10 @@ abstract class Filter
         $default = $this->defaultValue();
         if ($default !== null) {
             $data['default'] = $default;
+        }
+
+        if ($this->required) {
+            $data['required'] = true;
         }
 
         return $data;

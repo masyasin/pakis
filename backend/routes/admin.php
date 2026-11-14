@@ -3,6 +3,7 @@
 use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
@@ -31,6 +32,17 @@ Route::middleware(['auth'])->name('admin.')->group(function () {
         ->middleware('can:sequences.update')
         ->whereNumber('sequence')
         ->name('sequences.update');
+
+    // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.
+    Route::get('referensi', [ReferenceController::class, 'index'])
+        ->middleware('can:references.view')
+        ->name('references.index');
+    Route::middleware('can:references.manage')->group(function () {
+        Route::post('referensi', [ReferenceController::class, 'store'])->name('references.store');
+        Route::post('referensi/urutan', [ReferenceController::class, 'reorder'])->name('references.reorder');
+        Route::put('referensi/{item}', [ReferenceController::class, 'update'])->whereNumber('item')->name('references.update');
+        Route::delete('referensi/{item}', [ReferenceController::class, 'destroy'])->whereNumber('item')->name('references.destroy');
+    });
 
     // Pengaturan (05 §4.3). Grup sensitif minta konfirmasi password di controller.
     Route::post('pengaturan/uji-email', [SettingController::class, 'testMail'])

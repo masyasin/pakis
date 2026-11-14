@@ -84,16 +84,16 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
 | 0A | 7 | 7 | 0 | 0 |
-| 0B | 5 | 2 | 0 | 0 |
+| 0B | 5 | 3 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **9** | **0** | **0** |
+| **Total** | **48** | **10** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- (kosong) — berikutnya T-010 (referensi dinamis).
+- (kosong) — berikutnya T-011 (lookup).
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -128,12 +128,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-15 | T-008 (bag. 2) | Selesai | 3bd3423 | `BrandTheme`: warna kustom → token terang/gelap (`--primary`, `--ring`, `--chart-1`, `--sidebar-primary/-ring`, `--primary-strong`, `--logo-from`, `--brand-panel-*`) di `<style nonce>` setelah `@vite` (selector `html:root`/`html.dark`), dicetak dengan `{{ }}`; warna default = **tanpa override** (token desain dipakai apa adanya). Varian gelap dinaikkan lagi bila teks gelap di atas tombol < 4.5:1 (ditemukan test: ungu `#5B2C83` = 4.48). Panel login digelapkan bertahap sampai teks redup ≥ 4.5:1. `name`/`branding` dibagikan ke Inertia (URL logo relatif `/storage/...` → lolos `img-src 'self'`), judul tab & favicon dari setting, logo unggahan menggantikan lencana daun, nama perusahaan & tagline login dari setting. Simpan grup `general`/`branding` → `Inertia::location` (muat ulang penuh agar CSS/judul ikut). 356 Pest + 25 Vitest. Dicek CSP enforce: biru `#1F4E79` + logo dummy di login 1440 gelap / 360 terang, dasbor 768 (drawer), 0 galat konsol; data dev dikembalikan default |
 
+| 2026-11-15 | T-010 | Selesai | (commit T-010) | Migration `reference_items` (04 §2.6), `app/Domain/Reference` (`ReferenceGroup` + `usages()` dari 08 §3, model, `ReferenceUsage`, Actions tambah/ubah/hapus/urutkan + audit `reference.*`, `ReferenceListing`), `ReferenceSeeder` (19 item sistem, idempoten `firstOrCreate`), `ReferenceItemRequest`, halaman `/referensi` (tab grup ≥ sm / select di HP, DataTable, dialog tambah/ubah/hapus, dialog **Atur Urutan**: seret HTML5 + tombol naik/turun, tanpa dependency). Mesin listing: `Filter::required()` (kosong/tidak sah → default, chip tanpa tombol hapus, select tanpa "Semua"). Test "sudah dipakai" memakai `CREATE TEMPORARY TABLE` + `ReferenceUsage` eksplisit (DDL biasa memutus transaksi RefreshDatabase). Larastan menangkap `ids` bukan `list` → aturan `list`. 387 Pest + 26 Vitest. Dicek CSP enforce 1440/768 gelap, 360 terang; data dev dikembalikan |
+
 ### 6.5 Catatan untuk sesi berikutnya
 - **Fase 0A selesai (T-001–T-007).**
 - **T-008 selesai penuh (bag. 1 + 2).** Branding: `app/Domain/Settings/Branding/BrandTheme.php`. Warna netral (latar, kartu, `--sidebar-accent`, `--muted`) sengaja tetap palet hijau-abu desain; hanya token yang terkait warna utama yang mengikuti warna kustom. Bila Pakis ingin seluruh palet ikut, itu perubahan desain (tanyakan dulu). Pratinjau tema di `appearance-tabs.tsx` masih literal (ilustrasi tema bawaan).
 - Teks panel login "Satu tempat untuk data…" dan "Kudus, Jawa Tengah" masih teks tetap (tidak ada kunci setting di `08` §2).
 - Menu sidebar baru berisi **Dasbor** saja (`components/app-sidebar.tsx`). Halaman `/audit`, `/log-keamanan`, `/pengaturan/*` belum ada di menu → **dikerjakan di T-018** (keputusan Mas 14 Nov 2026): menu lengkap per grup `06` §8 + bagikan permission pengguna lewat Inertia. Jangan tambah menu sebelum itu.
-- **T-009 selesai.** Berikutnya: T-010–T-012 (referensi, lookup, wilayah). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
+- **T-010 selesai.** Berikutnya: T-011 (lookup, termasuk sumber `references` dengan `group`, hanya item aktif) lalu T-012 (wilayah). Saat T-021/T-024/T-040 membuat tabel pemakai referensi: tambahkan FK `RESTRICT` ke `reference_items` (cek `ReferenceUsage` otomatis aktif begitu tabelnya ada). Halaman Referensi belum di menu (T-018). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
 - `tests/Concurrency` menjalankan `migrate` di DB test tanpa RefreshDatabase dan membersihkan datanya sendiri; ikut jalan di `php artisan test` (± 5–10 detik).
 - `DocumentSequence` dikunci `FOR UPDATE` oleh generator **dan** `UpdateSequence`: jangan menambah query lain yang mengunci counter sebelum baris induk (urutan kunci = induk → counter, agar tidak deadlock).
 - Lokal: `php artisan storage:link` sudah dijalankan (logo di disk `public`). Nilai demo yang diubah saat cek browser: `attendance.default_radius_m` = 150 (bisa dikembalikan di Pengaturan → Absensi).

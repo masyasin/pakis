@@ -199,7 +199,7 @@ export function describeFilterValue(
     }
 }
 
-export type FilterChip = { key: string; label: string };
+export type FilterChip = { key: string; label: string; removable: boolean };
 
 export function filterChips(
     spec: ListingSpec,
@@ -210,5 +210,6 @@ export function filterChips(
         .map((f) => ({
             key: f.key,
             label: `${f.label}: ${describeFilterValue(f, filters[f.key])}`,
+            removable: !f.required,
         }));
 }

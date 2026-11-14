@@ -9,7 +9,10 @@ use Illuminate\Foundation\Http\Middleware\ValidateCsrfToken;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-Route::inertia('/', 'welcome')->name('home');
+// Sistem internal tanpa halaman publik: `/` (tujuan Fortify setelah logout) langsung ke dasbor bila sudah
+// masuk, atau ke halaman masuk bila belum. Langsung ke `login` (bukan lewat dasbor) agar tidak ada
+// url.intended palsu.
+Route::get('/', fn (Request $request) => redirect()->route($request->user() ? 'dashboard' : 'login'))->name('home');
 
 // Lupa password (05 §4.1, T-015). Pembatas BR-016 ada di RequestPasswordReset; verifikasi OTP juga dibatasi.
 Route::middleware('guest')->group(function () {

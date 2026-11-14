@@ -16,7 +16,6 @@ void createInertiaApp({
     title: (title) => (title ? `${title} - ${appName}` : appName),
     layout: (name) => {
         switch (true) {
-            case name === 'welcome':
             // Halaman galat bisa tampil untuk tamu (tanpa auth.user), jadi tanpa layout aplikasi.
             case name === 'error':
                 return null;

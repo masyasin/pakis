@@ -19,6 +19,8 @@ declare module '@inertiajs/core' {
         sharedPageProps: {
             name: string;
             branding: Branding;
+            /** `general.timezone`, mis. `Asia/Jakarta`. */
+            timezone: string;
             auth: Auth;
             sidebarOpen: boolean;
             [key: string]: unknown;

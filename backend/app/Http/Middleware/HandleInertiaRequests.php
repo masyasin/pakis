@@ -47,6 +47,9 @@ class HandleInertiaRequests extends Middleware
             // Nama & branding dari Pengaturan (T-008), juga untuk tamu di halaman login.
             'name' => setting('general.app_name'),
             'branding' => app(BrandTheme::class)->shared(),
+            // Zona tampilan (`general.timezone`): tanggal yang dibentuk di browser memakai zona ini,
+            // bukan zona perangkat pengguna.
+            'timezone' => setting('general.timezone'),
             'auth' => [
                 'user' => self::sharedUser($request->user()),
                 // 06 §10: permission & menu sudah difilter server. Menyembunyikan menu hanya UX;

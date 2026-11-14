@@ -1,6 +1,7 @@
 import { Head, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import { CalendarX2, ClipboardPen, Smartphone, UserX } from 'lucide-react';
+import { formatLongDate } from '@/lib/local-date';
 import { dashboard } from '@/routes/admin';
 
 /*
@@ -50,8 +51,9 @@ function Empty() {
 }
 
 export default function Dashboard() {
-    const { auth } = usePage().props;
+    const { auth, timezone } = usePage().props;
     const firstName = auth.user?.name.split(' ')[0] ?? '';
+    const today = formatLongDate(new Date(), timezone);
 
     return (
         <>
@@ -63,7 +65,7 @@ export default function Dashboard() {
                         Selamat datang, {firstName}
                     </h1>
                     <p className="mt-0.5 text-sm text-muted-foreground">
-                        Ringkasan kehadiran tim hari ini.
+                        Ringkasan kehadiran tim hari ini, {today}.
                     </p>
                 </header>
 

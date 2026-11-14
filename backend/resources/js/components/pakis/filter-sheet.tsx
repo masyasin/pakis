@@ -12,7 +12,7 @@ import {
     SheetTrigger,
 } from '@/components/ui/sheet';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { countActiveFilters, isEmptyValue } from '@/lib/listing-query';
+import { countActiveFilters, withDependentsCleared } from '@/lib/listing-query';
 import type { FilterValue, ListingSpec, ListingState } from '@/types/listing';
 
 type Props = {
@@ -68,26 +68,42 @@ export function FilterSheet({ spec, state, onApply, onReset }: Props) {
                 </SheetHeader>
 
                 <div className="grid gap-5 overflow-y-auto px-4">
-                    {spec.filters.map((filter) => (
-                        <FilterField
-                            key={filter.key}
-                            filter={filter}
-                            value={draft[filter.key]}
-                            error={state.invalid_filters[filter.key]}
-                            onChange={(value) =>
-                                setDraft((current) => {
-                                    const next = { ...current };
-                                    if (value === null || isEmptyValue(value)) {
-                                        delete next[filter.key];
-                                    } else {
-                                        next[filter.key] = value;
-                                    }
+                    {spec.filters.map((filter) => {
+                        const parentKey =
+                            'depends_on' in filter
+                                ? filter.depends_on
+                                : undefined;
+                        const parentSpec = spec.filters.find(
+                            (f) => f.key === parentKey,
+                        );
 
-                                    return next;
-                                })
-                            }
-                        />
-                    ))}
+                        return (
+                            <FilterField
+                                key={filter.key}
+                                filter={filter}
+                                value={draft[filter.key]}
+                                error={state.invalid_filters[filter.key]}
+                                parent={
+                                    parentSpec
+                                        ? {
+                                              value: draft[parentSpec.key],
+                                              label: parentSpec.label,
+                                          }
+                                        : undefined
+                                }
+                                onChange={(value) =>
+                                    setDraft((current) =>
+                                        withDependentsCleared(
+                                            spec,
+                                            current,
+                                            filter.key,
+                                            value,
+                                        ),
+                                    )
+                                }
+                            />
+                        );
+                    })}
                 </div>
 
                 <SheetFooter className="flex-row gap-2">

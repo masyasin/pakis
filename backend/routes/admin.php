@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\ReferenceController;
+use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
@@ -39,6 +40,11 @@ Route::middleware(['auth'])->name('admin.')->group(function () {
         ->middleware('can:sequences.update')
         ->whereNumber('sequence')
         ->name('sequences.update');
+
+    // Wilayah (05 §4.5, FR-021), hanya baca; diisi `php artisan regions:import`.
+    Route::get('wilayah', [RegionController::class, 'index'])
+        ->middleware('can:regions.view')
+        ->name('regions.index');
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.
     Route::get('referensi', [ReferenceController::class, 'index'])

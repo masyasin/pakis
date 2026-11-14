@@ -16,4 +16,5 @@ return [
     'security_events', // T-007
     'sequences', // T-009
     'references', // T-010
+    'regions', // T-012
 ];

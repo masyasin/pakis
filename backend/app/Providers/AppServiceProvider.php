@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Domain\Access\Lookup\UserLookup;
 use App\Domain\Audit\Listeners\RecordExportCreated;
 use App\Domain\Reference\Lookup\ReferenceLookup;
+use App\Domain\Region\Lookup\RegionLookup;
 use App\Domain\Settings\Branding\BrandTheme;
 use App\Domain\Settings\SettingStore;
 use App\Models\User;
@@ -38,6 +39,7 @@ class AppServiceProvider extends ServiceProvider
             $registry = new LookupRegistry;
             $registry->register('references', ReferenceLookup::class);
             $registry->register('users', UserLookup::class);
+            $registry->register('regions', RegionLookup::class);
 
             return $registry;
         });
@@ -76,7 +78,7 @@ class AppServiceProvider extends ServiceProvider
     protected function configureTemporaryAbilities(): void
     {
         // TODO(T-018): hapus; `can:audit.view` dijawab permission Spatie lewat Gate::before.
-        foreach (['audit.view', 'audit.export', 'settings.view', 'settings.update', 'sequences.view', 'sequences.update', 'references.view', 'references.manage'] as $ability) {
+        foreach (['audit.view', 'audit.export', 'settings.view', 'settings.update', 'sequences.view', 'sequences.update', 'references.view', 'references.manage', 'regions.view'] as $ability) {
             Gate::define($ability, fn (User $user): bool => app()->isLocal());
         }
     }

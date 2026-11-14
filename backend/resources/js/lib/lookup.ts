@@ -34,11 +34,20 @@ export function clearLookupCache(): void {
     labels.clear();
 }
 
-export function lookupUrl(
-    source: string,
-    params: { q?: string; ids?: Array<number | string> } = {},
-): string {
+export type LookupParams = {
+    q?: string;
+    ids?: Array<number | string>;
+    /** Parameter khusus sumber, mis. `level` & `parent` untuk wilayah. */
+    extra?: Record<string, string | undefined>;
+};
+
+export function lookupUrl(source: string, params: LookupParams = {}): string {
     const search = new URLSearchParams();
+    Object.entries(params.extra ?? {}).forEach(([key, value]) => {
+        if (value) {
+            search.set(key, value);
+        }
+    });
     if (params.q) {
         search.set('q', params.q);
     }
@@ -50,7 +59,7 @@ export function lookupUrl(
 
 export async function fetchLookup(
     source: string,
-    params: { q?: string; ids?: Array<number | string> },
+    params: LookupParams,
     signal?: AbortSignal,
 ): Promise<LookupOption[]> {
     const response = await fetch(lookupUrl(source, params), {

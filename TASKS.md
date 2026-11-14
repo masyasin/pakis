@@ -181,9 +181,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migrations 4 tabel, `app/Domain/Region/*`, command `regions:import {path} {--format=}`, `Listings/RegionListing`, controller + `pages/Regions/Index.tsx`, lookup source `regions`
 - Deskripsi: Import idempoten (upsert) dari SQL Sintech. **Pemetaan format sumber menunggu OQ-003.** Sementara itu buat adapter untuk format kode bertitik dan fixture kecil (Kab. Kudus) untuk test. Daftar desa dengan filter berjenjang.
 - Kriteria penerimaan:
-  - [ ] Import 2× tidak menggandakan baris
-  - [ ] Filter kecamatan hanya aktif setelah kab/kota dipilih
-  - [ ] Listing `regions` lolos test kontrak
+  - [x] Import 2× tidak menggandakan baris
+  - [x] Filter kecamatan hanya aktif setelah kab/kota dipilih
+  - [x] Listing `regions` lolos test kontrak
 - Verifikasi: `php artisan regions:import tests/Fixtures/regions_kudus.sql`
 - Di luar lingkup: data wilayah selain Indonesia
 

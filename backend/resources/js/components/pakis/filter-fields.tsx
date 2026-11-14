@@ -16,15 +16,37 @@ type FieldProps = {
     value: FilterValue | undefined;
     onChange: (value: FilterValue | null) => void;
     error?: string;
+    /** Filter berjenjang: nilai filter induk saat ini dan labelnya (untuk petunjuk). */
+    parent?: { value: FilterValue | undefined; label: string };
 };
 
 const toNumber = (raw: string): number | undefined =>
     raw === '' ? undefined : Number(raw);
 
 /** Satu field filter, dirender otomatis dari tipe di spec (07 §2: FilterBar dibuat dari spec). */
-export function FilterField({ filter, value, onChange, error }: FieldProps) {
+export function FilterField({
+    filter,
+    value,
+    onChange,
+    error,
+    parent,
+}: FieldProps) {
     const id = useId();
     const usesLookup = 'options_source' in filter && !!filter.options_source;
+    // Berjenjang: anak baru aktif setelah induk dipilih; nilai induk dikirim sebagai `parent`.
+    const parentValue =
+        parent &&
+        (typeof parent.value === 'string' || typeof parent.value === 'number')
+            ? String(parent.value)
+            : undefined;
+    const waitingForParent = !!parent && parentValue === undefined;
+    const lookupParams = {
+        ...('options_params' in filter ? filter.options_params : {}),
+        parent: parentValue,
+    };
+    const lookupPlaceholder = waitingForParent
+        ? `Pilih ${parent.label.toLowerCase()} dulu`
+        : undefined;
 
     const control = (() => {
         switch (filter.type) {
@@ -34,6 +56,9 @@ export function FilterField({ filter, value, onChange, error }: FieldProps) {
                         <AsyncSelect
                             id={id}
                             source={filter.options_source as string}
+                            params={lookupParams}
+                            disabled={waitingForParent}
+                            placeholder={lookupPlaceholder}
                             value={
                                 value === undefined || value === null
                                     ? []
@@ -69,6 +94,9 @@ export function FilterField({ filter, value, onChange, error }: FieldProps) {
                         <AsyncSelect
                             id={id}
                             source={filter.options_source as string}
+                            params={lookupParams}
+                            disabled={waitingForParent}
+                            placeholder={lookupPlaceholder}
                             multiple
                             value={(value as Array<string | number>) ?? []}
                             onChange={(next) =>

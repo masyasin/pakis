@@ -1,6 +1,11 @@
 import { router } from '@inertiajs/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { defaultFilters, nextSort, toQueryParams } from '@/lib/listing-query';
+import {
+    defaultFilters,
+    nextSort,
+    toQueryParams,
+    withDependentsCleared,
+} from '@/lib/listing-query';
 import type { ListingQueryState } from '@/lib/listing-query';
 import type { FilterValue, Listing } from '@/types/listing';
 
@@ -135,8 +140,13 @@ export function useListing(listing: Listing) {
         applyFilters: (filters: Record<string, FilterValue>) =>
             visit({ filters, page: 1 }),
         removeFilter: (key: string) => {
-            const filters = { ...state.filters };
-            delete filters[key];
+            // Filter berjenjang: hapus induk ikut menghapus anaknya (provinsi → kab/kota → kecamatan).
+            const filters = withDependentsCleared(
+                spec,
+                state.filters,
+                key,
+                null,
+            );
             visit({ filters, page: 1 });
         },
         reset: () => {

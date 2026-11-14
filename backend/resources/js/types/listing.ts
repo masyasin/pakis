@@ -17,6 +17,10 @@ export type SelectFilterSpec = FilterBase & {
     options?: ListingOption[];
     /** Opsi diambil dari endpoint lookup (filter relasi), bukan dikirim di spec. */
     options_source?: string | null;
+    /** Parameter tetap untuk lookup, mis. `{ level: 'district' }`. */
+    options_params?: Record<string, string>;
+    /** Filter berjenjang: kunci filter induk (nilainya dikirim sebagai `parent`). */
+    depends_on?: string;
     default?: string | number;
 };
 
@@ -24,6 +28,8 @@ export type MultiSelectFilterSpec = FilterBase & {
     type: 'multi_select';
     options?: ListingOption[];
     options_source?: string | null;
+    options_params?: Record<string, string>;
+    depends_on?: string;
     default?: Array<string | number>;
 };
 

@@ -84,16 +84,16 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
 | 0A | 7 | 7 | 0 | 0 |
-| 0B | 5 | 4 | 0 | 0 |
+| 0B | 5 | 5 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **11** | **0** | **0** |
+| **Total** | **48** | **12** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- (kosong) — berikutnya T-012 (master wilayah).
+- (kosong) — **Fase 0B selesai.** Berikutnya Fase 0C: T-013 (login, lockout, sesi, log keamanan).
 
 ### 6.3 Blocker aktif
 - (kosong)
@@ -132,12 +132,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-15 | T-011 | Selesai | d5df715 | `app/Support/Lookup` (`LookupSource` abstrak: authorize/query aktif/`TextSearch`/order/option/rules + hook `scope()` `TODO(T-019)`; `LookupRegistry` didaftarkan di `AppServiceProvider`), `LookupController` (`GET /lookup/{source}` `admin.lookup.show`, 404/403/422, `LIMIT` ≤ 20 di SQL, `ids[]` untuk label terpilih, `throttle:120,1`). Sumber `references` (grup wajib, aktif) & **`users`** (keputusan Mas: hanya `audit.view`/`users.view`, akun nonaktif ikut; 05 §4.11 + 12 diperbarui). Frontend: `AsyncSelect` (combobox ARIA tanpa dependency, tunggal/multi, debounce 250 ms), cache label `lib/lookup.ts` + `useLookupLabels` → chip "Pelaku: Demo Admin" juga dari URL yang dibagikan; isian ID di `filter-fields.tsx` diganti. Larastan: generik `LookupSource<*>` tidak bisa dipakai dengan `get()` → `Builder<covariant Model>` + guard `instanceof`. 403 Pest + 32 Vitest. Dicek CSP enforce di `/audit` 1440 gelap & 360 terang, 0 galat konsol |
 
+| 2026-11-15 | T-012 | Selesai | (commit T-012) | Migration 4 tabel wilayah (04 §2.7, kode bertitik CHAR, FK berjenjang), `app/Domain/Region` (`RegionLevel`, model, `RegionCode` sisip titik 2/4/6, `SintechRegionParser` **membaca teks, tidak mengeksekusi SQL** — tokenizer sendiri, `RegionImporter` kumpulkan per level lalu upsert provinsi→desa per 1.000 baris, baris tidak sah dilewati + dilaporkan), command `regions:import {path} {--format=sintech}`, lookup `regions` (level wajib, parent, kunci string), `RegionListing` (filter berjenjang lewat **awalan kode desa**, tanpa join), halaman `/wilayah`. Mesin listing: `RelationFilter::keyPattern/params/dependsOn` (+ spec `options_params`, `depends_on`); UI: anak nonaktif sampai induk dipilih, ganti/hapus induk mengosongkan anak (panel & chip). Fixture `tests/Fixtures/regions_kudus.sql` dari `konsep/region.sql`. Impor penuh di DB dev: 38/514/7.265/83.202 dalam 1,5 dtk, ulang = jumlah sama. 443 Pest + 36 Vitest. Dicek CSP enforce 1440 gelap & 360 terang. **Fase 0B selesai.** |
+
 ### 6.5 Catatan untuk sesi berikutnya
 - **Fase 0A selesai (T-001–T-007).**
 - **T-008 selesai penuh (bag. 1 + 2).** Branding: `app/Domain/Settings/Branding/BrandTheme.php`. Warna netral (latar, kartu, `--sidebar-accent`, `--muted`) sengaja tetap palet hijau-abu desain; hanya token yang terkait warna utama yang mengikuti warna kustom. Bila Pakis ingin seluruh palet ikut, itu perubahan desain (tanyakan dulu). Pratinjau tema di `appearance-tabs.tsx` masih literal (ilustrasi tema bawaan).
 - Teks panel login "Satu tempat untuk data…" dan "Kudus, Jawa Tengah" masih teks tetap (tidak ada kunci setting di `08` §2).
 - Menu sidebar baru berisi **Dasbor** saja (`components/app-sidebar.tsx`). Halaman `/audit`, `/log-keamanan`, `/pengaturan/*` belum ada di menu → **dikerjakan di T-018** (keputusan Mas 14 Nov 2026): menu lengkap per grup `06` §8 + bagikan permission pengguna lewat Inertia. Jangan tambah menu sebelum itu.
-- **T-010 & T-011 selesai.** Berikutnya: T-012 (wilayah; daftarkan sumber lookup `regions` dengan `level` & `parent` di `AppServiceProvider`). Sumber lookup baru: buat kelas turunan `App\Support\Lookup\LookupSource`, isi `scope()` untuk data ber-scope (T-019), daftarkan di `AppServiceProvider::register`. `RelationFilter` dengan `options_source` otomatis memakai `AsyncSelect`; sumber yang butuh parameter (mis. `references?group=`) belum bisa dipakai filter relasi — tambahkan dukungan parameter bila dibutuhkan. Saat T-021/T-024/T-040 membuat tabel pemakai referensi: tambahkan FK `RESTRICT` ke `reference_items` (cek `ReferenceUsage` otomatis aktif begitu tabelnya ada). Halaman Referensi belum di menu (T-018). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
+- **Fase 0B selesai (T-008–T-012).** Berikutnya Fase 0C mulai T-013. DB dev sudah berisi wilayah lengkap (`php artisan regions:import ../konsep/region.sql`, idempoten). Staging/produksi: jalankan command yang sama setelah migrate (bukan seeder). Filter relasi berjenjang: `RelationFilter::dependsOn()` + `params()`; contoh di `RegionListing`. Sumber lookup baru: buat kelas turunan `App\Support\Lookup\LookupSource`, isi `scope()` untuk data ber-scope (T-019), daftarkan di `AppServiceProvider::register`. `RelationFilter` dengan `options_source` otomatis memakai `AsyncSelect`; sumber yang butuh parameter (mis. `references?group=`) belum bisa dipakai filter relasi — tambahkan dukungan parameter bila dibutuhkan. Saat T-021/T-024/T-040 membuat tabel pemakai referensi: tambahkan FK `RESTRICT` ke `reference_items` (cek `ReferenceUsage` otomatis aktif begitu tabelnya ada). Halaman Referensi belum di menu (T-018). Pemakai `NumberGenerator` (T-024 pegawai, T-040 koreksi) wajib memanggil `next()` di dalam transaksi yang sama dengan penyimpanan dokumen + `isTaken`. Halaman Penomoran belum di menu (T-018).
 - `tests/Concurrency` menjalankan `migrate` di DB test tanpa RefreshDatabase dan membersihkan datanya sendiri; ikut jalan di `php artisan test` (± 5–10 detik).
 - `DocumentSequence` dikunci `FOR UPDATE` oleh generator **dan** `UpdateSequence`: jangan menambah query lain yang mengunci counter sebelum baris induk (urutan kunci = induk → counter, agar tidak deadlock).
 - Lokal: `php artisan storage:link` sudah dijalankan (logo di disk `public`). Nilai demo yang diubah saat cek browser: `attendance.default_radius_m` = 150 (bisa dikembalikan di Pengaturan → Absensi).
@@ -155,4 +157,3 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 - Shell PowerShell 5.1: here-string tidak bisa dipipe ke `git commit -F -`; tulis pesan ke file lalu `git commit -F <file>`.
 - Dibiarkan untuk task nanti: halaman settings starter kit masih punya **hapus akun sendiri** (`profile.destroy`) → tangani di T-017 (pegawai dinonaktifkan lewat offboarding, bukan dihapus). Teks UI auth sudah Indonesia; sisa: `lang/id/validation.php` belum ada (pesan validasi bawaan masih Inggris), field lupa password masih "Email" + pesan `passwords.user` membocorkan keberadaan akun → T-014; halaman `/` (welcome) masih template Laravel dan jadi tujuan setelah Keluar → T-013.
 - `config/pakis.php` `display_timezone` adalah penyangga sementara (`TODO(T-008)`), dihapus saat `setting('general.timezone')` tersedia.
-- Sumber master wilayah untuk T-012: `konsep/region.sql` (pemetaan di OQ-003).

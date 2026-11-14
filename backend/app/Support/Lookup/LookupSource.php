@@ -50,6 +50,17 @@ abstract class LookupSource
     }
 
     /**
+     * Aturan tiap nilai `ids[]` (kunci entri). Default ID bilangan bulat; sumber berkunci string
+     * (mis. kode wilayah) menggantinya.
+     *
+     * @return list<mixed>
+     */
+    public function keyRules(): array
+    {
+        return ['integer', 'min:1'];
+    }
+
+    /**
      * Batasi ke data dalam scope pemanggil (06 §5). Sumber data pegawai/lokasi WAJIB mengisinya.
      *
      * @param  Builder<covariant Model>  $query

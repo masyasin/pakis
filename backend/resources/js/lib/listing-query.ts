@@ -216,3 +216,37 @@ export function filterChips(
             removable: !f.required,
         }));
 }
+
+/**
+ * Setel nilai satu filter. Bila nilainya berubah, filter yang bergantung padanya (berantai:
+ * provinsi → kab/kota → kecamatan) dikosongkan, karena pilihan lamanya belum tentu milik induk baru.
+ */
+export function withDependentsCleared(
+    spec: ListingSpec,
+    current: Record<string, FilterValue>,
+    key: string,
+    value: FilterValue | null,
+): Record<string, FilterValue> {
+    const next = { ...current };
+    const changed = JSON.stringify(current[key]) !== JSON.stringify(value);
+
+    if (value === null || isEmptyValue(value)) {
+        delete next[key];
+    } else {
+        next[key] = value;
+    }
+
+    if (changed) {
+        const clear = (parentKey: string) => {
+            spec.filters
+                .filter((f) => 'depends_on' in f && f.depends_on === parentKey)
+                .forEach((child) => {
+                    delete next[child.key];
+                    clear(child.key);
+                });
+        };
+        clear(key);
+    }
+
+    return next;
+}

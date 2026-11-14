@@ -28,7 +28,7 @@ class LookupController extends Controller
             'parent' => ['nullable', 'string', 'max:50'],
             'limit' => ['nullable', 'integer', 'min:1', 'max:'.self::MAX_LIMIT],
             'ids' => ['nullable', 'array', 'max:'.self::MAX_LIMIT],
-            'ids.*' => ['integer', 'min:1'],
+            'ids.*' => $lookup->keyRules(),
             ...$lookup->rules(),
         ]);
 
@@ -37,7 +37,7 @@ class LookupController extends Controller
 
         if (! empty($data['ids'])) {
             // Label untuk nilai yang sudah terpilih (chip filter). Tetap aktif + ber-scope.
-            $query->whereKey(array_map('intval', $data['ids']));
+            $query->whereKey(array_values($data['ids']));
         } else {
             $lookup->search()->apply($query, TextSearch::normalize($data['q'] ?? null));
         }

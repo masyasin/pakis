@@ -2,6 +2,7 @@
 
 namespace Tests\Contract;
 
+use App\Domain\Region\Models\Province;
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Gate;
@@ -39,6 +40,9 @@ final class ListingRouteFixtures
         if ($routeName === 'admin.references.index') {
             Gate::define('references.view', fn () => true);
         }
+        if ($routeName === 'admin.regions.index') {
+            Gate::define('regions.view', fn () => true);
+        }
 
         return match ($routeName) {
             default => User::factory()->create(),
@@ -53,6 +57,12 @@ final class ListingRouteFixtures
     public static function filterSamples(string $routeName): array
     {
         return match ($routeName) {
+            // Tabel wilayah kosong di test: buat satu provinsi agar contoh filter pasti ada.
+            'admin.regions.index' => (function () {
+                Province::query()->firstOrCreate(['code' => '33'], ['name' => 'Jawa Tengah']);
+
+                return ['province' => '33'];
+            })(),
             default => [],
         };
     }

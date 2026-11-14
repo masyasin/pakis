@@ -15,6 +15,9 @@ type Props = {
     value: Value;
     onChange: (value: Value) => void;
     multiple?: boolean;
+    /** Parameter khusus sumber (mis. `{ level: 'district', parent: '33.19' }`). */
+    params?: Record<string, string | undefined>;
+    disabled?: boolean;
     id?: string;
     placeholder?: string;
     'aria-label'?: string;
@@ -30,6 +33,8 @@ export function AsyncSelect({
     value,
     onChange,
     multiple = false,
+    params,
+    disabled = false,
     id,
     placeholder = 'Ketik untuk mencari…',
     'aria-label': ariaLabel,
@@ -42,6 +47,8 @@ export function AsyncSelect({
     const [failed, setFailed] = useState(false);
     const [active, setActive] = useState(0);
     const inputRef = useRef<HTMLInputElement>(null);
+    // String stabil untuk dependensi effect (objek params baru tiap render).
+    const paramKey = JSON.stringify(params ?? {});
 
     // Ambil opsi saat terbuka / kata kunci berubah (ditunda agar tidak tiap ketukan).
     useEffect(() => {
@@ -52,7 +59,14 @@ export function AsyncSelect({
         const controller = new AbortController();
         const timer = window.setTimeout(() => {
             setLoading(true);
-            fetchLookup(source, { q: query.trim() }, controller.signal)
+            fetchLookup(
+                source,
+                {
+                    q: query.trim(),
+                    extra: JSON.parse(paramKey) as Record<string, string>,
+                },
+                controller.signal,
+            )
                 .then((result) => {
                     setOptions(result);
                     setFailed(false);
@@ -70,7 +84,7 @@ export function AsyncSelect({
             window.clearTimeout(timer);
             controller.abort();
         };
-    }, [open, query, source]);
+    }, [open, query, source, paramKey]);
 
     const isSelected = (option: LookupOption) =>
         value.map(String).includes(String(option.value));
@@ -151,6 +165,7 @@ export function AsyncSelect({
                                 <span className="truncate">{label}</span>
                                 <button
                                     type="button"
+                                    disabled={disabled}
                                     className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
                                     aria-label={`Hapus pilihan ${label}`}
                                     onClick={() => remove(item)}
@@ -181,13 +196,14 @@ export function AsyncSelect({
                             : undefined
                     }
                     autoComplete="off"
+                    disabled={disabled}
                     placeholder={placeholder}
                     value={query}
                     onChange={(e) => {
                         setQuery(e.target.value);
                         setOpen(true);
                     }}
-                    onFocus={() => setOpen(true)}
+                    onFocus={() => !disabled && setOpen(true)}
                     onBlur={() => setOpen(false)}
                     onKeyDown={onKeyDown}
                 />
@@ -199,7 +215,7 @@ export function AsyncSelect({
                 )}
             </div>
 
-            {open && (
+            {open && !disabled && (
                 <ul
                     id={listId}
                     role="listbox"

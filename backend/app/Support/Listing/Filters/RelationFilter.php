@@ -20,6 +20,14 @@ class RelationFilter extends Filter
 
     protected ?string $source = null;
 
+    /** @var array<string, string> parameter tetap untuk lookup, mis. `['level' => 'district']` */
+    protected array $params = [];
+
+    protected ?string $dependsOn = null;
+
+    /** Regex kunci string (mis. kode wilayah); null = ID bilangan bulat. */
+    protected ?string $keyPattern = null;
+
     /** @var (Closure(): Builder<*>)|null */
     protected ?Closure $validIds = null;
 
@@ -34,6 +42,39 @@ class RelationFilter extends Filter
     public function source(string $source): static
     {
         $this->source = $source;
+
+        return $this;
+    }
+
+    /**
+     * Parameter tetap untuk endpoint lookup (05 §4.11), mis. `level` untuk wilayah.
+     *
+     * @param  array<string, string>  $params
+     */
+    public function params(array $params): static
+    {
+        $this->params = $params;
+
+        return $this;
+    }
+
+    /**
+     * Filter ini bergantung pada filter lain (berjenjang): UI menonaktifkannya sampai induk dipilih,
+     * mengirim nilai induk sebagai `parent` ke lookup, dan mengosongkannya saat induk berubah.
+     */
+    public function dependsOn(string $filterKey): static
+    {
+        $this->dependsOn = $filterKey;
+
+        return $this;
+    }
+
+    /**
+     * Kunci berupa string (mis. kode wilayah `33.19`), divalidasi dengan regex ini sebelum ke DB.
+     */
+    public function keyPattern(string $regex): static
+    {
+        $this->keyPattern = $regex;
 
         return $this;
     }
@@ -77,7 +118,12 @@ class RelationFilter extends Filter
 
         $ids = [];
         foreach ($values as $value) {
-            if (is_int($value) && $value > 0) {
+            if ($this->keyPattern !== null) {
+                if (! is_string($value) || preg_match($this->keyPattern, $value) !== 1) {
+                    return FilterResult::invalid('Pilihan tidak valid.');
+                }
+                $ids[] = $value;
+            } elseif (is_int($value) && $value > 0) {
                 $ids[] = $value;
             } elseif (is_string($value) && preg_match('/^[1-9]\d{0,18}$/', $value) === 1) {
                 $ids[] = (int) $value;
@@ -89,8 +135,10 @@ class RelationFilter extends Filter
         $ids = array_values(array_unique($ids));
 
         $query = ($this->validIds)();
-        /** @var list<int> $allowed */
-        $allowed = $query->whereKey($ids)->pluck($query->getModel()->getQualifiedKeyName())->map(fn ($id) => (int) $id)->all();
+        /** @var list<int|string> $allowed */
+        $allowed = $query->whereKey($ids)->pluck($query->getModel()->getQualifiedKeyName())
+            ->map(fn ($id) => $this->keyPattern !== null ? (string) $id : (int) $id)
+            ->all();
         $found = array_values(array_intersect($ids, $allowed));
 
         $value = $this->multiple ? $found : ($found[0] ?? null);
@@ -107,6 +155,11 @@ class RelationFilter extends Filter
 
     public function toArray(): array
     {
-        return [...parent::toArray(), 'options_source' => $this->source];
+        return [
+            ...parent::toArray(),
+            'options_source' => $this->source,
+            ...($this->params !== [] ? ['options_params' => $this->params] : []),
+            ...($this->dependsOn !== null ? ['depends_on' => $this->dependsOn] : []),
+        ];
     }
 }

@@ -52,10 +52,13 @@ class RoleController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
+        /** @var User $actor */
+        $actor = $request->user();
+
         return Inertia::render('roles/form', [
-            ...self::formOptions(),
+            ...self::formOptions($actor),
             'role' => null,
             'readOnly' => null,
         ]);
@@ -78,7 +81,7 @@ class RoleController extends Controller
         $actor = $request->user();
 
         return Inertia::render('roles/form', [
-            ...self::formOptions(),
+            ...self::formOptions($actor),
             'role' => [
                 'id' => $role->id,
                 'name' => $role->name,
@@ -117,10 +120,13 @@ class RoleController extends Controller
     }
 
     /** @return array<string, mixed> */
-    private static function formOptions(): array
+    private static function formOptions(User $actor): array
     {
         return [
             'modules' => PermissionCatalog::grouped(),
+            // Batas delegasi (BR-031): hanya permission & scope milik sendiri yang bisa ditambahkan.
+            'grantable' => SaveRole::grantablePermissions($actor),
+            'widestScope' => SaveRole::widestScope($actor)->value,
             'scopes' => collect(DataScope::cases())->map(fn (DataScope $s) => [
                 'value' => $s->value,
                 'label' => $s->label(),

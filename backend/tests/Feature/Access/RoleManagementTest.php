@@ -168,3 +168,35 @@ test('listing role: cari, filter scope & sistem, sort label', function () {
     $this->get('/role?filter[is_system]=1')->assertInertia(fn (Assert $page) => $page->has('rows', 3));
     $this->get('/role?sort=-label')->assertInertia(fn (Assert $page) => $page->where('rows.0.name', 'supervisor'));
 });
+
+test('BR-031 batas delegasi: Administrator tidak bisa memberi permission yang tidak ia miliki (cegah naik hak lewat akun lain)', function () {
+    $this->actingAs(userWithRole('administrator'));
+
+    confirmed()->from('/role/baru')->post('/role', rolePayload(['permissions' => ['dashboard.view', 'employees.view_sensitive']]))
+        ->assertSessionHasErrors('permissions');
+    expect(Role::query()->where('name', 'kepala_toko_khusus')->exists())->toBeFalse();
+
+    // Mengubah role lain: permission yang SUDAH ada (di luar milik admin) boleh tetap / dilepas, tidak boleh ditambah.
+    $hrd = Role::findByName('hrd', 'web');
+    $kept = $hrd->permissions->pluck('name')->all();
+    confirmed()->put("/role/{$hrd->id}", rolePayload(['label' => 'HRD', 'name' => 'hrd', 'data_scope' => 'all', 'mfa_required' => true, 'permissions' => $kept]))
+        ->assertSessionHasNoErrors();
+
+    $supervisor = Role::findByName('supervisor', 'web');
+    confirmed()->put("/role/{$supervisor->id}", rolePayload([
+        'label' => 'Supervisor', 'name' => 'supervisor', 'data_scope' => 'team',
+        'permissions' => [...$supervisor->permissions->pluck('name')->all(), 'employees.view_sensitive'],
+    ]))->assertSessionHasErrors('permissions');
+});
+
+test('BR-031 batas delegasi scope: tidak bisa memberi scope lebih luas dari scope sendiri', function () {
+    // Role kustom pengelola role dengan scope `location`.
+    $manager = Role::create(['name' => 'pengelola_lokasi', 'guard_name' => 'web', 'label' => 'Pengelola Lokasi', 'data_scope' => 'location']);
+    $manager->givePermissionTo(['dashboard.view', 'roles.view', 'roles.manage']);
+    $this->actingAs(userWithRole('pengelola_lokasi'));
+
+    confirmed()->from('/role/baru')->post('/role', rolePayload(['data_scope' => 'all', 'permissions' => ['dashboard.view']]))
+        ->assertSessionHasErrors('data_scope');
+    confirmed()->post('/role', rolePayload(['data_scope' => 'team', 'permissions' => ['dashboard.view']]))
+        ->assertSessionHasNoErrors();
+});

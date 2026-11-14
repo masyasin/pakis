@@ -4,6 +4,8 @@ namespace App\Domain\Access\Actions;
 
 use App\Domain\Access\Enums\DataScope;
 use App\Domain\Access\Models\Role;
+use App\Domain\Access\Support\PermissionCatalog;
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\SecurityChannel;
 use App\Domain\Audit\Enums\SecurityEventType;
@@ -42,6 +44,8 @@ final class SaveRole
                 throw ValidationException::withMessages(['name' => 'Kode role sistem tidak bisa diganti.']);
             }
         }
+
+        self::assertWithinDelegation($actor, $role, $data);
 
         $saved = DB::transaction(function () use ($role, $data) {
             $isNew = $role === null;
@@ -111,6 +115,76 @@ final class SaveRole
                 ? 'Role ini terkunci dan tidak bisa diubah.'
                 : 'Anda tidak bisa mengubah role yang sedang Anda pegang.');
         }
+    }
+
+    /**
+     * Permission yang boleh DITAMBAHKAN `$actor` ke role: hanya yang ia miliki sendiri (Super Admin:
+     * semua). Tanpa batas ini pemegang `roles.manage` bisa membuat role berisi permission yang tidak
+     * ia punya (mis. Administrator → `employees.view_sensitive`), menetapkannya ke akun lain, lalu
+     * memakainya — menembus pemisahan tugas 06 §4.
+     *
+     * @return list<string>
+     */
+    public static function grantablePermissions(User $actor): array
+    {
+        if ($actor->hasRole(RoleCatalog::SUPER_ADMIN)) {
+            return PermissionCatalog::names();
+        }
+
+        return array_values($actor->getAllPermissions()->map(fn ($p): string => (string) $p->name)->all());
+    }
+
+    /** Scope terluas yang boleh diberikan `$actor` = scope terluas role-nya sendiri (06 §2). */
+    public static function widestScope(User $actor): DataScope
+    {
+        if ($actor->hasRole(RoleCatalog::SUPER_ADMIN)) {
+            return DataScope::All;
+        }
+
+        $widest = DataScope::Self;
+        foreach ($actor->roles as $held) {
+            $scope = $held instanceof Role ? $held->data_scope : DataScope::Self;
+            if (self::scopeRank($scope) > self::scopeRank($widest)) {
+                $widest = $scope;
+            }
+        }
+
+        return $widest;
+    }
+
+    /**
+     * @param  array{name: string, label: string, description: string|null, data_scope: string, mfa_required: bool, permissions: list<string>}  $data
+     */
+    private static function assertWithinDelegation(User $actor, ?Role $role, array $data): void
+    {
+        // Permission yang sudah ada di role boleh dipertahankan/dilepas; yang DITAMBAHKAN dibatasi.
+        $existing = $role?->permissions->pluck('name')->all() ?? [];
+        $beyond = array_values(array_diff($data['permissions'], $existing, self::grantablePermissions($actor)));
+
+        if ($beyond !== []) {
+            throw ValidationException::withMessages([
+                'permissions' => 'Anda hanya bisa memberikan permission yang Anda miliki sendiri. Tidak boleh: '.implode(', ', $beyond).'.',
+            ]);
+        }
+
+        $requested = DataScope::from($data['data_scope']);
+        $unchanged = $role !== null && $role->data_scope === $requested;
+        if (! $unchanged && self::scopeRank($requested) > self::scopeRank(self::widestScope($actor))) {
+            throw ValidationException::withMessages([
+                'data_scope' => 'Cakupan data tidak boleh lebih luas dari cakupan role Anda sendiri ('.self::widestScope($actor)->label().').',
+            ]);
+        }
+    }
+
+    /** `all` > `location` > `team` > `self` (06 §11: scope terluas). */
+    private static function scopeRank(DataScope $scope): int
+    {
+        return match ($scope) {
+            DataScope::All => 3,
+            DataScope::Location => 2,
+            DataScope::Team => 1,
+            DataScope::Self => 0,
+        };
     }
 
     /** @return array<string, mixed> */

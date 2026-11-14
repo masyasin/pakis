@@ -37,6 +37,18 @@ type Props = {
     scopes: Scope[];
     role: RoleData | null;
     readOnly: 'locked' | 'own' | null;
+    /** Permission yang boleh DITAMBAHKAN pengguna ini (batas delegasi, BR-031). */
+    grantable: string[];
+    /** Scope terluas yang boleh diberikan pengguna ini. */
+    widestScope: string;
+};
+
+/** Urutan scope dari sempit ke luas (06 §11). */
+const SCOPE_RANK: Record<string, number> = {
+    self: 0,
+    team: 1,
+    location: 2,
+    all: 3,
 };
 
 const READ_ONLY_MESSAGE: Record<'locked' | 'own', string> = {
@@ -45,7 +57,14 @@ const READ_ONLY_MESSAGE: Record<'locked' | 'own', string> = {
 };
 
 /** Form role + matriks permission per modul (07 §4 "Role (form)", FR-017, BR-030). */
-export default function RoleForm({ modules, scopes, role, readOnly }: Props) {
+export default function RoleForm({
+    modules,
+    scopes,
+    role,
+    readOnly,
+    grantable,
+    widestScope,
+}: Props) {
     const form = useForm({
         label: role?.label ?? '',
         name: role?.name ?? '',
@@ -56,6 +75,17 @@ export default function RoleForm({ modules, scopes, role, readOnly }: Props) {
     });
     const disabled = readOnly !== null;
     const selected = new Set(form.data.permissions);
+    // Permission yang sudah ada di role boleh dipertahankan/dilepas; yang lain hanya bila dimiliki.
+    const original = new Set(role?.permissions ?? []);
+    const grantableSet = new Set(grantable);
+    const canGrant = (name: string) =>
+        grantableSet.has(name) || original.has(name);
+    const scopeAllowed = (value: string) =>
+        value === role?.data_scope ||
+        (SCOPE_RANK[value] ?? 0) <= (SCOPE_RANK[widestScope] ?? 0);
+    const someLocked = modules.some((m) =>
+        m.permissions.some((p) => !canGrant(p.name)),
+    );
 
     const toggle = (names: string[], on: boolean) => {
         const next = new Set(form.data.permissions);
@@ -200,16 +230,24 @@ export default function RoleForm({ modules, scopes, role, readOnly }: Props) {
                                 {scopes.map((s) => (
                                     <label
                                         key={s.value}
+                                        title={
+                                            scopeAllowed(s.value)
+                                                ? undefined
+                                                : 'Lebih luas dari cakupan role Anda sendiri.'
+                                        }
                                         className={cn(
                                             'flex cursor-pointer gap-3 rounded-lg border p-3 text-sm transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring',
                                             form.data.data_scope === s.value &&
                                                 'border-primary/50 bg-sidebar-accent',
+                                            !scopeAllowed(s.value) &&
+                                                'cursor-not-allowed opacity-50',
                                         )}
                                     >
                                         <input
                                             type="radio"
                                             name="data_scope"
                                             value={s.value}
+                                            disabled={!scopeAllowed(s.value)}
                                             checked={
                                                 form.data.data_scope === s.value
                                             }
@@ -265,7 +303,9 @@ export default function RoleForm({ modules, scopes, role, readOnly }: Props) {
                         className="@container grid gap-3 sm:grid-cols-2"
                     >
                         {modules.map((m) => {
-                            const names = m.permissions.map((p) => p.name);
+                            const names = m.permissions
+                                .map((p) => p.name)
+                                .filter(canGrant);
                             const count = names.filter((n) =>
                                 selected.has(n),
                             ).length;
@@ -278,6 +318,7 @@ export default function RoleForm({ modules, scopes, role, readOnly }: Props) {
                                 >
                                     <label className="flex items-center gap-2.5 border-b pb-2 text-sm font-semibold">
                                         <Checkbox
+                                            disabled={names.length === 0}
                                             checked={
                                                 all
                                                     ? true
@@ -292,14 +333,28 @@ export default function RoleForm({ modules, scopes, role, readOnly }: Props) {
                                         />
                                         {m.label}
                                         <span className="ml-auto text-xs font-normal text-muted-foreground tabular-nums">
-                                            {count}/{names.length}
+                                            {count}/{m.permissions.length}
                                         </span>
                                     </label>
                                     <ul className="mt-2 space-y-1.5">
                                         {m.permissions.map((p) => (
                                             <li key={p.name}>
-                                                <label className="flex items-start gap-2.5 text-sm">
+                                                <label
+                                                    className={cn(
+                                                        'flex items-start gap-2.5 text-sm',
+                                                        !canGrant(p.name) &&
+                                                            'opacity-50',
+                                                    )}
+                                                    title={
+                                                        canGrant(p.name)
+                                                            ? undefined
+                                                            : 'Anda tidak memiliki permission ini, jadi tidak bisa memberikannya.'
+                                                    }
+                                                >
                                                     <Checkbox
+                                                        disabled={
+                                                            !canGrant(p.name)
+                                                        }
                                                         checked={selected.has(
                                                             p.name,
                                                         )}
@@ -325,6 +380,12 @@ export default function RoleForm({ modules, scopes, role, readOnly }: Props) {
                             );
                         })}
                     </fieldset>
+                    {someLocked && !disabled && (
+                        <p className="mt-3 text-xs text-muted-foreground">
+                            Permission yang redup tidak Anda miliki, jadi tidak
+                            bisa Anda berikan ke role.
+                        </p>
+                    )}
                     <InputError message={form.errors.permissions} />
                 </SettingsSection>
 

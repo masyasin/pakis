@@ -2,6 +2,7 @@
 
 namespace App\Support\Lookup;
 
+use App\Domain\Access\DataScope;
 use App\Models\User;
 use App\Support\Listing\Search\TextSearch;
 use Illuminate\Database\Eloquent\Builder;
@@ -61,12 +62,26 @@ abstract class LookupSource
     }
 
     /**
-     * Batasi ke data dalam scope pemanggil (06 §5). Sumber data pegawai/lokasi WAJIB mengisinya.
+     * Kolom pegawai pemilik data untuk sumber ber-scope (06 §5), mis. `employees.id`. Null = data
+     * tidak terikat pegawai (referensi, wilayah, role, akun untuk filter audit).
+     */
+    public function scopeColumn(): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Batasi ke data dalam scope pemanggil (06 §5, BR-032). Sumber data pegawai cukup mengisi
+     * `scopeColumn()`; sumber lokasi (T-021) menimpa method ini.
      *
      * @param  Builder<covariant Model>  $query
      */
     public function scope(Builder $query, User $user): void
     {
-        // TODO(T-019): terapkan DataScope pengguna untuk sumber yang ber-scope (lokasi, pegawai, …).
+        $column = $this->scopeColumn();
+
+        if ($column !== null) {
+            app(DataScope::class)->apply($query, $user, $column);
+        }
     }
 }

@@ -111,7 +111,7 @@ Catatan: `administrator` sengaja **tidak** bisa membuka NIK, mengubah data pegaw
 | `team` | Diri sendiri + bawahan langsung & tidak langsung lewat `assignments.supervisor_employee_id` (penugasan aktif, CTE rekursif maks 5 tingkat) | sama dengan baris atas |
 | `self` | Diri sendiri | API mobile milik sendiri |
 
-Implementasi: `App\Domain\Access\DataScope::apply(Builder $q, User $u, string $employeeColumn)` dipanggil oleh setiap `*Listing` dan setiap Policy `view/update`. Pengguna tanpa pegawai (mis. Super Admin) dengan scope selain `all` tidak melihat data apa pun.
+Implementasi: `App\Domain\Access\DataScope::apply(Builder $q, User $u, string $employeeColumn)` dipanggil oleh setiap `*Listing` dan setiap Policy `view/update`; `DataScope::allows($u, $employeeId)` untuk Policy. Pengguna tanpa pegawai (mis. Super Admin) dengan scope selain `all` tidak melihat data apa pun. Struktur organisasi dibaca lewat `OrgStructure` (`DatabaseOrgStructure`: penugasan aktif = `start_date ≤ hari ini` dan `end_date` kosong/≥ hari ini, tanggal lokal). `team` dihitung per tingkat (≤ 5 query, pengaman struktur melingkar) — hasil sama dengan CTE rekursif 5 tingkat (T-019).
 
 ## 6. Aturan Persetujuan Koreksi (BR-069)
 
@@ -208,7 +208,9 @@ Role `pegawai` saja **tidak** bisa masuk web admin. Login web ditolak dengan pes
 ## 10. Implementasi
 
 - Permission dicek lewat Policy (`EmployeePolicy`, `AttendanceDayPolicy`, `AttendanceCorrectionPolicy`, dst.). Controller memakai atribut `#[Authorize]` (Laravel 13) atau `$this->authorize()`.
-- Route-model binding untuk resource ber-scope memakai `resolveRouteBinding` yang menerapkan `DataScope`, sehingga ID di luar scope menghasilkan 404.
+- Route-model binding untuk resource ber-scope memakai trait `App\Support\Authorization\ScopedRouteBinding` (model menyebut `scopedEmployeeColumn()`), sehingga ID di luar scope menghasilkan 404. Lookup ber-scope cukup mengisi `LookupSource::scopeColumn()`.
+- Super Admin lolos semua permission lewat `Gate::before`, **kecuali** ability akun yang dilindungi Owner (`users.assign-roles`, `users.reset-mfa-of`, `UserPolicy`): bukan akun sendiri, akun Owner hanya oleh Owner (SEC-009).
+- Test: `tests/Feature/Authorization/PermissionMatrixTest` (role × permission, route perwakilan per modul) dan trait `Tests\Support\AssertsIdor` + `FakeOrgStructure` untuk test IDOR modul.
 - `HandleInertiaRequests` membagikan `auth.permissions` (array) dan `auth.menu` (sudah difilter server) ke frontend.
 - Perubahan role/permission/penugasan → `security_events` (`role_changed`/`permission_changed`) + `audit_logs`, dan cache permission Spatie dibersihkan.
 

@@ -6,6 +6,7 @@ use App\Domain\Access\Enums\DataScope;
 use App\Domain\Access\Models\Role;
 use App\Domain\Access\Support\PermissionCatalog;
 use App\Domain\Access\Support\RoleCatalog;
+use App\Domain\Access\Support\ScopeResolver;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\SecurityChannel;
 use App\Domain\Audit\Enums\SecurityEventType;
@@ -134,22 +135,10 @@ final class SaveRole
         return array_values($actor->getAllPermissions()->map(fn ($p): string => (string) $p->name)->all());
     }
 
-    /** Scope terluas yang boleh diberikan `$actor` = scope terluas role-nya sendiri (06 §2). */
+    /** Scope terluas yang boleh diberikan `$actor` = scope efektifnya sendiri (BR-032). */
     public static function widestScope(User $actor): DataScope
     {
-        if ($actor->hasRole(RoleCatalog::SUPER_ADMIN)) {
-            return DataScope::All;
-        }
-
-        $widest = DataScope::Self;
-        foreach ($actor->roles as $held) {
-            $scope = $held instanceof Role ? $held->data_scope : DataScope::Self;
-            if (self::scopeRank($scope) > self::scopeRank($widest)) {
-                $widest = $scope;
-            }
-        }
-
-        return $widest;
+        return ScopeResolver::for($actor);
     }
 
     /**
@@ -169,22 +158,11 @@ final class SaveRole
 
         $requested = DataScope::from($data['data_scope']);
         $unchanged = $role !== null && $role->data_scope === $requested;
-        if (! $unchanged && self::scopeRank($requested) > self::scopeRank(self::widestScope($actor))) {
+        if (! $unchanged && ScopeResolver::rank($requested) > ScopeResolver::rank(self::widestScope($actor))) {
             throw ValidationException::withMessages([
                 'data_scope' => 'Cakupan data tidak boleh lebih luas dari cakupan role Anda sendiri ('.self::widestScope($actor)->label().').',
             ]);
         }
-    }
-
-    /** `all` > `location` > `team` > `self` (06 §11: scope terluas). */
-    private static function scopeRank(DataScope $scope): int
-    {
-        return match ($scope) {
-            DataScope::All => 3,
-            DataScope::Location => 2,
-            DataScope::Team => 1,
-            DataScope::Self => 0,
-        };
     }
 
     /** @return array<string, mixed> */

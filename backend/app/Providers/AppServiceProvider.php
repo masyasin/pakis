@@ -2,15 +2,19 @@
 
 namespace App\Providers;
 
+use App\Domain\Access\DataScope;
 use App\Domain\Access\Listeners\ConfirmPasswordForMfaSetup;
 use App\Domain\Access\Listeners\RecordLogout;
 use App\Domain\Access\Listeners\RecordSuccessfulLogin;
 use App\Domain\Access\Listeners\RecordTwoFactorEvents;
 use App\Domain\Access\Lookup\RoleLookup;
 use App\Domain\Access\Lookup\UserLookup;
+use App\Domain\Access\Policies\UserPolicy;
 use App\Domain\Access\Rules\PasswordPolicy;
 use App\Domain\Access\Support\ActiveEmployeeStatus;
+use App\Domain\Access\Support\DatabaseOrgStructure;
 use App\Domain\Access\Support\EmployeeStatus;
+use App\Domain\Access\Support\OrgStructure;
 use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Audit\Listeners\RecordExportCreated;
 use App\Domain\Notification\Otp\OtpManager;
@@ -45,6 +49,11 @@ class AppServiceProvider extends ServiceProvider
     {
         // Scoped: direset tiap request & tiap job antrean, jadi nilai setting tidak basi di worker.
         $this->app->scoped(SettingStore::class);
+
+        // Scope data (06 §5, T-019). DataScope di-memo per request (scoped), jadi struktur
+        // organisasi dihitung sekali per pengguna per request.
+        $this->app->bind(OrgStructure::class, DatabaseOrgStructure::class);
+        $this->app->scoped(DataScope::class);
 
         // Status pegawai untuk login (BR-010); TODO(T-024): implementasi berbasis model Employee.
         $this->app->bind(EmployeeStatus::class, ActiveEmployeeStatus::class);
@@ -99,14 +108,24 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * Super Admin (vendor) lolos semua permission (06 §2). Batasnya (tidak bisa mengubah Owner)
-     * ditegakkan di Action, bukan lewat permission: role `owner`/`super_admin` terkunci penuh.
-     * Pengguna lain: Spatie menjawab dari permission role-nya (Gate::before miliknya mengembalikan
-     * null bila tidak punya, sehingga ability yang didefinisikan biasa tetap berlaku).
+     * Ability atas akun pengguna lain yang dilindungi Owner (SEC-009): TIDAK ikut "Super Admin
+     * lolos semua" — UserPolicy yang memutuskan, sehingga Super Admin tidak bisa mengubah Owner.
+     */
+    public const OWNER_PROTECTED = ['users.assign-roles', 'users.reset-mfa-of'];
+
+    /**
+     * Super Admin (vendor) lolos semua permission (06 §2), kecuali OWNER_PROTECTED. Pengguna lain:
+     * Spatie menjawab dari permission role-nya (mengembalikan null bila tidak punya, sehingga
+     * ability yang didefinisikan biasa tetap berlaku). Role `owner`/`super_admin` sendiri terkunci
+     * penuh di SaveRole.
      */
     protected function configureAuthorization(): void
     {
-        Gate::before(fn (User $user): ?bool => $user->hasRole(RoleCatalog::SUPER_ADMIN) ? true : null);
+        Gate::before(fn (User $user, string $ability): ?bool => ! in_array($ability, self::OWNER_PROTECTED, true)
+            && $user->hasRole(RoleCatalog::SUPER_ADMIN) ? true : null);
+
+        Gate::define('users.assign-roles', [UserPolicy::class, 'assignRoles']);
+        Gate::define('users.reset-mfa-of', [UserPolicy::class, 'resetMfaOf']);
     }
 
     /**

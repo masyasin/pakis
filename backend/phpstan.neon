@@ -9,5 +9,8 @@ parameters:
         - config/
         - database/
         - routes/
+        # Pemakai ScopedRouteBinding satu-satunya sampai model pegawai ada (T-024); tanpa ini trait
+        # tidak dianalisis sama sekali.
+        - tests/Support/ScopedUserProbe.php
 
     level: 7

@@ -283,9 +283,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Domain/Access/{DataScope,ScopeResolver}.php`, `Gate::before` super admin (+ pengecualian Owner), trait `ScopedRouteBinding`, `tests/Feature/Authorization/{PermissionMatrixTest,IdorTestCase}.php`, `tests/Fixtures/permission_matrix.php`
 - Deskripsi: Implementasi scope `all/location/team/self` (CTE rekursif maks 5 tingkat untuk `team`) dengan kolom pegawai yang bisa dikonfigurasi per query. Hook ke `LookupRegistry` (T-011). Harness data-driven untuk matriks & IDOR yang dipakai task modul berikutnya. Tabel pegawai/penugasan belum ada, jadi gunakan migration test minimal atau tunda test integrasi scope ke T-025 (catat di Implementasi_Plan).
 - Kriteria penerimaan:
-  - [ ] Unit test scope dengan struktur atasan 3 tingkat
-  - [ ] Super Admin tidak bisa mengubah role akun Owner (SEC-009)
-  - [ ] Resource di luar scope → 404 (bukan 403)
+  - [x] Unit test scope dengan struktur atasan 3 tingkat
+  - [x] Super Admin tidak bisa mengubah role akun Owner (SEC-009)
+  - [x] Resource di luar scope → 404 (bukan 403)
 - Verifikasi: `php artisan test --filter=Scope`
 - Di luar lingkup: —
 

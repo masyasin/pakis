@@ -2,7 +2,6 @@
 
 namespace App\Domain\Access\Actions;
 
-use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\SecurityChannel;
 use App\Domain\Audit\Enums\SecurityEventType;
@@ -10,6 +9,7 @@ use App\Domain\Audit\SecurityLogger;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Reset MFA pengguna oleh admin (BR-015), mis. HP autentikator hilang. Dipanggil route
@@ -46,14 +46,13 @@ final class ResetMfa
         });
     }
 
+    /** Aturan wewenang satu sumber: UserPolicy::resetMfaOf (ability `users.reset-mfa-of`, T-019). */
     public static function assertAllowed(User $actor, User $target): void
     {
-        if ($actor->is($target)) {
-            throw new AuthorizationException('Anda tidak bisa mereset MFA akun sendiri.');
-        }
-
-        if ($target->hasRole(RoleCatalog::OWNER) && ! $actor->hasRole(RoleCatalog::OWNER)) {
-            throw new AuthorizationException('Hanya Owner yang bisa mereset MFA akun Owner.');
+        if (Gate::forUser($actor)->denies('users.reset-mfa-of', $target)) {
+            throw new AuthorizationException($actor->is($target)
+                ? 'Anda tidak bisa mereset MFA akun sendiri.'
+                : 'Anda tidak berwenang mereset MFA akun ini.');
         }
     }
 }

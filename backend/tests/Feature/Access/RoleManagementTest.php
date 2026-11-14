@@ -18,7 +18,8 @@ beforeEach(function () {
 
 function userWithRole(string ...$roles): User
 {
-    return User::factory()->create()->assignRole($roles);
+    // MFA aktif: owner/administrator/hrd/super_admin wajib MFA (BR-015); test ini menguji role, bukan MFA.
+    return User::factory()->withTwoFactor()->create()->assignRole($roles);
 }
 
 function confirmed()

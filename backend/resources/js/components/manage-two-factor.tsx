@@ -12,6 +12,11 @@ export type Props = {
     canManageTwoFactor?: boolean;
     requiresConfirmation?: boolean;
     twoFactorEnabled?: boolean;
+    /** Role pengguna mewajibkan MFA (BR-015): tidak bisa dinonaktifkan. */
+    mfaRequired?: boolean;
+    /** Server mengizinkan kode pemulihan dilihat sekali (tepat setelah dibuat). */
+    recoveryCodesViewable?: boolean;
+    recoveryCodesRemaining?: number;
 };
 
 export default function ManageTwoFactor(props: Props) {
@@ -60,24 +65,34 @@ export default function ManageTwoFactor(props: Props) {
                         aplikasi autentikator (mis. Google Authenticator).
                     </p>
 
-                    <div className="relative inline">
-                        <Form {...disable.form()}>
-                            {({ processing }) => (
-                                <Button
-                                    variant="destructive"
-                                    type="submit"
-                                    disabled={processing}
-                                >
-                                    Nonaktifkan 2FA
-                                </Button>
-                            )}
-                        </Form>
-                    </div>
+                    {props.mfaRequired ? (
+                        <p className="text-sm text-muted-foreground">
+                            Wajib untuk role Anda, jadi tidak bisa
+                            dinonaktifkan. Bila HP hilang, minta admin mereset
+                            MFA akun Anda.
+                        </p>
+                    ) : (
+                        <div className="relative inline">
+                            <Form {...disable.form()}>
+                                {({ processing }) => (
+                                    <Button
+                                        variant="destructive"
+                                        type="submit"
+                                        disabled={processing}
+                                    >
+                                        Nonaktifkan 2FA
+                                    </Button>
+                                )}
+                            </Form>
+                        </div>
+                    )}
 
                     <TwoFactorRecoveryCodes
                         recoveryCodesList={recoveryCodesList}
                         fetchRecoveryCodes={fetchRecoveryCodes}
                         errors={errors}
+                        viewable={props.recoveryCodesViewable ?? false}
+                        remaining={props.recoveryCodesRemaining}
                     />
                 </div>
             ) : (

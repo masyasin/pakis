@@ -54,6 +54,9 @@ export default function ProfileSecurity(props: Props) {
                 canManageTwoFactor={props.canManageTwoFactor}
                 requiresConfirmation={props.requiresConfirmation}
                 twoFactorEnabled={props.twoFactorEnabled}
+                mfaRequired={props.mfaRequired}
+                recoveryCodesViewable={props.recoveryCodesViewable}
+                recoveryCodesRemaining={props.recoveryCodesRemaining}
             />
 
             <SessionsSection sessions={props.sessions} />

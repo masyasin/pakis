@@ -38,7 +38,8 @@ final class ListingRouteFixtures
             (new PermissionSeeder)->run();
             (new RoleSeeder)->run();
 
-            return User::factory()->create()->assignRole(RoleCatalog::SUPER_ADMIN);
+            // MFA aktif: super_admin wajib MFA (BR-015), tanpa itu semua halaman dialihkan ke aktivasi.
+            return User::factory()->withTwoFactor()->create()->assignRole(RoleCatalog::SUPER_ADMIN);
         }
 
         return match ($routeName) {

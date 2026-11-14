@@ -10,8 +10,10 @@ use App\Domain\Access\Actions\UnlinkTelegram;
 use App\Domain\Access\Actions\UpdateProfile;
 use App\Domain\Access\Rules\PasswordPolicy;
 use App\Domain\Access\Support\AvatarStore;
+use App\Domain\Access\Support\MfaRequirement;
 use App\Domain\Notification\Telegram\TelegramLink;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\RecoveryCodesOnce;
 use App\Http\Requests\Profile\CurrentPasswordRequest;
 use App\Http\Requests\Profile\PasswordUpdateRequest;
 use App\Http\Requests\Profile\ProfileUpdateRequest;
@@ -100,6 +102,11 @@ class ProfileController extends Controller
             $request->ensureStateIsValid();
 
             $props['twoFactorEnabled'] = $user->hasEnabledTwoFactorAuthentication();
+            // BR-015: role wajib MFA → tombol nonaktifkan disembunyikan (server juga menolak).
+            $props['mfaRequired'] = MfaRequirement::requires($user);
+            // Kode pemulihan hanya tampil sekali; sesudahnya cukup jumlah sisanya.
+            $props['recoveryCodesRemaining'] = $user->hasEnabledTwoFactorAuthentication() ? count($user->recoveryCodes()) : 0;
+            $props['recoveryCodesViewable'] = (bool) $request->session()->get(RecoveryCodesOnce::SESSION_FLAG, false);
             $props['requiresConfirmation'] = Features::optionEnabled(Features::twoFactorAuthentication(), 'confirm');
         }
 

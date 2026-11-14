@@ -20,7 +20,8 @@ beforeEach(function () {
 function menuOf(string $role): array
 {
     $menu = [];
-    test()->actingAs(User::factory()->create()->assignRole($role))->get('/dasbor')
+    // MFA aktif: beberapa role wajib MFA (BR-015); yang diuji di sini menu, bukan MFA.
+    test()->actingAs(User::factory()->withTwoFactor()->create()->assignRole($role))->get('/dasbor')
         ->assertOk()
         ->assertInertia(function (Assert $page) use (&$menu) {
             foreach ($page->toArray()['props']['auth']['menu'] as $group) {
@@ -53,7 +54,7 @@ test('06 §8 kepala lokasi & supervisor: hanya Dasbor sampai modul absensi/pegaw
 })->with(['kepala_lokasi', 'supervisor']);
 
 test('auth.permissions: super_admin = 50 permission; tamu tanpa menu', function () {
-    $this->actingAs(User::factory()->create()->assignRole('super_admin'))->get('/dasbor')
+    $this->actingAs(User::factory()->withTwoFactor()->create()->assignRole('super_admin'))->get('/dasbor')
         ->assertInertia(fn (Assert $page) => $page->has('auth.permissions', 50)->has('auth.menu'));
 
     app('auth')->forgetGuards();

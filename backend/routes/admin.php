@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\LookupController;
+use App\Http\Controllers\Admin\MfaSetupController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
@@ -54,6 +55,9 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('role/{role}', [RoleController::class, 'update'])->whereNumber('role')->name('roles.update');
         Route::delete('role/{role}', [RoleController::class, 'destroy'])->whereNumber('role')->name('roles.destroy');
     });
+
+    // Wajib aktivasi MFA (05 §4.1, BR-015). Dibiarkan oleh middleware EnforceMfa.
+    Route::get('aktivasi-mfa', MfaSetupController::class)->middleware(RequirePassword::class)->name('mfa.setup');
 
     // Lookup select/autocomplete (05 §4.11, BR-006). Izin per sumber dicek di controller.
     Route::get('lookup/{source}', [LookupController::class, 'show'])

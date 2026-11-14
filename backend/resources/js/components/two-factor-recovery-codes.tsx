@@ -1,6 +1,6 @@
 import { Form } from '@inertiajs/react';
-import { Eye, EyeOff, LockKeyhole, RefreshCw } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { LockKeyhole, RefreshCw, TriangleAlert } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import AlertError from '@/components/alert-error';
 import { Button } from '@/components/ui/button';
 import {
@@ -16,41 +16,34 @@ type Props = {
     recoveryCodesList: string[];
     fetchRecoveryCodes: () => Promise<void>;
     errors: string[];
+    /** Server mengizinkan kode dilihat SEKALI (tepat setelah dibuat). */
+    viewable: boolean;
+    /** Jumlah kode yang belum dipakai. */
+    remaining?: number;
 };
 
+/**
+ * Kode pemulihan MFA (BR-015): tampil SEKALI tepat setelah dibuat (aktivasi / buat ulang).
+ * Sesudahnya hanya jumlah sisa kode yang terlihat; kode yang hilang diganti dengan "Buat ulang".
+ */
 export default function TwoFactorRecoveryCodes({
     recoveryCodesList,
     fetchRecoveryCodes,
     errors,
+    viewable,
+    remaining,
 }: Props) {
-    const [codesAreVisible, setCodesAreVisible] = useState<boolean>(false);
-    const codesSectionRef = useRef<HTMLDivElement | null>(null);
-    const canRegenerateCodes = recoveryCodesList.length > 0 && codesAreVisible;
-
-    const toggleCodesVisibility = useCallback(async () => {
-        if (!codesAreVisible && !recoveryCodesList.length) {
-            await fetchRecoveryCodes();
-        }
-
-        setCodesAreVisible(!codesAreVisible);
-
-        if (!codesAreVisible) {
-            setTimeout(() => {
-                codesSectionRef.current?.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                });
-            });
-        }
-    }, [codesAreVisible, recoveryCodesList.length, fetchRecoveryCodes]);
+    const fetched = useRef(false);
 
     useEffect(() => {
-        if (!recoveryCodesList.length) {
+        // Satu kali saja: server hanya melayani permintaan pertama setelah kode dibuat.
+        if (viewable && !fetched.current && recoveryCodesList.length === 0) {
+            fetched.current = true;
             void fetchRecoveryCodes();
         }
-    }, [recoveryCodesList.length, fetchRecoveryCodes]);
+    }, [viewable, recoveryCodesList.length, fetchRecoveryCodes]);
 
-    const RecoveryCodeIconComponent = codesAreVisible ? EyeOff : Eye;
+    const showing = recoveryCodesList.length > 0;
 
     return (
         // Berada di dalam kartu Pengaturan, jadi tanpa bayangan agar tidak bertumpuk.
@@ -58,108 +51,84 @@ export default function TwoFactorRecoveryCodes({
             <CardHeader>
                 <CardTitle className="flex gap-3">
                     <LockKeyhole className="size-4" aria-hidden="true" />
-                    Kode pemulihan 2FA
+                    Kode pemulihan
                 </CardTitle>
                 <CardDescription>
-                    Dipakai untuk masuk bila HP autentikator hilang. Simpan di
-                    pengelola password atau tempat aman lain.
+                    Dipakai untuk masuk bila HP autentikator hilang. Setiap kode
+                    hanya bisa dipakai sekali.
                 </CardDescription>
             </CardHeader>
-            <CardContent>
-                <div className="flex flex-col gap-3 select-none sm:flex-row sm:items-center sm:justify-between">
-                    <Button
-                        onClick={toggleCodesVisibility}
-                        className="w-fit"
-                        aria-expanded={codesAreVisible}
-                        aria-controls="recovery-codes-section"
-                    >
-                        <RecoveryCodeIconComponent
-                            className="size-4"
-                            aria-hidden="true"
-                        />
-                        {codesAreVisible ? 'Sembunyikan' : 'Lihat'} kode
-                        pemulihan
-                    </Button>
+            <CardContent className="space-y-3">
+                {errors.length > 0 && <AlertError errors={errors} />}
 
-                    {canRegenerateCodes && (
+                {showing ? (
+                    <>
+                        <div
+                            role="alert"
+                            className="flex items-start gap-2.5 rounded-lg bg-status-warning-bg px-3.5 py-3 text-sm text-status-warning"
+                        >
+                            <TriangleAlert
+                                className="mt-px size-4 shrink-0"
+                                aria-hidden="true"
+                            />
+                            <span>
+                                Simpan sekarang (pengelola password atau kertas
+                                di tempat aman).{' '}
+                                <strong>
+                                    Kode ini tidak bisa dilihat lagi
+                                </strong>{' '}
+                                setelah halaman ditutup.
+                            </span>
+                        </div>
+                        <div
+                            className="grid gap-x-6 gap-y-1 rounded-lg bg-card p-4 font-mono text-sm break-all select-text sm:grid-cols-2"
+                            role="list"
+                            aria-label="Kode pemulihan"
+                        >
+                            {recoveryCodesList.map((code) => (
+                                <div key={code} role="listitem">
+                                    {code}
+                                </div>
+                            ))}
+                        </div>
+                    </>
+                ) : (
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <p className="text-sm text-muted-foreground">
+                            {remaining !== undefined && (
+                                <>
+                                    <strong className="text-foreground tabular-nums">
+                                        {remaining} kode
+                                    </strong>{' '}
+                                    tersisa.{' '}
+                                </>
+                            )}
+                            Kode hanya ditampilkan sekali saat dibuat. Bila
+                            hilang atau hampir habis, buat kode baru (kode lama
+                            tidak berlaku lagi).
+                        </p>
                         <Form
                             {...regenerateRecoveryCodes.form()}
                             options={{ preserveScroll: true }}
-                            onSuccess={fetchRecoveryCodes}
+                            onSuccess={() => {
+                                fetched.current = true;
+                                void fetchRecoveryCodes();
+                            }}
                         >
                             {({ processing }) => (
                                 <Button
                                     variant="secondary"
                                     type="submit"
                                     disabled={processing}
-                                    aria-describedby="regenerate-warning"
+                                    className="shrink-0"
                                 >
-                                    <RefreshCw /> Buat ulang kode
+                                    <RefreshCw aria-hidden="true" />
+                                    Buat kode baru
                                 </Button>
                             )}
                         </Form>
-                    )}
-                </div>
-                <div
-                    id="recovery-codes-section"
-                    className={`relative overflow-hidden transition-all duration-300 ${codesAreVisible ? 'h-auto opacity-100' : 'h-0 opacity-0'}`}
-                    aria-hidden={!codesAreVisible}
-                >
-                    <div className="mt-3 space-y-3">
-                        {errors?.length ? (
-                            <AlertError errors={errors} />
-                        ) : (
-                            <>
-                                <div
-                                    ref={codesSectionRef}
-                                    className="grid gap-1 rounded-lg bg-muted p-4 font-mono text-sm"
-                                    role="list"
-                                    aria-label="Kode pemulihan"
-                                >
-                                    {recoveryCodesList.length ? (
-                                        recoveryCodesList.map((code, index) => (
-                                            <div
-                                                key={index}
-                                                role="listitem"
-                                                className="select-text"
-                                            >
-                                                {code}
-                                            </div>
-                                        ))
-                                    ) : (
-                                        <div
-                                            className="space-y-2"
-                                            aria-label="Memuat kode pemulihan"
-                                        >
-                                            {Array.from(
-                                                { length: 8 },
-                                                (_, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="h-4 animate-pulse rounded bg-muted-foreground/20"
-                                                        aria-hidden="true"
-                                                    />
-                                                ),
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-
-                                <div className="text-xs text-muted-foreground select-none">
-                                    <p id="regenerate-warning">
-                                        Setiap kode hanya bisa dipakai sekali
-                                        lalu otomatis hangus. Bila perlu kode
-                                        baru, pilih{' '}
-                                        <span className="font-semibold">
-                                            Buat ulang kode
-                                        </span>{' '}
-                                        di atas.
-                                    </p>
-                                </div>
-                            </>
-                        )}
                     </div>
-                </div>
+                )}
             </CardContent>
         </Card>
     );

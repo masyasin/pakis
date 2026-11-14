@@ -143,6 +143,7 @@ Kolom **Daftar** = harus mematuhi §3. Rincian kolom/cari/filter/sort tiap dafta
 | `telegram.webhook` | POST | `/telegram/webhook` | header `X-Telegram-Bot-Api-Secret-Token` | Update bot Telegram: `/start <kode>` menautkan akun (kode dibuat dari Profil, T-017). Tanpa CSRF, throttle |
 | `two-factor.login` | GET/POST | `/two-factor-challenge` | tamu | |
 | `admin.password.force` / `admin.password.force.update` | GET/PUT | `/ganti-password` | auth | Wajib ganti password (FR-007) |
+| `admin.mfa.setup` | GET | `/aktivasi-mfa` | auth + konfirmasi password | Wajib aktivasi MFA (BR-015). Middleware `mfa.enforced` mengalihkan ke sini selama role wajib MFA dan MFA belum aktif; aktivasi lewat endpoint Fortify `user/two-factor-*` |
 | `admin.profile.edit` / `admin.profile.update` | GET/PUT | `/profil` | auth | FR-010: `name`, `phone`, `email`, `avatar` (berkas) / `remove_avatar`. Mengubah `email` atau `phone` (kanal pemulihan) wajib `current_password`. Email berubah → `email_verified_at` null + email verifikasi ke alamat baru + pemberitahuan ke alamat lama |
 | `admin.profile.avatar` | GET | `/profil/foto` | auth | Stream avatar milik sendiri dari disk privat (404 bila tidak ada) |
 | `admin.profile.password` | PUT | `/profil/password` | auth | FR-004, throttle 6/menit |

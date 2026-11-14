@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Domain\Access\Listeners\ConfirmPasswordForMfaSetup;
 use App\Domain\Access\Listeners\RecordLogout;
 use App\Domain\Access\Listeners\RecordSuccessfulLogin;
+use App\Domain\Access\Listeners\RecordTwoFactorEvents;
 use App\Domain\Access\Lookup\RoleLookup;
 use App\Domain\Access\Lookup\UserLookup;
 use App\Domain\Access\Rules\PasswordPolicy;
@@ -83,7 +85,10 @@ class AppServiceProvider extends ServiceProvider
         // Listener di app/Domain tidak ikut auto-discovery (hanya app/Listeners).
         Event::listen(ExportCreated::class, RecordExportCreated::class);
         Event::listen(Login::class, RecordSuccessfulLogin::class);
+        Event::listen(Login::class, ConfirmPasswordForMfaSetup::class);
         Event::listen(Logout::class, RecordLogout::class);
+        // Event MFA Fortify → security_events + izin sekali-lihat kode pemulihan (T-016).
+        Event::subscribe(RecordTwoFactorEvents::class);
 
         // Driver OTP `log` di produksi = kode OTP tertulis di log → gagal start, jangan diam-diam (T-015).
         OtpManager::assertSafeForEnvironment();

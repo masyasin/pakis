@@ -2,10 +2,12 @@
 
 use App\Exceptions\ApiExceptionRenderer;
 use App\Http\Middleware\AssignRequestId;
+use App\Http\Middleware\EnforceMfa;
 use App\Http\Middleware\EnforceSessionLifetime;
 use App\Http\Middleware\EnsureUserActive;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
+use App\Http\Middleware\RecoveryCodesOnce;
 use App\Http\Middleware\RequirePasswordChange;
 use App\Http\Middleware\RequireWebMenuAccess;
 use App\Http\Middleware\SecurityHeaders;
@@ -43,6 +45,10 @@ return Application::configure(basePath: dirname(__DIR__))
             EnforceSessionLifetime::class,
             // SEC-006: akun wajib ganti password hanya boleh ke /ganti-password & keluar.
             RequirePasswordChange::class,
+            // BR-015: role wajib MFA tanpa MFA aktif hanya boleh ke /aktivasi-mfa; MFA wajib tidak bisa dimatikan.
+            EnforceMfa::class,
+            // BR-015: kode pemulihan MFA hanya bisa dilihat sekali setelah dibuat.
+            RecoveryCodesOnce::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
@@ -52,6 +58,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'web.access' => RequireWebMenuAccess::class,
             'password.changed' => RequirePasswordChange::class,
+            'mfa.enforced' => EnforceMfa::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

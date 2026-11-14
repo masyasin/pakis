@@ -241,8 +241,8 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: middleware `EnforceMfa`, `pages/Profile/Security.tsx` (aktivasi TOTP via Fortify), `pages/Auth/MfaSetupRequired.tsx`, `Actions/ResetMfa.php`
 - Deskripsi: Bila salah satu role `mfa_required` dan MFA belum aktif → paksa aktivasi sebelum menu lain. Kode pemulihan ditampilkan sekali. Event `mfa_enabled/disabled/failed`.
 - Kriteria penerimaan:
-  - [ ] Owner tanpa MFA tidak bisa membuka `/dasbor` (redirect ke aktivasi)
-  - [ ] Kode pemulihan sekali pakai
+  - [x] Owner tanpa MFA tidak bisa membuka `/dasbor` (redirect ke aktivasi)
+  - [x] Kode pemulihan sekali pakai
 - Verifikasi: `php artisan test --filter=Mfa`
 - Di luar lingkup: MFA di API (T-031)
 

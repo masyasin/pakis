@@ -17,9 +17,6 @@ return [
         'download_url_minutes' => 15,
     ],
 
-    // Driver OTP lupa password: `log` (lokal) atau penyedia WhatsApp (OQ-004). T-015 memindahkan ke config/otp.php.
-    'otp_driver' => env('OTP_DRIVER', 'log'),
-
     // Kunci listing yang bisa diekspor => kelas ExportableListing. Modul mendaftarkan listingnya di sini.
     'exports' => [
         'audit_logs' => AuditLogListing::class,

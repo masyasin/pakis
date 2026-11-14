@@ -28,6 +28,7 @@ enum SecurityEventType: string
     case AttendanceMockDetected = 'attendance_mock_detected';
     case SensitiveDataViewed = 'sensitive_data_viewed';
     case MassExport = 'mass_export';
+    case TelegramLinked = 'telegram_linked';
 
     public function label(): string
     {
@@ -55,6 +56,7 @@ enum SecurityEventType: string
             self::AttendanceMockDetected => 'Lokasi palsu terdeteksi',
             self::SensitiveDataViewed => 'Data sensitif dilihat',
             self::MassExport => 'Ekspor massal',
+            self::TelegramLinked => 'Telegram ditautkan',
         };
     }
 }

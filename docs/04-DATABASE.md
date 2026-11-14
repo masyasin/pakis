@@ -81,11 +81,14 @@ CREATE TABLE users (
   locked_until TIMESTAMP NULL,
   last_login_at TIMESTAMP NULL,
   last_login_ip VARCHAR(45) NULL,
+  telegram_chat_id VARCHAR(32) NULL,        -- diisi saat pengguna menautkan bot Telegram (OTP lupa password)
+  telegram_linked_at TIMESTAMP NULL,
   created_by BIGINT UNSIGNED NULL, updated_by BIGINT UNSIGNED NULL,
   created_at TIMESTAMP NULL, updated_at TIMESTAMP NULL, deleted_at TIMESTAMP NULL,
   UNIQUE KEY users_username_unique (username),
   UNIQUE KEY users_email_unique (email),
   UNIQUE KEY users_employee_id_unique (employee_id),
+  UNIQUE KEY users_telegram_chat_id_unique (telegram_chat_id),
   KEY users_active_name_idx (is_active, name),
   CONSTRAINT users_employee_fk FOREIGN KEY (employee_id) REFERENCES employees(id),
   CONSTRAINT users_username_chk CHECK (username REGEXP '^[a-z0-9._-]{3,50}$')
@@ -390,7 +393,7 @@ CREATE TABLE security_events (
              'mfa_enabled','mfa_disabled','mfa_failed','mfa_reset_by_admin',
              'session_revoked','token_revoked','role_changed','permission_changed',
              'device_registered','device_approved','device_revoked','attendance_mock_detected',
-             'sensitive_data_viewed','mass_export') NOT NULL,
+             'sensitive_data_viewed','mass_export','telegram_linked') NOT NULL,
   channel ENUM('web','api','system') NOT NULL,
   ip VARCHAR(45) NULL,
   user_agent VARCHAR(255) NULL,

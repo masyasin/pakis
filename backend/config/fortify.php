@@ -148,7 +148,7 @@ return [
     // - registration(): akun dibuat admin (T-020), 05 §1 tidak memuat /register.
     // - passkeys(): di luar alur login + lockout + MFA per role (T-013, T-016). Keputusan 14 Nov 2026.
     'features' => [
-        Features::resetPasswords(),
+        // Reset password memakai route sendiri (T-015): field login, kanal, respons generik.
         Features::emailVerification(),
         Features::twoFactorAuthentication([
             'confirm' => true,

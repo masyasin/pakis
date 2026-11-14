@@ -53,6 +53,16 @@ return [
 
     'channels' => [
 
+        // OTP lupa password dari driver `log` (hanya non-produksi): berkas terpisah agar mudah
+        // dicari saat uji dan tidak bercampur dengan log aplikasi (T-015).
+        'otp' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/otp.log'),
+            'level' => 'debug',
+            'days' => 3,
+            'replace_placeholders' => true,
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'single')),

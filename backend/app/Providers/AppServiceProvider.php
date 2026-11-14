@@ -9,6 +9,7 @@ use App\Domain\Access\Rules\PasswordPolicy;
 use App\Domain\Access\Support\ActiveEmployeeStatus;
 use App\Domain\Access\Support\EmployeeStatus;
 use App\Domain\Audit\Listeners\RecordExportCreated;
+use App\Domain\Notification\Otp\OtpManager;
 use App\Domain\Reference\Lookup\ReferenceLookup;
 use App\Domain\Region\Lookup\RegionLookup;
 use App\Domain\Settings\Branding\BrandTheme;
@@ -80,6 +81,10 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ExportCreated::class, RecordExportCreated::class);
         Event::listen(Login::class, RecordSuccessfulLogin::class);
         Event::listen(Logout::class, RecordLogout::class);
+
+        // Driver OTP `log` di produksi = kode OTP tertulis di log → gagal start, jangan diam-diam (T-015).
+        OtpManager::assertSafeForEnvironment();
+        $this->app->singleton(OtpManager::class);
 
         // Cookie sesi ikut batas idle dari setting (BR-018); penegakan di EnforceSessionLifetime.
         config(['session.lifetime' => (int) setting('security.session_idle_minutes')]);

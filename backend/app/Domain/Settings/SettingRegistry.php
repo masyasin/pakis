@@ -2,6 +2,7 @@
 
 namespace App\Domain\Settings;
 
+use App\Domain\Notification\Otp\OtpManager;
 use App\Domain\Settings\Validation\ContrastRatio;
 use App\Domain\Settings\Validation\Semver;
 use InvalidArgumentException;
@@ -107,7 +108,7 @@ final class SettingRegistry
             $t('security.reset_token_minutes', SettingType::Int, 60, 'Tautan reset password berlaku (menit)', min: 15, max: 1440),
             $t('security.notify_new_device_login', SettingType::Bool, true, 'Email saat login dari perangkat baru'),
             $t('auth.forgot_channels', SettingType::MultiEnum, ['email'], 'Kanal lupa password', 'WhatsApp butuh penyedia OTP aktif.', isPublic: true,
-                options: ['email', 'whatsapp'], min: 1, check: self::checkForgotChannels(...)),
+                options: ['email', 'whatsapp', 'telegram'], min: 1, check: self::checkForgotChannels(...)),
             $t('auth.otp_length', SettingType::Int, 6, 'Panjang kode OTP', min: 6, max: 8),
             $t('auth.otp_minutes', SettingType::Int, 10, 'Kode OTP berlaku (menit)', min: 3, max: 30),
 
@@ -157,13 +158,15 @@ final class SettingRegistry
     private static function checkForgotChannels(mixed $value, array $group): ?string
     {
         $value = (array) $value;
-        if (array_diff($value, ['email', 'whatsapp']) !== []) {
+        if (array_diff($value, ['email', 'whatsapp', 'telegram']) !== []) {
             return 'Kanal tidak dikenal.';
         }
 
-        // WhatsApp tanpa penyedia OTP sungguhan di produksi = pengguna menunggu kode yang tak pernah datang.
-        if (in_array('whatsapp', $value, true) && app()->isProduction() && config('pakis.otp_driver') === 'log') {
-            return 'WhatsApp belum bisa dipakai: penyedia OTP belum dikonfigurasi.';
+        // Kanal OTP tanpa driver yang tersedia = pengguna menunggu kode yang tak pernah datang.
+        foreach (['whatsapp' => 'WhatsApp', 'telegram' => 'Telegram'] as $channel => $label) {
+            if (in_array($channel, $value, true) && ! OtpManager::available($channel)) {
+                return "{$label} belum bisa dipakai: penyedia OTP belum dikonfigurasi.";
+            }
         }
 
         return null;

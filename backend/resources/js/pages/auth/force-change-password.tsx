@@ -1,13 +1,13 @@
 import { Head, Link, useForm } from '@inertiajs/react';
-import { Check, Circle, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import type { FormEvent } from 'react';
 import { FormStatus } from '@/components/form-status';
 import InputError from '@/components/input-error';
+import { PasswordRuleList } from '@/components/pakis/password-rules';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { cn } from '@/lib/utils';
 import { logout } from '@/routes';
 
 type Props = {
@@ -29,23 +29,6 @@ export default function ForceChangePassword({
 }: Props) {
     const form = useForm({ password: '', password_confirmation: '' });
     const { password, password_confirmation: confirmation } = form.data;
-
-    const rules = [
-        {
-            ok: password.length >= minLength && password.length <= maxLength,
-            label: `Minimal ${minLength} karakter`,
-        },
-        {
-            ok:
-                password !== '' &&
-                !password.toLowerCase().includes(username.toLowerCase()),
-            label: 'Tidak memuat username Anda',
-        },
-        {
-            ok: password !== '' && password === confirmation,
-            label: 'Konfirmasi sama dengan password baru',
-        },
-    ];
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
@@ -108,45 +91,12 @@ export default function ForceChangePassword({
                         />
                     </div>
 
-                    <ul
-                        id="password-rules"
-                        className="grid gap-1.5 text-sm"
-                        aria-label="Syarat password"
-                    >
-                        {rules.map((rule) => (
-                            <li
-                                key={rule.label}
-                                className={cn(
-                                    'flex items-center gap-2',
-                                    rule.ok
-                                        ? 'text-status-success'
-                                        : 'text-muted-foreground',
-                                )}
-                            >
-                                {rule.ok ? (
-                                    <Check
-                                        className="size-4 shrink-0"
-                                        aria-hidden="true"
-                                    />
-                                ) : (
-                                    <Circle
-                                        className="size-4 shrink-0"
-                                        aria-hidden="true"
-                                    />
-                                )}
-                                <span>
-                                    {rule.label}
-                                    <span className="sr-only">
-                                        {rule.ok ? ' (terpenuhi)' : ' (belum)'}
-                                    </span>
-                                </span>
-                            </li>
-                        ))}
-                        <li className="pl-6 text-xs text-muted-foreground">
-                            Juga tidak boleh sama dengan password lama dan tidak
-                            boleh password yang pernah bocor di internet.
-                        </li>
-                    </ul>
+                    <PasswordRuleList
+                        password={password}
+                        confirmation={confirmation}
+                        minLength={minLength}
+                        username={username}
+                    />
 
                     <Button
                         type="submit"

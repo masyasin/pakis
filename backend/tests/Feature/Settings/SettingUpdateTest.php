@@ -74,12 +74,13 @@ test('BR-027 versi terbaru tidak boleh lebih rendah dari minimum (lintas kunci)'
 test('kanal WhatsApp ditolak di produksi bila driver OTP masih log', function () {
     // Action dipanggil langsung: mengganti environment ke production lewat HTTP juga menyalakan CSRF.
     app()->detectEnvironment(fn () => 'production');
-    config(['pakis.otp_driver' => 'log']);
+    config(['otp.channels.whatsapp.driver' => 'log']);
 
     expect(fn () => app(UpdateSettingGroup::class)->handle('auth', ['auth__forgot_channels' => ['email', 'whatsapp']], [], [], null))
         ->toThrow(ValidationException::class, 'penyedia OTP belum dikonfigurasi');
 
-    config(['pakis.otp_driver' => 'fonnte']);
+    // Driver lokal di non-produksi tersedia.
+    app()->detectEnvironment(fn () => 'testing');
     app(UpdateSettingGroup::class)->handle('auth', ['auth__forgot_channels' => ['email', 'whatsapp']], [], [], null);
     app()->forgetScopedInstances();
 

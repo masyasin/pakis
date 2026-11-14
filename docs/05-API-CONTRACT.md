@@ -139,7 +139,8 @@ Kolom **Daftar** = harus mematuhi §3. Rincian kolom/cari/filter/sort tiap dafta
 | `logout` | POST | `/logout` | auth | |
 | `password.request` / `password.email` | GET/POST | `/forgot-password` | tamu | Field `login` + `channel` (`email`/`whatsapp`, hanya kanal aktif). Respons selalu generik (FR-005, FR-006) |
 | `password.reset` / `password.update` | GET/POST | `/reset-password/{token}` | tamu | |
-| `password.otp` / `password.otp.update` | GET/POST | `/reset-password-otp` | tamu | Reset dengan OTP WA (FR-006) |
+| `password.otp` / `password.otp.update` | GET/POST | `/reset-password-otp` | tamu | Reset dengan OTP WhatsApp/Telegram (FR-006) |
+| `telegram.webhook` | POST | `/telegram/webhook` | header `X-Telegram-Bot-Api-Secret-Token` | Update bot Telegram: `/start <kode>` menautkan akun (kode dibuat dari Profil, T-017). Tanpa CSRF, throttle |
 | `two-factor.login` | GET/POST | `/two-factor-challenge` | tamu | |
 | `admin.password.force` / `admin.password.force.update` | GET/PUT | `/ganti-password` | auth | Wajib ganti password (FR-007) |
 | `admin.profile.edit` / `admin.profile.update` | GET/PUT | `/profil` | auth | FR-010 |

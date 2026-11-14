@@ -226,10 +226,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: kustomisasi Fortify reset, `app/Domain/Notification/Otp/{OtpChannel,LogOtpChannel,OtpService}.php`, `config/otp.php` (`OTP_DRIVER`), `pages/Auth/{ForgotPassword,ResetPassword,ResetPasswordOtp}.tsx`, rate limiter `password`
 - Deskripsi: Field `login` + pilihan kanal sesuai `auth.forgot_channels`. Email: tautan sekali pakai. OTP: kontrak `OtpChannel` + driver `log` (menulis ke log channel khusus, hanya non-produksi). Driver nyata dibuat di paket lain setelah OQ-004. Respons selalu generik. Reset sukses mencabut sesi & token.
 - Kriteria penerimaan:
-  - [ ] Respons identik untuk akun ada/tidak ada/tanpa email
-  - [ ] Token dipakai dua kali → gagal
-  - [ ] OTP salah 5× → OTP hangus. Kirim ulang < 60 s → ditolak
-  - [ ] Driver `log` menolak aktif di `APP_ENV=production` (boot exception)
+  - [x] Respons identik untuk akun ada/tidak ada/tanpa email
+  - [x] Token dipakai dua kali → gagal
+  - [x] OTP salah 5× → OTP hangus. Kirim ulang < 60 s → ditolak
+  - [x] Driver `log` menolak aktif di `APP_ENV=production` (boot exception)
 - Verifikasi: `php artisan test --filter=ForgotPassword`
 - Di luar lingkup: endpoint API lupa password (T-031)
 

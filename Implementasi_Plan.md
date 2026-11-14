@@ -83,14 +83,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | Fase | Total task | Selesai | Sedang | Blocked |
 |---|---|---|---|---|
-| 0A | 7 | 6 | 0 | 0 |
+| 0A | 7 | 7 | 0 | 0 |
 | 0B | 5 | 0 | 0 | 0 |
 | 0C | 8 | 0 | 0 | 0 |
 | 0D | 9 | 0 | 0 | 0 |
 | 0E | 3 | 0 | 0 | 0 |
 | 0,5 | 13 | 0 | 0 | 0 |
 | H | 3 | 0 | 0 | 0 |
-| **Total** | **48** | **6** | **0** | **0** |
+| **Total** | **48** | **7** | **0** | **0** |
 
 ### 6.2 Sedang dikerjakan
 - (kosong)
@@ -114,10 +114,13 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 | 2026-11-14 | T-005 | Selesai | 5581930, 5acc76a | `DataTable` + `FilterBar`/`FilterSheet`/`FilterField`/`ActiveFilterChips`/`Pagination`/`PerPageSelect`/`EmptyState`/`TableSkeleton`/`StatusBadge`, `hooks/use-listing.ts`, `lib/listing-query.ts`, `types/listing.ts`, `ui/table.tsx`. Token `--status-*` AA. `ListingContractTest` (+ meta-test route patuh/tidak patuh, katalog dua arah dengan 07 §3.4). Demo `/dev/listing-demo` (local). Vitest via vite-plus + happy-dom + RTL (disetujui Mas). Dicek di Chromium (CSP enforce): cari, sort, Back, filter, chip default, empty state, HP 375 px, gelap — 0 error konsol. 159 Pest + 22 Vitest hijau |
 
-| 2026-11-14 | T-006 | Selesai | (commit T-006) | Migration `export_files`, `app/Support/Export/*` (`ExportableListing`, `ExportColumns<TModel>` dengan guard model, `FormulaEscaper`, `XlsxExporter` streaming `lazy(1000)`, `ExportRunner` dipakai sinkron & job, `StartExport`, `ExportRegistry`, event `ExportCreated`/`ExportReady`), job `RunExport`, `ExportController` (Unduhan milik sendiri + signed download, bukan pemilik → 404), halaman `/unduhan`, `ExportButton`, menu Unduhan. Temuan: OpenSpout otomatis menjadikan string `=…` formula → escaping wajib sebelum OpenSpout. Angka `export.*` di `config/pakis.php` (`TODO(T-008)`). Dicek di browser: ekspor demo 16 baris = tampilan, Unduhan, unduh signed. 191 Pest + 22 Vitest |
+| 2026-11-14 | T-006 | Selesai | c476229 | Migration `export_files`, `app/Support/Export/*` (`ExportableListing`, `ExportColumns<TModel>` dengan guard model, `FormulaEscaper`, `XlsxExporter` streaming `lazy(1000)`, `ExportRunner` dipakai sinkron & job, `StartExport`, `ExportRegistry`, event `ExportCreated`/`ExportReady`), job `RunExport`, `ExportController` (Unduhan milik sendiri + signed download, bukan pemilik → 404), halaman `/unduhan`, `ExportButton`, menu Unduhan. Temuan: OpenSpout otomatis menjadikan string `=…` formula → escaping wajib sebelum OpenSpout. Angka `export.*` di `config/pakis.php` (`TODO(T-008)`). Dicek di browser: ekspor demo 16 baris = tampilan, Unduhan, unduh signed. 191 Pest + 22 Vitest |
+
+| 2026-11-14 | T-007 | Selesai | (commit T-007) | Migration `audit_logs`/`security_events` + 4 trigger append-only (`@audit_purge`), `app/Domain/Audit` (`AuditLogger`, `SecurityLogger`, `Redactor`, enum, model dengan guard, 2 listing exportable, listener `ExportCreated` → `export.created` + `mass_export`), command `audit:purge` (dijadwal 02.30 WIB), halaman `/audit`, `/audit/{log}` (diff), `/log-keamanan`, ekspor dengan `audit.export` + konfirmasi password. Izin `audit.*` sementara deny-by-default (lokal saja). Uji mutasi trigger & reset flag. 230 Pest + 22 Vitest. **Fase 0A selesai.** |
 
 ### 6.5 Catatan untuk sesi berikutnya
-- **Berikutnya T-007 (audit log & log keamanan):** dengarkan `App\Support\Export\Events\ExportCreated` → audit `export.created` + `security_events.mass_export` bila `rowCount` > `ExportRegistry::massExportAlertRows()`. Listing `audit_logs`/`security_events` = `ExportableListing` (ekspor ✅ di katalog) dan wajib masuk `tests/Fixtures/listing_catalog.php`.
+- **Fase 0A selesai (T-001–T-007).** Exit gate: CI hijau ✅, `ListingContractTest` aktif & menolak route tanpa standar ✅, trigger audit append-only teruji ✅.
+- **Berikutnya T-008 (registri site setting, halaman Pengaturan, `/api/v1/config`):** ganti semua penyangga `config/pakis.php` bertanda `TODO(T-008)` (`display_timezone`, `export.*`, `retention.*`) dan `ListingDefaults` (`ui.*`) dengan `setting()`. Perubahan setting → audit `setting.updated` (BR-023) lewat `AuditLogger`. Branding (`branding.*`, logo) bersinggungan dengan pekerjaan agen desain → tinjau/gabung branch `feat/ui-desain` dulu bila sudah selesai.
 - **Agen desain UI (chat terpisah):** prompt di `konsep/prompt-desain-ui.md`, bekerja di branch `feat/ui-desain` (worktree `..\pakis-ui`). Tinjau & gabungkan ke `main` dari sesi utama (cek test/lint/screenshot) — jangan gabung bila mengubah logika/route/test PHP.
 - Purge berkas ekspor kedaluwarsa (status `expired` + hapus berkas) belum ada → T-045 (job retensi). Saat ini berkas lewat `expires_at` sudah tidak bisa diunduh (404).
 - Filter relasi di UI masih input ID (`TODO(T-011)` di `filter-fields.tsx`), menunggu endpoint lookup.

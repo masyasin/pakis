@@ -4,6 +4,7 @@ namespace Tests\Contract;
 
 use App\Models\User;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Data pendukung uji HTTP ListingContractTest per route (10 §3.3).
@@ -28,6 +29,11 @@ final class ListingRouteFixtures
     public static function actor(string $routeName): Authenticatable
     {
         // TODO(T-018): super_admin untuk admin.*; TODO(T-031): pengguna + perangkat aktif untuk api.v1.*.
+        if (in_array($routeName, ['admin.audit.index', 'admin.security-events.index'], true)) {
+            // Ability sementara (deny-by-default) dibuka hanya untuk aktor uji ini.
+            Gate::define('audit.view', fn () => true);
+        }
+
         return match ($routeName) {
             default => User::factory()->create(),
         };

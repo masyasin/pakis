@@ -1,5 +1,8 @@
 <?php
 
+use App\Domain\Audit\Listings\AuditLogListing;
+use App\Domain\Audit\Listings\SecurityEventListing;
+
 /*
  * Konfigurasi aplikasi PAKIS ONE yang bukan secret.
  *
@@ -24,9 +27,16 @@ return [
         'download_url_minutes' => 15,
     ],
 
+    // Masa simpan audit & log keamanan (SEC-040). TODO(T-008): setting('retention.*').
+    'retention' => [
+        'audit_years' => 5,
+        'security_days' => 365,
+    ],
+
     // Kunci listing yang bisa diekspor => kelas ExportableListing. Modul mendaftarkan listingnya di sini.
     'exports' => [
-        // 'employees' => \App\Domain\Employee\Listings\EmployeeListing::class,
+        'audit_logs' => AuditLogListing::class,
+        'security_events' => SecurityEventListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

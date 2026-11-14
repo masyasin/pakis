@@ -34,6 +34,7 @@ Agent **tidak boleh** menebak jawaban OQ. Task yang terblokir harus menunggu, at
 | 14 Nov 2026 | CSP: script wajib nonce; style `'self' 'unsafe-inline'` tanpa nonce, karena progress bar Inertia/Sonner/React menyisipkan `<style>` saat runtime dan terbukti diblokir Chromium dalam mode enforce | Agent (T-003), teknis |
 | 14 Nov 2026 | devDependency test frontend: `happy-dom` + `@testing-library/react` (Vitest sudah ada lewat vite-plus) | Mas (T-005) |
 | 14 Nov 2026 | Token warna status (`--status-*`, terang/gelap, kontras ≥ 4.5:1 terukur) ditambahkan di `app.css` untuk `StatusBadge` (07 §6). Palet primer hijau Pakis (07 §1.1) belum diterapkan, menunggu `branding.primary_color` (T-008) | Agent (T-005), teknis |
+| 14 Nov 2026 | Izin `audit.view`/`audit.export` sementara deny-by-default (hanya environment `local`) sampai permission Spatie di T-018 | Mas (T-007) |
 | 14 Nov 2026 | Larastan **level 7** (bawaan starter kit, sudah 0 error) dipertahankan. NFR-012 menjadi "≥ level 6, saat ini 7" | Mas (T-002) |
 | 14 Nov 2026 | Lokal: cache/queue/session memakai driver `database` (PHP XAMPP tanpa ekstensi phpredis, `predis` tidak ditambah). Produksi tetap Redis | Mas |
 | 14 Nov 2026 | Fitur starter kit dimatikan: pendaftaran mandiri (05 §1 tanpa `/register`) dan **passkeys** (di luar alur login + lockout + MFA, tabel tidak ada di 04). Mengaktifkan passkey kelak = OQ baru | Mas (T-001) |

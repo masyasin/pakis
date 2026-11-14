@@ -2,9 +2,14 @@
 
 namespace App\Providers;
 
+use App\Domain\Audit\Listeners\RecordExportCreated;
+use App\Models\User;
+use App\Support\Export\Events\ExportCreated;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -24,6 +29,23 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->configureTemporaryAbilities();
+
+        // Listener di app/Domain tidak ikut auto-discovery (hanya app/Listeners).
+        Event::listen(ExportCreated::class, RecordExportCreated::class);
+    }
+
+    /**
+     * Ability sementara sampai permission Spatie ada (T-018). DENY-BY-DEFAULT: hanya environment
+     * `local` yang diizinkan, untuk mencoba halaman di mesin developer. Staging, produksi, dan test
+     * ditolak; test memberi izin eksplisit dengan Gate::define.
+     */
+    protected function configureTemporaryAbilities(): void
+    {
+        // TODO(T-018): hapus; `can:audit.view` dijawab permission Spatie lewat Gate::before.
+        foreach (['audit.view', 'audit.export'] as $ability) {
+            Gate::define($ability, fn (User $user): bool => app()->isLocal());
+        }
     }
 
     /**

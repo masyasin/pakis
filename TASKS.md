@@ -106,9 +106,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migrations `audit_logs`, `security_events` + trigger, `app/Domain/Audit/{AuditLogger,SecurityLogger,Redactor}.php`, `Models/{AuditLog,SecurityEvent}`, `Listings/{AuditLogListing,SecurityEventListing}`, controller + halaman `Audit/Index`, `Audit/Show`, `SecurityEvents/Index`, command `audit:purge`
 - Deskripsi: Logger dipanggil eksplisit dari Actions (bukan observer otomatis) dengan nilai lama/baru dan redaksi field sensitif. Trigger append-only. Purge memakai `@audit_purge`. Halaman daftar + detail diff + ekspor.
 - Kriteria penerimaan:
-  - [ ] `UPDATE audit_logs ...` langsung → galat DB (test)
-  - [ ] Field `password`, `nik_enc`, `nik_hash`, `two_factor_secret` tersimpan `***`
-  - [ ] Listing `audit_logs` & `security_events` lolos test kontrak, default filter 7 hari
+  - [x] `UPDATE audit_logs ...` langsung → galat DB (test)
+  - [x] Field `password`, `nik_enc`, `nik_hash`, `two_factor_secret` tersimpan `***`
+  - [x] Listing `audit_logs` & `security_events` lolos test kontrak, default filter 7 hari
+- Catatan pelaksanaan: halaman `pages/audit/{index,show}.tsx`, `pages/security-events/index.tsx` (kebab-case). Izin `audit.*` sementara deny-by-default (lokal saja) sampai T-018. Menu sidebar Audit/Log Keamanan menyusul T-018 (sidebar sedang dirombak agen desain).
 - Verifikasi: `php artisan test --filter=Audit`
 - Di luar lingkup: alert email (T-045)
 

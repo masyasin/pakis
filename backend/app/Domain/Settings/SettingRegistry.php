@@ -107,7 +107,7 @@ final class SettingRegistry
             $t('security.password_confirm_minutes', SettingType::Int, 15, 'Konfirmasi ulang password berlaku (menit)', min: 5, max: 120),
             $t('security.reset_token_minutes', SettingType::Int, 60, 'Tautan reset password berlaku (menit)', min: 15, max: 1440),
             $t('security.notify_new_device_login', SettingType::Bool, true, 'Email saat login dari perangkat baru'),
-            $t('auth.forgot_channels', SettingType::MultiEnum, ['email'], 'Kanal lupa password', 'WhatsApp butuh penyedia OTP aktif.', isPublic: true,
+            $t('auth.forgot_channels', SettingType::MultiEnum, ['email'], 'Kanal lupa password', 'Kanal yang dicentang tampil di halaman lupa password. Matikan WhatsApp/Telegram bila kuota habis atau nomor/bot diblokir. WhatsApp & Telegram butuh penyedia OTP aktif.', isPublic: true,
                 options: ['email', 'whatsapp', 'telegram'], min: 1, check: self::checkForgotChannels(...)),
             $t('auth.otp_length', SettingType::Int, 6, 'Panjang kode OTP', min: 6, max: 8),
             $t('auth.otp_minutes', SettingType::Int, 10, 'Kode OTP berlaku (menit)', min: 3, max: 30),

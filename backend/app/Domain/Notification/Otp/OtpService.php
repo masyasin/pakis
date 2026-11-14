@@ -7,7 +7,10 @@ use Illuminate\Support\Facades\Cache;
 
 /**
  * Kode OTP lupa password (BR-013): numerik `auth.otp_length` digit, berlaku `auth.otp_minutes`,
- * disimpan sebagai HMAC di cache (bukan teks asli), maksimal 5 kali salah lalu hangus.
+ * disimpan sebagai HMAC di cache (bukan teks asli), maksimal 5 kali percobaan lalu hangus.
+ *
+ * Penghitung percobaan terpisah dan dinaikkan ATOMIK (Cache::increment) SEBELUM kode dibandingkan,
+ * sehingga permintaan paralel tidak bisa melampaui batas 5 (tidak ada baca-ubah-tulis yang balapan).
  */
 final class OtpService
 {
@@ -20,13 +23,10 @@ final class OtpService
         $length = (int) setting('auth.otp_length');
         $minutes = (int) setting('auth.otp_minutes');
         $code = str_pad((string) random_int(0, 10 ** $length - 1), $length, '0', STR_PAD_LEFT);
-
         $expiresAt = now()->addMinutes($minutes);
-        Cache::put(self::key($user), [
-            'hash' => self::hash($code),
-            'attempts' => 0,
-            'expires_at' => $expiresAt->getTimestamp(),
-        ], $expiresAt);
+
+        Cache::forget(self::attemptsKey($user));
+        Cache::put(self::key($user), ['hash' => self::hash($code), 'expires_at' => $expiresAt->getTimestamp()], $expiresAt);
 
         $app = (string) setting('general.app_name');
         $this->channels->channel($channel)->send(
@@ -36,13 +36,23 @@ final class OtpService
     }
 
     /**
-     * Periksa kode TANPA menghabiskannya (kebijakan password baru dicek sesudahnya). Salah →
-     * percobaan bertambah; mencapai batas → kode dihapus.
+     * Periksa kode TANPA menghabiskannya (kebijakan password baru dicek sesudahnya). Setiap
+     * pemeriksaan memakai satu jatah; jatah habis → kode dihapus.
      */
     public function check(User $user, string $code): bool
     {
         $entry = Cache::get(self::key($user));
-        if (! is_array($entry) || self::secondsLeft($entry) <= 0) {
+        if (! is_array($entry) || (int) $entry['expires_at'] <= now()->getTimestamp()) {
+            return false;
+        }
+
+        $ttl = now()->setTimestamp((int) $entry['expires_at']);
+        Cache::add(self::attemptsKey($user), 0, $ttl);
+        $attempts = (int) Cache::increment(self::attemptsKey($user));
+
+        if ($attempts > self::MAX_ATTEMPTS) {
+            $this->consume($user);
+
             return false;
         }
 
@@ -50,21 +60,18 @@ final class OtpService
             return true;
         }
 
-        $attempts = (int) $entry['attempts'] + 1;
         if ($attempts >= self::MAX_ATTEMPTS) {
-            Cache::forget(self::key($user));
-        } else {
-            // Masa berlaku tidak diperpanjang: simpan ulang dengan sisa waktu kode semula.
-            Cache::put(self::key($user), [...$entry, 'attempts' => $attempts], now()->addSeconds(max(1, self::secondsLeft($entry))));
+            $this->consume($user);
         }
 
         return false;
     }
 
-    /** Kode sekali pakai: hapus setelah reset berhasil. */
+    /** Kode sekali pakai: hapus setelah reset berhasil (atau jatah habis). */
     public function consume(User $user): void
     {
         Cache::forget(self::key($user));
+        Cache::forget(self::attemptsKey($user));
     }
 
     private static function key(User $user): string
@@ -72,16 +79,13 @@ final class OtpService
         return 'otp:password-reset:'.$user->id;
     }
 
+    private static function attemptsKey(User $user): string
+    {
+        return 'otp:password-reset:'.$user->id.':attempts';
+    }
+
     private static function hash(string $code): string
     {
         return hash_hmac('sha256', $code, (string) config('app.key'));
-    }
-
-    /**
-     * @param  array<string, mixed>  $entry
-     */
-    private static function secondsLeft(array $entry): int
-    {
-        return (int) ($entry['expires_at'] ?? 0) - now()->getTimestamp();
     }
 }

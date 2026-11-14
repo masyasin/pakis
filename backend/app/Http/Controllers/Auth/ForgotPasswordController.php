@@ -13,6 +13,8 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -108,6 +110,15 @@ class ForgotPasswordController extends Controller
         ], ['code.*' => self::INVALID_CODE]);
 
         $identifier = AttemptLogin::normalize($request->input('login'));
+
+        // Batas percobaan per identifier (dilipat), selain throttle per IP di route: penebak yang
+        // berganti IP tetap tertahan. Berlaku sama untuk identifier yang tidak ada.
+        $attemptKey = 'pw-otp-verify:'.sha1(Str::lower(Str::ascii($identifier)));
+        if (RateLimiter::tooManyAttempts($attemptKey, 10)) {
+            throw ValidationException::withMessages(['code' => 'Terlalu banyak percobaan. Coba lagi nanti.']);
+        }
+        RateLimiter::hit($attemptKey, 900);
+
         $user = User::query()
             ->where(fn ($q) => $q->where('username', $identifier)->orWhere('email', $identifier))
             ->first();

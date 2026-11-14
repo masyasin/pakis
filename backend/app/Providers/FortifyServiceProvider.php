@@ -4,9 +4,11 @@ namespace App\Providers;
 
 use App\Domain\Access\Actions\AttemptLogin;
 use App\Http\Requests\Auth\LoginRequest;
+use App\Models\User;
 use App\Support\Http\ClientNetwork;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Inertia\Inertia;
@@ -41,6 +43,10 @@ class FortifyServiceProvider extends ServiceProvider
     {
         // Login username/email + lockout + gerbang web (BR-010, BR-016, BR-017, SEC-001).
         Fortify::authenticateUsing(fn (Request $request) => app(AttemptLogin::class)->handle($request));
+
+        // Field login Fortify bernama `login` (bukan kolom DB): konfirmasi password cukup mencocokkan
+        // hash milik pengguna yang sedang masuk. Tanpa ini Fortify mencari kolom `login` → galat 500.
+        Fortify::confirmPasswordsUsing(fn (User $user, ?string $password): bool => is_string($password) && Hash::check($password, $user->password));
     }
 
     /**

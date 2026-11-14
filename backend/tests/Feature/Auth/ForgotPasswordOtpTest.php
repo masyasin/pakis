@@ -4,6 +4,7 @@ use App\Domain\Access\Notifications\PasswordChanged;
 use App\Domain\Audit\Models\SecurityEvent;
 use App\Domain\Notification\Otp\OtpChannel;
 use App\Domain\Notification\Otp\OtpManager;
+use App\Domain\Notification\Otp\OtpService;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Hash;
@@ -167,4 +168,29 @@ test('BR-011 kode benar tapi password melanggar kebijakan → kode tetap bisa di
 
     resetWithOtp('siti.aminah', $code, 'siti.aminah-2026')->assertSessionHasErrors('password');
     resetWithOtp('siti.aminah', $code)->assertSessionHasNoErrors();
+});
+
+test('verifikasi OTP dibatasi per identifier walau berganti IP (pesan sama untuk identifier tak ada)', function () {
+    foreach (['siti.aminah', 'tidak.ada'] as $login) {
+        foreach (range(1, 10) as $i) {
+            test()->withServerVariables(['REMOTE_ADDR' => "10.9.{$i}.1"])->from('/reset-password-otp')
+                ->post('/reset-password-otp', ['login' => $login, 'code' => '000000', 'password' => 'x', 'password_confirmation' => 'x']);
+        }
+
+        test()->withServerVariables(['REMOTE_ADDR' => '10.9.99.1'])->from('/reset-password-otp')
+            ->post('/reset-password-otp', ['login' => $login, 'code' => '000000', 'password' => 'x', 'password_confirmation' => 'x'])
+            ->assertSessionHasErrors(['code' => 'Terlalu banyak percobaan. Coba lagi nanti.']);
+    }
+});
+
+test('BR-013 jatah percobaan dihitung atomik: kode benar setelah 5 pemeriksaan tetap ditolak', function () {
+    requestOtp('siti.aminah', 'whatsapp');
+    $code = $this->otp->lastCode();
+    $service = app(OtpService::class);
+
+    foreach (range(1, 4) as $i) {
+        expect($service->check($this->user, '000000'))->toBeFalse();
+    }
+    expect($service->check($this->user, $code))->toBeTrue()      // percobaan ke-5 masih boleh
+        ->and($service->check($this->user, $code))->toBeFalse(); // ke-6: jatah habis, kode hangus
 });

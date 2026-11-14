@@ -7,6 +7,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 
+/** Label tampilan untuk nilai opsi setting (nilai tersimpan tetap kode huruf kecil). */
+const OPTION_LABELS: Record<string, string> = {
+    email: 'Email',
+    whatsapp: 'WhatsApp',
+    telegram: 'Telegram',
+};
+
 export type SettingValue = string | number | boolean | string[] | null;
 
 export type SettingFieldDef = {
@@ -146,11 +153,7 @@ export function SettingField({
                                     htmlFor={`${id}-${o}`}
                                     className="font-normal"
                                 >
-                                    {o === 'whatsapp'
-                                        ? 'WhatsApp'
-                                        : o === 'email'
-                                          ? 'Email'
-                                          : o}
+                                    {OPTION_LABELS[String(o)] ?? o}
                                 </Label>
                             </div>
                         ))}

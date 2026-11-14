@@ -17,7 +17,7 @@ Agent **tidak boleh** menebak jawaban OQ. Task yang terblokir harus menunggu, at
 | OQ-011 | Aturan kerja nyata: jam shift per lokasi, toleransi telat, apakah sales absen dari mana saja, hari kerja Sabtu | Konfigurasi awal (bukan kode) | Seperti seeder demo. Diubah HRD saat UAT | — | HRD Pakis |
 | OQ-012 | Domain email & SMTP untuk kirim reset password/notifikasi (mis. layanan email bisnis Pakis) | FR-005 di produksi | Mailpit di lokal, SMTP Sintech di staging | T-046 | Pakis |
 | OQ-013 | ~~Semua dependency di `03` §5 kompatibel PHP 8.5?~~ **Terjawab di T-001 (14 Nov 2026): ya.** Laravel 13.42, Spatie 8.5, Sanctum 4.4, OpenSpout 5.13, Pest 5.3, Larastan 3.15 terpasang & teruji di PHP 8.5.12. Tetap PHP 8.5 (ADR-003) | Versi PHP | — | — | Agent |
-| OQ-014 | Lokal memakai MariaDB 11.8 (bawaan XAMPP). Apakah CI (T-002) dan produksi (T-046) juga MariaDB, atau tetap MySQL 8.4? | Service DB di CI, paket server produksi, perilaku trigger/JSON | CI & produksi mengikuti MariaDB 11.8 agar sama dengan lokal. Fitur khusus MySQL 8.4 dihindari | T-002 (service DB), T-046 | Mas |
+| OQ-014 | ~~Apakah CI dan produksi juga MariaDB, atau tetap MySQL 8.4?~~ **Terjawab 14 Nov 2026: MariaDB 11.8 di lokal, CI (`mariadb:11.8.9`), dan produksi.** | Service DB di CI, paket server produksi | — | — | Mas |
 
 ## Log Keputusan
 
@@ -29,7 +29,8 @@ Agent **tidak boleh** menebak jawaban OQ. Task yang terblokir harus menunggu, at
 | 3 Nov 2026 | Laravel 13 + PHP terbaru (8.5) | Mas |
 | 3 Nov 2026 | Setiap CRUD wajib paging, pencarian, filter (ditegakkan test kontrak) | Mas |
 | 3 Nov 2026 | Fondasi = core HR (pegawai & struktur) + absensi sebagai pintu masuk adopsi, payroll belakangan | Diskusi |
-| 14 Nov 2026 | Database memakai **MariaDB 11.8** bawaan XAMPP (port 3307), menggantikan MySQL 8.4 di ADR-012. Cakupan CI/produksi: OQ-014 | Mas |
+| 14 Nov 2026 | Database memakai **MariaDB 11.8** bawaan XAMPP (port 3307), menggantikan MySQL 8.4 di ADR-012. Berlaku juga untuk CI dan produksi (OQ-014) | Mas |
+| 14 Nov 2026 | Larastan **level 7** (bawaan starter kit, sudah 0 error) dipertahankan. NFR-012 menjadi "≥ level 6, saat ini 7" | Mas (T-002) |
 | 14 Nov 2026 | Lokal: cache/queue/session memakai driver `database` (PHP XAMPP tanpa ekstensi phpredis, `predis` tidak ditambah). Produksi tetap Redis | Mas |
 | 14 Nov 2026 | Fitur starter kit dimatikan: pendaftaran mandiri (05 §1 tanpa `/register`) dan **passkeys** (di luar alur login + lockout + MFA, tabel tidak ada di 04). Mengaktifkan passkey kelak = OQ baru | Mas (T-001) |
 | 14 Nov 2026 | Root monorepo = `D:\program\pakis`. Arsip konsep (zip, png, html v1.2, `region.sql`) tetap di `konsep/` dan tidak masuk git | Mas |

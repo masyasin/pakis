@@ -1,0 +1,38 @@
+# Kerangka pipeline Pakis Pro (Flutter). Diisi di T-030 saat mobile-pro/ dibuat:
+#   fvm flutter pub get, flutter analyze, flutter test, flutter pub outdated (SEC-066),
+#   lalu build APK rilis bertanda tangan di T-047 (SEC-067).
+name: mobile
+
+on:
+  push:
+    paths:
+      - 'mobile-pro/**'
+      - '.github/workflows/mobile.yml'
+  pull_request:
+    paths:
+      - 'mobile-pro/**'
+      - '.github/workflows/mobile.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  placeholder:
+    name: Flutter (belum aktif)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - name: Lewati bila mobile-pro/ belum ada
+        run: |
+          if [ ! -f mobile-pro/pubspec.yaml ]; then
+            echo "mobile-pro/ belum dibuat (T-030). Tidak ada yang diperiksa."
+            exit 0
+          fi
+          echo "::error::mobile-pro/ sudah ada tetapi pipeline Flutter belum diisi. Lengkapi mobile.yml di T-030."
+          exit 1

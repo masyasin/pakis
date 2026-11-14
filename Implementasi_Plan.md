@@ -104,7 +104,7 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 |---|---|---|---|---|
 | 2026-11-03 | — | Paket dokumen v1.0 dibuat | — | Siap mulai T-001 |
 | 2026-11-14 | — | Persiapan lingkungan | d41aac6 | Root repo dipindah ke `D:\program\pakis` + `git init`. Keputusan: MariaDB 11.8 (ADR-012 direvisi, OQ-014 baru), driver `database` lokal, OQ-003 terjawab (`konsep/region.sql`) |
-| 2026-11-14 | T-001 | Selesai | branch `feat/T-001-scaffold` | Laravel 13.42 + React starter kit (dev-main) di `backend/`. Spatie 8.5, Sanctum 4.4, OpenSpout 5.13, Pest 5.3, Larastan 3.15. OQ-013 terjawab (PHP 8.5 OK). Registrasi mandiri & passkeys dimatikan, "ingat saya" dihapus (SEC-005). 49 test hijau, Pint/Larastan/lint/tsc/build bersih |
+| 2026-11-14 | T-001 | Selesai | 263cf01 (PR #1) | Laravel 13.42 + React starter kit (dev-main) di `backend/`. Spatie 8.5, Sanctum 4.4, OpenSpout 5.13, Pest 5.3, Larastan 3.15. OQ-013 terjawab (PHP 8.5 OK). Registrasi mandiri & passkeys dimatikan, "ingat saya" dihapus (SEC-005). 49 test hijau, Pint/Larastan/lint/tsc/build bersih |
 
 ### 6.5 Catatan untuk sesi berikutnya
 - **Berikutnya T-002 (CI & pre-commit).** Hal yang sudah diketahui dari T-001:

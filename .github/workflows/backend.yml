@@ -1,0 +1,188 @@
+# Pipeline backend Laravel (NFR-012, SEC-066). Pindai secret ada di secrets.yml (tanpa path filter).
+name: backend
+
+on:
+  push:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+  pull_request:
+    paths:
+      - 'backend/**'
+      - '.github/workflows/backend.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PHP_VERSION: '8.5'
+  PHP_EXTENSIONS: pdo_mysql, intl, zip, gd, bcmath, redis
+  NODE_VERSION: '22'
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  php-quality:
+    name: Pint & Larastan
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: shivammathur/setup-php@2.40.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Lokasi cache composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Pint
+        run: vendor/bin/pint --test
+
+      - name: Larastan (level di phpstan.neon)
+        run: vendor/bin/phpstan analyse --no-progress --memory-limit=1G
+
+  php-test:
+    name: Pest (MariaDB 11.8)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    services:
+      # Mesin DB sama dengan lokal & produksi (ADR-012, OQ-014). Password hanya untuk container CI sekali pakai.
+      mariadb:
+        image: mariadb:11.8.9
+        env:
+          MARIADB_ROOT_PASSWORD: root
+          MARIADB_DATABASE: pakis_one_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s --health-timeout=5s --health-retries=20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s --health-timeout=5s --health-retries=10
+    env:
+      # Env proses menang atas .env (Dotenv immutable), jadi .env.example lokal (port 3307) tetap aman disalin.
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_USERNAME: root
+      DB_PASSWORD: root
+      REDIS_HOST: 127.0.0.1
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: shivammathur/setup-php@2.40.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      - name: Lokasi cache composer
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v6.1.0
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Siapkan .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      - name: Pest
+        run: php artisan test --parallel
+
+  frontend:
+    name: Lint, tsc & build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      # PHP dibutuhkan untuk menghasilkan route TS Wayfinder (di-gitignore).
+      - uses: shivammathur/setup-php@2.40.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          extensions: ${{ env.PHP_EXTENSIONS }}
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: composer install --no-interaction --no-progress --prefer-dist
+
+      - run: npm ci
+
+      - name: Siapkan .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate --ansi
+
+      # Tanpa --with-form, tsc gagal "Property 'form' does not exist" (lihat backend/CLAUDE.md).
+      - name: Generate Wayfinder
+        run: php artisan wayfinder:generate --with-form
+
+      - name: Lint & format (vp check)
+        run: npm run lint
+
+      - name: TypeScript
+        run: npm run types
+
+      - name: Build
+        run: npm run build
+
+  audit:
+    name: Audit dependency
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7.0.1
+
+      - uses: shivammathur/setup-php@2.40.0
+        with:
+          php-version: ${{ env.PHP_VERSION }}
+          coverage: none
+          tools: composer:v2
+
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # High/Critical memblokir; pengecualian wajib dijustifikasi di docs/12-OPEN-QUESTIONS.md (SEC-066).
+      - name: composer audit
+        run: composer audit --locked --no-interaction
+
+      - name: npm audit
+        run: npm audit --audit-level=high

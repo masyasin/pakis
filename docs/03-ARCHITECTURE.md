@@ -18,7 +18,7 @@ flowchart LR
     API["Laravel 13 - API v1 (Sanctum)"]
     WRK["Queue worker (Supervisor)"]
     SCH["Scheduler (cron)"]
-    DB[("MySQL 8.4")]
+    DB[("MariaDB 11.8")]
     RDS[("Redis - cache, queue, session")]
     STG[("Storage privat - selfie, import, export")]
   end
@@ -151,8 +151,8 @@ Dibawa starter kit `laravel/react-starter-kit` (dev-main, Laravel 13): `laravel/
 | Token API | `laravel/sanctum` | Versi kompatibel Laravel 13 dari starter/composer. |
 | TOTP mobile | `pragmarx/google2fa` | Sudah menjadi dependency Fortify, dipakai juga untuk verifikasi MFA di API. |
 | Excel | `openspout/openspout` | Baca/tulis streaming, hemat memori untuk import/export besar. |
-| Test | Pest, Larastan (level 6), Pint, Playwright (E2E web) | |
-| Database | **MariaDB 11.8** (keputusan 14 Nov 2026, menggantikan MySQL 8.4) | Lokal: XAMPP port 3307. utf8mb4, `Asia/Jakarta` di sisi aplikasi, kolom waktu disimpan UTC. CI/produksi: OQ-014. |
+| Test | Pest, Larastan (level 7), Pint, Playwright (E2E web) | CI: `.github/workflows/backend.yml`. Secret: gitleaks 8.30.1 (`secrets.yml` + pre-commit). |
+| Database | **MariaDB 11.8** (keputusan 14 Nov 2026, menggantikan MySQL 8.4) | Lokal: XAMPP port 3307. CI: image `mariadb:11.8.9`. Produksi: MariaDB 11.8. utf8mb4, `Asia/Jakarta` di sisi aplikasi, kolom waktu disimpan UTC. |
 | Cache/Queue/Session | Redis (paket stabil OS, ≥ 7) | Queue `redis`, driver `database` tidak dipakai di produksi. **Lokal** memakai driver `database` (PHP XAMPP tanpa phpredis). |
 | Mobile | Flutter stable terbaru (dikunci dengan FVM `.fvmrc`) | Android minSdk 26. |
 | Paket Flutter | `dio`, `flutter_riverpod`, `go_router`, `drift` + `sqlcipher_flutter_libs`, `flutter_secure_storage`, `camera`, `geolocator`, `flutter_image_compress`, `device_info_plus`, `package_info_plus`, `connectivity_plus`, `uuid`, `intl` | Penambahan paket lain wajib lewat `12-OPEN-QUESTIONS.md`. |
@@ -174,7 +174,7 @@ Dependency di luar tabel ini **dilarang** ditambahkan tanpa persetujuan tertulis
 | ADR-009 | Penomoran hanya di server dengan row lock | Nomor tidak bisa dipalsukan atau bentrok. Fondasi untuk kwitansi di Fase 1. | Butuh transaksi di setiap pembuatan dokumen bernomor. |
 | ADR-010 | Absen online memakai waktu server | Jam HP mudah diubah. | Offline diterima dengan batas dan penanda (BR-067). |
 | ADR-011 | `spatie/laravel-permission` + kolom tambahan di `roles` (`description`, `data_scope`, `mfa_required`, `is_system`) | Role dinamis dengan matriks permission, standar di semua produk Sintech. | Permission dibuat seeder dari `06` §3. UI tidak bisa membuat permission baru. |
-| ADR-012 | ~~MySQL 8.4 LTS~~ **MariaDB 11.8** (revisi 14 Nov 2026) | Lingkungan dev memakai XAMPP bawaan (MariaDB 11.8). Satu mesin DB untuk lokal, CI, dan produksi lebih aman daripada mengandalkan kompatibilitas dua mesin. | Trigger append-only (T-007), `SELECT … FOR UPDATE` (T-009), dan kolom JSON (alias `LONGTEXT` + `CHECK json_valid` di MariaDB) diuji di MariaDB. Hindari fitur khusus MySQL 8.4. Cakupan CI/produksi: OQ-014. |
+| ADR-012 | ~~MySQL 8.4 LTS~~ **MariaDB 11.8** (revisi 14 Nov 2026) | Lingkungan dev memakai XAMPP bawaan (MariaDB 11.8). Satu mesin DB untuk lokal, CI, dan produksi lebih aman daripada mengandalkan kompatibilitas dua mesin. | Trigger append-only (T-007), `SELECT … FOR UPDATE` (T-009), dan kolom JSON (alias `LONGTEXT` + `CHECK json_valid` di MariaDB) diuji di MariaDB. Hindari fitur khusus MySQL 8.4. Berlaku di lokal, CI, dan produksi (OQ-014 terjawab). |
 
 ## 7. Alur Penting
 
@@ -185,7 +185,7 @@ sequenceDiagram
   autonumber
   participant P as Pakis Pro
   participant A as API v1
-  participant D as MySQL
+  participant D as MariaDB
   participant S as Storage privat
   P->>P: Ambil selfie kamera + GPS, cek isMocked, kompres ke 100 KB
   P->>A: POST /api/v1/attendance (multipart, client_uuid, Bearer token, X-Device-Id)
@@ -232,8 +232,8 @@ flowchart TD
 
 **Spesifikasi produksi minimum:** 4 vCPU, 8 GB RAM, 160 GB SSD (selfie ±9 GB/tahun), IPv4 publik, snapshot mingguan dari penyedia.
 
-**Komponen server:** Nginx, PHP-FPM 8.5 (OPcache), MySQL 8.4 (bind ke localhost), Redis (bind localhost + password), Supervisor (2 worker `default`, 1 worker `imports`), cron `schedule:run` tiap menit, Certbot (TLS), UFW (22 dari IP admin, 80, 443), fail2ban, unattended-upgrades.
+**Komponen server:** Nginx, PHP-FPM 8.5 (OPcache), MariaDB 11.8 (bind ke localhost), Redis (bind localhost + password), Supervisor (2 worker `default`, 1 worker `imports`), cron `schedule:run` tiap menit, Certbot (TLS), UFW (22 dari IP admin, 80, 443), fail2ban, unattended-upgrades.
 
-**Backup:** `mysqldump --single-transaction` harian + binlog, `storage/app/private` harian. Semuanya dienkripsi (age/gpg) dan dikirim ke penyimpanan di luar server (lokasi: OQ-002). Uji restore bulanan dicatat.
+**Backup:** `mariadb-dump --single-transaction` harian + binlog, `storage/app/private` harian. Semuanya dienkripsi (age/gpg) dan dikirim ke penyimpanan di luar server (lokasi: OQ-002). Uji restore bulanan dicatat.
 
 **Rilis:** GitHub Actions → build aset → deploy lewat SSH (zero-downtime dengan symlink release), `php artisan migrate --force`, `optimize`, `queue:restart`. APK Pakis Pro dibangun dan ditandatangani di CI, keystore disimpan sebagai secret CI, lalu dibagikan lewat URL unduh di setting `mobile.download_url` (distribusi Play Store: OQ-006).

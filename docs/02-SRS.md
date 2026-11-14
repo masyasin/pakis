@@ -86,6 +86,6 @@ Notasi: **W** = web admin, **M** = Pakis Pro (mobile), **API** = API v1. Permiss
 | NFR-009 | UX & aksesibilitas | WCAG 2.2 AA, tema terang & gelap, Bahasa Indonesia, format tanggal & angka Indonesia, zona waktu dari setting. |
 | NFR-010 | Standar daftar | **Setiap** halaman daftar dan endpoint daftar API wajib paging, pencarian, filter, sort, dan state di URL (BR-001–BR-006). Ditegakkan oleh test kontrak (`10` §3). |
 | NFR-011 | Observability | Log JSON + `request_id`, endpoint `/up`, metrik antrean & job gagal, alert ke email/WA admin (penerima di setting `monitoring.alert_emails`). |
-| NFR-012 | Maintainability | Larastan level 6, Pint, ESLint, `flutter analyze` bersih. Logika bisnis di Actions dengan test. |
+| NFR-012 | Maintainability | Larastan ≥ level 6 (saat ini 7, `backend/phpstan.neon`), Pint, ESLint, `flutter analyze` bersih. Logika bisnis di Actions dengan test. |
 | NFR-013 | Retensi | Audit log 5 tahun, log keamanan 1 tahun, selfie sesuai setting, berkas import 90 hari, berkas export 7 hari. |
 | NFR-014 | Mobile | Ukuran APK < 40 MB, cold start < 3 s di HP RAM 3 GB, absen online selesai ≤ 3 ketukan. |

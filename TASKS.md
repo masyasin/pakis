@@ -31,8 +31,8 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Memenuhi: NFR-012, SEC-060, SEC-066
 - Dependensi: T-001
 - Konteks wajib: `docs/09-SECURITY.md` §3.7, `docs/10-TEST-PLAN.md` §1
-- File: `.github/workflows/backend.yml`, `.github/workflows/mobile.yml` (kerangka, path filter), `.gitleaks.toml`, `.pre-commit-config.yaml` atau `lefthook.yml`, `backend/phpstan.neon` (level 6)
-- Deskripsi: Pipeline backend: Pint `--test`, Larastan, Pest (service MySQL 8.4 + Redis), ESLint, `tsc`, gitleaks, `composer audit`, `npm audit --audit-level=high`. Pre-commit: gitleaks + Pint.
+- File: `.github/workflows/backend.yml`, `.github/workflows/mobile.yml` (kerangka, path filter), `.gitleaks.toml`, `.pre-commit-config.yaml` atau `lefthook.yml`, `backend/phpstan.neon` (level 7, keputusan 14 Nov 2026)
+- Deskripsi: Pipeline backend: Pint `--test`, Larastan, Pest (service MariaDB 11.8 + Redis), ESLint, `tsc`, gitleaks, `composer audit`, `npm audit --audit-level=high`. Pre-commit: gitleaks + Pint.
 - Kriteria penerimaan:
   - [ ] PR dengan secret tiruan (`AKIA...`) gagal di gitleaks
   - [ ] Semua job hijau pada commit kosong fitur

@@ -1,0 +1,27 @@
+# Hook lokal sebelum commit (T-002). Pasang sekali per clone:
+#   pip install --user pre-commit==4.7.0
+#   pre-commit install
+# Jalankan manual: pre-commit run --all-files
+#
+# Hook ini lapis pertama; CI (secrets.yml, backend.yml) tetap penjaga utama.
+# Melewati hook (--no-verify / SKIP=...) hanya dengan alasan tertulis, tidak pernah untuk secret sungguhan.
+
+minimum_pre_commit_version: '4.0.0'
+
+repos:
+  # Secret di berkas yang di-stage (SEC-060). Butuh Go untuk build pertama; di-cache sesudahnya.
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.1
+    hooks:
+      - id: gitleaks
+        args: ['--config', '.gitleaks.toml']
+
+  - repo: local
+    hooks:
+      # Hanya memeriksa, tidak memformat ulang diam-diam: perbaiki dengan `vendor/bin/pint` di backend/.
+      - id: pint
+        name: pint (backend)
+        language: system
+        entry: php backend/vendor/bin/pint --config backend/pint.json --test
+        files: ^backend/.*\.php$
+        pass_filenames: true

@@ -24,9 +24,13 @@ PAKIS ONE adalah sistem internal **CV Pakis Jaya Abadi** (distributor pestisida 
 
 ## 2. Stack & Perintah
 
-Laravel 13 · PHP 8.5 · Inertia + React + TypeScript · Tailwind + shadcn/ui (starter kit resmi) · MySQL 8.4 · Redis · Spatie Permission ^8 · Sanctum · OpenSpout · Pest · Larastan · Playwright. Mobile: Flutter stable (FVM). Versi terkunci: `docs/03-ARCHITECTURE.md` §5.
+Laravel 13 · PHP 8.5 · Inertia + React + TypeScript · Tailwind + shadcn/ui (starter kit resmi) · MariaDB 11.8 · Redis · Spatie Permission ^8 · Sanctum · OpenSpout · Pest · Larastan · Playwright. Mobile: Flutter stable (FVM). Versi terkunci: `docs/03-ARCHITECTURE.md` §5.
 
 ```bash
+# root repo — sekali per clone (T-002): hook gitleaks + Pint sebelum commit
+pip install --user pre-commit==4.7.0 && pre-commit install
+pre-commit run --all-files
+
 # backend/
 composer install && npm ci
 cp .env.example .env && php artisan key:generate

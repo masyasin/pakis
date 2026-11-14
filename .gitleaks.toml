@@ -1,0 +1,40 @@
+# Konfigurasi gitleaks PAKIS ONE (SEC-060). Dipakai pre-commit (.pre-commit-config.yaml) dan CI (secrets.yml).
+#
+# Aturan bawaan gitleaks tetap aktif. Aturan di bawah menambal celah yang terbukti saat T-002:
+# APP_KEY Laravel (`base64:...`) TIDAK tertangkap aturan bawaan.
+#
+# Sengaja tanpa allowlist: scan T-002 tidak menemukan false positive di berkas yang dilacak git.
+# Bila nanti perlu allowlist, batasi ke satu path/regex spesifik dan catat alasannya di sini.
+
+title = "PAKIS ONE"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "laravel-app-key"
+description = "Laravel APP_KEY / APP_PREVIOUS_KEYS (kunci enkripsi utama, SEC-011)"
+regex = '''(?i)\bAPP_(?:PREVIOUS_)?KEYS?\s*[=:]\s*["']?(base64:[A-Za-z0-9+/]{43}=)'''
+secretGroup = 1
+keywords = ["app_key", "app_previous_keys"]
+
+[[rules]]
+id = "laravel-base64-key"
+description = "Kunci Laravel base64 32 byte yang tertulis di luar .env (mis. di config, test, dokumen)"
+regex = '''["'](base64:[A-Za-z0-9+/]{43}=)["']'''
+secretGroup = 1
+keywords = ["base64:"]
+
+[[rules]]
+id = "pakis-nik-hash-key"
+description = "NIK_HASH_KEY: kunci HMAC NIK, terpisah dari APP_KEY (SEC-010, SEC-011)"
+regex = '''(?i)\bNIK_HASH_KEY\s*[=:]\s*["']?([0-9a-f]{32,})'''
+secretGroup = 1
+keywords = ["nik_hash_key"]
+
+[[rules]]
+id = "pakis-superadmin-password"
+description = "Password Super Admin awal (SEC-008) yang terisi"
+regex = '''(?i)\bSUPERADMIN_PASSWORD\s*[=:]\s*["']?([^\s"'#]{8,})'''
+secretGroup = 1
+keywords = ["superadmin_password"]

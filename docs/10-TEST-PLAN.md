@@ -5,7 +5,7 @@
 | Lapisan | Alat | Cakupan wajib |
 |---|---|---|
 | Unit | Pest | Actions, `ListingQuery`, `NumberGenerator`, `SettingRegistry`, `AttendanceStatusResolver`, `ScheduleResolver`, kalkulasi jarak/radius, normalisasi HP/NIK/tanggal, parser import |
-| Feature (HTTP) | Pest + `RefreshDatabase` (MySQL 8.4 di CI) | Semua route web & API: validasi, Policy, scope, audit, respons |
+| Feature (HTTP) | Pest + `RefreshDatabase` (MariaDB 11.8 di lokal & CI) | Semua route web & API: validasi, Policy, scope, audit, respons |
 | Contract | Pest | `ListingContractTest` (§3), `ApiErrorFormatTest`, `PublicConfigTest` (SEC-062) |
 | Arsitektur | Pest `arch()` | Controller tidak memakai `DB::` mentah. Tidak ada `dd/dump/ray`. Actions tidak bergantung pada `Request`. Model di `Domain/*/Models` |
 | Otorisasi | Pest dataset | Matriks role × permission dari `06` §4 + IDOR (§4) |

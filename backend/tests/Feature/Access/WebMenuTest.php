@@ -2,6 +2,7 @@
 
 use App\Domain\Access\Support\WebAccess;
 use App\Models\User;
+use App\Support\Menu\MenuBuilder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Facades\Gate;
@@ -35,31 +36,46 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
-        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
+        'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
-        'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
-        'Akses' => ['Pengguna', 'Role & Hak Akses', 'Perangkat'],
-        'Sistem' => ['Pengaturan', 'Penomoran', 'Referensi', 'Audit Log', 'Log Keamanan'],
+        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
+        'Pengguna & Akses' => ['Pengguna', 'Role & Hak Akses', 'Perangkat'],
+        'Pengaturan' => ['Pengaturan Umum', 'Penomoran', 'Referensi', 'Wilayah'],
+        'Audit' => ['Audit Log', 'Log Keamanan'],
     ]);
 });
 
-test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function () {
+test('06 §8 HRD: Pengguna tanpa Role, Pengaturan Umum, Penomoran, Audit', function () {
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
-        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
+        'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
-        'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
-        'Akses' => ['Pengguna', 'Perangkat'],
-        'Sistem' => ['Referensi'],
+        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
+        'Pengguna & Akses' => ['Pengguna', 'Perangkat'],
+        'Pengaturan' => ['Referensi', 'Wilayah'],
     ]);
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Organisasi' => ['Lokasi'], 'Akses' => ['Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'], 'Pengguna & Akses' => ['Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota'], 'Kepegawaian' => ['Pegawai', 'Penugasan']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
+});
+
+test('06 §8 setiap grup menu punya seksi sidebar (HRIS / Sistem), Dasbor tanpa seksi', function () {
+    $groups = array_values(array_unique(array_filter(array_column(MenuBuilder::ITEMS, 0))));
+    expect(array_keys(MenuBuilder::SECTIONS))->toEqualCanonicalizing($groups);
+
+    $this->actingAs(User::factory()->withTwoFactor()->create()->assignRole('owner'))->get('/dasbor')
+        ->assertInertia(function (Assert $page) {
+            $sections = array_column($page->toArray()['props']['auth']['menu'], 'section', 'title');
+            expect($sections)->toMatchArray([
+                '' => null, 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
+                'Pengguna & Akses' => 'Sistem', 'Pengaturan' => 'Sistem', 'Audit' => 'Sistem',
+            ]);
+        });
 });
 
 test('auth.permissions: super_admin = 54 permission; tamu tanpa menu', function () {

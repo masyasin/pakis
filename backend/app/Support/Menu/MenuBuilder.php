@@ -14,13 +14,35 @@ use Illuminate\Support\Facades\Route;
 final class MenuBuilder
 {
     /**
+     * Seksi sidebar (judul kecil tanpa klik) per grup; keputusan Mas 16 Nov 2026 (06 §8). HRIS =
+     * Unit Kerja, Kepegawaian, Presensi (lalu Cuti, Payroll, dst. di Fase HR); Sistem = akses,
+     * pengaturan, audit. Modul bisnis nanti cukup menambah seksi baru tanpa merombak yang ada.
+     *
+     * @var array<string, string>
+     */
+    public const SECTIONS = [
+        'Unit Kerja' => 'HRIS',
+        'Kepegawaian' => 'HRIS',
+        'Presensi' => 'HRIS',
+        'Pengguna & Akses' => 'Sistem',
+        'Pengaturan' => 'Sistem',
+        'Audit' => 'Sistem',
+    ];
+
+    /**
      * [grup, judul, kunci ikon (dipetakan di frontend), permission syarat, nama route].
-     * Grup null = tanpa judul grup (Dasbor).
+     * Grup null = tanpa judul grup (Dasbor). Urutan di sini = urutan di sidebar.
      *
      * @var list<array{0: string|null, 1: string, 2: string, 3: string, 4: string}>
      */
     public const ITEMS = [
         [null, 'Dasbor', 'dashboard', 'dashboard.view', 'admin.dashboard'],
+        ['Unit Kerja', 'Lokasi', 'location', 'locations.view', 'admin.locations.index'],
+        ['Unit Kerja', 'Departemen', 'department', 'departments.view', 'admin.departments.index'],
+        ['Unit Kerja', 'Jabatan', 'position', 'positions.view', 'admin.positions.index'],
+        ['Kepegawaian', 'Pegawai', 'employee', 'employees.view', 'admin.employees.index'],
+        ['Kepegawaian', 'Penugasan', 'assignment', 'assignments.view', 'admin.assignments.index'],
+        ['Kepegawaian', 'Impor Pegawai', 'import', 'employees.import', 'admin.imports.index'],
         ['Presensi', 'Presensi Harian', 'attendance', 'attendance.view', 'admin.attendance.index'],
         ['Presensi', 'Rekap Bulanan', 'recap', 'attendance.view', 'admin.attendance-summary.index'],
         ['Presensi', 'Koreksi Presensi', 'correction', 'attendance_corrections.view', 'admin.corrections.index'],
@@ -28,21 +50,15 @@ final class MenuBuilder
         ['Presensi', 'Shift', 'shift', 'shifts.view', 'admin.shifts.index'],
         ['Presensi', 'Hari Libur', 'holiday', 'holidays.view', 'admin.holidays.index'],
         ['Presensi', 'Tugas Luar Kota', 'trip', 'field_trips.view', 'admin.field-trips.index'],
-        ['Kepegawaian', 'Pegawai', 'employee', 'employees.view', 'admin.employees.index'],
-        ['Kepegawaian', 'Penugasan', 'assignment', 'assignments.view', 'admin.assignments.index'],
-        ['Kepegawaian', 'Impor Pegawai', 'import', 'employees.import', 'admin.imports.index'],
-        ['Organisasi', 'Lokasi', 'location', 'locations.view', 'admin.locations.index'],
-        ['Organisasi', 'Departemen', 'department', 'departments.view', 'admin.departments.index'],
-        ['Organisasi', 'Jabatan', 'position', 'positions.view', 'admin.positions.index'],
-        ['Organisasi', 'Wilayah', 'region', 'regions.view', 'admin.regions.index'],
-        ['Akses', 'Pengguna', 'user', 'users.view', 'admin.users.index'],
-        ['Akses', 'Role & Hak Akses', 'role', 'roles.view', 'admin.roles.index'],
-        ['Akses', 'Perangkat', 'device', 'devices.view', 'admin.devices.index'],
-        ['Sistem', 'Pengaturan', 'settings', 'settings.view', 'admin.settings.edit'],
-        ['Sistem', 'Penomoran', 'sequence', 'sequences.view', 'admin.sequences.index'],
-        ['Sistem', 'Referensi', 'reference', 'references.view', 'admin.references.index'],
-        ['Sistem', 'Audit Log', 'audit', 'audit.view', 'admin.audit.index'],
-        ['Sistem', 'Log Keamanan', 'security', 'audit.view', 'admin.security-events.index'],
+        ['Pengguna & Akses', 'Pengguna', 'user', 'users.view', 'admin.users.index'],
+        ['Pengguna & Akses', 'Role & Hak Akses', 'role', 'roles.view', 'admin.roles.index'],
+        ['Pengguna & Akses', 'Perangkat', 'device', 'devices.view', 'admin.devices.index'],
+        ['Pengaturan', 'Pengaturan Umum', 'settings', 'settings.view', 'admin.settings.edit'],
+        ['Pengaturan', 'Penomoran', 'sequence', 'sequences.view', 'admin.sequences.index'],
+        ['Pengaturan', 'Referensi', 'reference', 'references.view', 'admin.references.index'],
+        ['Pengaturan', 'Wilayah', 'region', 'regions.view', 'admin.regions.index'],
+        ['Audit', 'Audit Log', 'audit', 'audit.view', 'admin.audit.index'],
+        ['Audit', 'Log Keamanan', 'security', 'audit.view', 'admin.security-events.index'],
     ];
 
     /** @return list<string> permission yang membuka setidaknya satu menu (BR-017). */
@@ -52,7 +68,7 @@ final class MenuBuilder
     }
 
     /**
-     * @return list<array{title: string|null, items: list<array{title: string, href: string, icon: string}>}>
+     * @return list<array{section: string|null, title: string|null, items: list<array{title: string, href: string, icon: string}>}>
      */
     public function for(User $user): array
     {
@@ -64,7 +80,7 @@ final class MenuBuilder
             }
 
             $key = $group ?? '';
-            $groups[$key] ??= ['title' => $group, 'items' => []];
+            $groups[$key] ??= ['section' => $group === null ? null : self::SECTIONS[$group], 'title' => $group, 'items' => []];
             // Relatif: aman dari perbedaan host APP_URL dan cocok untuk penanda item aktif.
             $groups[$key]['items'][] = ['title' => $title, 'href' => route($route, absolute: false), 'icon' => $icon];
         }

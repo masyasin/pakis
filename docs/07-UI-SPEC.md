@@ -19,7 +19,7 @@ Produk internal perusahaan distribusi pertanian: **tenang, rapi, terpercaya, cep
 Warna primer bisa diganti lewat setting `branding.primary_color` (diterapkan sebagai `--primary`, dengan varian terang/gelap dihitung otomatis dan kontras dicek ≥ 4.5:1 terhadap putih. Kalau gagal, setting ditolak, BR-021). Font: sistem (`Inter` bila tersedia lokal, tanpa CDN). Ikon: Lucide (sudah ada di starter kit). Radius 12 px, spacing kelipatan 4. Tema mengikuti `prefers-color-scheme`, dengan toggle yang diingat dan diterapkan sebelum render.
 
 ### 1.2 Layout web
-Sidebar kiri (grup menu sesuai `06` §8, bisa diciutkan), header (judul halaman, breadcrumb, lonceng notifikasi + jumlah belum dibaca, menu unduhan, toggle tema, avatar → Profil/Keluar). Konten maks 1440 px. Di layar < 1024 px, sidebar menjadi drawer.
+Sidebar kiri (seksi berjudul HRIS/Sistem berisi grup menu yang bisa dibuka-tutup, sesuai `06` §8; bisa diciutkan, grup menjadi ikon dengan menu melayang), header (judul halaman, breadcrumb, lonceng notifikasi + jumlah belum dibaca, menu unduhan, toggle tema, avatar → Profil/Keluar). Konten maks 1440 px. Di layar < 1024 px, sidebar menjadi drawer.
 
 ## 2. Pola Komponen Bersama (`resources/js/components/pakis/`)
 

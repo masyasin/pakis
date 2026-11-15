@@ -186,34 +186,34 @@ Tugas terlihat bila **salah satu** pegawainya dalam scope pelaku (selain itu 404
 
 ## 8. Matriks Menu (web)
 
-Menu tampil bila pengguna punya permission pada kolom "Syarat".
+Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokkan dalam **seksi** berjudul (teks kecil, tidak bisa diklik; keputusan Mas 16 Nov 2026): **HRIS** = Unit Kerja, Kepegawaian, Presensi (Fase HR menambah grupnya di seksi ini); **Sistem** = Pengguna & Akses, Pengaturan, Audit. Modul bisnis berikutnya menambah seksi baru. Urutan tabel = urutan sidebar.
 
-| Grup | Menu | Syarat | owner | admin | hrd | kepala_lokasi | supervisor |
-|---|---|---|---|---|---|---|---|
-| — | Dasbor | `dashboard.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Presensi | Presensi Harian | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Presensi | Rekap Bulanan | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Presensi | Koreksi Presensi | `attendance_corrections.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Presensi | Jadwal | `schedules.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Presensi | Shift | `shifts.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Presensi | Hari Libur | `holidays.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Presensi | Tugas Luar Kota | `field_trips.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Kepegawaian | Pegawai | `employees.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Kepegawaian | Penugasan | `assignments.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Kepegawaian | Impor Pegawai | `employees.import` | ✅ | ❌ | ✅ | ❌ | ❌ |
-| Organisasi | Lokasi | `locations.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Organisasi | Departemen | `departments.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Organisasi | Jabatan | `positions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Organisasi | Wilayah | `regions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Akses | Pengguna | `users.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Akses | Role & Hak Akses | `roles.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Akses | Perangkat | `devices.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Sistem | Pengaturan | `settings.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Sistem | Penomoran | `sequences.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Sistem | Referensi | `references.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
-| Sistem | Audit Log | `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Sistem | Log Keamanan | `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Header | Notifikasi, Unduhan, Profil | auth | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Seksi | Grup | Menu | Syarat | owner | admin | hrd | kepala_lokasi | supervisor |
+|---|---|---|---|---|---|---|---|---|
+| — | — | Dasbor | `dashboard.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Unit Kerja | Lokasi | `locations.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| HRIS | Unit Kerja | Departemen | `departments.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| HRIS | Unit Kerja | Jabatan | `positions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| HRIS | Kepegawaian | Pegawai | `employees.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Kepegawaian | Penugasan | `assignments.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Kepegawaian | Impor Pegawai | `employees.import` | ✅ | ❌ | ✅ | ❌ | ❌ |
+| HRIS | Presensi | Presensi Harian | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Presensi | Rekap Bulanan | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Presensi | Koreksi Presensi | `attendance_corrections.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Presensi | Jadwal | `schedules.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Presensi | Shift | `shifts.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| HRIS | Presensi | Hari Libur | `holidays.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Presensi | Tugas Luar Kota | `field_trips.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Sistem | Pengguna & Akses | Pengguna | `users.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Sistem | Pengguna & Akses | Role & Hak Akses | `roles.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Sistem | Pengguna & Akses | Perangkat | `devices.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Sistem | Pengaturan | Pengaturan Umum | `settings.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Sistem | Pengaturan | Penomoran | `sequences.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Sistem | Pengaturan | Referensi | `references.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Sistem | Pengaturan | Wilayah | `regions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Sistem | Audit | Audit Log | `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| Sistem | Audit | Log Keamanan | `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
+| — | Header | Notifikasi, Unduhan, Profil | auth | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 Role `pegawai` saja **tidak** bisa masuk web admin. Login web ditolak dengan pesan "Akun Anda hanya untuk aplikasi Pakis Pro" bila pengguna tidak punya satu pun permission yang membuka menu di atas (BR-017).
 

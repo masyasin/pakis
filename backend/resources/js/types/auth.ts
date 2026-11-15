@@ -20,6 +20,8 @@ export type MenuItem = {
 };
 
 export type MenuGroup = {
+    /** Judul seksi sidebar (`HRIS`, `Sistem`); null = tanpa seksi (Dasbor). */
+    section: string | null;
     /** null = tanpa judul grup (Dasbor). */
     title: string | null;
     items: MenuItem[];

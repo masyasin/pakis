@@ -43,6 +43,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import {
     SidebarGroup,
+    SidebarGroupLabel,
     SidebarMenu,
     SidebarMenuButton,
     SidebarMenuItem,
@@ -84,12 +85,33 @@ const ICONS: Record<string, LucideIcon> = {
 
 /** Ikon grup menu (judul grup 06 §8). Grup lain memakai ikon item pertamanya. */
 const GROUP_ICONS: Record<string, LucideIcon> = {
-    Presensi: ClipboardCheck,
+    'Unit Kerja': Building2,
     Kepegawaian: UsersRound,
-    Organisasi: Building2,
-    Akses: KeyRound,
-    Sistem: Settings,
+    Presensi: ClipboardCheck,
+    'Pengguna & Akses': KeyRound,
+    Pengaturan: Settings,
+    Audit: History,
 };
+
+/**
+ * Grup berurutan dengan seksi yang sama dikumpulkan jadi satu blok (06 §8): satu judul seksi
+ * kecil (HRIS, Sistem) lalu grup-grupnya. Urutan dari server dipertahankan.
+ */
+export function bySection(
+    groups: MenuGroup[],
+): { section: string | null; groups: MenuGroup[] }[] {
+    const blocks: { section: string | null; groups: MenuGroup[] }[] = [];
+    for (const group of groups) {
+        const last = blocks[blocks.length - 1];
+        if (last && last.section === group.section) {
+            last.groups.push(group);
+        } else {
+            blocks.push({ section: group.section, groups: [group] });
+        }
+    }
+
+    return blocks;
+}
 
 /** Status buka/tutup grup diingat per browser (hanya kenyamanan; gagal = pakai bawaan). */
 const STORAGE_KEY = 'sidebar.groups';
@@ -143,7 +165,7 @@ const ITEM_CLASS =
 
 /**
  * Menu sidebar dari `auth.menu` (sudah difilter server menurut permission & modul yang ada,
- * 06 §8/§10). Grup bisa dibuka/tutup (grup berisi halaman aktif selalu terbuka saat dimuat);
+ * 06 §8/§10). Grup dikelompokkan per seksi berjudul (HRIS, Sistem). Grup bisa dibuka/tutup (grup berisi halaman aktif selalu terbuka saat dimuat);
  * saat sidebar diciutkan, tiap grup menjadi ikon yang membuka menu melayang berisi itemnya
  * sehingga semua menu tetap bisa diklik. Item aktif juga untuk halaman turunan.
  */
@@ -157,39 +179,59 @@ export function NavMain() {
     );
 
     return (
-        <SidebarGroup className="px-2 py-0">
-            <SidebarMenu className="gap-0.5">
-                {groups.map((group, index) =>
-                    group.title ? (
-                        <NavGroup
-                            key={group.title}
-                            group={group as MenuGroup & { title: string }}
-                            activeHref={activeHref}
-                        />
-                    ) : (
-                        group.items.map((item) => {
-                            const Icon = ICONS[item.icon] ?? CircleDot;
+        <>
+            {bySection(groups).map((block, blockIndex) => (
+                <SidebarGroup
+                    key={block.section ?? `tanpa-seksi-${blockIndex}`}
+                    className="px-2 py-0 pt-1"
+                >
+                    {block.section && (
+                        <SidebarGroupLabel className="h-7 px-3 text-[11px] font-semibold tracking-wider text-muted-foreground uppercase">
+                            {block.section}
+                        </SidebarGroupLabel>
+                    )}
+                    <SidebarMenu className="gap-0.5">
+                        {block.groups.map((group, index) =>
+                            group.title ? (
+                                <NavGroup
+                                    key={group.title}
+                                    group={
+                                        group as MenuGroup & { title: string }
+                                    }
+                                    activeHref={activeHref}
+                                />
+                            ) : (
+                                group.items.map((item) => {
+                                    const Icon = ICONS[item.icon] ?? CircleDot;
 
-                            return (
-                                <SidebarMenuItem key={item.href ?? index}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={item.href === activeHref}
-                                        tooltip={{ children: item.title }}
-                                        className={ITEM_CLASS}
-                                    >
-                                        <Link href={item.href} prefetch>
-                                            <Icon />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            );
-                        })
-                    ),
-                )}
-            </SidebarMenu>
-        </SidebarGroup>
+                                    return (
+                                        <SidebarMenuItem
+                                            key={item.href ?? index}
+                                        >
+                                            <SidebarMenuButton
+                                                asChild
+                                                isActive={
+                                                    item.href === activeHref
+                                                }
+                                                tooltip={{
+                                                    children: item.title,
+                                                }}
+                                                className={ITEM_CLASS}
+                                            >
+                                                <Link href={item.href} prefetch>
+                                                    <Icon />
+                                                    <span>{item.title}</span>
+                                                </Link>
+                                            </SidebarMenuButton>
+                                        </SidebarMenuItem>
+                                    );
+                                })
+                            ),
+                        )}
+                    </SidebarMenu>
+                </SidebarGroup>
+            ))}
+        </>
     );
 }
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
+use App\Http\Controllers\Admin\HolidayController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MfaSetupController;
@@ -94,6 +95,19 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('shift/{shift}/ubah', [ShiftController::class, 'edit'])->whereNumber('shift')->name('shifts.edit');
         Route::put('shift/{shift}', [ShiftController::class, 'update'])->whereNumber('shift')->name('shifts.update');
         Route::delete('shift/{shift}', [ShiftController::class, 'destroy'])->whereNumber('shift')->name('shifts.destroy');
+    });
+
+    // Hari libur (05 §4.9, FR-033, BR-062). Tidak ber-scope data. `baru` & `ekspor` sebelum `{holiday}`.
+    Route::middleware('can:holidays.view')->group(function () {
+        Route::get('hari-libur', [HolidayController::class, 'index'])->name('holidays.index');
+        Route::get('hari-libur/ekspor', [HolidayController::class, 'export'])->name('holidays.export');
+    });
+    Route::middleware('can:holidays.manage')->group(function () {
+        Route::get('hari-libur/baru', [HolidayController::class, 'create'])->name('holidays.create');
+        Route::post('hari-libur', [HolidayController::class, 'store'])->name('holidays.store');
+        Route::get('hari-libur/{holiday}/ubah', [HolidayController::class, 'edit'])->whereNumber('holiday')->name('holidays.edit');
+        Route::put('hari-libur/{holiday}', [HolidayController::class, 'update'])->whereNumber('holiday')->name('holidays.update');
+        Route::delete('hari-libur/{holiday}', [HolidayController::class, 'destroy'])->whereNumber('holiday')->name('holidays.destroy');
     });
 
     // Wajib aktivasi MFA (05 §4.1, BR-015). Dibiarkan oleh middleware EnforceMfa.

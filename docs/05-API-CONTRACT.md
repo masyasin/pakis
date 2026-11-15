@@ -281,6 +281,7 @@ Semua route `*.export`: bila baris ≤ `export.sync_max_rows` → unduh langsung
 | `admin.schedule-overrides.store` | POST | `/jadwal/pengecualian` | `schedules.manage` | Massal per tanggal |
 | `admin.schedule-overrides.destroy` | DELETE | `/jadwal/pengecualian/{override}` | `schedules.manage` | |
 | `admin.holidays.index` | GET | `/hari-libur` | `holidays.view` | ✅ |
+| `admin.holidays.export` | GET | `/hari-libur/ekspor` | `holidays.view` | |
 | `admin.holidays.create`/`store`/`edit`/`update`/`destroy` | | `/hari-libur/...` | `holidays.manage` | |
 
 ### 4.10 Absensi & Koreksi

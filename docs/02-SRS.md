@@ -60,7 +60,7 @@ Notasi: **W** = web admin, **M** = Pakis Pro (mobile), **API** = API v1. Permiss
 |---|---|---|---|
 | FR-031 | Shift: kode, nama, jam masuk, jam pulang, lintas hari, toleransi telat (menit), batas awal absen masuk (menit sebelum jam masuk), batas akhir absen pulang (menit setelah jam pulang), aktif. | W | BR-060 |
 | FR-032 | Jadwal: pola mingguan per pegawai (shift per hari Senin–Minggu, atau libur) + override per tanggal. Penetapan massal per lokasi/jabatan/pegawai terpilih. | W | BR-061 |
-| FR-033 | Hari libur: tanggal, nama, berlaku untuk semua atau lokasi tertentu. | W | BR-062 |
+| FR-033 | Hari libur: rentang tanggal (satu atau beberapa hari, mis. Idul Fitri + cuti bersama), nama, keterangan, berlaku untuk semua atau lokasi tertentu. | W | BR-062 |
 | FR-034 | Perangkat: registrasi otomatis saat login pertama (bila setting mengizinkan) atau menunggu persetujuan; permintaan ganti HP; admin menyetujui/mereset. Satu pengguna, satu perangkat aktif. | W, M | BR-040, SEC-020 |
 | FR-035 | Absen masuk/pulang: selfie dari kamera (bukan galeri), koordinat + akurasi, penanda lokasi palsu, ID perangkat, UUID klien, waktu perangkat. Server memakai **waktu server** (kecuali offline, lihat FR-036) dan memvalidasi radius sesuai mode absen. | M, API | BR-063–BR-066, SEC-022, SEC-023 |
 | FR-036 | Antrean offline: absen disimpan terenkripsi di HP dan dikirim otomatis saat online. Server menerima dengan waktu perangkat bila selisih ≤ batas setting, menandai `is_offline`, dan menolak bila melewati batas. | M, API | BR-067 |

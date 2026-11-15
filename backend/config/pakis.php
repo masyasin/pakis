@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Access\Listings\UserListing;
+use App\Domain\Attendance\Listings\HolidayListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Employee\Listings\EmployeeListing;
@@ -45,6 +46,7 @@ return [
         'locations' => LocationListing::class,
         'departments' => DepartmentListing::class,
         'positions' => PositionListing::class,
+        'holidays' => HolidayListing::class,
         'employees' => EmployeeListing::class,
     ],
 

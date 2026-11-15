@@ -20,6 +20,7 @@ return [
     'roles', // T-018
     'users', // T-020
     'shifts', // T-033
+    'holidays', // T-034
     'notifications', // T-029
     'locations', // T-021
     'departments', // T-022

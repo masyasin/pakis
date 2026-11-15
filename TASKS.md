@@ -495,9 +495,11 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Dependensi: T-021
 - Konteks wajib: `docs/04-DATABASE.md` §2.13 (`holidays`), OQ-008
 - File: migrations, `app/Domain/Attendance/...Holiday...`, `Listings/HolidayListing`, `pages/Holidays/{Index,Form}.tsx`
+- Deskripsi: Satu libur bisa beberapa hari (rentang tanggal mulai–selesai, mis. Idul Fitri + cuti bersama), dengan nama dan keterangan (keputusan Mas 15 Nov 2026).
 - Kriteria penerimaan:
-  - [ ] Libur per lokasi hanya berlaku untuk lokasi terpilih (test resolver di T-035)
-  - [ ] Listing + ekspor lolos test kontrak (filter tahun default tahun ini)
+  - [x] Libur per lokasi hanya berlaku untuk lokasi terpilih (scope `Holiday::appliesTo` diuji; resolver lengkap di T-035)
+  - [x] Listing + ekspor lolos test kontrak (filter tahun default tahun ini)
+  - [x] Rentang tanggal inklusif + keterangan; libur lintas tahun tampil di kedua tahun
 - Verifikasi: `php artisan test --filter=Holiday`
 
 ### T-035 — Jadwal: pola, pengecualian, kalender

@@ -476,14 +476,17 @@ CREATE TABLE schedule_overrides (
   CONSTRAINT so_shift_fk FOREIGN KEY (shift_id) REFERENCES shifts(id)
 );
 
-CREATE TABLE holidays (
+CREATE TABLE holidays (                      -- satu baris = satu libur, bisa beberapa hari (T-034)
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
-  date DATE NOT NULL, name VARCHAR(150) NOT NULL,
+  start_date DATE NOT NULL, end_date DATE NOT NULL,   -- inklusif; libur 1 hari: end_date = start_date
+  name VARCHAR(150) NOT NULL,
+  description VARCHAR(500) NULL,              -- keterangan, mis. "1–2 Syawal + cuti bersama"
   is_national BOOLEAN NOT NULL DEFAULT TRUE,
   applies_to_all BOOLEAN NOT NULL DEFAULT TRUE,
   [audit],
-  UNIQUE KEY holidays_date_name_unique (date, name),
-  KEY holidays_date_idx (date)
+  UNIQUE KEY holidays_start_name_unique (start_date, name),
+  KEY holidays_range_idx (start_date, end_date),
+  CONSTRAINT holidays_range_chk CHECK (end_date >= start_date)
 );
 CREATE TABLE holiday_locations (
   holiday_id BIGINT UNSIGNED NOT NULL, location_id BIGINT UNSIGNED NOT NULL,
@@ -653,5 +656,5 @@ Pencarian teks memakai `LIKE 'kata%'` di kolom ber-index untuk nama/kode. `LIKE 
 - Jabatan: Owner (lv 1), Kepala Gudang, Kepala Toko, Supervisor Sales (lv 3), Sales (`anywhere`), Driver (`any_location`), Staf Gudang, Kasir, Admin, Staf HRD.
 - 15 pegawai fiktif (nama umum Jawa, NIK acak tidak valid Dukcapil), akun login untuk semuanya dengan password `password-demo-123` dan `must_change_password = false`.
 - Shift: `PAGI` 08:00–16:00 (toleransi 10), `GDG` 07:00–15:00 (toleransi 5), `SLS` 07:30–16:30 (toleransi 15). Pola Senin–Sabtu, Minggu libur.
-- Hari libur: dua tanggal contoh bertanda "(contoh)". Daftar libur nasional resmi diisi HRD (OQ-008).
+- Hari libur: dua libur contoh bertanda "(contoh)" di tahun berjalan (satu 1 hari, satu 2 hari). Daftar libur nasional resmi diisi HRD (OQ-008).
 - 30 hari data absensi acak untuk demo rekap.

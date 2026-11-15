@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Access\Support\RoleCatalog;
+use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Attendance\Models\Shift;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
@@ -17,6 +18,8 @@ use App\Domain\Organization\Models\Position;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Models\User;
+use App\Support\Time\DisplayTime;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -104,6 +107,15 @@ class DemoSeeder extends Seeder
         'SLS' => ['Shift Sales', '07:30:00', '16:30:00', 15],
     ];
 
+    /**
+     * Hari libur contoh 04 §4.2 (OQ-008: daftar resmi diisi HRD tiap tahun):
+     * [mulai bulan-hari, selesai bulan-hari, nama, keterangan, nasional, kode lokasi ([] = semua)].
+     */
+    public const HOLIDAYS = [
+        ['08-17', '08-17', 'Hari Kemerdekaan RI (contoh)', null, true, []],
+        ['12-30', '12-31', 'Stok opname akhir tahun (contoh)', 'Gudang tutup untuk tutup buku & stok opname.', false, ['GDG-01']],
+    ];
+
     public function run(): void
     {
         if (app()->isProduction()) {
@@ -132,6 +144,19 @@ class DemoSeeder extends Seeder
         }
 
         $this->seedEmployees();
+
+        // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
+        // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
+        $year = CarbonImmutable::now(DisplayTime::timezone())->year;
+        foreach (self::HOLIDAYS as [$from, $to, $name, $description, $national, $locations]) {
+            $holiday = Holiday::query()->firstOrCreate(['start_date' => "{$year}-{$from}", 'name' => $name], [
+                'end_date' => "{$year}-{$to}", 'description' => $description, 'is_national' => $national,
+                'applies_to_all' => $locations === [],
+            ]);
+            if ($holiday->wasRecentlyCreated && $locations !== []) {
+                $holiday->locations()->sync(Location::query()->whereIn('code', $locations)->pluck('id')->all());
+            }
+        }
     }
 
     /**

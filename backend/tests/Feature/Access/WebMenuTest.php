@@ -35,7 +35,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
-        'Absensi' => ['Shift'],
+        'Absensi' => ['Shift', 'Hari Libur'],
         'Kepegawaian' => ['Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna', 'Role & Hak Akses'],
@@ -46,7 +46,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
 test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function () {
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
-        'Absensi' => ['Shift'],
+        'Absensi' => ['Shift', 'Hari Libur'],
         'Kepegawaian' => ['Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna'],
@@ -54,12 +54,12 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function (
     ]);
 });
 
-test('06 §8 kepala lokasi: Dasbor + Shift (T-033) + Lokasi (T-021) sampai modul absensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Shift'], 'Kepegawaian' => ['Pegawai'], 'Organisasi' => ['Lokasi']]);
+test('06 §8 kepala lokasi: Dasbor + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Shift', 'Hari Libur'], 'Kepegawaian' => ['Pegawai'], 'Organisasi' => ['Lokasi']]);
 });
 
-test('06 §8 supervisor: hanya Dasbor sampai modul absensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Kepegawaian' => ['Pegawai']]);
+test('06 §8 supervisor: Dasbor + Hari Libur (T-034) sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Hari Libur'], 'Kepegawaian' => ['Pegawai']]);
 });
 
 test('auth.permissions: super_admin = 50 permission; tamu tanpa menu', function () {

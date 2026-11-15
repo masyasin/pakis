@@ -580,9 +580,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/07-UI-SPEC.md` §3.4 (`attendance_summary`), §4 (Rekap bulanan)
 - File: `Listings/AttendanceSummaryListing` (agregasi SQL per pegawai), controller, `pages/Attendance/Summary.tsx`, kalender pegawai
 - Kriteria penerimaan:
-  - [ ] Angka rekap = agregasi `attendance_days` (test dengan fixture 1 bulan)
-  - [ ] Sort `% kehadiran` & filter rentang % berfungsi
-  - [ ] Listing + ekspor lolos test kontrak
+  - [x] Angka rekap = agregasi `attendance_days` (test dengan fixture 1 bulan)
+  - [x] Sort `% kehadiran` & filter rentang % berfungsi
+  - [x] Listing + ekspor lolos test kontrak
 - Verifikasi: `php artisan test --filter=AttendanceSummary`
 
 ### T-040 — Koreksi absen (backend & API)

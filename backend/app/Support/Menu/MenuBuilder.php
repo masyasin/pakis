@@ -22,7 +22,7 @@ final class MenuBuilder
     public const ITEMS = [
         [null, 'Dasbor', 'dashboard', 'dashboard.view', 'admin.dashboard'],
         ['Presensi', 'Presensi Harian', 'attendance', 'attendance.view', 'admin.attendance.index'],
-        ['Presensi', 'Rekap Bulanan', 'recap', 'attendance.view', 'admin.attendance.recap'],
+        ['Presensi', 'Rekap Bulanan', 'recap', 'attendance.view', 'admin.attendance-summary.index'],
         ['Presensi', 'Koreksi Presensi', 'correction', 'attendance_corrections.view', 'admin.corrections.index'],
         ['Presensi', 'Jadwal', 'schedule', 'schedules.view', 'admin.schedules.index'],
         ['Presensi', 'Shift', 'shift', 'shifts.view', 'admin.shifts.index'],

@@ -35,4 +35,5 @@ return [
     'import_rows', // T-027
     'import_profiles', // T-027
     'attendance_days', // T-038
+    'attendance_summary', // T-039
 ];

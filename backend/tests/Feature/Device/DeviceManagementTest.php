@@ -178,3 +178,24 @@ test('FR-034 ekspor perangkat mengunduh berkas', function () {
     $response->assertOk();
     expect((string) $response->headers->get('content-disposition'))->toContain('.xlsx');
 });
+
+test('SEC-031 pola: pemegang devices.manage tidak bisa menyetujui HP untuk akunnya sendiri', function () {
+    $own = makeDevice($this->hrd);
+
+    $this->actingAs($this->hrd)->from('/perangkat')->post("/perangkat/{$own->id}/setujui")
+        ->assertSessionHasErrors(['device' => 'Perangkat milik akun Anda sendiri harus disetujui admin lain.']);
+
+    expect($own->fresh()->status)->toBe(DeviceStatus::Pending);
+});
+
+test('06 §5 galat "HP masih aktif di akun lain" tidak menyebut nama akun di luar scope pelaku', function () {
+    $headEmployee = $this->world->employee($this->world->gudang);
+    $head = $this->world->actor('kepala_lokasi', $headEmployee);
+    $head->givePermissionTo('devices.manage');
+    $uid = hash('sha256', 'hp-bersama');
+    makeDevice(phoneOwner($this->world, 'Rahasia Toko', $this->world->toko), 'active', ['device_uid' => $uid]);
+    $pending = makeDevice(phoneOwner($this->world, 'Pegawai Gudang', $this->world->gudang), 'pending', ['device_uid' => $uid]);
+
+    $this->actingAs($head)->from('/perangkat')->post("/perangkat/{$pending->id}/setujui")
+        ->assertSessionHasErrors(['device' => 'HP ini masih aktif untuk akun lain. Cabut perangkat itu dulu (satu HP hanya untuk satu akun).']);
+});

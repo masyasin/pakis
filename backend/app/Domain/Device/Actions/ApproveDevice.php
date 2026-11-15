@@ -34,14 +34,23 @@ final class ApproveDevice
                 throw ValidationException::withMessages(['device' => 'Perangkat ini sudah tidak menunggu persetujuan. Muat ulang halaman.']);
             }
 
+            // Mengikat HP untuk akun sendiri harus lewat orang lain (pola SEC-031): HP kedua
+            // pemegang `devices.manage` tidak boleh disetujui pemiliknya sendiri.
+            if ($locked->user_id === $actor->id) {
+                throw ValidationException::withMessages(['device' => 'Perangkat milik akun Anda sendiri harus disetujui admin lain.']);
+            }
+
             $usedElsewhere = Device::query()->where('device_uid', $locked->device_uid)
                 ->where('status', DeviceStatus::Active->value)
                 ->where('user_id', '!=', $locked->user_id)
-                ->with('user:id,name')
                 ->first();
             if ($usedElsewhere !== null) {
+                // Nama akun lain hanya disebut bila akun itu dalam scope pelaku (06 §5).
+                $visible = Device::query()->whereKey($usedElsewhere->id)->visibleTo($actor)->exists();
+                $owner = $visible ? "akun {$usedElsewhere->user->name}" : 'akun lain';
+
                 throw ValidationException::withMessages([
-                    'device' => "HP ini masih aktif untuk akun {$usedElsewhere->user->name}. Cabut perangkat itu dulu (satu HP hanya untuk satu akun).",
+                    'device' => "HP ini masih aktif untuk {$owner}. Cabut perangkat itu dulu (satu HP hanya untuk satu akun).",
                 ]);
             }
 

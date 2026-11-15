@@ -20,8 +20,11 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Setiap request API ber-token (BR-040, SEC-020, SEC-021):
- * 1. Akun harus masih boleh masuk (aktif, tidak terkunci, pegawai aktif) — selain itu semua token
- *    akun dicabut dan 401 `UNAUTHENTICATED`.
+ * 1. Akun & pegawai harus aktif — selain itu semua token akun dicabut dan 401 `UNAUTHENTICATED`.
+ *    Kunci sementara karena salah password (`locked_until`, BR-016) SENGAJA tidak dicek di sini:
+ *    kunci itu menahan login baru, sedangkan token yang sudah sah dibuktikan sebelumnya. Kalau ikut
+ *    dicabut, siapa pun bisa memutus Pakis Pro (dan absen) pegawai lain cukup dengan salah login
+ *    berulang memakai username-nya.
  * 2. Token harus token perangkat (`device:{id}`), perangkatnya milik akun ini, berstatus `active`,
  *    dan `X-Device-Id` sama dengan `device_uid`. Selain itu token dicabut + 401 `DEVICE_MISMATCH`.
  * `last_seen_at` (dan versi app) diperbarui paling sering sekali per 5 menit agar tidak menulis
@@ -45,7 +48,7 @@ class EnsureDeviceBound
             throw new ApiError(ErrorCode::UNAUTHENTICATED);
         }
 
-        if (! $user->is_active || $user->isLocked() || ! $this->employees->isActive($user)) {
+        if (! $user->is_active || ! $this->employees->isActive($user)) {
             $this->tokens->revokeForUser($user, 'account_inactive');
 
             throw new ApiError(ErrorCode::UNAUTHENTICATED);

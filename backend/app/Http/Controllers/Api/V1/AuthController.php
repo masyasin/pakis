@@ -172,15 +172,18 @@ class AuthController extends Controller
             throw new ApiError(ErrorCode::MFA_REQUIRED, ['mfa' => true]);
         }
 
+        // Hitung DULU (atomik di cache), baru verifikasi: request bersamaan tidak bisa sama-sama lolos
+        // pengecekan lalu menebak lebih dari batas. Berhasil → penghitung dikosongkan.
         $limiterKey = 'api-mfa:'.$user->id;
-        if (RateLimiter::tooManyAttempts($limiterKey, self::MFA_ATTEMPTS_PER_MINUTE)) {
+        if (RateLimiter::hit($limiterKey, 60) > self::MFA_ATTEMPTS_PER_MINUTE) {
             throw new ApiError(ErrorCode::RATE_LIMITED, ['retry_after_s' => RateLimiter::availableIn($limiterKey)]);
         }
 
         $secret = Fortify::currentEncrypter()->decrypt((string) $user->two_factor_secret);
         $valid = app(TwoFactorAuthenticationProvider::class)->verify($secret, preg_replace('/\s+/', '', $code));
 
-        if (! $valid) {
+        // Kode pemulihan hanya bila sudah pernah dibuat (kolom null → tidak didekripsi).
+        if (! $valid && $user->two_factor_recovery_codes !== null) {
             $recovery = collect($user->recoveryCodes())->first(fn ($c) => hash_equals((string) $c, $code));
             if ($recovery !== null) {
                 $user->replaceRecoveryCode($recovery);
@@ -189,7 +192,6 @@ class AuthController extends Controller
         }
 
         if (! $valid) {
-            RateLimiter::hit($limiterKey, 60);
             $security->record(SecurityEventType::MfaFailed, SecurityChannel::Api, $user, $user->username);
 
             throw new ApiError(ErrorCode::MFA_INVALID);

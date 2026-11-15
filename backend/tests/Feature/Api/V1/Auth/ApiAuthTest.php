@@ -374,3 +374,25 @@ test('FR-005 FR-006 lupa password API: respons seragam; kode OTP salah ditolak; 
     expect(Hash::check('teh sore di kantor', $this->pegawai->fresh()->password))->toBeTrue()
         ->and(PersonalAccessToken::query()->count())->toBe(0);
 });
+
+test('BR-016 kunci karena salah password tidak memutus token HP yang sudah sah (cegah DoS lewat salah login)', function () {
+    [$token, $uid] = loggedInPhone('a');
+    $this->pegawai->forceFill(['locked_until' => now()->addMinutes(15)])->save();
+
+    apiGet('/api/v1/me', $token, $uid)->assertOk();
+    expect(PersonalAccessToken::query()->count())->toBe(1);
+});
+
+test('BR-015 tebakan MFA dibatasi 5/menit per akun, termasuk kode benar sesudahnya', function () {
+    $hrd = User::factory()->create(['username' => 'hrd.uji', 'password' => Hash::make('kopi pagi di gudang')])->assignRole('hrd');
+    $google = new Google2FA;
+    $secret = $google->generateSecretKey();
+    $hrd->forceFill(['two_factor_secret' => encrypt($secret), 'two_factor_confirmed_at' => now()])->save();
+
+    foreach (range(1, 5) as $_) {
+        apiLogin('hrd.uji', 'kopi pagi di gudang', phoneUid('h'), ['otp' => '000000'])->assertJsonPath('error.code', 'MFA_INVALID');
+    }
+
+    apiLogin('hrd.uji', 'kopi pagi di gudang', phoneUid('h'), ['otp' => $google->getCurrentOtp($secret)])
+        ->assertStatus(429)->assertJsonPath('error.code', 'RATE_LIMITED');
+});

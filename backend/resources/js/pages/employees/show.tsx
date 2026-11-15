@@ -1,13 +1,37 @@
-import { Head, Link, router, useHttp } from '@inertiajs/react';
-import { ArrowLeft, Pencil, Trash2, UserPlus } from 'lucide-react';
+import { Head, Link, router, useHttp, usePage } from '@inertiajs/react';
+import {
+    ArrowLeft,
+    BriefcaseBusiness,
+    CalendarClock,
+    CalendarDays,
+    Contact,
+    Fingerprint,
+    History,
+    Info,
+    KeyRound,
+    MapPin,
+    Network,
+    Smartphone,
+    UserPlus,
+    UserRound,
+} from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
+import {
+    DetailCard,
+    EmptyPanel,
+    Field,
+    FieldGrid,
+    Timeline,
+    TimelineItem,
+} from '@/components/employee/detail-ui';
+import { EmployeeHero } from '@/components/employee/employee-hero';
+import { EmployeeTabs, tabLabel } from '@/components/employee/employee-tabs';
+import type { EmployeeTab } from '@/components/employee/employee-tabs';
 import InputError from '@/components/input-error';
 import { MaskedValue } from '@/components/pakis/masked-value';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { OneTimeSecretDialog } from '@/components/pakis/one-time-secret-dialog';
-import { PageTabs } from '@/components/pakis/page-tabs';
-import type { PageTab } from '@/components/pakis/page-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,9 +47,14 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
-import { formatDate, formatPhone } from '@/lib/employee-format';
+import {
+    ageOn,
+    formatDate,
+    formatPhone,
+    formatTenure,
+    todayIn,
+} from '@/lib/employee-format';
 import { formatRelativeTime } from '@/lib/relative-time';
-import { cn } from '@/lib/utils';
 import {
     account as accountRoute,
     destroy,
@@ -34,15 +63,6 @@ import {
     revealNik,
     show,
 } from '@/routes/admin/employees';
-
-type Tab =
-    | 'profil'
-    | 'alamat'
-    | 'penugasan'
-    | 'jadwal'
-    | 'presensi'
-    | 'akun'
-    | 'riwayat';
 
 type EmployeeDetail = {
     id: number;
@@ -113,7 +133,7 @@ type HistoryPage = {
 };
 
 type Props = {
-    tab: Tab;
+    tab: EmployeeTab;
     employee: EmployeeDetail;
     primary: AssignmentRow | null;
     assignments: AssignmentRow[];
@@ -131,201 +151,112 @@ type Props = {
     historyEvents: { value: string; label: string }[];
 };
 
-/**
- * Tab detail pegawai dikelompokkan: grup di baris pertama, sub-tab di baris kedua (dropdown di HP).
- * Modul riwayat kepegawaian berikutnya (status kerja, pangkat, pendidikan, diklat, …) cukup menambah
- * sub-tab di grupnya; grup tanpa isi tidak ditampilkan.
- */
-const GROUPS: {
-    key: string;
-    label: string;
-    tabs: { key: Tab; label: string }[];
-}[] = [
-    {
-        key: 'data-diri',
-        label: 'Data Diri',
-        tabs: [
-            { key: 'profil', label: 'Profil' },
-            { key: 'alamat', label: 'Alamat' },
-        ],
-    },
-    {
-        key: 'kepegawaian',
-        label: 'Kepegawaian',
-        tabs: [{ key: 'penugasan', label: 'Penugasan & Jabatan' }],
-    },
-    {
-        key: 'kehadiran',
-        label: 'Kehadiran',
-        tabs: [
-            { key: 'jadwal', label: 'Jadwal' },
-            { key: 'presensi', label: 'Presensi' },
-        ],
-    },
-    {
-        key: 'akun',
-        label: 'Akun & Perangkat',
-        tabs: [{ key: 'akun', label: 'Akun & Perangkat' }],
-    },
-    {
-        key: 'riwayat',
-        label: 'Riwayat Perubahan',
-        tabs: [{ key: 'riwayat', label: 'Riwayat Perubahan' }],
-    },
-];
-
-const Dash = () => <span className="text-muted-foreground">–</span>;
-
 /** Detail pegawai (07 §4 "Pegawai (detail)", FR-025). Data di luar scope tidak pernah sampai sini (404). */
 export default function EmployeeShow(props: Props) {
-    const { employee, primary, can, tab } = props;
+    const { employee, primary, can, tab, account } = props;
+    const { timezone } = usePage<{ timezone: string }>().props;
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    const group =
-        GROUPS.find((g) => g.tabs.some((t) => t.key === tab)) ?? GROUPS[0];
-    const current = group.tabs.find((t) => t.key === tab) ?? group.tabs[0];
-    const groupTabs: PageTab[] = GROUPS.map((g) => ({
-        key: g.key,
-        label: g.label,
-        href: show(employee.id, { query: { tab: g.tabs[0].key } }),
-    }));
-
-    const initials = employee.full_name
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((w) => w[0]?.toUpperCase() ?? '')
-        .join('');
+    // Masa kerja dihitung sampai tanggal keluar (pegawai nonaktif) atau hari ini di zona kantor.
+    const today = todayIn(timezone);
+    const tenure = formatTenure(
+        employee.join_date,
+        employee.exit_date ?? today,
+    );
+    const hrefFor = (key: EmployeeTab) =>
+        show(employee.id, { query: { tab: key } }).url;
 
     return (
         <>
             <Head title={employee.full_name} />
-            <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:px-7 md:py-6">
-                <Button variant="ghost" size="sm" asChild>
+            <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
+                <Button variant="ghost" size="sm" className="-ml-2" asChild>
                     <Link href={index()}>
                         <ArrowLeft aria-hidden="true" />
                         Daftar pegawai
                     </Link>
                 </Button>
 
-                <header className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="flex min-w-0 items-center gap-4">
-                        {employee.photo_url ? (
-                            <img
-                                src={employee.photo_url}
-                                alt={`Foto ${employee.full_name}`}
-                                className="size-16 shrink-0 rounded-full object-cover"
-                            />
-                        ) : (
-                            <span
-                                aria-hidden="true"
-                                className="grid size-16 shrink-0 place-items-center rounded-full bg-sidebar-accent text-lg font-bold text-primary"
-                            >
-                                {initials}
-                            </span>
-                        )}
-                        <div className="min-w-0 space-y-1">
-                            <h1 className="text-[1.4rem] leading-tight font-bold break-words">
-                                {employee.full_name}
-                            </h1>
-                            <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                                <span className="font-mono">
-                                    {employee.employee_number}
-                                </span>
-                                <StatusBadge
-                                    status={`employee.${employee.status}`}
-                                />
-                            </div>
-                            <p className="text-sm">
-                                {primary ? (
-                                    <>
-                                        {primary.position ?? '–'}
-                                        <span className="text-muted-foreground">
-                                            {' '}
-                                            · {primary.location ?? '–'}
-                                        </span>
-                                    </>
-                                ) : (
-                                    <span className="text-muted-foreground">
-                                        Belum ada penugasan aktif hari ini
-                                    </span>
-                                )}
-                            </p>
-                        </div>
-                    </div>
-
-                    {(can.update || can.delete) && (
-                        <div className="flex flex-wrap gap-2">
-                            {can.update && (
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link href={edit(employee.id)}>
-                                        <Pencil aria-hidden="true" />
-                                        Ubah
-                                    </Link>
-                                </Button>
-                            )}
-                            {can.delete && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setConfirmDelete(true)}
-                                >
-                                    <Trash2 aria-hidden="true" />
-                                    Hapus
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </header>
+                <EmployeeHero
+                    name={employee.full_name}
+                    number={employee.employee_number}
+                    status={employee.status}
+                    photoUrl={employee.photo_url}
+                    position={primary?.position ?? null}
+                    location={primary?.location ?? null}
+                    department={primary?.department ?? null}
+                    joinDate={employee.join_date}
+                    editHref={can.update ? edit(employee.id) : null}
+                    onDelete={can.delete ? () => setConfirmDelete(true) : null}
+                    summary={[
+                        { label: 'Masa kerja', value: tenure },
+                        {
+                            label: 'Status kerja',
+                            value: employee.employment_status ?? '–',
+                        },
+                        {
+                            label: 'Atasan langsung',
+                            value: primary?.supervisor?.name ?? 'Tidak ada',
+                        },
+                        {
+                            label: 'Akun login',
+                            value: account ? account.username : 'Belum ada',
+                        },
+                    ]}
+                />
 
                 {props.deleteBlockers.length > 0 && (
-                    <p className="rounded-lg bg-status-info-bg px-3.5 py-3 text-sm text-status-info">
-                        Pegawai ini tidak bisa dihapus karena{' '}
-                        {props.deleteBlockers.join(', ')}. Bila sudah keluar,
-                        gunakan Nonaktifkan (menyusul).
+                    <p className="flex items-start gap-2.5 rounded-xl bg-status-info-bg px-4 py-3 text-sm text-status-info">
+                        <Info
+                            className="mt-0.5 size-4 shrink-0"
+                            aria-hidden="true"
+                        />
+                        <span>
+                            Pegawai ini tidak bisa dihapus karena{' '}
+                            {props.deleteBlockers.join(', ')}. Bila sudah
+                            keluar, gunakan Nonaktifkan (menyusul).
+                        </span>
                     </p>
                 )}
 
-                <PageTabs
-                    tabs={groupTabs}
-                    active={group.key}
-                    label="Kelompok data pegawai"
-                />
+                <EmployeeTabs active={tab} hrefFor={hrefFor} />
 
-                {group.tabs.length > 1 && (
-                    <SubTabs
-                        employeeId={employee.id}
-                        tabs={group.tabs}
-                        active={current.key}
-                        label={group.label}
-                    />
-                )}
-
-                <section aria-label={current.label}>
+                <section aria-label={tabLabel(tab)}>
                     {tab === 'profil' && (
-                        <DataTab
+                        <ProfileTab
                             employee={employee}
                             canReveal={can.revealNik}
+                            tenure={tenure}
+                            age={ageOn(employee.birth_date, today)}
                         />
                     )}
                     {tab === 'alamat' && <AddressTab employee={employee} />}
                     {tab === 'penugasan' && (
                         <AssignmentsTab rows={props.assignments} />
                     )}
+                    {tab === 'jadwal' && (
+                        <EmptyPanel
+                            icon={CalendarDays}
+                            title="Jadwal kerja belum tersedia"
+                            text="Pola shift dan jadwal pegawai akan tampil di sini setelah modul Jadwal aktif."
+                        />
+                    )}
+                    {tab === 'presensi' && (
+                        <EmptyPanel
+                            icon={CalendarClock}
+                            title="Presensi belum tersedia"
+                            text="Riwayat absen 30 hari terakhir akan tampil di sini setelah modul Absensi aktif."
+                        />
+                    )}
                     {tab === 'akun' && (
                         <AccountTab
                             employee={employee}
-                            account={props.account}
+                            account={account}
                             canCreate={can.createAccount}
                             suggestedUsername={props.suggestedUsername}
                             roleOptions={props.roleOptions}
                         />
-                    )}
-                    {tab === 'jadwal' && (
-                        <Empty text="Jadwal kerja pegawai akan tampil di sini setelah modul Jadwal aktif." />
-                    )}
-                    {tab === 'presensi' && (
-                        <Empty text="Absensi 30 hari terakhir akan tampil di sini setelah modul Absensi aktif." />
                     )}
                     {tab === 'riwayat' && props.history && (
                         <HistoryTab
@@ -376,154 +307,156 @@ export default function EmployeeShow(props: Props) {
     );
 }
 
-function Item({
-    label,
-    children,
-}: {
-    label: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="grid gap-0.5 sm:grid-cols-[12rem_1fr] sm:gap-4">
-            <dt className="text-sm text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 text-sm break-words">{children}</dd>
-        </div>
-    );
-}
-
-function DataTab({
+function ProfileTab({
     employee,
     canReveal,
+    tenure,
+    age,
 }: {
     employee: EmployeeDetail;
     canReveal: boolean;
+    tenure: string;
+    age: number | null;
 }) {
     return (
-        <dl className="grid gap-3 rounded-xl border bg-card p-4 sm:p-5">
-            <Item label="Nama lengkap">{employee.full_name}</Item>
-            <Item label="No. pegawai">
-                <span className="font-mono">{employee.employee_number}</span>
-            </Item>
-            <Item label="NIK">
-                <MaskedValue
-                    masked={employee.nik_masked}
-                    reveal={canReveal ? revealNik(employee.id) : null}
-                />
-            </Item>
-            <Item label="Jenis kelamin">{employee.gender_label}</Item>
-            <Item label="Tanggal lahir">
-                {employee.birth_date ? (
-                    formatDate(employee.birth_date)
-                ) : (
-                    <Dash />
-                )}
-            </Item>
-            <Item label="HP">
-                {employee.phone ? formatPhone(employee.phone) : <Dash />}
-            </Item>
-            <Item label="Email">{employee.email ?? <Dash />}</Item>
-            <Item label="Status kerja">
-                {employee.employment_status ?? <Dash />}
-            </Item>
-            <Item label="Tanggal masuk">{formatDate(employee.join_date)}</Item>
-            {employee.exit_date && (
-                <Item label="Tanggal keluar">
-                    {formatDate(employee.exit_date)}
-                </Item>
-            )}
-        </dl>
+        <div className="grid gap-4 lg:grid-cols-2">
+            <DetailCard
+                title="Identitas"
+                icon={Fingerprint}
+                className="lg:row-span-2"
+            >
+                <FieldGrid>
+                    <Field
+                        label="Nama lengkap"
+                        value={employee.full_name}
+                        wide
+                    />
+                    <Field
+                        label="No. pegawai"
+                        value={employee.employee_number}
+                        mono
+                    />
+                    <Field
+                        label="NIK"
+                        value={
+                            employee.nik_masked ? (
+                                <MaskedValue
+                                    masked={employee.nik_masked}
+                                    reveal={
+                                        canReveal
+                                            ? revealNik(employee.id)
+                                            : null
+                                    }
+                                />
+                            ) : null
+                        }
+                    />
+                    <Field
+                        label="Jenis kelamin"
+                        value={employee.gender_label}
+                    />
+                    <Field
+                        label="Tanggal lahir"
+                        value={
+                            employee.birth_date
+                                ? formatDate(employee.birth_date)
+                                : null
+                        }
+                        hint={age !== null ? `· ${age} tahun` : undefined}
+                    />
+                </FieldGrid>
+            </DetailCard>
+
+            <DetailCard title="Kontak" icon={Contact}>
+                <FieldGrid>
+                    <Field
+                        label="HP"
+                        value={
+                            employee.phone ? (
+                                <a
+                                    href={`tel:+${employee.phone}`}
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
+                                >
+                                    {formatPhone(employee.phone)}
+                                </a>
+                            ) : null
+                        }
+                    />
+                    <Field
+                        label="Email"
+                        value={
+                            employee.email ? (
+                                <a
+                                    href={`mailto:${employee.email}`}
+                                    className="font-medium text-primary underline-offset-4 hover:underline"
+                                >
+                                    {employee.email}
+                                </a>
+                            ) : null
+                        }
+                    />
+                </FieldGrid>
+            </DetailCard>
+
+            <DetailCard title="Kepegawaian" icon={BriefcaseBusiness}>
+                <FieldGrid>
+                    <Field
+                        label="Status kerja"
+                        value={employee.employment_status}
+                    />
+                    <Field
+                        label="Tanggal masuk"
+                        value={formatDate(employee.join_date)}
+                        hint={`· ${tenure}`}
+                    />
+                    {employee.exit_date && (
+                        <Field
+                            label="Tanggal keluar"
+                            value={formatDate(employee.exit_date)}
+                        />
+                    )}
+                </FieldGrid>
+            </DetailCard>
+        </div>
     );
 }
 
 function AddressTab({ employee }: { employee: EmployeeDetail }) {
     return (
-        <dl className="grid gap-3 rounded-xl border bg-card p-4 sm:p-5">
-            <Item label="Alamat jalan">{employee.address ?? <Dash />}</Item>
-            <Item label="Desa, kecamatan, kab/kota">
-                {employee.village_label ?? <Dash />}
-            </Item>
-        </dl>
-    );
-}
-
-/**
- * Sub-tab dalam satu grup: deretan tautan di layar lebar, dropdown di HP (hemat ruang, picker
- * bawaan OS). Keduanya mengubah `?tab=` sehingga posisi bisa dibagikan lewat URL.
- */
-function SubTabs({
-    employeeId,
-    tabs,
-    active,
-    label,
-}: {
-    employeeId: number;
-    tabs: { key: Tab; label: string }[];
-    active: Tab;
-    label: string;
-}) {
-    const href = (key: Tab) => show(employeeId, { query: { tab: key } }).url;
-
-    return (
-        <>
-            <nav
-                aria-label={`Bagian ${label}`}
-                className="hidden gap-1 border-b sm:flex"
-            >
-                {tabs.map((t) => (
-                    <Link
-                        key={t.key}
-                        href={href(t.key)}
-                        preserveScroll
-                        aria-current={t.key === active ? 'page' : undefined}
-                        className={cn(
-                            '-mb-px border-b-2 px-3 py-2 text-sm transition-colors',
-                            t.key === active
-                                ? 'border-primary font-semibold text-primary'
-                                : 'border-transparent text-muted-foreground hover:text-foreground',
-                        )}
-                    >
-                        {t.label}
-                    </Link>
-                ))}
-            </nav>
-            <div className="sm:hidden">
-                <Label htmlFor="employee-subtab" className="sr-only">
-                    Bagian {label}
-                </Label>
-                <NativeSelect
-                    id="employee-subtab"
-                    value={active}
-                    onChange={(e) =>
-                        router.visit(href(e.target.value as Tab), {
-                            preserveScroll: true,
-                        })
-                    }
-                >
-                    {tabs.map((t) => (
-                        <option key={t.key} value={t.key}>
-                            {t.label}
-                        </option>
-                    ))}
-                </NativeSelect>
-            </div>
-        </>
+        <DetailCard title="Alamat tinggal" icon={MapPin}>
+            <FieldGrid>
+                <Field label="Alamat jalan" value={employee.address} wide />
+                <Field
+                    label="Desa, kecamatan, kab/kota"
+                    value={employee.village_label}
+                    wide
+                />
+            </FieldGrid>
+        </DetailCard>
     );
 }
 
 function AssignmentsTab({ rows }: { rows: AssignmentRow[] }) {
     if (rows.length === 0) {
-        return <Empty text="Belum ada penugasan." />;
+        return (
+            <EmptyPanel
+                icon={Network}
+                title="Belum ada penugasan"
+                text="Penugasan menentukan jabatan, lokasi tugas, dan atasan pegawai."
+            />
+        );
     }
 
     return (
-        <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-                Mutasi dan pengakhiran penugasan menyusul (modul Penugasan).
-            </p>
-            <ol className="divide-y rounded-xl border bg-card">
-                {rows.map((a) => (
-                    <li key={a.id} className="grid gap-1.5 p-4 text-sm">
-                        <p className="flex flex-wrap items-center gap-2">
+        <DetailCard title="Riwayat penugasan" icon={Network}>
+            <Timeline>
+                {rows.map((a, i) => (
+                    <TimelineItem
+                        key={a.id}
+                        active={a.end_date === null}
+                        last={i === rows.length - 1}
+                    >
+                        <div className="flex flex-wrap items-center gap-2">
                             <span className="font-semibold">
                                 {a.position ?? '–'}
                             </span>
@@ -544,20 +477,44 @@ function AssignmentsTab({ rows }: { rows: AssignmentRow[] }) {
                                     tone="success"
                                 />
                             )}
-                        </p>
-                        <p className="text-muted-foreground">
-                            {a.location ?? '–'} · atasan{' '}
-                            {a.supervisor?.name ?? 'tidak ada'}
-                        </p>
-                        <p className="text-muted-foreground">
-                            Mode absen: {a.effective_mode_label ?? '–'}
-                            {a.mode_from_position && ' (ikut jabatan)'} ·{' '}
-                            {formatDate(a.start_date)} –{' '}
-                            {a.end_date ? formatDate(a.end_date) : 'sekarang'}
-                        </p>
-                    </li>
+                        </div>
+                        <dl className="mt-2 grid gap-x-6 gap-y-1 text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
+                            <TimelineFact label="Lokasi" value={a.location} />
+                            <TimelineFact
+                                label="Atasan"
+                                value={a.supervisor?.name ?? 'Tidak ada'}
+                            />
+                            <TimelineFact
+                                label="Mode absen"
+                                value={
+                                    a.effective_mode_label
+                                        ? `${a.effective_mode_label}${a.mode_from_position ? ' (ikut jabatan)' : ''}`
+                                        : null
+                                }
+                            />
+                            <TimelineFact
+                                label="Periode"
+                                value={`${formatDate(a.start_date)} – ${a.end_date ? formatDate(a.end_date) : 'sekarang'}`}
+                            />
+                        </dl>
+                    </TimelineItem>
                 ))}
-            </ol>
+            </Timeline>
+        </DetailCard>
+    );
+}
+
+function TimelineFact({
+    label,
+    value,
+}: {
+    label: string;
+    value: string | null;
+}) {
+    return (
+        <div className="min-w-0">
+            <dt className="text-xs">{label}</dt>
+            <dd className="truncate text-foreground/85">{value ?? '–'}</dd>
         </div>
     );
 }
@@ -579,64 +536,78 @@ function AccountTab({
     const [secret, setSecret] = useState<string | null>(null);
 
     return (
-        <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-2">
             {account ? (
-                <dl className="grid gap-3 rounded-xl border bg-card p-4 sm:p-5">
-                    <Item label="Username">
-                        {account.show_url ? (
-                            <Link
-                                href={account.show_url}
-                                className="font-mono font-medium text-primary underline-offset-4 hover:underline"
-                            >
-                                {account.username}
-                            </Link>
-                        ) : (
-                            <span className="font-mono">
-                                {account.username}
-                            </span>
-                        )}
-                    </Item>
-                    <Item label="Status akun">
-                        <StatusBadge
-                            status={
-                                account.is_active
-                                    ? 'user.active'
-                                    : 'user.inactive'
+                <DetailCard
+                    title="Akun login"
+                    icon={KeyRound}
+                    action={
+                        account.show_url ? (
+                            <Button variant="ghost" size="sm" asChild>
+                                <Link href={account.show_url}>Kelola akun</Link>
+                            </Button>
+                        ) : undefined
+                    }
+                >
+                    <FieldGrid>
+                        <Field label="Username" value={account.username} mono />
+                        <Field
+                            label="Status akun"
+                            value={
+                                <StatusBadge
+                                    status={
+                                        account.is_active
+                                            ? 'user.active'
+                                            : 'user.inactive'
+                                    }
+                                />
                             }
                         />
-                    </Item>
-                    <Item label="Role">
-                        {account.roles.length > 0 ? (
-                            account.roles.join(', ')
-                        ) : (
-                            <Dash />
-                        )}
-                    </Item>
-                    <Item label="Login terakhir">
-                        {account.last_login_at ? (
-                            formatRelativeTime(account.last_login_at)
-                        ) : (
-                            <span className="text-muted-foreground">
-                                Belum pernah
-                            </span>
-                        )}
-                    </Item>
-                </dl>
+                        <Field
+                            label="Role"
+                            value={
+                                account.roles.length > 0 ? (
+                                    <span className="flex flex-wrap gap-1.5">
+                                        {account.roles.map((r) => (
+                                            <Badge key={r} variant="secondary">
+                                                {r}
+                                            </Badge>
+                                        ))}
+                                    </span>
+                                ) : null
+                            }
+                        />
+                        <Field
+                            label="Login terakhir"
+                            value={
+                                account.last_login_at
+                                    ? formatRelativeTime(account.last_login_at)
+                                    : 'Belum pernah'
+                            }
+                        />
+                    </FieldGrid>
+                </DetailCard>
             ) : (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-dashed p-5 text-sm">
-                    <span className="text-muted-foreground">
-                        Pegawai ini belum punya akun login.
-                    </span>
-                    {canCreate && (
-                        <Button size="sm" onClick={() => setOpen(true)}>
-                            <UserPlus aria-hidden="true" />
-                            Buat Akun
-                        </Button>
-                    )}
-                </div>
+                <EmptyPanel
+                    icon={UserRound}
+                    title="Belum punya akun login"
+                    text="Akun dipakai untuk absen lewat Pakis Pro dan, sesuai role, masuk ke web admin."
+                    action={
+                        canCreate ? (
+                            <Button size="sm" onClick={() => setOpen(true)}>
+                                <UserPlus aria-hidden="true" />
+                                Buat Akun
+                            </Button>
+                        ) : undefined
+                    }
+                />
             )}
 
-            <Empty text="Perangkat Pakis Pro akan tampil di sini setelah modul Perangkat aktif." />
+            <EmptyPanel
+                icon={Smartphone}
+                title="Perangkat Pakis Pro"
+                text="HP yang terdaftar untuk absen akan tampil di sini setelah modul Perangkat aktif."
+            />
 
             {canCreate && (
                 <CreateAccountDialog
@@ -896,61 +867,76 @@ function HistoryTab({
         );
 
     return (
-        <div className="space-y-3">
-            <div className="flex flex-wrap items-center gap-2">
-                <Label htmlFor="history-event" className="text-sm">
-                    Event
-                </Label>
-                <NativeSelect
-                    id="history-event"
-                    className="w-auto min-w-48"
-                    value={history.event ?? ''}
-                    onChange={(e) => filter(e.target.value)}
-                >
-                    <option value="">Semua event</option>
-                    {events.map((e) => (
-                        <option key={e.value} value={e.value}>
-                            {e.label}
-                        </option>
-                    ))}
-                </NativeSelect>
-                <span
-                    className="text-sm text-muted-foreground"
-                    aria-live="polite"
-                >
-                    {history.pagination.total.toLocaleString('id-ID')} catatan
-                </span>
-            </div>
+        <DetailCard
+            title="Riwayat perubahan"
+            icon={History}
+            action={
+                <div className="flex items-center gap-2">
+                    <Label htmlFor="history-event" className="sr-only">
+                        Saring event
+                    </Label>
+                    <NativeSelect
+                        id="history-event"
+                        className="h-8 w-auto min-w-40 text-xs"
+                        value={history.event ?? ''}
+                        onChange={(e) => filter(e.target.value)}
+                    >
+                        <option value="">Semua event</option>
+                        {events.map((e) => (
+                            <option key={e.value} value={e.value}>
+                                {e.label}
+                            </option>
+                        ))}
+                    </NativeSelect>
+                </div>
+            }
+        >
+            <p
+                className="mb-3 text-xs text-muted-foreground"
+                aria-live="polite"
+            >
+                {history.pagination.total.toLocaleString('id-ID')} catatan
+            </p>
 
             {history.rows.length === 0 ? (
-                <Empty text="Belum ada riwayat untuk filter ini." />
+                <EmptyPanel
+                    icon={History}
+                    title="Belum ada riwayat"
+                    text="Tidak ada perubahan yang cocok dengan filter ini."
+                />
             ) : (
-                <ol className="divide-y rounded-xl border bg-card">
-                    {history.rows.map((h) => (
-                        <li key={h.id} className="grid gap-1 p-4 text-sm">
+                <Timeline>
+                    {history.rows.map((h, i) => (
+                        <TimelineItem
+                            key={h.id}
+                            last={i === history.rows.length - 1}
+                        >
                             <p className="flex flex-wrap items-center gap-2">
                                 <Badge variant="secondary">
                                     {h.event_label}
                                 </Badge>
                                 <span className="text-muted-foreground">
-                                    oleh {h.actor}
+                                    oleh{' '}
+                                    <span className="font-medium text-foreground">
+                                        {h.actor}
+                                    </span>
                                     {h.occurred_at &&
                                         ` · ${formatRelativeTime(h.occurred_at)}`}
                                 </span>
                             </p>
                             {h.new_values && (
-                                <p className="text-xs break-words text-muted-foreground">
+                                <p className="mt-1.5 text-xs break-words text-muted-foreground">
                                     {describeChanges(h.new_values)}
                                 </p>
                             )}
-                        </li>
+                        </TimelineItem>
                     ))}
-                </ol>
+                </Timeline>
             )}
 
             {history.pagination.last_page > 1 && (
                 <nav
-                    className="flex items-center justify-between gap-2"
+                    className="mt-2 flex items-center justify-between gap-2"
                     aria-label="Halaman riwayat"
                 >
                     <PageLink url={history.pagination.prev_url}>
@@ -965,7 +951,7 @@ function HistoryTab({
                     </PageLink>
                 </nav>
             )}
-        </div>
+        </DetailCard>
     );
 }
 
@@ -986,18 +972,6 @@ function PageLink({
                 <span>{children}</span>
             )}
         </Button>
-    );
-}
-
-function Empty({ text }: { text: string }) {
-    return (
-        <p
-            className={cn(
-                'rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground',
-            )}
-        >
-            {text}
-        </p>
     );
 }
 

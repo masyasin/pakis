@@ -20,14 +20,15 @@
             })();
         </script>
 
-        {{-- Inline style to set the HTML background color based on our theme in app.css --}}
+        {{-- Latar html sebelum app.css dimuat (anti-kedip). Memakai token agar ikut warna brand kustom
+             (BrandTheme mendefinisikan --background); nilai cadangan = latar desain app.css. --}}
         <style nonce="{{ Vite::cspNonce() }}">
             html {
-                background-color: #f3f6f2;
+                background-color: var(--background, #f3f6f2);
             }
 
             html.dark {
-                background-color: #121814;
+                background-color: var(--background, #121814);
             }
         </style>
 

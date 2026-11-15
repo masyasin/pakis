@@ -555,9 +555,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/08-BUSINESS-RULES.md` BR-066, BR-068, `docs/03-ARCHITECTURE.md` §4.6
 - File: `app/Domain/Attendance/AttendanceStatusResolver.php`, command + schedule `attendance:resolve-day {date?}`, listener `AssignmentChanged` → hitung ulang
 - Kriteria penerimaan:
-  - [ ] Tabel kebenaran BR-068 (≥ 12 kasus) lulus
-  - [ ] Job dijalankan 2× untuk tanggal sama → hasil identik
-  - [ ] Snapshot lokasi/jabatan/departemen sesuai penugasan pada tanggal itu
+  - [x] Tabel kebenaran BR-068 (≥ 12 kasus) lulus
+  - [x] Job dijalankan 2× untuk tanggal sama → hasil identik
+  - [x] Snapshot lokasi/jabatan/departemen sesuai penugasan pada tanggal itu
 - Verifikasi: `php artisan test --filter=StatusResolver`
 
 ### T-038 — Absensi harian (web)

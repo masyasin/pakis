@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attendance\Actions;
 
+use App\Domain\Attendance\Events\ScheduleChanged;
 use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Audit\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,8 @@ final class DeleteHoliday
             $locked->delete();
 
             $this->audit->record('holiday.deleted', $locked, $before, null);
+
+            ScheduleChanged::dispatch(null, $locked->start_date->toDateString(), $locked->end_date->toDateString());
         });
     }
 }

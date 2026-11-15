@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attendance\Actions;
 
+use App\Domain\Attendance\Events\ScheduleChanged;
 use App\Domain\Attendance\Models\ScheduleOverride;
 use App\Domain\Audit\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -58,6 +59,11 @@ final class SetScheduleOverride
                 $override->save();
                 $this->audit->record('schedule.override_set', $override, $before, $override->auditValues());
                 $summary['updated']++;
+            }
+
+            // Status harian tanggal itu dihitung ulang bila sudah ada (T-037, OQ-021).
+            if ($summary['created'] + $summary['updated'] > 0) {
+                ScheduleChanged::dispatch($employeeIds, $date, $date);
             }
 
             return $summary;

@@ -118,7 +118,7 @@ Masalah yang diselesaikan: fitur paging/pencarian/filter sering terlewat di seba
 - Waktu: online memakai waktu server. Offline memakai `client_time`, divalidasi terhadap batas `attendance.offline_max_hours` dan selisih jam perangkat yang dilaporkan saat sinkron (BR-067).
 
 ### 4.6 Penentuan status absensi
-`AttendanceStatusResolver` dipanggil saat absen masuk/pulang, saat koreksi disetujui, dan oleh job `attendance:resolve-day` (setiap hari pukul `attendance.daily_close_time`). Resolver membuat baris `absent`/`holiday`/`off` untuk pegawai yang dijadwalkan tetapi tidak absen. Resolver idempoten per (pegawai, tanggal).
+`AttendanceStatusResolver` dipanggil saat absen masuk/pulang, saat koreksi disetujui, dan oleh job `attendance:resolve-day` (**tiap 15 menit** untuk kemarin & hari ini, keputusan Mas 15 Nov 2026; tanpa argumen = tanggal lokal). Resolver sendiri yang menentukan kapan hari **ditutup**: jam `attendance.daily_close_time` lokal, tetapi tidak sebelum shift selesai; shift lintas tengah malam ditutup setelah jendela pulangnya (`end + checkout_close_min`) lewat. Dengan begitu perubahan setting jam tutup langsung berlaku tanpa restart scheduler. Resolver membuat baris `holiday`/`off` kapan saja dan `absent` setelah hari ditutup untuk pegawai yang bekerja pada tanggal itu (`join_date ≤ tanggal ≤ exit_date`); hari kerja yang belum ditutup dan belum ada absen tidak punya baris. Perubahan penugasan (`AssignmentChanged`) dan jadwal/libur (`ScheduleChanged`) memicu hitung ulang **baris yang sudah ada** lewat antrean (tidak membuat baris tanggal lama). Resolver tidak pernah mengubah jam masuk/pulang, log, atau `has_anomaly`. Resolver idempoten per (pegawai, tanggal).
 
 ## 5. Stack & Versi
 

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attendance\Actions;
 
+use App\Domain\Attendance\Events\ScheduleChanged;
 use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Audit\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,9 @@ final class CreateHoliday
             $holiday->locations()->sync($locationIds);
 
             $this->audit->record('holiday.created', $holiday, null, $holiday->auditValues($locationIds));
+
+            // Semua pegawai: libur per lokasi dinilai resolver dari penugasan pada tiap tanggal.
+            ScheduleChanged::dispatch(null, $holiday->start_date->toDateString(), $holiday->end_date->toDateString());
 
             return $holiday;
         });

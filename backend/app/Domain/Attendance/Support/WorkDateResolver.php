@@ -178,12 +178,8 @@ final class WorkDateResolver
             if ($date === $yesterday && ! $shift->crosses_midnight) {
                 continue;
             }
-            $start = CarbonImmutable::parse("{$date} {$shift->start_time}", $tz);
-            $end = CarbonImmutable::parse("{$date} {$shift->end_time}", $tz);
-            if ($shift->crosses_midnight) {
-                $end = $end->addDay();
-            }
-            $candidates[$date] = new WorkDateCandidate($date, $shift, $start->utc(), $end->utc());
+            [$start, $end] = ShiftTimes::on($date, $shift);
+            $candidates[$date] = new WorkDateCandidate($date, $shift, $start, $end);
         }
 
         /** @var Collection<string, AttendanceDay> $days */

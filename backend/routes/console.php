@@ -10,3 +10,11 @@ Schedule::command('audit:purge')
     ->timezone(DisplayTime::timezone())
     ->onOneServer()
     ->withoutOverlapping();
+
+// Status harian absensi (BR-068, T-037): kemarin & hari ini, tiap 15 menit. Jam tutup hari
+// (`attendance.daily_close_time`) dibaca resolver saat berjalan, bukan di sini: setting bisa diubah
+// kapan saja tanpa restart scheduler (keputusan Mas 15 Nov 2026). Idempoten, aman diulang.
+Schedule::command('attendance:resolve-day')
+    ->everyFifteenMinutes()
+    ->onOneServer()
+    ->withoutOverlapping();

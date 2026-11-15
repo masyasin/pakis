@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attendance\Actions;
 
+use App\Domain\Attendance\Events\ScheduleChanged;
 use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Audit\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,8 @@ final class UpdateHoliday
         return DB::transaction(function () use ($holiday, $data, $locationIds, $userId) {
             $locked = Holiday::query()->lockForUpdate()->findOrFail($holiday->id);
             $before = $locked->auditValues($locked->locationIds());
+            $oldFrom = $locked->start_date->toDateString();
+            $oldTo = $locked->end_date->toDateString();
 
             $locked->fill($data);
             $locationIds = $locked->applies_to_all ? [] : $locationIds;
@@ -37,6 +40,9 @@ final class UpdateHoliday
             $locked->locations()->sync($locationIds);
 
             $this->audit->record('holiday.updated', $locked, $before, $after);
+
+            // Rentang lama ∪ baru: tanggal yang tidak lagi libur juga harus dihitung ulang.
+            ScheduleChanged::dispatch(null, min($oldFrom, $locked->start_date->toDateString()), max($oldTo, $locked->end_date->toDateString()));
 
             return $locked;
         });

@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attendance\Actions;
 
+use App\Domain\Attendance\Events\ScheduleChanged;
 use App\Domain\Attendance\Models\ScheduleOverride;
 use App\Domain\Audit\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,9 @@ final class DeleteScheduleOverride
             $locked->delete();
 
             $this->audit->record('schedule.override_deleted', $locked, $before, null);
+
+            $date = $locked->date->toDateString();
+            ScheduleChanged::dispatch([$locked->employee_id], $date, $date);
         });
     }
 }

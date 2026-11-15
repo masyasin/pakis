@@ -2,6 +2,7 @@
 
 namespace App\Domain\Attendance\Actions;
 
+use App\Domain\Attendance\Events\ScheduleChanged;
 use App\Domain\Attendance\Models\ShiftPattern;
 use App\Domain\Audit\AuditLogger;
 use Illuminate\Support\Facades\DB;
@@ -64,6 +65,11 @@ final class SetShiftPattern
                 $pattern->save();
                 $this->audit->record('schedule.pattern_set', $pattern, $before, self::auditValues($pattern));
                 $summary['updated']++;
+            }
+
+            // Status harian yang sudah ada mulai tanggal berlaku dihitung ulang (T-037, OQ-021).
+            if ($summary['created'] + $summary['updated'] > 0) {
+                ScheduleChanged::dispatch($employeeIds, $effectiveFrom);
             }
 
             return $summary;

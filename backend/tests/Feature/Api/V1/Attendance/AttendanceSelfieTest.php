@@ -108,3 +108,18 @@ test('SEC-022 SelfieStore::strip membuang APP1/APP13/COM tanpa re-encode dan mem
         ->and(strstr($stripped, "\xFF\xDA"))->toBe(strstr($clean, "\xFF\xDA"))
         ->and(SelfieStore::strip('bukan jpeg'))->toBeNull();
 });
+
+test('SEC-022 bom dekompresi: JPEG kecil yang mengaku 60 000 × 60 000 px ditolak 422 sebelum didekode', function () {
+    $bytes = AttendanceWorld::jpegBytes(withExif: false);
+    // SOF0 = FF C0, panjang (2), presisi (1), tinggi (2), lebar (2).
+    $sof = strpos($bytes, "\xFF\xC0");
+    expect($sof)->not->toBeFalse();
+    $bomb = substr_replace($bytes, pack('nn', 60000, 60000), (int) $sof + 5, 4);
+
+    expect(getimagesizefromstring($bomb)[0] ?? null)->toBe(60000)
+        ->and(SelfieStore::isGenuineJpeg($bomb))->toBeFalse();
+
+    AttendanceWorld::post($this, $this->phone, ['selfie' => UploadedFile::fake()->createWithContent('selfie.jpg', $bomb)])
+        ->assertStatus(422)->assertJsonStructure(['error' => ['details' => ['selfie']]]);
+    expect(AttendanceLog::query()->count())->toBe(0);
+});

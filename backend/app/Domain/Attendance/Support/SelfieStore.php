@@ -19,6 +19,14 @@ final class SelfieStore
 {
     public const DISK = 'local';
 
+    /**
+     * Batas teknis dimensi selfie (bukan parameter bisnis): Pakis Pro mengompres foto kamera ke
+     * ±100 KB, jauh di bawah ini. Mencegah dekode gambar raksasa (≤ 12 MP ≈ 48 MB RAM di GD).
+     */
+    public const MAX_SIDE_PX = 4096;
+
+    public const MAX_PIXELS = 12_000_000;
+
     /** Segmen APPn yang dipertahankan: APP0 JFIF, APP2 ICC, APP14 Adobe. */
     private const KEEP_APP = [0xE0, 0xE2, 0xEE];
 
@@ -31,6 +39,13 @@ final class SelfieStore
 
         $info = @getimagesizefromstring($bytes);
         if ($info === false || $info[2] !== IMAGETYPE_JPEG) {
+            return false;
+        }
+
+        // Dimensi dari header SOF dicek SEBELUM dekode: JPEG kecil bisa mengaku 60 000 × 60 000 px,
+        // dan GD akan mencoba mengalokasikan memori sebanyak itu (bom dekompresi → DoS).
+        [$width, $height] = $info;
+        if ($width < 1 || $height < 1 || $width > self::MAX_SIDE_PX || $height > self::MAX_SIDE_PX || $width * $height > self::MAX_PIXELS) {
             return false;
         }
 

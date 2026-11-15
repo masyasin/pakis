@@ -153,7 +153,11 @@ class EmployeeController extends Controller
             'tab' => $tab,
             'employee' => self::detail($employee),
             'primary' => $primary !== null ? self::assignment($primary) : null,
-            'assignments' => $employee->assignments->map(fn (Assignment $a) => self::assignment($a))->values(),
+            // `can_manage` per baris: penugasan rangkap di lokasi di luar scope pelaku tidak bisa diubah.
+            'assignments' => $employee->assignments->map(fn (Assignment $a) => [
+                ...self::assignment($a),
+                'can_manage' => Gate::forUser($actor)->allows('update', $a),
+            ])->values(),
             'account' => self::accountInfo($actor, $employee),
             'suggestedUsername' => $noAccount ? UsernameSuggester::suggest($employee->full_name) : null,
             'roleOptions' => $noAccount && $actor->can('users.create') ? UserController::roleOptions($actor) : [],

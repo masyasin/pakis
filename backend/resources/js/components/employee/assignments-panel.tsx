@@ -49,6 +49,8 @@ export type AssignmentRow = {
     start_date: string;
     end_date: string | null;
     running: boolean;
+    /** Pelaku boleh mengubah/mengakhiri penugasan ini (lokasinya dalam scope). */
+    can_manage?: boolean;
 };
 
 type Mode = 'location' | 'any_location' | 'anywhere';
@@ -155,42 +157,44 @@ export function AssignmentsPanel({
                                         )}
                                         <RunState row={a} today={today} />
                                     </div>
-                                    {canManage && a.running && (
-                                        <div className="flex gap-1">
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
-                                                className="h-7"
-                                                onClick={() =>
-                                                    setDialog({
-                                                        kind: 'edit',
-                                                        row: a,
-                                                    })
-                                                }
-                                                aria-label={`Ubah penugasan ${a.position ?? ''}`}
-                                            >
-                                                <Pencil aria-hidden="true" />
-                                                Ubah
-                                            </Button>
-                                            {!a.is_primary && (
+                                    {canManage &&
+                                        a.running &&
+                                        a.can_manage !== false && (
+                                            <div className="flex gap-1">
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    className="h-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                    className="h-7"
                                                     onClick={() =>
                                                         setDialog({
-                                                            kind: 'end',
+                                                            kind: 'edit',
                                                             row: a,
                                                         })
                                                     }
-                                                    aria-label={`Akhiri penugasan tambahan ${a.position ?? ''}`}
+                                                    aria-label={`Ubah penugasan ${a.position ?? ''}`}
                                                 >
-                                                    <CalendarX2 aria-hidden="true" />
-                                                    Akhiri
+                                                    <Pencil aria-hidden="true" />
+                                                    Ubah
                                                 </Button>
-                                            )}
-                                        </div>
-                                    )}
+                                                {!a.is_primary && (
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        className="h-7 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                                        onClick={() =>
+                                                            setDialog({
+                                                                kind: 'end',
+                                                                row: a,
+                                                            })
+                                                        }
+                                                        aria-label={`Akhiri penugasan tambahan ${a.position ?? ''}`}
+                                                    >
+                                                        <CalendarX2 aria-hidden="true" />
+                                                        Akhiri
+                                                    </Button>
+                                                )}
+                                            </div>
+                                        )}
                                 </div>
                                 <dl className="mt-2 grid gap-x-6 gap-y-1 text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
                                     <Fact label="Lokasi" value={a.location} />

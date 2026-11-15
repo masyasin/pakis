@@ -10,6 +10,7 @@ use App\Domain\Employee\Support\SupervisorCycleGuard;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
 use App\Support\Time\DisplayTime;
+use Closure;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -36,6 +37,14 @@ final class CreateAssignment
             $fail = fn (string $key, string $message) => throw ValidationException::withMessages([$field.$key => $message]);
             $primary = $data['is_primary'] ?? true;
             $start = $data['start_date'] ?? $employee->join_date->toDateString();
+
+            // Penugasan tambahan memakai aturan tanggal & status yang sama dengan mutasi (BR-052):
+            // tanpa ini jalur "tambahan" menjadi celah memberi penugasan ke pegawai nonaktif atau
+            // bertanggal mundur tanpa batas. Penugasan utama pertama (pegawai baru) & mutasi sudah dicek
+            // pemanggilnya.
+            if (! $primary) {
+                $this->guardExtra($employee, $start, $fail);
+            }
 
             if (! Position::query()->whereKey($data['position_id'])->where('is_active', true)->exists()) {
                 $fail('position_id', 'Jabatan tidak ditemukan atau sudah nonaktif.');
@@ -90,6 +99,25 @@ final class CreateAssignment
 
             return $assignment;
         });
+    }
+
+    /**
+     * @param  Closure(string, string): never  $fail
+     */
+    private function guardExtra(Employee $employee, string $start, Closure $fail): void
+    {
+        if (! Employee::query()->whereKey($employee->id)->where('status', 'active')->exists()) {
+            $fail('start_date', 'Pegawai nonaktif tidak bisa diberi penugasan. Aktifkan kembali dulu.');
+        }
+
+        if ($start < $employee->join_date->toDateString()) {
+            $fail('start_date', 'Tanggal mulai tidak boleh sebelum tanggal masuk pegawai ('.$employee->join_date->translatedFormat('j F Y').').');
+        }
+
+        $earliest = DisplayTime::toLocal(now())->subDays(MutateEmployee::MAX_BACKDATE_DAYS)->toDateString();
+        if ($start < $earliest) {
+            $fail('start_date', 'Tanggal mulai paling jauh '.MutateEmployee::MAX_BACKDATE_DAYS.' hari ke belakang.');
+        }
     }
 
     /**

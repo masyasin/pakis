@@ -183,6 +183,44 @@ test('BR-051 penugasan tambahan: boleh di lokasi lain, ditolak di lokasi yang sa
         ->and(primaryOf($employee)->location_id)->toBe($this->world->gudang->id);
 });
 
+test('BR-052 penugasan tambahan ikut aturan tanggal & status: nonaktif, sebelum tanggal masuk, > 31 hari ke belakang ditolak', function () {
+    $employee = $this->world->employee($this->world->gudang, attributes: ['join_date' => $this->today->subDays(10)->toDateString()]);
+
+    $this->actingAs($this->hrd)->post("/pegawai/{$employee->id}/penugasan", mutation(['is_primary' => false, 'start_date' => $this->today->subDays(11)->toDateString()]))
+        ->assertSessionHasErrors('start_date');
+    expect(session('errors')->first('start_date'))->toContain('sebelum tanggal masuk');
+
+    $old = $this->world->employee($this->world->gudang);
+    $this->actingAs($this->hrd)->post("/pegawai/{$old->id}/penugasan", mutation(['is_primary' => false, 'start_date' => $this->today->subDays(40)->toDateString()]))
+        ->assertSessionHasErrors('start_date');
+    expect(session('errors')->first('start_date'))->toContain('31 hari');
+
+    $old->forceFill(['status' => 'inactive', 'exit_date' => $this->today->toDateString()])->save();
+    $this->actingAs($this->hrd)->post("/pegawai/{$old->id}/penugasan", mutation(['is_primary' => false]))
+        ->assertSessionHasErrors('start_date');
+    expect(session('errors')->first('start_date'))->toContain('nonaktif')
+        ->and(Assignment::query()->where('is_primary', false)->count())->toBe(0);
+});
+
+test('SEC-033 ubah/akhiri penugasan rangkap di lokasi di luar scope pelaku → ditolak walau pegawainya dalam scope', function () {
+    $self = $this->world->employee($this->world->gudang);
+    $mate = $this->world->employee($this->world->gudang);
+    $this->actingAs($this->hrd)->post("/pegawai/{$mate->id}/penugasan", mutation(['is_primary' => false]))->assertSessionHasNoErrors();
+    $extra = Assignment::query()->where('employee_id', $mate->id)->where('is_primary', false)->sole();
+
+    $role = Role::query()->create(['name' => 'hrd_lokasi', 'label' => 'HRD Lokasi', 'guard_name' => 'web', 'data_scope' => DataScope::Location]);
+    $role->givePermissionTo(['employees.view', 'assignments.view', 'assignments.manage']);
+    $actor = User::factory()->withTwoFactor()->create(['employee_id' => $self->id])->assignRole('hrd_lokasi');
+
+    app()->forgetScopedInstances();
+    $this->actingAs($actor)->put("/penugasan/{$extra->id}", ['note' => 'diubah'])->assertForbidden();
+    $this->actingAs($actor)->post("/penugasan/{$extra->id}/akhiri", ['end_date' => $this->today->toDateString()])->assertForbidden();
+    // Penugasan utama mate di gudang (dalam scope) tetap bisa diubah.
+    $this->actingAs($actor)->put('/penugasan/'.primaryOf($mate)->id, ['note' => 'ok'])->assertSessionHasNoErrors();
+
+    expect($extra->fresh()->end_date)->toBeNull()->and($extra->fresh()->note)->toBeNull();
+});
+
 // --- Ubah & akhiri ----------------------------------------------------------------------------
 
 test('05 ubah penugasan: hanya atasan, mode absen, catatan; diaudit', function () {

@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Access\Listings\UserListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Organization\Listings\LocationListing;
@@ -31,6 +32,7 @@ return [
     'exports' => [
         'audit_logs' => AuditLogListing::class,
         'security_events' => SecurityEventListing::class,
+        'users' => UserListing::class,
         'locations' => LocationListing::class,
     ],
 

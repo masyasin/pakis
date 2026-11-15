@@ -297,9 +297,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Domain/Access/Actions/{CreateUser,UpdateUser,ToggleUser,AdminResetPassword,RevokeUserSessions}.php`, `Listings/UserListing`, controller + `pages/Users/{Index,Form,Show}.tsx`, kolom ekspor
 - Deskripsi: CRUD akun, tautan pegawai (lookup pegawai tanpa akun, aktif setelah T-024), role multi, nonaktif (cabut sesi & token), reset password (tampil sekali, konfirmasi password admin), reset MFA, cabut sesi, ekspor.
 - Kriteria penerimaan:
-  - [ ] Password sementara tidak tersimpan di log/audit/flash berikutnya (hanya sekali tampil)
-  - [ ] HRD tidak bisa reset MFA (403). Admin tidak bisa reset password Owner
-  - [ ] Listing `users` lolos test kontrak + test cari/filter role/sort
+  - [x] Password sementara tidak tersimpan di log/audit/flash berikutnya (hanya sekali tampil)
+  - [x] HRD tidak bisa reset MFA (403). Admin tidak bisa reset password Owner
+  - [x] Listing `users` lolos test kontrak + test cari/filter role/sort
 - Verifikasi: `php artisan test --filter=User`
 - Di luar lingkup: pembuatan akun dari halaman pegawai (T-024)
 

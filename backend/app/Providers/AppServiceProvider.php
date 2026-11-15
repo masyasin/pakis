@@ -111,7 +111,7 @@ class AppServiceProvider extends ServiceProvider
      * Ability atas akun pengguna lain yang dilindungi Owner (SEC-009): TIDAK ikut "Super Admin
      * lolos semua" — UserPolicy yang memutuskan, sehingga Super Admin tidak bisa mengubah Owner.
      */
-    public const OWNER_PROTECTED = ['users.assign-roles', 'users.reset-mfa-of'];
+    public const OWNER_PROTECTED = ['users.manage-account', 'users.assign-roles', 'users.reset-password-of', 'users.reset-mfa-of'];
 
     /**
      * Super Admin (vendor) lolos semua permission (06 §2), kecuali OWNER_PROTECTED. Pengguna lain:
@@ -124,7 +124,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn (User $user, string $ability): ?bool => ! in_array($ability, self::OWNER_PROTECTED, true)
             && $user->hasRole(RoleCatalog::SUPER_ADMIN) ? true : null);
 
+        Gate::define('users.manage-account', [UserPolicy::class, 'manageAccount']);
         Gate::define('users.assign-roles', [UserPolicy::class, 'assignRoles']);
+        Gate::define('users.reset-password-of', [UserPolicy::class, 'resetPasswordOf']);
         Gate::define('users.reset-mfa-of', [UserPolicy::class, 'resetMfaOf']);
     }
 

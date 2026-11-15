@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\UserController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,30 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('role/{role}', [RoleController::class, 'update'])->whereNumber('role')->name('roles.update');
         Route::delete('role/{role}', [RoleController::class, 'destroy'])->whereNumber('role')->name('roles.destroy');
     });
+
+    // Pengguna (05 §4.4, FR-016). Permission dasar di route; wewenang atas akun tertentu (bukan diri
+    // sendiri, Owner hanya oleh Owner, hak target ⊆ pelaku) di UserPolicy. `{user}` ber-scope data
+    // (di luar scope → 404). `ekspor`/`baru` didaftarkan sebelum `{user}`.
+    Route::get('pengguna', [UserController::class, 'index'])->middleware('can:users.view')->name('users.index');
+    Route::get('pengguna/ekspor', [UserController::class, 'export'])->middleware('can:users.export')->name('users.export');
+    Route::middleware('can:users.create')->group(function () {
+        Route::get('pengguna/baru', [UserController::class, 'create'])->name('users.create');
+        Route::post('pengguna', [UserController::class, 'store'])->middleware('throttle:30,1')->name('users.store');
+    });
+    Route::get('pengguna/{user}', [UserController::class, 'show'])->middleware('can:users.view')->whereNumber('user')->name('users.show');
+    Route::middleware('can:users.update')->group(function () {
+        Route::get('pengguna/{user}/ubah', [UserController::class, 'edit'])->whereNumber('user')->name('users.edit');
+        Route::put('pengguna/{user}', [UserController::class, 'update'])->whereNumber('user')->name('users.update');
+        Route::post('pengguna/{user}/cabut-sesi', [UserController::class, 'revokeSessions'])->whereNumber('user')->middleware('throttle:10,1')->name('users.revoke-sessions');
+    });
+    Route::patch('pengguna/{user}/status', [UserController::class, 'toggle'])
+        ->middleware(['can:users.deactivate', 'throttle:20,1'])->whereNumber('user')->name('users.toggle');
+    // Konfirmasi password admin di body request (AdminResetPasswordRequest), dibatasi agar tidak
+    // bisa dipakai menebak password admin.
+    Route::post('pengguna/{user}/reset-password', [UserController::class, 'resetPassword'])
+        ->middleware(['can:users.reset_password', 'throttle:6,1'])->whereNumber('user')->name('users.reset-password');
+    Route::post('pengguna/{user}/reset-mfa', [UserController::class, 'resetMfa'])
+        ->middleware(['can:users.reset_mfa', 'throttle:10,1'])->whereNumber('user')->name('users.reset-mfa');
 
     // Wajib aktivasi MFA (05 §4.1, BR-015). Dibiarkan oleh middleware EnforceMfa.
     Route::get('aktivasi-mfa', MfaSetupController::class)->middleware(RequirePassword::class)->name('mfa.setup');

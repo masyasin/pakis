@@ -2,7 +2,9 @@
 
 namespace App\Domain\Audit;
 
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Audit\Models\AuditLog;
+use App\Models\User;
 use App\Support\Api\RequestId;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -35,10 +37,13 @@ final class AuditLogger
             $new = array_intersect_key($new, array_flip($changed));
         }
 
+        $actor = request()->user();
+
         $log = new AuditLog([
             'occurred_at' => now(),
-            'user_id' => request()->user()?->getAuthIdentifier(),
-            'actor_label' => $actorLabel,
+            'user_id' => $actor?->getAuthIdentifier(),
+            // SEC-009: semua aksi Super Admin (vendor Sintech) ditandai agar mudah ditinjau Owner.
+            'actor_label' => $actorLabel ?? ($actor instanceof User && $actor->hasRole(RoleCatalog::SUPER_ADMIN) ? 'vendor' : null),
             'event' => $event,
             'auditable_type' => $auditable?->getMorphClass(),
             'auditable_id' => $auditable?->getKey(),

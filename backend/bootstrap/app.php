@@ -18,6 +18,7 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\AuthenticateSession;
 use Inertia\Inertia;
 use Symfony\Component\HttpFoundation\Response;
@@ -60,6 +61,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'password.changed' => RequirePasswordChange::class,
             'mfa.enforced' => EnforceMfa::class,
         ]);
+        // Gerbang web BR-017 sebelum route binding ber-scope (T-020): akun tanpa menu web selalu
+        // dikeluarkan, bukan menerima 404 dari binding `{user}` di luar scope-nya.
+        $middleware->prependToPriorityList(before: SubstituteBindings::class, prepend: RequireWebMenuAccess::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Galat domain yang disengaja (mis. di luar radius) bukan insiden; jangan memenuhi log error.

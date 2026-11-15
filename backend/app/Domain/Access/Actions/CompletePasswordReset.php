@@ -28,7 +28,15 @@ final class CompletePasswordReset
                 'must_change_password' => false,
                 'password_changed_at' => now(),
                 'locked_until' => null,
-            ])->save();
+            ]);
+
+            // Tautan email sampai & dipakai = bukti kepemilikan alamat. Akun yang dibuat admin
+            // dengan "kirim tautan atur password" menjadi terverifikasi di sini (T-020).
+            if ($via === 'email' && $user->email !== null && $user->email_verified_at === null) {
+                $user->forceFill(['email_verified_at' => now()]);
+            }
+
+            $user->save();
 
             $this->security->record(SecurityEventType::PasswordResetCompleted, SecurityChannel::Web, $user, $user->username, ['via' => $via]);
         });

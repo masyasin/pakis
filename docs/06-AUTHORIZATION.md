@@ -107,7 +107,7 @@ Catatan: `administrator` sengaja **tidak** bisa membuka NIK, mengubah data pegaw
 | `data_scope` | Pegawai yang terlihat | Diterapkan pada |
 |---|---|---|
 | `all` | Semua | — |
-| `location` | Pegawai yang penugasan utama aktifnya di **lokasi pengguna**: (a) lokasi penugasan utama pengguna, dan (b) lokasi yang `head_employee_id` = pegawai pengguna. Untuk `attendance_days` dipakai snapshot `attendance_days.location_id`. | employees, assignments, devices (lewat user→employee), schedules, attendance_days, attendance_corrections, locations (hanya lokasinya), shifts (hanya yang dipakai pegawai di lokasinya) |
+| `location` | Pegawai yang penugasan utama aktifnya di **lokasi pengguna**: (a) lokasi penugasan utama pengguna, dan (b) lokasi yang `head_employee_id` = pegawai pengguna. Untuk `attendance_days` dipakai snapshot `attendance_days.location_id`. | employees, assignments, devices (lewat user→employee), schedules, attendance_days, attendance_corrections, locations (hanya lokasinya), shifts (hanya yang dipakai pegawai di lokasinya), users (lewat `users.employee_id`; akun tanpa pegawai hanya terlihat scope `all`, keputusan Mas 15 Nov 2026) |
 | `team` | Diri sendiri + bawahan langsung & tidak langsung lewat `assignments.supervisor_employee_id` (penugasan aktif, CTE rekursif maks 5 tingkat) | sama dengan baris atas |
 | `self` | Diri sendiri | API mobile milik sendiri |
 
@@ -209,7 +209,9 @@ Role `pegawai` saja **tidak** bisa masuk web admin. Login web ditolak dengan pes
 
 - Permission dicek lewat Policy (`EmployeePolicy`, `AttendanceDayPolicy`, `AttendanceCorrectionPolicy`, dst.). Controller memakai atribut `#[Authorize]` (Laravel 13) atau `$this->authorize()`.
 - Route-model binding untuk resource ber-scope memakai trait `App\Support\Authorization\ScopedRouteBinding` (model menyebut `scopedEmployeeColumn()`), sehingga ID di luar scope menghasilkan 404. Lookup ber-scope cukup mengisi `LookupSource::scopeColumn()`.
-- Super Admin lolos semua permission lewat `Gate::before`, **kecuali** ability akun yang dilindungi Owner (`users.assign-roles`, `users.reset-mfa-of`, `UserPolicy`): bukan akun sendiri, akun Owner hanya oleh Owner (SEC-009).
+- Super Admin lolos semua permission lewat `Gate::before`, **kecuali** ability akun yang dilindungi Owner (`users.manage-account`, `users.assign-roles`, `users.reset-password-of`, `users.reset-mfa-of`, `UserPolicy`): bukan akun sendiri, akun Owner hanya oleh Owner (SEC-009), dan **hak target ⊆ hak pelaku** — semua permission & scope akun target harus dimiliki pelaku (T-020, keputusan Mas 15 Nov 2026). Akibatnya dengan matriks default: Administrator hanya bisa mengelola akun ber-role Pegawai (dan Administrator lain), HRD mengelola Kepala Lokasi/Supervisor/Pegawai, akun HRD & Administrator dikelola Owner.
+- Penetapan role (T-020, `AssignUserRoles`): role yang ditambahkan/dilepas harus seluruh permission-nya dimiliki pelaku dan scope-nya tidak lebih luas; role `owner`/`super_admin` hanya oleh Owner.
+- Gerbang web BR-017 (`RequireWebMenuAccess`) berjalan sebelum route binding ber-scope (prioritas middleware), sehingga akun tanpa menu web selalu dikeluarkan, bukan menerima 404.
 - Test: `tests/Feature/Authorization/PermissionMatrixTest` (role × permission, route perwakilan per modul) dan trait `Tests\Support\AssertsIdor` + `FakeOrgStructure` untuk test IDOR modul.
 - `HandleInertiaRequests` membagikan `auth.permissions` (array) dan `auth.menu` (sudah difilter server) ke frontend.
 - Perubahan role/permission/penugasan → `security_events` (`role_changed`/`permission_changed`) + `audit_logs`, dan cache permission Spatie dibersihkan.

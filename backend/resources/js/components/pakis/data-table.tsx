@@ -286,7 +286,7 @@ export function DataTable<Row>({
             <div className="flex flex-wrap items-center gap-2">
                 <h2 className="mr-auto text-base font-bold">{title}</h2>
                 {toolbarActions && (
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                         {toolbarActions}
                     </div>
                 )}

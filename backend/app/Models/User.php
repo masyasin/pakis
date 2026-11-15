@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Authorization\ScopedRouteBinding;
 use Database\Factories\UserFactory;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,6 +18,8 @@ use Spatie\Permission\Traits\HasRoles;
 
 /**
  * Akun login (04 §2.2). Login dengan `username` atau `email` (BR-010); `username` selalu huruf kecil.
+ * Route `{user}` ber-scope data lewat pegawai terkait (06 §5, keputusan Mas 15 Nov 2026): akun di
+ * luar scope → 404; akun tanpa pegawai hanya terlihat pemegang scope `all`.
  *
  * @property int $id
  * @property int|null $employee_id
@@ -49,7 +52,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable, SoftDeletes, TwoFactorAuthenticatable;
+    use HasFactory, HasRoles, Notifiable, ScopedRouteBinding, SoftDeletes, TwoFactorAuthenticatable;
 
     /**
      * Kosong = "ingat saya" mati (SEC-005). SessionGuard melewati set/cycle remember token
@@ -106,6 +109,11 @@ class User extends Authenticatable implements MustVerifyEmail
     protected function email(): Attribute
     {
         return Attribute::make(set: fn (?string $value) => $value === null || trim($value) === '' ? null : mb_strtolower(trim($value)));
+    }
+
+    public static function scopedEmployeeColumn(): string
+    {
+        return 'employee_id';
     }
 
     public function isLocked(): bool

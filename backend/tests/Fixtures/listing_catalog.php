@@ -18,6 +18,7 @@ return [
     'references', // T-010
     'regions', // T-012
     'roles', // T-018
+    'users', // T-020
     'notifications', // T-029
     'locations', // T-021
 ];

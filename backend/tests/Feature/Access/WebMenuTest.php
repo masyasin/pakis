@@ -36,15 +36,16 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
         'Organisasi' => ['Lokasi', 'Wilayah'],
-        'Akses' => ['Role & Hak Akses'],
+        'Akses' => ['Pengguna', 'Role & Hak Akses'],
         'Sistem' => ['Pengaturan', 'Penomoran', 'Referensi', 'Audit Log', 'Log Keamanan'],
     ]);
 });
 
-test('06 §8 HRD: tanpa Role, Pengaturan, Penomoran, Audit', function () {
+test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function () {
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
         'Organisasi' => ['Lokasi', 'Wilayah'],
+        'Akses' => ['Pengguna'],
         'Sistem' => ['Referensi'],
     ]);
 });

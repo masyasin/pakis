@@ -46,10 +46,24 @@ test('BR-031 tidak ada yang bisa mengubah role / mereset MFA akunnya sendiri', f
 
 test('butuh permission dasar: HRD tanpa users.reset_mfa tidak bisa mereset MFA', function () {
     $staff = User::factory()->create()->assignRole('kepala_lokasi');
+    $pegawai = User::factory()->create()->assignRole('pegawai');
 
     expect(canFor($this->hrd, 'users.reset-mfa-of', $staff))->toBeFalse()   // hrd tanpa users.reset_mfa (06 §4)
         ->and(canFor($this->hrd, 'users.assign-roles', $staff))->toBeTrue()  // hrd punya users.update
-        ->and(canFor($this->admin, 'users.reset-mfa-of', $staff))->toBeTrue();
+        ->and(canFor($this->admin, 'users.reset-mfa-of', $pegawai))->toBeTrue();
+});
+
+test('T-020 batas hak target: akun dengan permission di luar milik pelaku tidak bisa disentuh', function () {
+    $staff = User::factory()->create()->assignRole('kepala_lokasi'); // memegang foto & persetujuan absensi
+
+    // Administrator sengaja tanpa akses foto/data SDM (06 §4) → tidak bisa mengambil alih akun itu.
+    expect(canFor($this->admin, 'users.reset-mfa-of', $staff))->toBeFalse()
+        ->and(canFor($this->admin, 'users.reset-password-of', $staff))->toBeFalse()
+        ->and(canFor($this->admin, 'users.manage-account', $staff))->toBeFalse()
+        ->and(canFor($this->admin, 'users.reset-password-of', $this->hrd))->toBeFalse()
+        ->and(canFor($this->hrd, 'users.manage-account', $this->admin))->toBeFalse()
+        // HRD memegang semua permission Kepala Lokasi → boleh.
+        ->and(canFor($this->hrd, 'users.reset-password-of', $staff))->toBeTrue();
 });
 
 test('Super Admin tetap lolos permission biasa lewat Gate::before', function () {

@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Access\Enums\DataScope;
+use App\Domain\Access\Models\Role;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\UsernameSuggester;
@@ -76,6 +78,24 @@ test('FR-016 tanpa users.create → 403; batas delegasi role tetap berlaku (BR-0
         'username' => 'calon.owner', 'roles' => ['owner'], 'password_mode' => 'generate',
     ])->assertUnprocessable()->assertJsonValidationErrors('roles');
     expect(User::query()->where('username', 'calon.owner')->exists())->toBeFalse();
+});
+
+test('BR-032 buat akun dari pegawai butuh scope Semua (menautkan akun = menentukan scope akun)', function () {
+    $self = $this->world->employee($this->world->gudang);
+    $mate = $this->world->employee($this->world->gudang);
+    $role = Role::query()->create(['name' => 'hrd_lokasi', 'label' => 'HRD Lokasi', 'guard_name' => 'web', 'data_scope' => DataScope::Location]);
+    $role->givePermissionTo(['employees.view', 'employees.create', 'users.create']);
+    $actor = User::factory()->withTwoFactor()->create(['employee_id' => $self->id])->assignRole('hrd_lokasi');
+
+    $this->actingAs($actor)->postJson("/pegawai/{$mate->id}/akun", [
+        'username' => 'teman.gudang', 'roles' => [], 'password_mode' => 'generate',
+    ])->assertForbidden();
+
+    $this->actingAs($actor)->postJson('/pegawai', $this->world->payload([
+        'account' => ['create' => true, 'username' => 'baru.gudang', 'roles' => [], 'password_mode' => 'generate'],
+    ]))->assertUnprocessable()->assertJsonValidationErrors('account.username');
+
+    expect(User::query()->whereIn('username', ['teman.gudang', 'baru.gudang'])->exists())->toBeFalse();
 });
 
 test('FR-016 tautan atur password butuh email pegawai', function () {

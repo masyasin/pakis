@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Access\Enums\DataScope as Scope;
 use App\Domain\Access\Support\AvatarStore;
+use App\Domain\Access\Support\ScopeResolver;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Employee\Actions\CreateAccountForEmployee;
 use App\Domain\Employee\Actions\CreateEmployee;
@@ -99,8 +101,8 @@ class EmployeeController extends Controller
             ...self::formOptions(null),
             'employee' => null,
             'labels' => [],
-            'canCreateAccount' => $actor->can('users.create'),
-            'roleOptions' => $actor->can('users.create') ? UserController::roleOptions($actor) : [],
+            'canCreateAccount' => $actor->can('users.create') && ScopeResolver::for($actor) === Scope::All,
+            'roleOptions' => $actor->can('users.create') && ScopeResolver::for($actor) === Scope::All ? UserController::roleOptions($actor) : [],
         ]);
     }
 

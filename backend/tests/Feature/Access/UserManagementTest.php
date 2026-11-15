@@ -168,7 +168,7 @@ test('FR-016 tautkan pegawai (T-024): hanya pegawai aktif yang belum punya akun,
     expect($user->fresh()->employee_id)->toBeNull();
 });
 
-test('SEC-033 pegawai di luar scope pelaku tidak bisa ditautkan (dianggap tidak ditemukan)', function () {
+test('BR-032 pelaku ber-scope sempit tidak bisa menautkan pegawai (cegah pelebaran scope akun)', function () {
     $org = FakeOrgStructure::bind();
     $org->employee(employeeRow(1))->at(10);
     $org->employee(employeeRow(2))->at(20);
@@ -176,8 +176,35 @@ test('SEC-033 pegawai di luar scope pelaku tidak bisa ditautkan (dianggap tidak 
         ->givePermissionTo(['users.view', 'users.create']);
     $actor = User::factory()->withTwoFactor()->create(['employee_id' => employeeRow(1)])->assignRole('admin_lokasi');
 
-    $this->actingAs($actor)->postJson('/pengguna', umPayload(['roles' => [], 'employee_id' => 2]))
-        ->assertUnprocessable()->assertJsonValidationErrors(['employee_id' => 'tidak ditemukan']);
+    // Pegawai #3 (dalam scope pelaku) pun ditolak: pegawai bisa saja mengepalai lokasi lain.
+    $org->employee(employeeRow(3))->at(10);
+    foreach ([3, 2] as $id) {
+        $this->actingAs($actor)->postJson('/pengguna', umPayload(['roles' => [], 'employee_id' => $id]))
+            ->assertUnprocessable()->assertJsonValidationErrors(['employee_id' => 'Hanya pengguna dengan cakupan data "Semua"']);
+    }
+});
+
+test('BR-010 tautan ke pegawai nonaktif tidak bisa dilepas/diganti; ubah tanpa field employee_id tidak melepas tautan', function () {
+    $owner = umActor('owner');
+    $employee = Employee::factory()->create();
+    $user = User::factory()->create(['username' => 'pegawai.keluar', 'employee_id' => $employee->id]);
+    $payload = umPayload(['username' => 'pegawai.keluar', 'name' => 'Pegawai Keluar']);
+
+    // Tanpa field employee_id: tautan tetap.
+    $this->actingAs($owner)->put("/pengguna/{$user->id}", $payload)->assertRedirect();
+    expect($user->fresh()->employee_id)->toBe($employee->id);
+
+    $employee->forceFill(['status' => 'inactive', 'exit_date' => now()->toDateString()])->save();
+    $other = Employee::factory()->create();
+
+    foreach ([null, $other->id] as $value) {
+        $this->actingAs($owner)->from("/pengguna/{$user->id}/ubah")->put("/pengguna/{$user->id}", [...$payload, 'employee_id' => $value])
+            ->assertSessionHasErrors('employee_id');
+        expect($user->fresh()->employee_id)->toBe($employee->id);
+    }
+
+    // Nilai sama (tautan dipertahankan) tetap boleh walau pegawainya nonaktif.
+    $this->actingAs($owner)->put("/pengguna/{$user->id}", [...$payload, 'employee_id' => $employee->id])->assertSessionHasNoErrors();
 });
 
 test('BR-031 batas delegasi: HRD tidak bisa menetapkan role Administrator atau Owner', function () {

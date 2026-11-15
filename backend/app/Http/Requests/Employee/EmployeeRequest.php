@@ -3,7 +3,9 @@
 namespace App\Http\Requests\Employee;
 
 use App\Domain\Access\DataScope;
+use App\Domain\Access\Enums\DataScope as Scope;
 use App\Domain\Access\Support\AvatarStore;
+use App\Domain\Access\Support\ScopeResolver;
 use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\PersonName;
@@ -152,7 +154,9 @@ class EmployeeRequest extends FormRequest
             if ($this->creating()) {
                 $this->checkAssignmentScope($v);
 
-                if ($this->input('account.create') === true && ! $this->user()?->can('users.create')) {
+                $actor = $this->user();
+                if ($this->input('account.create') === true && (! $actor instanceof User || ! $actor->can('users.create') || ScopeResolver::for($actor) !== Scope::All)) {
+                    // Sama dengan EmployeePolicy::createAccount: menautkan akun = menentukan scope akun.
                     $v->errors()->add('account.username', 'Anda tidak punya izin membuat akun. Hilangkan centang "Buat akun".');
                 }
             }

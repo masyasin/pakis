@@ -23,7 +23,7 @@ final class UpdateUser
     ) {}
 
     /**
-     * @param  array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id?: int|null}  $data
+     * @param  array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id?: int|null}  $data  `employee_id` tidak ada = tautan tidak diubah
      */
     public function handle(User $actor, User $target, array $data): void
     {

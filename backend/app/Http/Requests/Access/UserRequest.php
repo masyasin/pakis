@@ -3,6 +3,9 @@
 namespace App\Http\Requests\Access;
 
 use App\Domain\Access\DataScope;
+use App\Domain\Access\Enums\DataScope as Scope;
+use App\Domain\Access\Support\ScopeResolver;
+use App\Domain\Employee\Models\Employee;
 use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -35,8 +38,13 @@ class UserRequest extends FormRequest
             'phone' => is_string($phone) && trim($phone) !== '' ? (string) preg_replace('/[\s.\-()]/', '', $phone) : null,
             'roles' => is_array($this->input('roles')) ? array_values(array_unique(array_filter($this->input('roles'), 'is_string'))) : [],
             'is_active' => $this->has('is_active') ? $this->boolean('is_active') : true,
-            'employee_id' => is_numeric($this->input('employee_id')) ? (int) $this->input('employee_id') : null,
         ]);
+
+        // Tautan pegawai hanya diubah bila field-nya DIKIRIM: permintaan tanpa `employee_id` tidak
+        // boleh diam-diam melepas tautan (akun pegawai nonaktif bisa login lagi, BR-010).
+        if ($this->has('employee_id')) {
+            $this->merge(['employee_id' => is_numeric($this->input('employee_id')) ? (int) $this->input('employee_id') : null]);
+        }
     }
 
     /**
@@ -100,24 +108,64 @@ class UserRequest extends FormRequest
                     $validator->errors()->add('email', 'Isi email untuk mengirim tautan atur password.');
                 }
 
-                // Pegawai di luar scope pelaku diperlakukan "tidak ditemukan" (SEC-033).
-                $employeeId = $this->input('employee_id');
-                $actor = $this->user();
-                if (is_int($employeeId) && $actor instanceof User && ! app(DataScope::class)->allows($actor, $employeeId)) {
-                    $validator->errors()->add('employee_id', 'Pegawai tidak ditemukan atau sudah nonaktif.');
-                }
+                $this->checkEmployeeLink($validator);
             },
         ];
     }
 
     /**
-     * @return array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id: int|null}
+     * Penautan pegawai (T-024). Pegawai menentukan data yang terlihat akun (scope `location`/`team`
+     * dihitung dari lokasi & bawahan pegawainya), jadi mengubah tautan sama dengan mengubah hak akses:
+     * - hanya pelaku ber-scope `all` (role bawaan yang punya `users.create/update` memang `all`);
+     *   pelaku ber-scope sempit bisa menautkan pegawai yang mengepalai lokasi di luar scope-nya;
+     * - tautan ke pegawai nonaktif/terhapus tidak bisa diubah: akun pegawai yang sudah keluar
+     *   tertolak saat login (BR-010) dan tidak boleh "dibebaskan" dengan melepas tautannya;
+     * - pegawai di luar scope pelaku diperlakukan "tidak ditemukan" (SEC-033).
+     */
+    private function checkEmployeeLink(Validator $validator): void
+    {
+        if (! $this->has('employee_id') || $validator->errors()->has('employee_id')) {
+            return;
+        }
+
+        $actor = $this->user();
+        $target = $this->route('user');
+        $current = $target instanceof User ? $target->employee_id : null;
+        $new = $this->input('employee_id');
+
+        if (! $actor instanceof User || $new === $current) {
+            return;
+        }
+
+        if (ScopeResolver::for($actor) !== Scope::All) {
+            $validator->errors()->add('employee_id', 'Hanya pengguna dengan cakupan data "Semua" yang bisa menautkan atau melepas pegawai.');
+
+            return;
+        }
+
+        if ($current !== null && ! Employee::query()->whereKey($current)->where('status', 'active')->exists()) {
+            $validator->errors()->add('employee_id', 'Pegawai terkait akun ini sudah nonaktif atau dihapus, jadi tautannya tidak bisa diubah. Akun mengikuti status pegawainya.');
+
+            return;
+        }
+
+        if (is_int($new) && ! app(DataScope::class)->allows($actor, $new)) {
+            $validator->errors()->add('employee_id', 'Pegawai tidak ditemukan atau sudah nonaktif.');
+        }
+    }
+
+    /**
+     * `employee_id` hanya ikut bila dikirim (lihat prepareForValidation).
+     *
+     * @return array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id?: int|null}
      */
     public function accountData(): array
     {
-        /** @var array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id: int|null} */
+        $link = $this->has('employee_id') ? ['employee_id' => $this->validated('employee_id')] : [];
+
+        /** @var array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id?: int|null} */
         return [
-            'employee_id' => $this->validated('employee_id'),
+            ...$link,
             'name' => (string) $this->validated('name'),
             'username' => (string) $this->validated('username'),
             'email' => $this->validated('email'),

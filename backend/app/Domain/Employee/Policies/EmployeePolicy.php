@@ -3,6 +3,8 @@
 namespace App\Domain\Employee\Policies;
 
 use App\Domain\Access\DataScope;
+use App\Domain\Access\Enums\DataScope as Scope;
+use App\Domain\Access\Support\ScopeResolver;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\EmployeeUsage;
 use App\Models\User;
@@ -58,9 +60,13 @@ class EmployeePolicy
         return $user->can('employees.view_sensitive') && $this->scope->allows($user, $employee->id);
     }
 
-    /** Buat akun dari pegawai: izin akun (`users.create`) + pegawai dalam scope. */
+    /**
+     * Buat akun dari pegawai: izin akun (`users.create`) + scope `all`. Menautkan akun ke pegawai
+     * menentukan data yang terlihat akun itu; pelaku ber-scope sempit bisa memilih pegawai yang
+     * mengepalai lokasi di luar scope-nya (aturan sama dengan UserRequest::checkEmployeeLink).
+     */
     public function createAccount(User $user, Employee $employee): bool
     {
-        return $user->can('users.create') && $this->scope->allows($user, $employee->id);
+        return $user->can('users.create') && ScopeResolver::for($user) === Scope::All && $this->scope->allows($user, $employee->id);
     }
 }

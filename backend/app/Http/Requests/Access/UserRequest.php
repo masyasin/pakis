@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Access;
 
+use App\Domain\Access\DataScope;
 use App\Models\User;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Validator;
@@ -33,6 +35,7 @@ class UserRequest extends FormRequest
             'phone' => is_string($phone) && trim($phone) !== '' ? (string) preg_replace('/[\s.\-()]/', '', $phone) : null,
             'roles' => is_array($this->input('roles')) ? array_values(array_unique(array_filter($this->input('roles'), 'is_string'))) : [],
             'is_active' => $this->has('is_active') ? $this->boolean('is_active') : true,
+            'employee_id' => is_numeric($this->input('employee_id')) ? (int) $this->input('employee_id') : null,
         ]);
     }
 
@@ -44,6 +47,7 @@ class UserRequest extends FormRequest
         $target = $this->route('user');
         $ignore = $target instanceof User ? $target->id : null;
         $creating = $ignore === null;
+        $currentEmployee = $target instanceof User ? $target->employee_id : null;
 
         return [
             'name' => ['required', 'string', 'min:2', 'max:150'],
@@ -52,8 +56,15 @@ class UserRequest extends FormRequest
             'phone' => ['nullable', 'string', 'regex:/^\+?[0-9]{8,20}$/'],
             'roles' => ['array', 'max:20'],
             'roles.*' => ['string', Rule::exists('roles', 'name')->where('guard_name', 'web')],
-            // TODO(T-024): tautkan pegawai (lookup `employees`, hanya yang belum punya akun).
-            'employee_id' => ['prohibited'],
+            // Pegawai terkait (T-024): pegawai aktif yang belum punya akun lain. Tautan yang sudah ada
+            // boleh dipertahankan walau pegawainya kini nonaktif. Unik termasuk akun terhapus
+            // (index `users_employee_id_unique` tidak mengenal soft delete).
+            'employee_id' => [
+                'nullable', 'integer',
+                Rule::exists('employees', 'id')->whereNull('deleted_at')->where(fn (Builder $q) => $q
+                    ->where('status', 'active')->when($currentEmployee !== null, fn (Builder $o) => $o->orWhere('id', $currentEmployee))),
+                Rule::unique(User::class, 'employee_id')->ignore($ignore),
+            ],
             ...$creating ? [
                 'is_active' => ['boolean'],
                 'password_mode' => ['required', Rule::in(['generate', 'email_link'])],
@@ -72,7 +83,8 @@ class UserRequest extends FormRequest
             'email.unique' => 'Email ini sudah dipakai akun lain.',
             'phone.regex' => 'Nomor HP hanya angka (boleh diawali +), 8–20 digit.',
             'roles.*.exists' => 'Role yang dipilih tidak ditemukan.',
-            'employee_id.prohibited' => 'Penautan pegawai tersedia setelah modul Pegawai aktif.',
+            'employee_id.exists' => 'Pegawai tidak ditemukan atau sudah nonaktif.',
+            'employee_id.unique' => 'Pegawai ini sudah punya akun lain.',
             'password_mode.in' => 'Pilih cara membuat password awal.',
         ];
     }
@@ -87,17 +99,25 @@ class UserRequest extends FormRequest
                 if ($this->input('password_mode') === 'email_link' && $this->input('email') === null) {
                     $validator->errors()->add('email', 'Isi email untuk mengirim tautan atur password.');
                 }
+
+                // Pegawai di luar scope pelaku diperlakukan "tidak ditemukan" (SEC-033).
+                $employeeId = $this->input('employee_id');
+                $actor = $this->user();
+                if (is_int($employeeId) && $actor instanceof User && ! app(DataScope::class)->allows($actor, $employeeId)) {
+                    $validator->errors()->add('employee_id', 'Pegawai tidak ditemukan atau sudah nonaktif.');
+                }
             },
         ];
     }
 
     /**
-     * @return array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>}
+     * @return array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id: int|null}
      */
     public function accountData(): array
     {
-        /** @var array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>} */
+        /** @var array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id: int|null} */
         return [
+            'employee_id' => $this->validated('employee_id'),
             'name' => (string) $this->validated('name'),
             'username' => (string) $this->validated('username'),
             'email' => $this->validated('email'),

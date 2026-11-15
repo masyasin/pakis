@@ -23,20 +23,22 @@ final class UpdateUser
     ) {}
 
     /**
-     * @param  array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>}  $data
+     * @param  array{name: string, username: string, email: string|null, phone: string|null, roles: list<string>, employee_id?: int|null}  $data
      */
     public function handle(User $actor, User $target, array $data): void
     {
         $oldEmail = $target->email;
 
         DB::transaction(function () use ($actor, $target, $data) {
-            $before = $target->only(['name', 'username', 'email', 'phone']);
+            $before = $target->only(['name', 'username', 'email', 'phone', 'employee_id']);
 
             $target->fill([
                 'name' => $data['name'],
                 'username' => $data['username'],
                 'email' => $data['email'],
                 'phone' => $data['phone'],
+                // Pegawai terkait (T-024); kunci tidak ada = tidak diubah.
+                'employee_id' => array_key_exists('employee_id', $data) ? $data['employee_id'] : $target->employee_id,
             ]);
 
             if ($target->isDirty('email')) {
@@ -54,7 +56,7 @@ final class UpdateUser
             if ($dirty || $roles['old'] !== $roles['new']) {
                 $this->audit->record('user.updated', $target,
                     [...$before, 'roles' => $roles['old']],
-                    [...$target->only(['name', 'username', 'email', 'phone']), 'roles' => $roles['new']],
+                    [...$target->only(['name', 'username', 'email', 'phone', 'employee_id']), 'roles' => $roles['new']],
                 );
             }
         });

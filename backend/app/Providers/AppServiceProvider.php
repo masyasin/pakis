@@ -55,7 +55,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(OrgStructure::class, DatabaseOrgStructure::class);
         $this->app->scoped(DataScope::class);
 
-        // Status pegawai untuk login (BR-010); TODO(T-024): implementasi berbasis model Employee.
+        // Status pegawai untuk login (BR-010).
         $this->app->bind(EmployeeStatus::class, ActiveEmployeeStatus::class);
 
         // Sumber lookup (05 §4.11). Modul baru menambahkan sumbernya di sini.

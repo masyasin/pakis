@@ -32,6 +32,7 @@ type LocationRow = {
     type: string | null;
     village: string | null;
     district: string | null;
+    head: string | null;
     has_coordinates: boolean;
     radius_m: number;
     radius_is_default: boolean;
@@ -73,7 +74,12 @@ const columns: DataTableColumn<LocationRow>[] = [
                 '–'
             ),
     },
-    // Kepala lokasi dipilih setelah modul pegawai (T-024); jumlah pegawai setelah penugasan (T-025).
+    {
+        key: 'head',
+        header: 'Kepala',
+        cell: (r) => r.head ?? <span className="text-muted-foreground">–</span>,
+    },
+    // Jumlah pegawai menyusul T-025 (penugasan).
     {
         key: 'radius',
         header: 'Radius',

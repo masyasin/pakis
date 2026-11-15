@@ -153,7 +153,7 @@ test('06 §5 scope shift: Kepala Lokasi tidak melihat shift sebelum ada jadwal p
     $org = FakeOrgStructure::bind();
     $org->employee(1)->at(10);
     $shift = makeShift(['code' => 'PAGI']);
-    $kepala = User::factory()->create(['employee_id' => 1])->assignRole('kepala_lokasi');
+    $kepala = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('kepala_lokasi');
 
     // TODO(T-035): dengan pola jadwal nyata, shift yang dipakai pegawai lokasinya terlihat.
     $this->actingAs($kepala)->get('/shift')->assertOk()

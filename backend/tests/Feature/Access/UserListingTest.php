@@ -50,7 +50,7 @@ test('07 §3.4 users: cari nama/username, filter role & aktif, sort login terakh
 
 test('07 §3.4 users: filter MFA aktif & punya pegawai; baris tanpa kolom rahasia', function () {
     User::factory()->withTwoFactor()->create(['username' => 'pakai.mfa']);
-    User::factory()->create(['username' => 'tanpa.mfa', 'employee_id' => 7]);
+    User::factory()->create(['username' => 'tanpa.mfa', 'employee_id' => employeeRow(7)]);
 
     $this->actingAs($this->owner)->get('/pengguna?filter[mfa]=0')
         ->assertInertia(fn (Assert $page) => expect(ulUsernames($page))->toBe(['tanpa.mfa']));
@@ -70,10 +70,10 @@ test('06 §5 scope pengguna: role ber-scope lokasi hanya melihat akun pegawai di
 
     $role = Role::query()->create(['name' => 'admin_cabang', 'label' => 'Admin Cabang', 'guard_name' => 'web', 'data_scope' => DataScope::Location]);
     $role->givePermissionTo(['dashboard.view', 'users.view', 'users.update', 'users.reset_password']);
-    $actor = User::factory()->create(['employee_id' => 1, 'name' => 'Kepala Cabang', 'username' => 'kepala.cabang'])->assignRole('admin_cabang');
+    $actor = User::factory()->create(['employee_id' => employeeRow(1), 'name' => 'Kepala Cabang', 'username' => 'kepala.cabang'])->assignRole('admin_cabang');
 
-    $inScope = User::factory()->create(['employee_id' => 2, 'name' => 'Dalam Scope', 'username' => 'dalam.scope'])->assignRole('pegawai');
-    $outScope = User::factory()->create(['employee_id' => 3, 'username' => 'luar.scope'])->assignRole('pegawai');
+    $inScope = User::factory()->create(['employee_id' => employeeRow(2), 'name' => 'Dalam Scope', 'username' => 'dalam.scope'])->assignRole('pegawai');
+    $outScope = User::factory()->create(['employee_id' => employeeRow(3), 'username' => 'luar.scope'])->assignRole('pegawai');
     User::factory()->create(['username' => 'tanpa.pegawai']);
 
     $this->actingAs($actor)->get('/pengguna')->assertOk()
@@ -95,7 +95,7 @@ test('06 §5 scope pengguna: role ber-scope lokasi hanya melihat akun pegawai di
 
 test('07 §3.4 users: ekspor sesuai izin dan scope, kolom tanpa password/secret', function () {
     $headers = (new UserListing)->exportColumns()->headers();
-    expect($headers)->toBe(['Nama', 'Username', 'Email', 'HP', 'Role', 'Aktif', 'MFA aktif', 'Login terakhir', 'ID pegawai']);
+    expect($headers)->toBe(['Nama', 'Username', 'Email', 'HP', 'Role', 'Aktif', 'MFA aktif', 'Login terakhir', 'No. pegawai', 'Pegawai']);
 
     $hrd = User::factory()->withTwoFactor()->create()->assignRole('hrd');
     $this->actingAs($hrd)->get('/pengguna/ekspor')->assertForbidden();

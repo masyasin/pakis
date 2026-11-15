@@ -24,4 +24,5 @@ return [
     'locations', // T-021
     'departments', // T-022
     'positions', // T-023
+    'employees', // T-024
 ];

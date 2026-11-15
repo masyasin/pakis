@@ -203,7 +203,7 @@ test('06 §5 kepala lokasi hanya melihat lokasinya (daftar & lookup)', function 
 
     $org = FakeOrgStructure::bind();
     $org->employee(1)->at($mine->id)->heads($headed->id);
-    $kepala = User::factory()->create(['employee_id' => 1])->assignRole('kepala_lokasi');
+    $kepala = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('kepala_lokasi');
 
     $this->actingAs($kepala)->get('/lokasi')
         ->assertInertia(fn (Assert $page) => $page->has('rows', 2)
@@ -222,7 +222,7 @@ test('SEC-033 lokasi di luar scope → 404 untuk ubah, simpan, dan hapus', funct
     $other = makeLocation(['code' => 'GD-03']);
 
     FakeOrgStructure::bind()->employee(1)->at($mine->id);
-    $kepala = User::factory()->create(['employee_id' => 1])->assignRole('kepala_lokasi');
+    $kepala = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('kepala_lokasi');
     $kepala->givePermissionTo('locations.manage');
 
     $this->actingAs($kepala)->get("/lokasi/{$mine->id}/ubah")->assertOk();
@@ -251,7 +251,7 @@ test('BR-041 lookup hanya lokasi aktif', function () {
 test('kepala lokasi tanpa locations.manage tidak bisa membuka form tambah', function () {
     // Juga memasang status pegawai aktif: tanpa itu akun ber-pegawai dikeluarkan (fail-closed, BR-010).
     FakeOrgStructure::bind();
-    $kepala = User::factory()->create(['employee_id' => 1])->assignRole('kepala_lokasi');
+    $kepala = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('kepala_lokasi');
 
     $this->actingAs($kepala)->get('/lokasi/baru')->assertForbidden();
     $this->actingAs($kepala)->post('/lokasi', validLocation())->assertForbidden();

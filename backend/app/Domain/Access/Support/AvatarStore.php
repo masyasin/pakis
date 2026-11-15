@@ -28,9 +28,11 @@ final class AvatarStore
     private const MAX_SOURCE_PIXELS = 40_000_000;
 
     /**
+     * Dipakai juga untuk foto pegawai (T-024, folder `employee-photos`): aturan unggahnya sama.
+     *
      * @return string path relatif di disk privat
      */
-    public function store(UploadedFile $file, string $field = 'avatar'): string
+    public function store(UploadedFile $file, string $field = 'avatar', string $directory = 'avatars'): string
     {
         $fail = fn (string $message) => throw ValidationException::withMessages([$field => $message]);
 
@@ -66,7 +68,7 @@ final class AvatarStore
         imagedestroy($source);
         imagedestroy($avatar);
 
-        $path = 'avatars/'.Str::ulid().'.webp';
+        $path = $directory.'/'.Str::ulid().'.webp';
         Storage::disk(self::DISK)->put($path, $bytes);
 
         return $path;

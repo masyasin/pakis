@@ -32,7 +32,7 @@ beforeEach(function () {
 
 function scopedUser(?int $employeeId, string ...$roles): User
 {
-    return User::factory()->create(['employee_id' => $employeeId])->assignRole($roles);
+    return User::factory()->create(['employee_id' => $employeeId === null ? null : employeeRow($employeeId)])->assignRole($roles);
 }
 
 function visible(User $user): ?array
@@ -91,8 +91,8 @@ test('pengguna tanpa role sama sekali: scope self', function () {
 });
 
 test('DataScope::apply membatasi query; kosong → tidak ada baris; all → tanpa batas', function () {
-    $a = User::factory()->create(['employee_id' => 3]);
-    $b = User::factory()->create(['employee_id' => 5]);
+    $a = User::factory()->create(['employee_id' => employeeRow(3)]);
+    $b = User::factory()->create(['employee_id' => employeeRow(5)]);
 
     $ids = fn (User $viewer) => app(DataScope::class)
         ->apply(User::query()->whereIn('id', [$a->id, $b->id]), $viewer, 'employee_id')

@@ -2,6 +2,7 @@
 
 use App\Providers\AppServiceProvider;
 use App\Providers\AttendanceServiceProvider;
+use App\Providers\EmployeeServiceProvider;
 use App\Providers\FortifyServiceProvider;
 use App\Providers\NotificationServiceProvider;
 use App\Providers\OrganizationServiceProvider;
@@ -12,4 +13,5 @@ return [
     NotificationServiceProvider::class,
     OrganizationServiceProvider::class,
     AttendanceServiceProvider::class,
+    EmployeeServiceProvider::class,
 ];

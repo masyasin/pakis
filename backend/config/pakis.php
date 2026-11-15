@@ -3,6 +3,7 @@
 use App\Domain\Access\Listings\UserListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
+use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 use App\Domain\Organization\Listings\PositionListing;
@@ -25,6 +26,12 @@ return [
         'password' => env('SUPERADMIN_PASSWORD', ''),
     ],
 
+    /*
+     * Kunci HMAC `employees.nik_hash` (SEC-010): 64 karakter hex, terpisah dari APP_KEY. Kosong =
+     * NikCipher menolak bekerja (fail-closed). Dibaca lewat config agar tetap ada saat config:cache.
+     */
+    'nik_hash_key' => env('NIK_HASH_KEY', ''),
+
     'export' => [
         // Umur signed URL unduhan (05 §4.7 "berumur pendek").
         'download_url_minutes' => 15,
@@ -38,6 +45,7 @@ return [
         'locations' => LocationListing::class,
         'departments' => DepartmentListing::class,
         'positions' => PositionListing::class,
+        'employees' => EmployeeListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

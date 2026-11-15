@@ -2,8 +2,10 @@
 
 namespace App\Http\Requests\Organization;
 
+use App\Domain\Access\DataScope;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Reference\Enums\ReferenceGroup;
+use App\Models\User;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -43,6 +45,7 @@ class LocationRequest extends FormRequest
             'longitude' => $text('longitude'),
             'attendance_radius_m' => $text('attendance_radius_m'),
             'is_active' => $this->boolean('is_active', true),
+            'head_employee_id' => is_numeric($this->input('head_employee_id')) ? (int) $this->input('head_employee_id') : null,
         ]);
     }
 
@@ -53,6 +56,7 @@ class LocationRequest extends FormRequest
     {
         $location = $this->route('location');
         $currentType = $location instanceof Location ? $location->location_type_id : null;
+        $currentHead = $location instanceof Location ? $location->head_employee_id : null;
 
         return [
             'code' => [
@@ -74,6 +78,12 @@ class LocationRequest extends FormRequest
             'longitude' => ['nullable', 'required_with:latitude', 'numeric', 'between:'.self::LNG_MIN.','.self::LNG_MAX, 'decimal:0,7'],
             'attendance_radius_m' => ['nullable', 'integer', 'between:20,5000'],
             'phone' => ['nullable', 'string', 'regex:/^(\+62|62|0)\d{7,13}$/'],
+            // Kepala lokasi (T-024): pegawai aktif; kepala yang sudah terpasang boleh dipertahankan.
+            'head_employee_id' => [
+                'nullable', 'integer',
+                Rule::exists('employees', 'id')->whereNull('deleted_at')->where(fn (Builder $q) => $q
+                    ->where('status', 'active')->when($currentHead !== null, fn (Builder $o) => $o->orWhere('id', $currentHead))),
+            ],
             'is_active' => ['boolean'],
         ];
     }
@@ -84,6 +94,13 @@ class LocationRequest extends FormRequest
         $validator->after(function (Validator $v) {
             if ((string) $this->input('latitude') === '0' && (string) $this->input('longitude') === '0') {
                 $v->errors()->add('latitude', 'Koordinat 0,0 bukan lokasi di Indonesia.');
+            }
+
+            // Pegawai di luar scope pelaku diperlakukan "tidak ditemukan" (SEC-033).
+            $head = $this->input('head_employee_id');
+            $actor = $this->user();
+            if (is_int($head) && $actor instanceof User && ! app(DataScope::class)->allows($actor, $head)) {
+                $v->errors()->add('head_employee_id', 'Pegawai tidak ditemukan atau sudah nonaktif.');
             }
         });
     }
@@ -96,6 +113,7 @@ class LocationRequest extends FormRequest
         $data = $this->validated();
         $data['attendance_radius_m'] = isset($data['attendance_radius_m']) ? (int) $data['attendance_radius_m'] : null;
         $data['location_type_id'] = (int) $data['location_type_id'];
+        $data['head_employee_id'] = $data['head_employee_id'] ?? null;
 
         return array_intersect_key($data, array_flip(Location::AUDITED));
     }
@@ -117,6 +135,7 @@ class LocationRequest extends FormRequest
             'longitude.required_with' => 'Isi latitude dan longitude bersamaan.',
             'attendance_radius_m.between' => 'Radius absen 20–5.000 meter. Kosongkan untuk memakai radius bawaan.',
             'phone.regex' => 'Nomor telepon tidak valid. Contoh: 0291 123456 atau 0812-3456-7890.',
+            'head_employee_id.exists' => 'Pegawai tidak ditemukan atau sudah nonaktif.',
         ];
     }
 
@@ -128,7 +147,7 @@ class LocationRequest extends FormRequest
         return [
             'code' => 'kode', 'name' => 'nama', 'location_type_id' => 'tipe lokasi', 'address' => 'alamat',
             'village_code' => 'desa/kelurahan', 'latitude' => 'latitude', 'longitude' => 'longitude',
-            'attendance_radius_m' => 'radius absen', 'phone' => 'telepon', 'is_active' => 'status aktif',
+            'attendance_radius_m' => 'radius absen', 'phone' => 'telepon', 'head_employee_id' => 'kepala lokasi', 'is_active' => 'status aktif',
         ];
     }
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { FormStatus } from '@/components/form-status';
 import InputError from '@/components/input-error';
+import { AsyncSelect } from '@/components/pakis/async-select';
 import { OneTimeSecretDialog } from '@/components/pakis/one-time-secret-dialog';
 import { SettingsSection } from '@/components/settings-section';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { rememberLabels } from '@/lib/lookup';
 import { cn } from '@/lib/utils';
 import { index, show, store, update } from '@/routes/admin/users';
 
@@ -29,6 +31,12 @@ type UserData = {
     email: string | null;
     phone: string | null;
     roles: { name: string; label: string }[];
+    employee: {
+        id: number;
+        name: string;
+        number: string;
+        url: string | null;
+    } | null;
 };
 
 type Props = {
@@ -43,6 +51,7 @@ type FormData = {
     email: string;
     phone: string;
     roles: string[];
+    employee_id: string;
     is_active: boolean;
     password_mode: 'generate' | 'email_link';
 };
@@ -56,12 +65,29 @@ type StoreResponse = {
 
 /** Form pengguna (07 §4 "Pengguna (form)", FR-016). */
 export default function UserForm({ user, roleOptions, canAssignRoles }: Props) {
+    // Label pegawai terkait dari server, agar select menampilkan nama, bukan ID.
+    useState(() =>
+        rememberLabels(
+            'employees',
+            user?.employee
+                ? [
+                      {
+                          value: user.employee.id,
+                          label: user.employee.name,
+                          hint: user.employee.number,
+                      },
+                  ]
+                : [],
+        ),
+    );
+
     const initial: FormData = {
         name: user?.name ?? '',
         username: user?.username ?? '',
         email: user?.email ?? '',
         phone: user?.phone ?? '',
         roles: user?.roles.map((r) => r.name) ?? [],
+        employee_id: user?.employee ? String(user.employee.id) : '',
         is_active: true,
         password_mode: 'generate',
     };
@@ -253,12 +279,29 @@ export default function UserForm({ user, roleOptions, canAssignRoles }: Props) {
                                 (opsional)
                             </span>
                         </Label>
-                        {/* TODO(T-024): autocomplete pegawai yang belum punya akun. */}
-                        <Input
+                        {/* Hanya pegawai aktif yang belum punya akun; server memeriksa ulang. */}
+                        <AsyncSelect
                             id="employee"
-                            disabled
-                            placeholder="Tersedia setelah modul Pegawai aktif"
+                            source="employees"
+                            params={{ without_account: '1' }}
+                            value={
+                                data.employee_id === ''
+                                    ? []
+                                    : [Number(data.employee_id)]
+                            }
+                            placeholder="Cari nama atau nomor pegawai"
+                            onChange={(v) =>
+                                setData(
+                                    'employee_id',
+                                    v.length > 0 ? String(v[0]) : '',
+                                )
+                            }
                         />
+                        <p className="text-xs text-muted-foreground">
+                            Akun pegawai ikut nonaktif saat pegawai
+                            dinonaktifkan, dan datanya mengikuti scope pegawai.
+                        </p>
+                        <InputError message={errors.employee_id} />
                     </div>
 
                     {!user && (

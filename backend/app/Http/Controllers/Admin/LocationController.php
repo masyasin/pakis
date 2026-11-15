@@ -33,7 +33,7 @@ class LocationController extends Controller
     public function index(Request $request, LocationScope $scope): Response
     {
         $user = self::user($request);
-        $query = $scope->apply(Location::query()->with(['type:id,name', 'village.district']), $user);
+        $query = $scope->apply(Location::query()->with(['type:id,name', 'village.district', 'head:id,full_name']), $user);
 
         $result = ListingQuery::apply($query, new LocationListing, $request)
             ->through(fn (Location $l) => [
@@ -43,6 +43,7 @@ class LocationController extends Controller
                 'type' => $l->type?->name,
                 'village' => $l->village?->name,
                 'district' => $l->village?->district?->name,
+                'head' => $l->head?->full_name,
                 'has_coordinates' => $l->hasCoordinates(),
                 'radius_m' => $l->effectiveRadius(),
                 'radius_is_default' => $l->attendance_radius_m === null,
@@ -57,7 +58,7 @@ class LocationController extends Controller
 
     public function create(): Response
     {
-        return Inertia::render('locations/form', [...self::formOptions(null), 'location' => null, 'regionLabels' => []]);
+        return Inertia::render('locations/form', [...self::formOptions(null), 'location' => null, 'regionLabels' => [], 'headLabel' => null]);
     }
 
     public function store(LocationRequest $request, CreateLocation $action): RedirectResponse
@@ -72,7 +73,7 @@ class LocationController extends Controller
     public function edit(Request $request, Location $location): Response
     {
         Gate::authorize('update', $location);
-        $location->load('village.district.regency.province');
+        $location->load(['village.district.regency.province', 'head:id,full_name,employee_number']);
         $village = $location->village;
 
         return Inertia::render('locations/form', [
@@ -98,8 +99,13 @@ class LocationController extends Controller
                 'longitude' => $location->longitude,
                 'attendance_radius_m' => $location->attendance_radius_m,
                 'phone' => $location->phone,
+                'head_employee_id' => $location->head_employee_id,
                 'is_active' => $location->is_active,
             ],
+            // Label kepala lokasi terpilih untuk select pencarian.
+            'headLabel' => $location->head !== null
+                ? ['value' => $location->head->id, 'label' => $location->head->full_name, 'hint' => $location->head->employee_number]
+                : null,
         ]);
     }
 

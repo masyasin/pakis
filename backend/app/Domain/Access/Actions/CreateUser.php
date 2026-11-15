@@ -25,7 +25,7 @@ final class CreateUser
     ) {}
 
     /**
-     * @param  array{name: string, username: string, email: string|null, phone: string|null, is_active: bool, roles: list<string>, password_mode: 'generate'|'email_link'}  $data
+     * @param  array{name: string, username: string, email: string|null, phone: string|null, is_active: bool, roles: list<string>, password_mode: 'generate'|'email_link', employee_id?: int|null}  $data
      * @return array{user: User, temporary_password: string|null}
      */
     public function handle(User $actor, array $data): array
@@ -35,6 +35,8 @@ final class CreateUser
         $user = DB::transaction(function () use ($actor, $data, $temporary) {
             $user = new User;
             $user->forceFill([
+                // Pegawai terkait (T-024): dari form Pengguna atau "Buat akun" di halaman pegawai.
+                'employee_id' => $data['employee_id'] ?? null,
                 'name' => $data['name'],
                 'username' => $data['username'],
                 'email' => $data['email'],
@@ -49,7 +51,7 @@ final class CreateUser
             $roles = $this->roles->handle($actor, $user, $data['roles']);
 
             $this->audit->record('user.created', $user, null, [
-                ...$user->only(['name', 'username', 'email', 'phone', 'is_active']),
+                ...$user->only(['name', 'username', 'email', 'phone', 'is_active', 'employee_id']),
                 'roles' => $roles['new'],
                 'initial_password' => $temporary !== null ? 'sementara' : 'tautan email',
             ]);

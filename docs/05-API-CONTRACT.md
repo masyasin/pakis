@@ -227,6 +227,7 @@ Kolom **Daftar** = harus mematuhi §3. Rincian kolom/cari/filter/sort tiap dafta
 | `admin.employees.edit` / `update` | GET/PUT | `/pegawai/{employee}/ubah` · `/pegawai/{employee}` | `employees.update` | |
 | `admin.employees.destroy` | DELETE | `/pegawai/{employee}` | `employees.delete` | Hanya bila belum punya absensi/akun pernah login (BR-055). Selain itu: offboard |
 | `admin.employees.reveal-nik` | POST | `/pegawai/{employee}/nik` | `employees.view_sensitive` | JSON, dicatat `sensitive_data_viewed` |
+| `admin.employees.photo` | GET | `/pegawai/{employee}/foto` | `employees.view` | Foto pegawai dari disk privat (SEC-050), ber-scope (luar scope 404). Ditambahkan T-024 |
 | `admin.employees.offboard` | POST | `/pegawai/{employee}/nonaktifkan` | `employees.offboard` | FR-027 |
 | `admin.employees.rehire` | POST | `/pegawai/{employee}/aktifkan` | `employees.offboard` | Status aktif + penugasan baru wajib |
 | `admin.employees.account` | POST | `/pegawai/{employee}/akun` | `users.create` | Buat akun dari data pegawai |

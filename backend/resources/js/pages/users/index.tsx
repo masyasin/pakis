@@ -18,6 +18,12 @@ type UserRow = {
     phone: string | null;
     roles: { name: string; label: string }[];
     employee_id: number | null;
+    employee: {
+        id: number;
+        name: string;
+        number: string;
+        url: string | null;
+    } | null;
     is_active: boolean;
     mfa_enabled: boolean;
     last_login_at: string | null;
@@ -76,10 +82,15 @@ export default function UsersIndex({
         {
             key: 'employee',
             header: 'Pegawai',
-            // TODO(T-024): nama & no. pegawai terkait.
             cell: (u) =>
-                u.employee_id !== null ? (
-                    <span className="tabular-nums">#{u.employee_id}</span>
+                u.employee ? (
+                    <span>
+                        {u.employee.name}
+                        <span className="text-muted-foreground tabular-nums">
+                            {' '}
+                            · {u.employee.number}
+                        </span>
+                    </span>
                 ) : (
                     <span className="text-muted-foreground">–</span>
                 ),

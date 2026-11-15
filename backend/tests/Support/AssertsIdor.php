@@ -14,7 +14,7 @@ use App\Models\User;
  *         $org = FakeOrgStructure::bind();            // atau data penugasan nyata (T-025+)
  *         $org->employee(1)->at(10);
  *         $org->employee(9)->at(20);                   // pegawai lokasi lain
- *         $kepala = User::factory()->create(['employee_id' => 1])->assignRole('kepala_lokasi');
+ *         $kepala = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('kepala_lokasi');
  *         $this->assertOutOfScope404($kepala, 'GET', "/pegawai/{$employee9->id}");
  *     });
  */

@@ -56,6 +56,12 @@ type UserDetail = {
     email_verified: boolean;
     phone: string | null;
     employee_id: number | null;
+    employee: {
+        id: number;
+        name: string;
+        number: string;
+        url: string | null;
+    } | null;
     is_active: boolean;
     is_locked: boolean;
     must_change_password: boolean;
@@ -561,9 +567,21 @@ function ProfileTab({ user }: { user: UserDetail }) {
                 )}
             </Item>
             <Item label="HP">{user.phone ?? <Dash />}</Item>
-            {/* TODO(T-024): nama & tautan ke halaman pegawai. */}
             <Item label="Pegawai terkait">
-                {user.employee_id !== null ? `#${user.employee_id}` : <Dash />}
+                {user.employee ? (
+                    user.employee.url ? (
+                        <Link
+                            href={user.employee.url}
+                            className="font-medium text-primary underline-offset-4 hover:underline"
+                        >
+                            {user.employee.name} · {user.employee.number}
+                        </Link>
+                    ) : (
+                        `${user.employee.name} · ${user.employee.number}`
+                    )
+                ) : (
+                    <Dash />
+                )}
             </Item>
             <Item label="Login terakhir">
                 {user.last_login_at ? (

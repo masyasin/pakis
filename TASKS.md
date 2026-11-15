@@ -351,11 +351,11 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migrations `employees` + FK `users.employee_id`, `app/Domain/Employee/{Models/Employee,Support/{NikCipher,PhoneNormalizer},Actions/{CreateEmployee,UpdateEmployee,DeleteEmployee,RevealNik,CreateAccountForEmployee},Policies/EmployeePolicy}`, `Listings/EmployeeListing`, controller + `pages/Employees/{Index,Form,Show}.tsx`, lookup `employees`
 - Deskripsi: Pegawai baru wajib disertai penugasan pertama (form gabungan; logika penugasan memakai Action dari T-025, jadi buat dulu Action minimal `CreateAssignment` di task ini lalu dilengkapi T-025). Nomor dari `NumberGenerator`. NIK enc+hash, masked, reveal tercatat. Buat akun dari pegawai (username saran dari nama, unik). Halaman detail bertab (tab Jadwal & Absensi diisi di fase 0,5, sementara berupa placeholder bertanda T-035/T-038).
 - Kriteria penerimaan:
-  - [ ] Dump tabel `employees` tidak memuat NIK plaintext. Audit NIK = `***`
-  - [ ] `reveal-nik` tanpa `employees.view_sensitive` → 403, dengan izin → event `sensitive_data_viewed`
-  - [ ] NIK duplikat → galat "NIK sudah terdaftar atas pegawai lain" (tanpa menyebut siapa)
-  - [ ] Field `employee_number` dari request diabaikan
-  - [ ] Listing `employees` (default status aktif) + ekspor lolos test kontrak, scope `location`/`team` teruji, IDOR show/update teruji
+  - [x] Dump tabel `employees` tidak memuat NIK plaintext. Audit NIK = `***`
+  - [x] `reveal-nik` tanpa `employees.view_sensitive` → 403, dengan izin → event `sensitive_data_viewed`
+  - [x] NIK duplikat → galat "NIK sudah terdaftar atas pegawai lain" (tanpa menyebut siapa)
+  - [x] Field `employee_number` dari request diabaikan
+  - [x] Listing `employees` (default status aktif) + ekspor lolos test kontrak, scope `location`/`team` teruji, IDOR show/update teruji
 - Verifikasi: `php artisan test --filter=Employee`
 - Di luar lingkup: mutasi (T-025), offboarding (T-026)
 

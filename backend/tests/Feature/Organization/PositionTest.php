@@ -194,7 +194,7 @@ test('FR-024 lookup: hanya aktif, bisa disaring per departemen & mengecualikan d
 
 test('06 §4 kepala lokasi & supervisor tidak punya akses jabatan', function (string $role) {
     FakeOrgStructure::bind();
-    $user = User::factory()->create(['employee_id' => 1])->assignRole($role);
+    $user = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole($role);
 
     $this->actingAs($user)->get('/jabatan')->assertForbidden();
     $this->actingAs($user)->post('/jabatan', positionInput())->assertForbidden();

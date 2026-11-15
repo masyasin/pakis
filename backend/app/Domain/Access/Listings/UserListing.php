@@ -57,7 +57,7 @@ final class UserListing implements ExportableListing
      */
     public function exportQuery(User $user): Builder
     {
-        $query = User::query()->with('roles:id,name,label');
+        $query = User::query()->with(['roles:id,name,label', 'employee:id,full_name,employee_number']);
 
         return app(DataScope::class)->apply($query, $user, 'users.employee_id');
     }
@@ -76,7 +76,7 @@ final class UserListing implements ExportableListing
             ->add('Aktif', fn (User $u) => $u->is_active ? 'Ya' : 'Tidak')
             ->add('MFA aktif', fn (User $u) => $u->two_factor_confirmed_at !== null ? 'Ya' : 'Tidak')
             ->add('Login terakhir', fn (User $u) => $u->last_login_at)
-            // TODO(T-024): nama/no. pegawai terkait setelah tabel `employees` ada.
-            ->add('ID pegawai', fn (User $u) => $u->employee_id);
+            ->add('No. pegawai', fn (User $u) => $u->employee?->employee_number)
+            ->add('Pegawai', fn (User $u) => $u->employee?->full_name);
     }
 }

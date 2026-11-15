@@ -49,12 +49,17 @@ const REPRESENTATIVE = [
     'departments.manage' => ['GET', '/departemen/baru'],
     'positions.view' => ['GET', '/jabatan'],
     'positions.manage' => ['GET', '/jabatan/baru'],
+    'employees.view' => ['GET', '/pegawai'],
+    'employees.create' => ['GET', '/pegawai/baru'],
+    'employees.update' => ['GET', '/pegawai/{employee}/ubah'],
+    'employees.delete' => ['DELETE', '/pegawai/{employee}'],
+    'employees.view_sensitive' => ['POST', '/pegawai/{employee}/nik'],
+    'employees.export' => ['GET', '/pegawai/ekspor'],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
-    'employees.view' => 'T-024', 'employees.create' => 'T-024', 'employees.update' => 'T-024', 'employees.delete' => 'T-024',
-    'employees.view_sensitive' => 'T-024', 'employees.offboard' => 'T-026', 'employees.import' => 'T-027', 'employees.export' => 'T-024',
+    'employees.offboard' => 'T-026', 'employees.import' => 'T-027',
     'assignments.view' => 'T-025', 'assignments.manage' => 'T-025',
     'devices.view' => 'T-031', 'devices.manage' => 'T-031',
     'holidays.view' => 'T-034', 'holidays.manage' => 'T-034',
@@ -94,14 +99,14 @@ test('10 §4 matriks role × permission sesuai 06 §4', function (string $role, 
     $data = REPRESENTATIVE[$permission][2] ?? [];
     $uri = str_replace('{sequence}', (string) DocumentSequence::query()->value('id'), $uri);
 
-    if (str_contains($uri, '{target}')) {
+    if (str_contains($uri, '{target}') || str_contains($uri, '{employee}')) {
         // Pelaku pegawai #1, target pegawai #2 di lokasi yang sama & bawahannya → dalam scope apa pun.
         $org = FakeOrgStructure::bind();
         $org->employee(1)->at(10);
         $org->employee(2)->at(10)->reportsTo(1);
-        $user->forceFill(['employee_id' => 1])->save();
-        $target = User::factory()->create(['employee_id' => 2])->assignRole('pegawai');
-        $uri = str_replace('{target}', (string) $target->id, $uri);
+        $user->forceFill(['employee_id' => employeeRow(1)])->save();
+        $target = User::factory()->create(['employee_id' => employeeRow(2)])->assignRole('pegawai');
+        $uri = str_replace(['{target}', '{employee}'], [(string) $target->id, '2'], $uri);
     }
 
     $response = $this->actingAs($user)

@@ -71,6 +71,7 @@ class UserController extends Controller
                 'phone' => $user->phone,
                 'roles' => $user->roles->map(fn (Model $r) => ['name' => $r->getAttribute('name'), 'label' => $r->getAttribute('label')])->values(),
                 'employee_id' => $user->employee_id,
+                'employee' => self::employee($user),
                 'is_active' => $user->is_active,
                 'mfa_enabled' => $user->two_factor_confirmed_at !== null,
                 'last_login_at' => self::iso($user->last_login_at),
@@ -235,6 +236,7 @@ class UserController extends Controller
             'email_verified' => $user->email_verified_at !== null,
             'phone' => $user->phone,
             'employee_id' => $user->employee_id,
+            'employee' => self::employee($user),
             'is_active' => $user->is_active,
             'is_locked' => $user->isLocked(),
             'must_change_password' => $user->must_change_password,
@@ -249,6 +251,29 @@ class UserController extends Controller
                 'data_scope_label' => $r instanceof Role ? $r->data_scope->label() : null,
                 'mfa_required' => $r instanceof Role && $r->mfa_required,
             ])->values(),
+        ];
+    }
+
+    /**
+     * Pegawai terkait (T-024) untuk tautan & label select; `url` hanya bila pegawai dalam scope pelaku.
+     *
+     * @return array{id: int, name: string, number: string, url: string|null}|null
+     */
+    private static function employee(User $user): ?array
+    {
+        $employee = $user->employee;
+        if ($employee === null) {
+            return null;
+        }
+
+        $actor = request()->user();
+        $visible = $employee->deleted_at === null && $actor instanceof User && Gate::forUser($actor)->allows('view', $employee);
+
+        return [
+            'id' => $employee->id,
+            'name' => $employee->full_name,
+            'number' => $employee->employee_number,
+            'url' => $visible ? route('admin.employees.show', $employee, absolute: false) : null,
         ];
     }
 
@@ -286,7 +311,7 @@ class UserController extends Controller
      *
      * @return list<array{name: string, label: string, description: string|null, data_scope_label: string, assignable: bool}>
      */
-    private static function roleOptions(User $actor): array
+    public static function roleOptions(User $actor): array
     {
         $assignable = AssignUserRoles::assignableNames($actor);
 

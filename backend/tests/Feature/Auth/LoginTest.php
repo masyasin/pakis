@@ -2,8 +2,8 @@
 
 use App\Domain\Access\Notifications\AccountLocked;
 use App\Domain\Access\Notifications\NewDeviceLogin;
-use App\Domain\Access\Support\EmployeeStatus;
 use App\Domain\Audit\Models\SecurityEvent;
+use App\Domain\Employee\Models\Employee;
 use App\Models\User;
 use App\Support\Http\ClientNetwork;
 use Illuminate\Support\Facades\Gate;
@@ -32,18 +32,6 @@ function attemptLogin(string $login, string $password = 'password', string $ip =
         ->post(route('login.store'), ['login' => $login, 'password' => $password]);
 }
 
-/** Pegawai terkait akun ini berstatus nonaktif (tabel pegawai baru ada di T-024). */
-function employeeInactive(): void
-{
-    app()->instance(EmployeeStatus::class, new class implements EmployeeStatus
-    {
-        public function isActive(User $user): bool
-        {
-            return $user->employee_id === null;
-        }
-    });
-}
-
 // --- BR-010 -----------------------------------------------------------------------------------
 
 test('BR-010 login dengan username atau email, huruf besar & spasi diabaikan', function (string $login) {
@@ -66,8 +54,7 @@ test('BR-010 sukses mengisi last_login, mencatat login_success, dan mereset peng
 
 test('SEC-001 empat kasus gagal → respons identik', function () {
     $inactive = User::factory()->create(['username' => 'nonaktif', 'is_active' => false]);
-    $withEmployee = User::factory()->create(['username' => 'pegawai.keluar', 'employee_id' => 9001]);
-    employeeInactive();
+    $withEmployee = User::factory()->create(['username' => 'pegawai.keluar', 'employee_id' => Employee::factory()->inactive()->create()->id]);
 
     $responses = [
         'tidak ada' => attemptLogin('tidak.ada.orangnya'),

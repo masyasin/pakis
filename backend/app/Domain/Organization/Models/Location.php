@@ -2,6 +2,7 @@
 
 namespace App\Domain\Organization\Models;
 
+use App\Domain\Employee\Models\Employee;
 use App\Domain\Organization\Support\LocationScope;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Domain\Region\Models\Village;
@@ -33,15 +34,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property Carbon|null $deleted_at
  * @property-read ReferenceItem|null $type
  * @property-read Village|null $village
+ * @property-read Employee|null $head
  */
 class Location extends Model
 {
     use SoftDeletes;
 
     /** Kolom yang diaudit & dibandingkan saat ubah (tanpa jejak waktu/pembuat). */
-    public const AUDITED = ['code', 'name', 'location_type_id', 'address', 'village_code', 'latitude', 'longitude', 'attendance_radius_m', 'phone', 'is_active'];
+    public const AUDITED = ['code', 'name', 'location_type_id', 'address', 'village_code', 'latitude', 'longitude', 'attendance_radius_m', 'phone', 'head_employee_id', 'is_active'];
 
-    protected $fillable = [...self::AUDITED, 'head_employee_id', 'created_by', 'updated_by'];
+    protected $fillable = [...self::AUDITED, 'created_by', 'updated_by'];
 
     protected function casts(): array
     {
@@ -65,6 +67,16 @@ class Location extends Model
     public function village(): BelongsTo
     {
         return $this->belongsTo(Village::class, 'village_code', 'code');
+    }
+
+    /**
+     * Kepala lokasi (T-024). Menentukan scope `location` (06 §5): kepala melihat pegawai lokasinya.
+     *
+     * @return BelongsTo<Employee, $this>
+     */
+    public function head(): BelongsTo
+    {
+        return $this->belongsTo(Employee::class, 'head_employee_id')->withTrashed();
     }
 
     /** BR-041: tanpa koordinat, lokasi tidak bisa dipakai validasi radius absen. */

@@ -2,10 +2,9 @@
 
 namespace App\Domain\Access\Rules;
 
+use App\Domain\Employee\Models\Employee;
 use App\Models\User;
 use Illuminate\Contracts\Validation\ValidationRule;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Kebijakan password tunggal (BR-011, SEC-002), dipakai di SEMUA tempat password ditetapkan:
@@ -61,12 +60,11 @@ final class PasswordPolicy
 
     private static function employeeNumber(User $user): ?string
     {
-        // TODO(T-024): pakai relasi Employee; tabel pegawai belum ada sebelum T-024.
-        if ($user->employee_id === null || ! Schema::hasTable('employees')) {
+        if ($user->employee_id === null) {
             return null;
         }
 
-        $number = DB::table('employees')->where('id', $user->employee_id)->value('employee_number');
+        $number = Employee::withTrashed()->whereKey($user->employee_id)->value('employee_number');
 
         return is_string($number) ? $number : null;
     }

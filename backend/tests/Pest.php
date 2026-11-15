@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Employee\Models\Employee;
 use App\Domain\Settings\SettingRegistry;
 use App\Domain\Settings\SettingStore;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,6 +33,20 @@ function setSetting(string $key, mixed $value): void
     $store = app(SettingStore::class);
     $store->write([$key => $value]);
     $store->forget(SettingRegistry::get($key)->group());
+}
+
+/**
+ * Pastikan baris pegawai dengan ID ini ada, lalu kembalikan ID-nya. Sejak T-024 `users.employee_id`
+ * ber-FK, jadi test scope yang memakai ID pegawai tetap (FakeOrgStructure) butuh baris nyata.
+ */
+function employeeRow(int $id): int
+{
+    if (! Employee::withTrashed()->whereKey($id)->exists()) {
+        $employee = Employee::factory()->make();
+        $employee->forceFill(['id' => $id])->save();
+    }
+
+    return $id;
 }
 
 /*

@@ -3,6 +3,7 @@
 use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\LocationController;
@@ -160,6 +161,29 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('jabatan/{position}', [PositionController::class, 'update'])->whereNumber('position')->name('positions.update');
         Route::delete('jabatan/{position}', [PositionController::class, 'destroy'])->whereNumber('position')->name('positions.destroy');
     });
+
+    // Pegawai (05 §4.6, FR-025, BR-050, BR-055). Pegawai di luar scope data → 404 lewat route
+    // binding ber-scope (SEC-033). `baru` & `ekspor` sebelum `{employee}`. Buka NIK & buat akun
+    // dibatasi laju: aksi sensitif yang tercatat, bukan untuk dipanggil berulang otomatis.
+    Route::middleware('can:employees.view')->group(function () {
+        Route::get('pegawai', [EmployeeController::class, 'index'])->name('employees.index');
+        Route::get('pegawai/{employee}', [EmployeeController::class, 'show'])->whereNumber('employee')->name('employees.show');
+        Route::get('pegawai/{employee}/foto', [EmployeeController::class, 'photo'])->whereNumber('employee')->name('employees.photo');
+    });
+    Route::get('pegawai/ekspor', [EmployeeController::class, 'export'])->middleware('can:employees.export')->name('employees.export');
+    Route::middleware('can:employees.create')->group(function () {
+        Route::get('pegawai/baru', [EmployeeController::class, 'create'])->name('employees.create');
+        Route::post('pegawai', [EmployeeController::class, 'store'])->middleware('throttle:30,1')->name('employees.store');
+    });
+    Route::middleware('can:employees.update')->group(function () {
+        Route::get('pegawai/{employee}/ubah', [EmployeeController::class, 'edit'])->whereNumber('employee')->name('employees.edit');
+        Route::put('pegawai/{employee}', [EmployeeController::class, 'update'])->whereNumber('employee')->name('employees.update');
+    });
+    Route::delete('pegawai/{employee}', [EmployeeController::class, 'destroy'])->middleware('can:employees.delete')->whereNumber('employee')->name('employees.destroy');
+    Route::post('pegawai/{employee}/nik', [EmployeeController::class, 'revealNik'])
+        ->middleware(['can:employees.view_sensitive', 'throttle:30,1'])->whereNumber('employee')->name('employees.reveal-nik');
+    Route::post('pegawai/{employee}/akun', [EmployeeController::class, 'account'])
+        ->middleware(['can:users.create', 'throttle:30,1'])->whereNumber('employee')->name('employees.account');
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.
     Route::get('referensi', [ReferenceController::class, 'index'])

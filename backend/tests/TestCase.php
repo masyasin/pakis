@@ -25,6 +25,10 @@ abstract class TestCase extends BaseTestCase
         // (BR-017) tanpa harus diberi role. Test otorisasi (harness matriks, BR-017, scope) memulihkan
         // pengecekan permission sesungguhnya dengan `$this->useRealPermissions()`.
         Gate::define('dashboard.view', fn () => true);
+
+        // Kunci HMAC NIK (SEC-010) khusus test, diturunkan saat runtime: tidak ada literal kunci
+        // di repo (gitleaks `pakis-nik-hash-key`) dan CI tidak perlu secret tambahan.
+        config(['pakis.nik_hash_key' => hash('sha256', 'pakis-one-test-nik-hash-key')]);
     }
 
     /** Kembalikan `dashboard.view` ke permission Spatie sesungguhnya (test otorisasi, T-019). */

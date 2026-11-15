@@ -2,15 +2,15 @@
 
 namespace App\Domain\Access\Support;
 
+use App\Domain\Employee\Enums\EmployeeStatus as Status;
+use App\Domain\Employee\Models\Employee;
 use App\Models\User;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
- * Implementasi bawaan EmployeeStatus. Akun tanpa pegawai selalu boleh.
+ * Implementasi bawaan EmployeeStatus (BR-010). Akun tanpa pegawai selalu boleh.
  *
- * FAIL-CLOSED: akun yang menunjuk pegawai tetapi status pegawainya tidak bisa dipastikan (tabel
- * belum ada, baris tidak ditemukan) ditolak. TODO(T-024): pakai model Employee + enum status.
+ * FAIL-CLOSED: akun yang menunjuk pegawai tetapi pegawainya tidak ditemukan (mis. sudah dihapus)
+ * atau tidak `active` ditolak.
  */
 final class ActiveEmployeeStatus implements EmployeeStatus
 {
@@ -20,10 +20,6 @@ final class ActiveEmployeeStatus implements EmployeeStatus
             return true;
         }
 
-        if (! Schema::hasTable('employees')) {
-            return false;
-        }
-
-        return DB::table('employees')->where('id', $user->employee_id)->value('status') === 'active';
+        return Employee::query()->whereKey($user->employee_id)->value('status') === Status::Active;
     }
 }

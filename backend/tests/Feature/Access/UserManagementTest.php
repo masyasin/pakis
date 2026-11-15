@@ -1,9 +1,12 @@
 <?php
 
+use App\Domain\Access\Enums\DataScope;
+use App\Domain\Access\Models\Role;
 use App\Domain\Access\Notifications\SetPasswordLink;
 use App\Domain\Access\Support\TemporaryPassword;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Audit\Models\SecurityEvent;
+use App\Domain\Employee\Models\Employee;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -12,6 +15,7 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\FakeOrgStructure;
 
 /*
  * Manajemen pengguna (T-020): FR-016, BR-014, BR-031, SEC-006, SEC-009.
@@ -129,7 +133,7 @@ test('BR-012 tautan atur password yang dipakai menandai email terverifikasi', fu
     expect($user->fresh()->email_verified_at)->not->toBeNull();
 });
 
-test('04 §2.2 username unik, huruf kecil, format; pegawai belum bisa ditautkan (T-024)', function () {
+test('04 §2.2 username unik, huruf kecil, format; pegawai tidak dikenal ditolak', function () {
     $owner = umActor('owner');
     User::factory()->create(['username' => 'budi.santoso']);
 
@@ -137,8 +141,43 @@ test('04 §2.2 username unik, huruf kecil, format; pegawai belum bisa ditautkan 
         ->assertUnprocessable()->assertJsonValidationErrors('username');
     $this->actingAs($owner)->postJson('/pengguna', umPayload(['username' => 'bu di']))
         ->assertUnprocessable()->assertJsonValidationErrors('username');
-    $this->actingAs($owner)->postJson('/pengguna', umPayload(['username' => 'baru.lagi', 'employee_id' => 5]))
+    $this->actingAs($owner)->postJson('/pengguna', umPayload(['username' => 'baru.lagi', 'employee_id' => 999999]))
         ->assertUnprocessable()->assertJsonValidationErrors('employee_id');
+});
+
+test('FR-016 tautkan pegawai (T-024): hanya pegawai aktif yang belum punya akun, tercatat audit', function () {
+    $owner = umActor('owner');
+    $employee = Employee::factory()->create();
+    $taken = Employee::factory()->create();
+    User::factory()->create(['employee_id' => $taken->id]);
+    $inactive = Employee::factory()->inactive()->create();
+
+    $this->actingAs($owner)->postJson('/pengguna', umPayload(['employee_id' => $taken->id]))
+        ->assertUnprocessable()->assertJsonValidationErrors(['employee_id' => 'sudah punya akun']);
+    $this->actingAs($owner)->postJson('/pengguna', umPayload(['employee_id' => $inactive->id]))
+        ->assertUnprocessable()->assertJsonValidationErrors('employee_id');
+
+    $id = $this->actingAs($owner)->postJson('/pengguna', umPayload(['employee_id' => $employee->id]))->assertCreated()->json('id');
+    $user = User::query()->findOrFail($id);
+
+    expect($user->employee_id)->toBe($employee->id)
+        ->and(AuditLog::query()->where('event', 'user.created')->where('auditable_id', $id)->value('new_values')['employee_id'])->toBe($employee->id);
+
+    // Melepas tautan lewat ubah akun.
+    $this->actingAs($owner)->put("/pengguna/{$id}", [...umPayload(['username' => $user->username]), 'employee_id' => null])->assertRedirect();
+    expect($user->fresh()->employee_id)->toBeNull();
+});
+
+test('SEC-033 pegawai di luar scope pelaku tidak bisa ditautkan (dianggap tidak ditemukan)', function () {
+    $org = FakeOrgStructure::bind();
+    $org->employee(employeeRow(1))->at(10);
+    $org->employee(employeeRow(2))->at(20);
+    Role::query()->create(['name' => 'admin_lokasi', 'label' => 'Admin lokasi', 'guard_name' => 'web', 'data_scope' => DataScope::Location])
+        ->givePermissionTo(['users.view', 'users.create']);
+    $actor = User::factory()->withTwoFactor()->create(['employee_id' => employeeRow(1)])->assignRole('admin_lokasi');
+
+    $this->actingAs($actor)->postJson('/pengguna', umPayload(['roles' => [], 'employee_id' => 2]))
+        ->assertUnprocessable()->assertJsonValidationErrors(['employee_id' => 'tidak ditemukan']);
 });
 
 test('BR-031 batas delegasi: HRD tidak bisa menetapkan role Administrator atau Owner', function () {

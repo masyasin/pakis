@@ -35,6 +35,7 @@ type LocationData = {
     longitude: string | null;
     attendance_radius_m: number | null;
     phone: string | null;
+    head_employee_id: number | null;
     is_active: boolean;
 };
 
@@ -43,6 +44,7 @@ type Props = {
     types: { value: number; label: string }[];
     defaultRadius: number;
     regionLabels: LookupOption[];
+    headLabel: LookupOption | null;
 };
 
 /** Satu nilai untuk AsyncSelect tunggal. */
@@ -55,9 +57,13 @@ export default function LocationForm({
     types,
     defaultRadius,
     regionLabels,
+    headLabel,
 }: Props) {
-    // Label wilayah terpilih dari server, agar select menampilkan nama, bukan kode.
-    useState(() => rememberLabels('regions', regionLabels));
+    // Label wilayah & kepala terpilih dari server, agar select menampilkan nama, bukan kode/ID.
+    useState(() => {
+        rememberLabels('regions', regionLabels);
+        rememberLabels('employees', headLabel ? [headLabel] : []);
+    });
 
     const form = useForm({
         code: location?.code ?? '',
@@ -77,6 +83,10 @@ export default function LocationForm({
                 ? String(location.attendance_radius_m)
                 : '',
         phone: location?.phone ?? '',
+        head_employee_id:
+            location?.head_employee_id != null
+                ? String(location.head_employee_id)
+                : '',
         is_active: location?.is_active ?? true,
     });
     const [mapsLink, setMapsLink] = useState('');
@@ -243,6 +253,21 @@ export default function LocationForm({
                                     form.setData('phone', e.target.value)
                                 }
                                 aria-invalid={err.phone ? true : undefined}
+                            />
+                        </Field>
+                        <Field
+                            id="head_employee_id"
+                            label="Kepala lokasi (opsional)"
+                            error={err.head_employee_id}
+                        >
+                            <AsyncSelect
+                                id="head_employee_id"
+                                source="employees"
+                                value={one(form.data.head_employee_id)}
+                                placeholder="Cari nama atau nomor pegawai"
+                                onChange={(v) =>
+                                    form.setData('head_employee_id', first(v))
+                                }
                             />
                         </Field>
                     </div>

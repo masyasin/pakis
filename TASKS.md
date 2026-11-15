@@ -1,9 +1,9 @@
-# TASKS — PAKIS ONE Fase 0 + 0,5 (T-001 s.d. T-048)
+# TASKS — PAKIS ONE Fase 0 + 0,5 (T-001 s.d. T-048) + Fase HR (T-049 s.d. T-066)
 
 Format & aturan: lihat `CLAUDE.md` §4. Satu task = satu sesi = satu commit/PR. Estimasi = jam kerja efektif developer + Claude Code.
 **Setiap task yang membuat halaman/endpoint daftar wajib menyalin checklist `docs/07-UI-SPEC.md` §3.3 ke PR-nya.**
 
-Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · Fase 0C (T-013–T-020) 41 jam · Fase 0D (T-021–T-029) 44 jam · Fase 0E (T-030–T-032) 22 jam · Fase 0,5 (T-033–T-045) 76 jam · Fase H (T-046–T-048) 26 jam · **Total ±270 jam**.
+Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · Fase 0C (T-013–T-020) 41 jam · Fase 0D (T-021–T-029) 44 jam · Fase 0E (T-030–T-032) 22 jam · Fase 0,5 (T-033–T-045) 76 jam · Fase H (T-046–T-048) 26 jam · **Total ±270 jam**. Fase HR (T-049–T-066, setelah Fase 0,5) ±132 jam.
 
 **Urutan eksekusi** mengikuti dependensi, bukan nomor. Lihat `Implementasi_Plan.md` §3 (beberapa task bernomor kecil menunggu task bernomor besar, mis. T-016 menunggu T-018 dan T-026 menunggu T-031).
 
@@ -696,3 +696,193 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
   - [ ] Manual pegawai ≤ 8 halaman dengan tangkapan layar, bahasa awam
   - [ ] `openapi.yaml` valid dan mencakup semua endpoint `05` §5.1
 - Verifikasi: review Mas
+
+---
+
+## Fase HR — Riwayat Kepegawaian (produk Sintech; dikerjakan setelah Fase 0,5)
+
+Sumber kebenaran: `docs/13-FASE-HR.md` (keputusan Mas 15 Nov 2026). Setiap task **memindahkan** bagiannya ke
+`04`/`05`/`06`/`07`/`08`/`09`/`10` beserta test registri/katalog/matriks, dan modulnya mengikuti `hr.modules`
+(modul mati → sub-tab tidak tampil, route 404).
+
+### T-049 — Fondasi modul HR
+- Fase: HR | Prioritas: P0 | Estimasi: 8 jam
+- Memenuhi: `13` §0, §2–§4, §6; SEC-012 (revisi)
+- Dependensi: T-024, T-025, T-045
+- Konteks wajib: `docs/13-FASE-HR.md`, `docs/08-BUSINESS-RULES.md` §2–§3, `docs/06-AUTHORIZATION.md` §3–§4, `docs/09-SECURITY.md` SEC-012
+- File: `SettingRegistry` (`hr.*`), `ReferenceGroup` (grup baru + meta `employment_status`), `PermissionCatalog`/`RoleCatalog` (permission baru), `app/Domain/Employee/Support/HrModules.php`, kerangka sub-tab dinamis di `pages/employees/show.tsx`, komponen `components/pakis/history-list.tsx`
+- Kriteria penerimaan:
+  - [ ] `hr.modules` + `hr.*` di registri = `08` §2 (test registri), default kelas B/C mati
+  - [ ] Modul mati → sub-tab tidak dikirim ke halaman, route modulnya 404 (test)
+  - [ ] Permission baru di `06` §3–§4 = katalog = seeder (test matriks)
+  - [ ] SEC-012 di `09` direvisi sesuai `13` §4
+- Verifikasi: `php artisan test --filter=Hr`
+
+### T-050 — Dokumen elektronik
+- Fase: HR | Prioritas: P0 | Estimasi: 8 jam
+- Memenuhi: `13` §5 (`employee_documents`), SEC-050
+- Dependensi: T-049, T-029
+- File: migration `employee_documents`, `app/Domain/Employee/{Models/EmployeeDocument,Actions/*Document*}`, sub-tab `dokumen`, route unduh ber-scope, pengingat kedaluwarsa (`hr.document_reminder_days`)
+- Kriteria penerimaan:
+  - [ ] Unggah PDF/JPG/PNG saja; `.php` berganti nama → 422; disk privat, unduh hanya lewat route ber-auth & ber-scope
+  - [ ] Dokumen kelas C hanya terbuka dengan `employees.view_health`, setiap buka tercatat `sensitive_data_viewed`
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+  - [ ] Notifikasi dokumen akan kedaluwarsa terkirim sekali per dokumen
+- Verifikasi: `php artisan test --filter=EmployeeDocument`
+
+### T-051 — Riwayat status kerja (kontrak, capeg, tetap)
+- Fase: HR | Prioritas: P0 | Estimasi: 8 jam
+- Memenuhi: `13` §5 (`employment_histories`)
+- Dependensi: T-049, T-050
+- File: migration + migrasi data awal, `Actions/{AddEmploymentHistory,…}`, sub-tab `status-kerja`, listing lintas pegawai "kontrak akan berakhir" (katalog `07` §3.4), pengingat (`hr.contract_reminder_days`)
+- Kriteria penerimaan:
+  - [ ] Rentang tidak tumpang tindih; status ber-`requires_end_date` wajib tanggal selesai
+  - [ ] `employees.employment_status_id` selalu = riwayat yang berlaku hari ini
+  - [ ] Pegawai lama mendapat satu baris awal dari `join_date` (migrasi data idempoten)
+  - [ ] Listing kontrak berakhir + ekspor lolos test kontrak
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+- Verifikasi: `php artisan test --filter=EmploymentHistory`
+
+### T-052 — Pendidikan & pengalaman kerja
+- Fase: HR | Prioritas: P1 | Estimasi: 5 jam
+- Memenuhi: `13` §5 (`educations`, `work_experiences`)
+- Dependensi: T-049, T-050
+- Kriteria penerimaan:
+  - [ ] Pendidikan terakhir = jenjang tertinggi menurut urutan referensi
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+- Verifikasi: `php artisan test --filter=Education`
+
+### T-053 — Pangkat / golongan
+- Fase: HR | Prioritas: P2 | Estimasi: 5 jam
+- Memenuhi: `13` §5 (`rank_histories`)
+- Dependensi: T-049, T-050
+- Kriteria penerimaan:
+  - [ ] Pangkat berlaku = riwayat terakhir ≤ hari ini, tampil di header detail pegawai
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+- Verifikasi: `php artisan test --filter=Rank`
+
+### T-054 — Diklat & penghargaan
+- Fase: HR | Prioritas: P1 | Estimasi: 5 jam
+- Memenuhi: `13` §5 (`trainings`, `awards`)
+- Dependensi: T-049, T-050
+- Kriteria penerimaan:
+  - [ ] Total jam diklat per tahun tampil di sub-tab
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+- Verifikasi: `php artisan test --filter=Training`
+
+### T-055 — Sanksi
+- Fase: HR | Prioritas: P1 | Estimasi: 6 jam
+- Memenuhi: `13` §4 (kelas B), §5 (`sanctions`)
+- Dependensi: T-049, T-050
+- Kriteria penerimaan:
+  - [ ] Tanpa `employees.view_disciplinary` → sub-tab tidak tampil & route 403/404
+  - [ ] Sanksi tidak bisa dihapus, hanya dibatalkan dengan alasan; status berlaku/kedaluwarsa/dibatalkan benar
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+- Verifikasi: `php artisan test --filter=Sanction`
+
+### T-056 — Keluarga
+- Fase: HR | Prioritas: P1 | Estimasi: 7 jam
+- Memenuhi: `13` §4 (kelas B/C), §5 (`family_members`), SEC-010 (pola NIK)
+- Dependensi: T-049, T-050
+- Kriteria penerimaan:
+  - [ ] NIK anggota keluarga tidak pernah plaintext di DB/log/audit/ekspor; reveal tercatat
+  - [ ] Status nikah diturunkan dari pasangan aktif; data anak hanya dengan `employees.view_family`
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+- Verifikasi: `php artisan test --filter=Family`
+
+### T-057 — Kesehatan, psikotes & persetujuan pegawai
+- Fase: HR | Prioritas: P1 | Estimasi: 8 jam
+- Memenuhi: `13` §4 (kelas C), §5 (`health_records`, `psych_tests`, `employee_consents`)
+- Dependensi: T-049, T-050
+- Kriteria penerimaan:
+  - [ ] Isi terenkripsi; dump tabel tidak memuat ringkasan/hasil plaintext
+  - [ ] Tanpa persetujuan pegawai yang berlaku → data baru ditolak
+  - [ ] Setiap pembukaan tercatat `sensitive_data_viewed`; data dihapus permanen setelah `hr.sensitive_retention_days` sejak pegawai keluar (command terjadwal, teruji)
+  - [ ] Daftar mini sub-tab: paging 10, urut tanggal terbaru, dialog tambah/ubah/hapus; ubah & hapus diaudit; IDOR (pegawai di luar scope → 404) teruji
+- Verifikasi: `php artisan test --filter=Health`
+
+### T-058 — Cetak CV (PDF)
+- Fase: HR | Prioritas: P1 | Estimasi: 5 jam
+- Memenuhi: `13` §0 butir 6, §2
+- Dependensi: T-051, T-052 · **Butuh persetujuan dependency PDF** (di luar `03` §5)
+- Kriteria penerimaan:
+  - [ ] PDF memakai nama, logo, dan warna perusahaan dari Pengaturan
+  - [ ] Isi mengikuti modul aktif & izin pelaku (kelas B/C tidak ikut tanpa izinnya); NIK termasking
+  - [ ] Tercatat audit `employee.cv_printed`
+- Verifikasi: `php artisan test --filter=Cv`
+
+### T-059 — Data administrasi pegawai
+- Fase: HR | Prioritas: P0 | Estimasi: 5 jam
+- Memenuhi: `13` §8 (`admin_data`)
+- Dependensi: T-049
+- Kriteria penerimaan:
+  - [ ] NPWP & nomor rekening terenkripsi + termasking, reveal tercatat; tidak pernah plaintext di DB/log/audit/ekspor
+  - [ ] Kontak darurat & status PTKP tersimpan; modul mati → tidak tampil
+- Verifikasi: `php artisan test --filter=AdminData`
+
+### T-060 — Cuti & izin
+- Fase: HR | Prioritas: P0 | Estimasi: 12 jam
+- Memenuhi: `13` §8 (`leave`)
+- Dependensi: T-049, T-038, T-041
+- File: migration jenis/hak/pengajuan cuti, Actions pengajuan & persetujuan, listing `leave_requests` (katalog `07` §3.4), layar Pakis Pro, perluasan `AttendanceStatusResolver` (status `leave`)
+- Kriteria penerimaan:
+  - [ ] Saldo tahunan per pegawai dari Pengaturan/Referensi; saldo tidak minus kecuali jenisnya mengizinkan
+  - [ ] Persetujuan mengikuti pola BR-069 (tidak menyetujui milik sendiri, atasan/scope)
+  - [ ] Hari cuti yang disetujui → status harian `leave`, bukan `absent`
+  - [ ] Listing + ekspor lolos test kontrak; IDOR teruji
+- Verifikasi: `php artisan test --filter=Leave`
+
+### T-061 — Lembur
+- Fase: HR | Prioritas: P1 | Estimasi: 8 jam
+- Memenuhi: `13` §8 (`overtime`)
+- Dependensi: T-049, T-038
+- Kriteria penerimaan:
+  - [ ] Jam lembur aktual dihitung dari log absensi, dibatasi jam yang disetujui
+  - [ ] Rumus upah lembur dari Pengaturan (tanpa konstanta di kode); listing + ekspor lolos test kontrak
+- Verifikasi: `php artisan test --filter=Overtime`
+
+### T-062 — Kasbon
+- Fase: HR | Prioritas: P2 | Estimasi: 6 jam
+- Memenuhi: `13` §8 (`loan`)
+- Dependensi: T-049
+- Kriteria penerimaan:
+  - [ ] Cicilan tidak melewati batas % gaji (setting); sisa pinjaman akurat setelah tiap periode
+  - [ ] Listing + ekspor lolos test kontrak
+- Verifikasi: `php artisan test --filter=Loan`
+
+### T-063 — Komponen & struktur gaji
+- Fase: HR | Prioritas: P0 | Estimasi: 8 jam
+- Memenuhi: `13` §8 (`payroll`)
+- Dependensi: T-049, T-059
+- Kriteria penerimaan:
+  - [ ] Komponen gaji = Referensi (pokok, tunjangan tetap/tidak tetap, potongan), struktur gaji per pegawai berlaku per tanggal
+  - [ ] Nominal disimpan integer rupiah; hanya `payroll.view`/`payroll.process` yang melihat
+- Verifikasi: `php artisan test --filter=SalaryStructure`
+
+### T-064 — Proses payroll, BPJS & PPh 21
+- Fase: HR | Prioritas: P0 | Estimasi: 14 jam
+- Memenuhi: `13` §8 (`payroll`)
+- Dependensi: T-063, T-060, T-061, T-062
+- Kriteria penerimaan:
+  - [ ] Hitung per periode: gaji, tunjangan, lembur, cuti tidak dibayar, kasbon, BPJS (Kes/JHT/JP/JKK/JKM), PPh 21
+  - [ ] Tarif BPJS, batas upah, dan tabel PPh 21 dari Pengaturan/tabel yang bisa diperbarui (bukan konstanta); contoh perhitungan resmi lolos test
+  - [ ] Periode terkunci tidak bisa diubah; proses ulang idempoten; diaudit
+- Verifikasi: `php artisan test --filter=Payroll`
+
+### T-065 — Slip gaji & laporan payroll
+- Fase: HR | Prioritas: P0 | Estimasi: 6 jam
+- Memenuhi: `13` §8 (slip gaji)
+- Dependensi: T-064, T-058
+- Kriteria penerimaan:
+  - [ ] Slip PDF per pegawai per periode; pegawai hanya melihat slipnya (web & Pakis Pro); buka slip orang lain tercatat
+  - [ ] Rekap periode + ekspor transfer bank lolos test kontrak listing
+- Verifikasi: `php artisan test --filter=Payslip`
+
+### T-066 — Penilaian kinerja
+- Fase: HR | Prioritas: P2 | Estimasi: 8 jam
+- Memenuhi: `13` §8 (`appraisal`)
+- Dependensi: T-049
+- Kriteria penerimaan:
+  - [ ] Periode, kriteria & bobot dari Referensi; penilai = atasan langsung/HRD (scope teruji)
+  - [ ] Nilai akhir terhitung dari bobot; listing + ekspor lolos test kontrak
+- Verifikasi: `php artisan test --filter=Appraisal`

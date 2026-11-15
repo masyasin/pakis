@@ -81,7 +81,7 @@ Semua modul PAKIS ONE berikutnya (penjualan, gudang, armada, payroll) membutuhka
 ### 5.2 Di Luar Scope (paket ini)
 - Produk, kios, harga, pesanan, piutang, kas, setoran (Fase 1).
 - Gudang, driver, BBM, armada, Pakis Mitra (Fase 2).
-- Cuti, izin, lembur, kasbon, payroll, BPJS, PPh 21 (Fase 3). Koreksi absen **bukan** cuti/izin.
+- Cuti, izin, lembur, kasbon, payroll, BPJS, PPh 21 (pindah ke **Fase HR**, `13-FASE-HR.md` §8, keputusan Mas 15 Nov 2026). Koreksi absen **bukan** cuti/izin.
 - Push notification FCM (OQ-005). Notifikasi Fase 0,5 berupa notifikasi dalam aplikasi (polling) dan email.
 - Lupa password lewat WhatsApp OTP. Antarmuka adapter disiapkan, tetapi pengiriman nyata menunggu pemilihan penyedia (OQ-004).
 - Aplikasi iOS (OQ-006).

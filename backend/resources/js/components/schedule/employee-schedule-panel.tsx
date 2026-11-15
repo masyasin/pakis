@@ -134,7 +134,7 @@ export function EmployeeSchedulePanel({
                 <EmptyPanel
                     icon={CalendarDays}
                     title="Belum ada pola jadwal"
-                    text="Tanpa pola, pegawai dianggap tidak dijadwalkan dan tidak bisa absen (kecuali pengaturan mengizinkan)."
+                    text="Tanpa pola, pegawai dianggap tidak dijadwalkan dan tidak bisa presensi (kecuali pengaturan mengizinkan)."
                     action={setPattern}
                 />
             ) : (

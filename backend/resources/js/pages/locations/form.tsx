@@ -382,8 +382,8 @@ export default function LocationForm({
                 </SettingsSection>
 
                 <SettingsSection
-                    title="Titik lokasi & radius absen"
-                    description="Tanpa koordinat, absen pegawai di lokasi ini tidak bisa diperiksa jaraknya (BR-041)."
+                    title="Titik lokasi & radius presensi"
+                    description="Tanpa koordinat, presensi pegawai di lokasi ini tidak bisa diperiksa jaraknya (BR-041)."
                 >
                     <div className="space-y-2">
                         <Label htmlFor="maps_link">
@@ -464,7 +464,7 @@ export default function LocationForm({
                         </Field>
                         <Field
                             id="attendance_radius_m"
-                            label="Radius absen (meter)"
+                            label="Radius presensi (meter)"
                             error={err.attendance_radius_m}
                         >
                             <Input

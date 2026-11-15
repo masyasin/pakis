@@ -3,9 +3,12 @@
 namespace App\Domain\Attendance\Models;
 
 use App\Domain\Attendance\Enums\AttendanceStatus;
+use App\Domain\Attendance\Support\AttendanceDayScope;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Organization\Models\Department;
 use App\Domain\Organization\Models\Location;
-use App\Support\Authorization\ScopedRouteBinding;
+use App\Domain\Organization\Models\Position;
+use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,7 +17,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * Ringkasan absen satu pegawai pada satu `work_date` (tanggal lokal, 04 §2.13). Dibuat/diperbarui
  * oleh RecordAttendance (T-036) lalu dihitung ulang oleh resolver status (DayStatusResolver,
  * T-037). Snapshot lokasi/jabatan/departemen = penugasan utama pada tanggal itu (BR-068). Route
- * `{day}` ber-scope lewat pegawai (06 §5): di luar scope → 404.
+ * `{day}` ber-scope lewat AttendanceDayScope (06 §5: scope lokasi = snapshot `location_id`): di luar
+ * scope → 404.
  *
  * @property int $id
  * @property int $employee_id
@@ -47,8 +51,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AttendanceDay extends Model
 {
-    use ScopedRouteBinding;
-
     protected $guarded = ['id'];
 
     protected $attributes = [
@@ -86,9 +88,24 @@ class AttendanceDay extends Model
         ];
     }
 
-    public static function scopedEmployeeColumn(): string
+    /**
+     * `{day}` ber-scope (SEC-033): scope `location` memakai snapshot lokasi hari itu (06 §5, T-038),
+     * bukan penugasan hari ini; di luar scope → 404.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
     {
-        return 'employee_id';
+        $user = request()->user();
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        // Route membatasi `{day}` ke angka; field kustom tidak dipakai.
+        $query = self::query()->where($this->qualifyColumn($field ?? $this->getRouteKeyName()), $value);
+
+        return app(AttendanceDayScope::class)->apply($query, $user)->first();
     }
 
     /**
@@ -105,6 +122,18 @@ class AttendanceDay extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class)->withTrashed();
+    }
+
+    /** @return BelongsTo<Position, $this> */
+    public function position(): BelongsTo
+    {
+        return $this->belongsTo(Position::class);
+    }
+
+    /** @return BelongsTo<Department, $this> */
+    public function department(): BelongsTo
+    {
+        return $this->belongsTo(Department::class);
     }
 
     /** @return BelongsTo<AttendanceLog, $this> */

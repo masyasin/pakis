@@ -27,7 +27,7 @@ class ReferenceSeeder extends Seeder
             'daily' => 'Harian Lepas',
         ],
         'correction_reason' => [
-            'forgot' => 'Lupa absen',
+            'forgot' => 'Lupa presensi',
             'gps_error' => 'GPS/HP bermasalah',
             'field_duty' => 'Tugas luar',
             'system_error' => 'Gangguan sistem',

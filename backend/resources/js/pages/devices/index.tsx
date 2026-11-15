@@ -132,7 +132,7 @@ const COPY = {
     revoke: {
         title: 'Cabut perangkat',
         description:
-            'Pakis Pro di HP ini langsung keluar dan tidak bisa absen lagi. Pakai saat HP hilang, dijual, atau pegawai keluar.',
+            'Pakis Pro di HP ini langsung keluar dan tidak bisa presensi lagi. Pakai saat HP hilang, dijual, atau pegawai keluar.',
         button: 'Cabut',
     },
 } as const;
@@ -189,7 +189,7 @@ export default function DevicesIndex({ rows, listing, can }: Props) {
                         Perangkat
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Satu akun hanya bisa absen dari satu HP, dan satu HP
+                        Satu akun hanya bisa presensi dari satu HP, dan satu HP
                         hanya untuk satu akun. HP baru perlu disetujui di sini.
                     </p>
                 </div>

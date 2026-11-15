@@ -26,7 +26,7 @@ final class DeletePosition
 
             if ($this->usage->isUsed($locked)) {
                 throw ValidationException::withMessages([
-                    'position' => "Jabatan \"{$locked->name}\" masih menjadi atasan jabatan lain atau sudah dipakai penugasan/absensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
+                    'position' => "Jabatan \"{$locked->name}\" masih menjadi atasan jabatan lain atau sudah dipakai penugasan/presensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
                 ]);
             }
 

@@ -206,7 +206,7 @@ export function AssignmentsPanel({
                                         }
                                     />
                                     <Fact
-                                        label="Mode absen"
+                                        label="Mode presensi"
                                         value={
                                             a.effective_mode_label
                                                 ? `${a.effective_mode_label}${a.mode_from_position ? ' (ikut jabatan)' : ''}`
@@ -316,14 +316,14 @@ export function ModePicker({
         {
             value: '',
             label: 'Ikut jabatan',
-            help: 'Memakai mode absen bawaan jabatan.',
+            help: 'Memakai mode presensi bawaan jabatan.',
         },
         ...modes,
     ];
 
     return (
         <fieldset className="grid gap-2 sm:grid-cols-2">
-            <legend className="mb-1 text-sm font-medium">Mode absen</legend>
+            <legend className="mb-1 text-sm font-medium">Mode presensi</legend>
             {options.map((m) => (
                 <label
                     key={m.value || 'ikut'}

@@ -106,7 +106,7 @@ class PositionRequest extends FormRequest
             'parent_position_id.not_in' => 'Jabatan tidak bisa menjadi atasan dirinya sendiri.',
             'parent_position_id.exists' => 'Pilih jabatan atasan yang aktif.',
             'level.between' => 'Level 1 (tertinggi) sampai 10.',
-            'attendance_mode.enum' => 'Pilih mode absen yang tersedia.',
+            'attendance_mode.enum' => 'Pilih mode presensi yang tersedia.',
         ];
     }
 
@@ -117,7 +117,7 @@ class PositionRequest extends FormRequest
     {
         return [
             'code' => 'kode', 'name' => 'nama', 'department_id' => 'departemen', 'parent_position_id' => 'jabatan atasan',
-            'level' => 'level', 'attendance_mode' => 'mode absen', 'is_active' => 'status aktif',
+            'level' => 'level', 'attendance_mode' => 'mode presensi', 'is_active' => 'status aktif',
         ];
     }
 }

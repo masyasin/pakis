@@ -124,7 +124,7 @@ export function OffboardDialog({
                         Nonaktifkan {employeeName}
                     </DialogTitle>
                     <DialogDescription>
-                        Data pegawai, riwayat penugasan, absensi, dan riwayat
+                        Data pegawai, riwayat penugasan, presensi, dan riwayat
                         perubahan tetap tersimpan. Akses login dan Pakis Pro
                         dicabut saat itu juga.
                     </DialogDescription>

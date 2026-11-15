@@ -195,8 +195,8 @@ export default function HolidaysIndex({ rows, listing, can }: Props) {
                                 deleting.start_date,
                                 deleting.end_date,
                             )}
-                        . Absensi yang sudah dihitung untuk tanggal tersebut
-                        akan menyesuaikan saat dihitung ulang.
+                        . Presensi yang sudah dihitung untuk tanggal tersebut
+                        ikut dihitung ulang otomatis.
                     </DialogDescription>
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>

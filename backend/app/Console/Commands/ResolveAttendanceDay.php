@@ -18,7 +18,7 @@ class ResolveAttendanceDay extends Command
 {
     protected $signature = 'attendance:resolve-day {date? : Tanggal lokal Y-m-d (default: kemarin dan hari ini)}';
 
-    protected $description = 'Hitung status absensi harian (tidak hadir, libur, tidak absen pulang, dst.)';
+    protected $description = 'Hitung status presensi harian (tidak hadir, libur, tidak absen pulang, dst.)';
 
     public function handle(AttendanceStatusResolver $resolver): int
     {

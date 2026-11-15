@@ -216,11 +216,13 @@ export default function PositionForm({
                 </SettingsSection>
 
                 <SettingsSection
-                    title="Mode absen bawaan"
+                    title="Mode presensi bawaan"
                     description="Berlaku untuk pegawai berjabatan ini, kecuali ditimpa di penugasannya."
                 >
                     <fieldset className="grid gap-3">
-                        <legend className="sr-only">Mode absen bawaan</legend>
+                        <legend className="sr-only">
+                            Mode presensi bawaan
+                        </legend>
                         {modes.map((m) => (
                             <label
                                 key={m.value}

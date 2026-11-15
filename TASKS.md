@@ -568,9 +568,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/07-UI-SPEC.md` §3.4 (`attendance_days`), §4 (Absensi harian), `docs/05-API-CONTRACT.md` §4.10
 - File: `Listings/AttendanceDayListing`, `Admin/AttendanceController@{index,show,selfie,export}`, `pages/Attendance/{Index,Show}.tsx`, komponen `MapPin`, tab Absensi di detail pegawai
 - Kriteria penerimaan:
-  - [ ] Foto hanya lewat signed URL 5 menit dengan `attendance.view_photo` dalam scope (IDOR test)
-  - [ ] Filter default hari ini. Filter status/lokasi/departemen/jabatan/penanda berfungsi
-  - [ ] Listing + ekspor lolos test kontrak. Query p95 < 500 ms pada 200.000 baris (test performa sederhana dengan seeder besar, dijalankan manual)
+  - [x] Foto hanya lewat signed URL 5 menit dengan `attendance.view_photo` dalam scope (IDOR test)
+  - [x] Filter default hari ini. Filter status/lokasi/departemen/jabatan/penanda berfungsi
+  - [x] Listing + ekspor lolos test kontrak. Query p95 < 500 ms pada 200.000 baris (test performa sederhana dengan seeder besar, dijalankan manual)
 - Verifikasi: `php artisan test --filter=AttendanceWeb`
 
 ### T-039 — Rekap bulanan (web)
@@ -597,6 +597,7 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
   - [ ] Disetujui → `attendance_days` diperbarui, `is_corrected`, log asli utuh, audit lama/baru
   - [ ] Keputusan ganda paralel → satu sukses, satu 409 `STATE_CONFLICT`
   - [ ] Listing API `my_corrections` & `approval_corrections` lolos test kontrak
+  - [ ] **Presensi manual oleh admin/atasan** (keputusan Mas 16 Nov 2026, `12`): pemegang `attendance_corrections.approve` dalam scope mengisi jam masuk/pulang + alasan atas nama pegawai saat pegawai tidak bisa presensi dari HP (rusak/hilang/ketinggalan) → koreksi langsung `approved` (`submitted_by` = pengisi, `decided_by` = pengisi), hari ditandai `is_corrected`, status dihitung ulang, audit. Tidak untuk diri sendiri (403 `CORRECTION_SELF_APPROVAL`), batas tanggal = BR-069. Tanggal tanpa baris `attendance_days` → baris dibuat (snapshot sama dengan resolver). Alasan baru di referensi `correction_reason`: HP rusak, HP hilang, HP ketinggalan. Perbarui BR-069, 05 §4.10 (route web baru), 07 §4 sebelum mulai
 - Verifikasi: `php artisan test --filter=Correction`
 
 ### T-041 — Koreksi absen (web)
@@ -608,6 +609,7 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Kriteria penerimaan:
   - [ ] Default filter `pending`. Scope `kepala_lokasi`/`supervisor` teruji
   - [ ] Listing + ekspor lolos test kontrak. IDOR approve teruji
+  - [ ] Form **"Isi presensi manual"** (keputusan Mas 16 Nov 2026) dari daftar koreksi & detail presensi: pilih pegawai (lookup ber-scope), tanggal, jam masuk/pulang, alasan, catatan
 - Verifikasi: `php artisan test --filter=CorrectionWeb`
 
 ### T-042 — Absen di Pakis Pro (kamera, GPS, offline)

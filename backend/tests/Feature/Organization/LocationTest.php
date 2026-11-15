@@ -157,7 +157,7 @@ test('BR-041 lokasi yang sudah dipakai penugasan tidak bisa dihapus, diarahkan u
     app()->instance(LocationUsage::class, new LocationUsage([['tmp_assignments', 'location_id']]));
 
     $this->actingAs($this->admin)->from('/lokasi')->delete("/lokasi/{$location->id}")
-        ->assertSessionHasErrors(['location' => 'Lokasi "Gudang Undaan" sudah dipakai penugasan atau absensi sehingga tidak bisa dihapus. Nonaktifkan saja.']);
+        ->assertSessionHasErrors(['location' => 'Lokasi "Gudang Undaan" sudah dipakai penugasan atau presensi sehingga tidak bisa dihapus. Nonaktifkan saja.']);
 
     expect($location->fresh())->not->toBeNull();
 });

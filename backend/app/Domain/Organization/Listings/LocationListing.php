@@ -84,7 +84,7 @@ final class LocationListing implements ExportableListing
             ->add('Kab/Kota', fn (Location $l) => $l->village?->district?->regency?->name)
             ->add('Latitude', fn (Location $l) => $l->latitude)
             ->add('Longitude', fn (Location $l) => $l->longitude)
-            ->add('Radius absen (m)', fn (Location $l) => $l->effectiveRadius())
+            ->add('Radius presensi (m)', fn (Location $l) => $l->effectiveRadius())
             ->add('Telepon', fn (Location $l) => $l->phone)
             ->add('Aktif', fn (Location $l) => $l->is_active ? 'Ya' : 'Tidak');
     }

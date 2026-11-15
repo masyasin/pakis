@@ -170,8 +170,8 @@ export default function ShiftForm({ shift }: Props) {
                 </SettingsSection>
 
                 <SettingsSection
-                    title="Aturan absen"
-                    description="Batas waktu pegawai bisa absen dari Pakis Pro untuk shift ini."
+                    title="Aturan presensi"
+                    description="Batas waktu pegawai bisa presensi dari Pakis Pro untuk shift ini."
                 >
                     <div className="grid gap-4 sm:grid-cols-3">
                         <MinutesField
@@ -186,7 +186,7 @@ export default function ShiftForm({ shift }: Props) {
                         />
                         <MinutesField
                             id="checkin_open_min"
-                            label="Absen masuk dibuka"
+                            label="Masuk dibuka"
                             help="Menit sebelum jam masuk."
                             value={data.checkin_open_min}
                             error={errors.checkin_open_min}
@@ -196,7 +196,7 @@ export default function ShiftForm({ shift }: Props) {
                         />
                         <MinutesField
                             id="checkout_close_min"
-                            label="Absen pulang ditutup"
+                            label="Pulang ditutup"
                             help="Menit setelah jam pulang."
                             value={data.checkout_close_min}
                             error={errors.checkout_close_min}

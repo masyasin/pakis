@@ -35,7 +35,7 @@ Sidebar kiri (grup menu sesuai `06` §8, bisa diciutkan), header (judul halaman,
 | `MaskedValue` | Menampilkan NIK `3319********0001` + tombol "Lihat" (bila berhak) |
 | `StatusBadge` | Status absensi/koreksi/perangkat/pegawai dengan warna & label konsisten (§6) |
 | `EmptyState`, `ErrorState`, `TableSkeleton` | Empty, galat, dan loading |
-| `MapPin` | Peta statis titik absen vs titik lokasi + lingkaran radius (Leaflet + tile OSM, hanya di halaman detail. Tile perlu internet, dan peta tidak wajib untuk fungsi) |
+| `LocationDiagram` | Diagram SVG titik presensi vs titik lokasi + lingkaran radius, jarak & arah mata angin, tombol "Buka di peta" (OpenStreetMap, tab baru, hanya bila diklik). **Tanpa library & tanpa tile** (keputusan Mas 15 Nov 2026, menggantikan `MapPin` Leaflet/OSM): koordinat pegawai tidak terkirim otomatis ke pihak luar. Hanya di detail presensi untuk pemegang `attendance.view_photo` |
 
 ## 3. Standar Halaman Daftar (WAJIB untuk setiap CRUD)
 
@@ -129,7 +129,7 @@ Halaman non-daftar yang tetap butuh paging/cari/filter: **Kalender Jadwal** (`ad
 | Pegawai (detail) | Header: foto, nama, no. pegawai, status, jabatan & lokasi aktif. Tab: Data Pribadi (NIK termasking), Penugasan (riwayat + tombol Mutasi/Akhiri), Akun & Perangkat, Jadwal, Absensi (daftar mini 30 hari), Riwayat (audit). |
 | Nonaktifkan pegawai | Dialog: tanggal keluar, alasan (referensi), catatan, ringkasan dampak ("Akun dinonaktifkan, 2 sesi dan 1 perangkat dicabut"), ketik nama pegawai untuk konfirmasi, konfirmasi password. |
 | Impor pegawai | Wizard 4 langkah: Unggah (templat bisa diunduh) → Pemetaan kolom (kolom berkas ↔ field sistem, saran otomatis dari profil/kemiripan nama, simpan sebagai profil) → Pratinjau & validasi (ringkasan valid/galat, tabel baris dengan sel galat merah + pesan) → Proses (progres, laporan akhir). |
-| Absensi harian (detail) | Data jadwal & hasil, dua kartu log (masuk/pulang): waktu, sumber (online/offline), akurasi, jarak, lokasi cocok, foto (bila berhak), peta. Riwayat koreksi. |
+| Absensi harian (detail) | Data jadwal & hasil, dua kartu log (masuk/pulang): waktu, sumber (online/offline), akurasi, jarak, lokasi cocok, dalam/luar radius, penanda. **Foto, koordinat presisi, dan `LocationDiagram` hanya untuk `attendance.view_photo`** (keputusan Mas 15 Nov 2026); foto lewat URL bertanda tangan 5 menit. Riwayat koreksi. Label web memakai istilah **Presensi** ("Presensi Harian"), path tetap `/absensi`. |
 | Rekap bulanan | Tabel per pegawai. Klik baris → kalender bulan pegawai itu dengan warna status. |
 | Koreksi (detail) | Data pengajuan, absensi asli vs usulan, lampiran, tombol Setujui / Tolak (alasan wajib) untuk yang berhak. |
 | Tugas Luar Kota | Daftar + form (tanggal, tujuan, keperluan, pegawai banyak, aturan lokasi: di mana saja / radius titik tujuan (1–10 titik, tiap titik: nama tempat + tempel tautan Google Maps + radius) / lokasi Pakis mana pun). Batalkan dengan konfirmasi. Tab "Tugas Luar Kota" di detail pegawai (grup Kehadiran). |
@@ -147,7 +147,7 @@ Struktur dan gaya mengikuti prototipe (header hijau, kartu, tab bawah). Teks bes
 | Login | Logo, "Username atau email", password, "Masuk", "Lupa password?". Bila `MFA_REQUIRED` → field kode 6 digit. Bila `DEVICE_PENDING` → layar "Menunggu persetujuan perangkat" + tombol "Coba lagi". |
 | Lupa password | Field login + kanal. Kanal email membuka konfirmasi "cek email". Kanal WA (bila aktif) → layar OTP + password baru. |
 | Wajib ganti password | Penuh layar, tidak bisa dilewati. |
-| Absen (beranda) | Kartu shift hari ini (jam, toleransi). Status: belum absen / sudah masuk HH.mm / selesai. Tombol bulat besar "Absen Masuk"/"Absen Pulang". Indikator GPS (akurasi, jarak ke lokasi) + indikator antrean offline ("2 absen menunggu sinyal"). |
+| Absen (beranda) | Kartu shift hari ini (jam, toleransi). Status: belum presensi / sudah masuk HH.mm / selesai. Tombol bulat besar "Masuk"/"Pulang" (keputusan Mas 16 Nov 2026). Indikator GPS (akurasi, jarak ke lokasi) + indikator antrean offline ("2 presensi menunggu sinyal"). |
 | Alur absen | Ketuk tombol → kamera depan (bingkai wajah, tanpa galeri) → ambil → cek GPS (spinner ≤ 15 s, kalau akurasi buruk: "Pindah ke tempat terbuka") → kirim → hasil (berhasil/telat N menit/galat dengan arahan). Offline: "Tersimpan di HP, akan dikirim otomatis". |
 | Riwayat | Daftar paging (infinite scroll 20), filter bulan & status (bottom sheet), pencarian, chip filter aktif. Header rekap bulan (hadir, telat, alpa). |
 | Koreksi saya | Daftar + tombol "Ajukan koreksi" → form (tanggal maks `correction_max_days` ke belakang, jenis, jam, alasan, catatan, lampiran foto). |
@@ -174,6 +174,6 @@ Struktur dan gaya mengikuti prototipe (header hijau, kartu, tab bawah). Teks bes
 ## 7. Format & Copy
 
 - Tanggal: `3 Nov 2026`, panjang `Selasa, 3 November 2026`. Jam: `07.41` (format Indonesia). Angka: `1.250`. Rupiah (fase berikutnya): `Rp 1.250.000`.
-- Tombol memakai kata kerja jelas: "Simpan Pegawai", "Nonaktifkan Pegawai", "Setujui Koreksi", "Absen Masuk".
+- Tombol memakai kata kerja jelas: "Simpan Pegawai", "Nonaktifkan Pegawai", "Setujui Koreksi", "Masuk" / "Pulang" (presensi).
 - Galat validasi menjelaskan cara memperbaiki: "NIK harus 16 digit angka (sekarang 15)."
 - Pesan sukses singkat (toast 3 detik) + tetap di halaman yang masuk akal.

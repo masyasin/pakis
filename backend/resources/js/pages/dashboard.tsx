@@ -12,13 +12,13 @@ import { dashboard } from '@/routes/admin';
 const TILES = [
     { label: 'Hadir hari ini', dot: 'bg-status-success' },
     { label: 'Telat', dot: 'bg-status-warning' },
-    { label: 'Belum absen', dot: 'bg-status-muted' },
+    { label: 'Belum presensi', dot: 'bg-status-muted' },
     { label: 'Libur / off', dot: 'bg-status-info' },
 ] as const;
 
 const PENDING: { title: string; note: string; icon: LucideIcon }[] = [
     {
-        title: 'Koreksi absen menunggu',
+        title: 'Koreksi presensi menunggu',
         note: 'Pengajuan pegawai yang perlu disetujui',
         icon: ClipboardPen,
     },
@@ -88,7 +88,7 @@ export default function Dashboard() {
                                     <Empty />
                                 </dd>
                                 <dd className="text-[0.8rem] text-muted-foreground">
-                                    Tersedia setelah absensi aktif
+                                    Tersedia setelah presensi aktif
                                 </dd>
                             </div>
                         ))}
@@ -128,7 +128,7 @@ export default function Dashboard() {
                                 ))}
                             </svg>
                             <p className="absolute inset-0 grid place-items-center px-4 text-center text-sm text-muted-foreground">
-                                Grafik tampil setelah ada data absensi
+                                Grafik tampil setelah ada data presensi
                             </p>
                         </div>
                         <div

@@ -58,7 +58,7 @@ export default function ProfileSecurity(props: Props) {
 
             <SettingsSection
                 title="Perangkat Pakis Pro"
-                description="HP yang terdaftar untuk absen lewat aplikasi Pakis Pro."
+                description="HP yang terdaftar untuk presensi lewat aplikasi Pakis Pro."
             >
                 <DeviceSummaryList
                     devices={props.devices}

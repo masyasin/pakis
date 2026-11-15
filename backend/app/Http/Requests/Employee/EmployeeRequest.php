@@ -283,7 +283,7 @@ class EmployeeRequest extends FormRequest
             'phone' => 'HP', 'email' => 'email', 'address' => 'alamat', 'village_code' => 'desa/kelurahan',
             'employment_status_id' => 'status kerja', 'join_date' => 'tanggal masuk', 'photo' => 'foto',
             'assignment.position_id' => 'jabatan', 'assignment.location_id' => 'lokasi',
-            'assignment.supervisor_employee_id' => 'atasan', 'assignment.attendance_mode' => 'mode absen',
+            'assignment.supervisor_employee_id' => 'atasan', 'assignment.attendance_mode' => 'mode presensi',
             'account.username' => 'username', 'account.password_mode' => 'password awal',
         ];
     }

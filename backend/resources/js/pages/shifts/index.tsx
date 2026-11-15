@@ -129,7 +129,7 @@ export default function ShiftsIndex({ rows, listing, can }: Props) {
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         Jam kerja yang dipakai jadwal pegawai, beserta batas
-                        waktu absen masuk dan pulang.
+                        waktu masuk dan pulang.
                     </p>
                 </div>
                 <DataTable
@@ -179,7 +179,7 @@ export default function ShiftsIndex({ rows, listing, can }: Props) {
                     <DialogTitle>Hapus shift {deleting?.name}?</DialogTitle>
                     <DialogDescription>
                         Hanya shift yang belum pernah dipakai jadwal atau
-                        absensi yang bisa dihapus. Bila sudah dipakai,
+                        presensi yang bisa dihapus. Bila sudah dipakai,
                         nonaktifkan saja. Tercatat di audit.
                     </DialogDescription>
                     <DialogFooter className="gap-2">

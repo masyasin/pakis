@@ -2,6 +2,7 @@
 
 use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AssignmentController;
+use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DeviceController;
@@ -141,6 +142,14 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('hari-libur/{holiday}', [HolidayController::class, 'update'])->whereNumber('holiday')->name('holidays.update');
         Route::delete('hari-libur/{holiday}', [HolidayController::class, 'destroy'])->whereNumber('holiday')->name('holidays.destroy');
     });
+
+    // Absensi harian (05 §4.10, FR-039, T-038). `{day}` ber-scope (06 §5: scope lokasi = snapshot);
+    // selfie hanya lewat URL bertanda tangan 5 menit + `attendance.view_photo` (SEC-013).
+    Route::get('absensi', [AttendanceController::class, 'index'])->middleware('can:attendance.view')->name('attendance.index');
+    Route::get('absensi/ekspor', [AttendanceController::class, 'export'])->middleware('can:attendance.export')->name('attendance.export');
+    Route::get('absensi/foto/{log}', [AttendanceController::class, 'selfie'])->whereNumber('log')
+        ->middleware(['can:attendance.view_photo', 'signed', 'throttle:120,1'])->name('attendance.selfie');
+    Route::get('absensi/{day}', [AttendanceController::class, 'show'])->whereNumber('day')->middleware('can:attendance.view')->name('attendance.show');
 
     // Perangkat Pakis Pro (05 §4.8, BR-040, 06 §7.2). `{device}` ber-scope lewat pegawai pemilik akun.
     Route::middleware('can:devices.view')->group(function () {

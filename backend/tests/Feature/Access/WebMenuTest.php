@@ -35,7 +35,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
-        'Presensi' => ['Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
+        'Presensi' => ['Presensi Harian', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna', 'Role & Hak Akses', 'Perangkat'],
@@ -46,7 +46,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
 test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function () {
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
-        'Presensi' => ['Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
+        'Presensi' => ['Presensi Harian', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna', 'Perangkat'],
@@ -55,11 +55,11 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function (
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Presensi' => ['Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Organisasi' => ['Lokasi'], 'Akses' => ['Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Presensi' => ['Presensi Harian', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Organisasi' => ['Lokasi'], 'Akses' => ['Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Presensi' => ['Jadwal', 'Hari Libur', 'Tugas Luar Kota'], 'Kepegawaian' => ['Pegawai', 'Penugasan']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Presensi' => ['Presensi Harian', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota'], 'Kepegawaian' => ['Pegawai', 'Penugasan']]);
 });
 
 test('auth.permissions: super_admin = 54 permission; tamu tanpa menu', function () {

@@ -33,7 +33,7 @@ final class PositionListing implements ExportableListing
                     ->source('departments')
                     ->column('department_id')
                     ->validIds(fn () => Department::query()),
-                MultiSelectFilter::make('mode', 'Mode absen')
+                MultiSelectFilter::make('mode', 'Mode presensi')
                     ->column('attendance_mode')
                     ->options(collect(AttendanceMode::cases())->mapWithKeys(fn (AttendanceMode $m) => [$m->value => $m->label()])->all()),
                 NumberRangeFilter::make('level', 'Level')->column('level'),
@@ -64,7 +64,7 @@ final class PositionListing implements ExportableListing
             ->add('Departemen', fn (Position $p) => $p->department?->name)
             ->add('Atasan', fn (Position $p) => $p->parent?->name)
             ->add('Level', fn (Position $p) => $p->level)
-            ->add('Mode absen', fn (Position $p) => $p->attendance_mode->label())
+            ->add('Mode presensi', fn (Position $p) => $p->attendance_mode->label())
             ->add('Aktif', fn (Position $p) => $p->is_active ? 'Ya' : 'Tidak');
     }
 }

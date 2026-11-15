@@ -137,7 +137,7 @@ export default function LocationsIndex({ rows, listing, can }: Props) {
                     </h1>
                     <p className="text-sm text-muted-foreground">
                         Kantor, gudang, dan toko tempat pegawai bertugas.
-                        Koordinat & radius dipakai untuk memeriksa absen di
+                        Koordinat & radius dipakai untuk memeriksa presensi di
                         lokasi.
                     </p>
                 </div>
@@ -208,7 +208,7 @@ export default function LocationsIndex({ rows, listing, can }: Props) {
                     <DialogTitle>Hapus lokasi {deleting?.name}?</DialogTitle>
                     <DialogDescription>
                         Hanya lokasi yang belum pernah dipakai penugasan atau
-                        absensi yang bisa dihapus. Bila sudah dipakai,
+                        presensi yang bisa dihapus. Bila sudah dipakai,
                         nonaktifkan lokasi lewat tombol Ubah.
                     </DialogDescription>
                     <DialogFooter className="gap-2">

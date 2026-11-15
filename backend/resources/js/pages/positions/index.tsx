@@ -81,7 +81,7 @@ const columns: DataTableColumn<PositionRow>[] = [
     },
     {
         key: 'mode',
-        header: 'Mode absen',
+        header: 'Mode presensi',
         cell: (r) => (
             <StatusBadge
                 status={`position.mode.${r.attendance_mode}`}
@@ -125,8 +125,8 @@ export default function PositionsIndex({ rows, listing, can }: Props) {
                         Jabatan
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Jabatan per departemen, atasannya, dan mode absen
-                        bawaan. Mode absen bisa ditimpa per pegawai di
+                        Jabatan per departemen, atasannya, dan mode presensi
+                        bawaan. Mode presensi bisa ditimpa per pegawai di
                         penugasan.
                     </p>
                 </div>

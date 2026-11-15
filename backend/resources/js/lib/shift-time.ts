@@ -66,5 +66,5 @@ export function shiftWindowSummary(shift: ShiftWindowInput): string | null {
     const checkinTo = clockAt(end);
     const checkoutTo = clockAt(end + (shift.checkout_close_min || 0));
 
-    return `Absen masuk ${label(checkinFrom)} – ${label(checkinTo)}; absen pulang paling lambat ${label(checkoutTo)}.`;
+    return `Masuk ${label(checkinFrom)} – ${label(checkinTo)}; pulang paling lambat ${label(checkoutTo)}.`;
 }

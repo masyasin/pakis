@@ -29,7 +29,7 @@ final class RoleCatalog
             ['name' => self::SUPER_ADMIN, 'label' => 'Super Admin', 'data_scope' => DataScope::All, 'mfa_required' => true, 'is_system' => true, 'description' => 'Dukungan teknis vendor (Sintech). Bisa dinonaktifkan Owner.'],
             ['name' => self::OWNER, 'label' => 'Owner', 'data_scope' => DataScope::All, 'mfa_required' => true, 'is_system' => true, 'description' => 'Pemilik usaha, akses penuh.'],
             ['name' => 'administrator', 'label' => 'Administrator', 'data_scope' => DataScope::All, 'mfa_required' => true, 'is_system' => false, 'description' => 'Admin kantor / IT internal. Mengurus sistem, bukan data SDM.'],
-            ['name' => 'hrd', 'label' => 'HRD', 'data_scope' => DataScope::All, 'mfa_required' => true, 'is_system' => false, 'description' => 'Staf HRD: data pegawai, jadwal, absensi.'],
+            ['name' => 'hrd', 'label' => 'HRD', 'data_scope' => DataScope::All, 'mfa_required' => true, 'is_system' => false, 'description' => 'Staf HRD: data pegawai, jadwal, presensi.'],
             ['name' => 'kepala_lokasi', 'label' => 'Kepala Lokasi', 'data_scope' => DataScope::Location, 'mfa_required' => false, 'is_system' => false, 'description' => 'Kepala gudang / toko, terbatas lokasinya.'],
             ['name' => 'supervisor', 'label' => 'Supervisor', 'data_scope' => DataScope::Team, 'mfa_required' => false, 'is_system' => false, 'description' => 'Supervisor sales, terbatas timnya.'],
             ['name' => self::PEGAWAI, 'label' => 'Pegawai', 'data_scope' => DataScope::Self, 'mfa_required' => false, 'is_system' => true, 'description' => 'Presensi lewat Pakis Pro. Tidak masuk web admin.'],

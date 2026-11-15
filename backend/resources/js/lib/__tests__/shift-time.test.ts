@@ -18,7 +18,7 @@ describe('shiftWindowSummary (BR-060)', () => {
                 checkin_open_min: 120,
                 checkout_close_min: 360,
             }),
-        ).toBe('Absen masuk 05.30 – 16.30; absen pulang paling lambat 22.30.');
+        ).toBe('Masuk 05.30 – 16.30; pulang paling lambat 22.30.');
     });
 
     it('shift lintas hari: jam pulang jatuh di hari berikutnya', () => {
@@ -31,7 +31,7 @@ describe('shiftWindowSummary (BR-060)', () => {
                 checkout_close_min: 120,
             }),
         ).toBe(
-            'Absen masuk 21.00 – 06.00 (hari berikutnya); absen pulang paling lambat 08.00 (hari berikutnya).',
+            'Masuk 21.00 – 06.00 (hari berikutnya); pulang paling lambat 08.00 (hari berikutnya).',
         );
     });
 
@@ -45,7 +45,7 @@ describe('shiftWindowSummary (BR-060)', () => {
                 checkout_close_min: 0,
             }),
         ).toBe(
-            'Absen masuk 23.30 (hari sebelumnya) – 08.00; absen pulang paling lambat 08.00.',
+            'Masuk 23.30 (hari sebelumnya) – 08.00; pulang paling lambat 08.00.',
         );
     });
 

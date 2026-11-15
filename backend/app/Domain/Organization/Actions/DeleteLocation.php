@@ -27,7 +27,7 @@ final class DeleteLocation
 
             if ($this->usage->isUsed($locked)) {
                 throw ValidationException::withMessages([
-                    'location' => "Lokasi \"{$locked->name}\" sudah dipakai penugasan atau absensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
+                    'location' => "Lokasi \"{$locked->name}\" sudah dipakai penugasan atau presensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
                 ]);
             }
 

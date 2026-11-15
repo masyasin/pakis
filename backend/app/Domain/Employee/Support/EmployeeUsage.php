@@ -22,7 +22,7 @@ class EmployeeUsage
 
         // Tabel absensi baru ada di T-036; sebelum itu pemakai ini dilewati.
         if (Schema::hasTable('attendance_logs') && DB::table('attendance_logs')->where('employee_id', $employee->id)->exists()) {
-            $reasons[] = 'sudah punya data absensi';
+            $reasons[] = 'sudah punya data presensi';
         }
 
         if (DB::table('users')->where('employee_id', $employee->id)->whereNotNull('last_login_at')->exists()) {

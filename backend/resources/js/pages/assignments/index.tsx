@@ -65,7 +65,7 @@ const columns: DataTableColumn<AssignmentRow>[] = [
     { key: 'supervisor', header: 'Atasan', cell: (r) => r.supervisor ?? dash },
     {
         key: 'mode',
-        header: 'Mode absen',
+        header: 'Mode presensi',
         cell: (r) =>
             r.mode_label ? (
                 <span>

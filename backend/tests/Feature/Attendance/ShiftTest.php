@@ -122,7 +122,7 @@ test('05 §4.9 shift yang sudah dipakai jadwal tidak bisa dihapus, diarahkan unt
     app()->instance(ShiftUsage::class, new ShiftUsage([['tmp_patterns', 'mon_shift_id']]));
 
     $this->actingAs($this->hrd)->from('/shift')->delete("/shift/{$shift->id}")
-        ->assertSessionHasErrors(['shift' => 'Shift "Shift Pagi" sudah dipakai jadwal atau absensi sehingga tidak bisa dihapus. Nonaktifkan saja.']);
+        ->assertSessionHasErrors(['shift' => 'Shift "Shift Pagi" sudah dipakai jadwal atau presensi sehingga tidak bisa dihapus. Nonaktifkan saja.']);
 
     expect($shift->fresh())->not->toBeNull();
 });
@@ -199,7 +199,7 @@ test('05 §4.9 shift yang dipakai pengecualian jadwal (tabel nyata) tidak bisa d
     ScheduleOverride::query()->create(['employee_id' => $world->employee()->id, 'date' => '2026-11-20', 'shift_id' => $shift->id]);
 
     $this->actingAs($this->hrd)->from('/shift')->delete("/shift/{$shift->id}")
-        ->assertSessionHasErrors(['shift' => 'Shift "Shift Piket" sudah dipakai jadwal atau absensi sehingga tidak bisa dihapus. Nonaktifkan saja.']);
+        ->assertSessionHasErrors(['shift' => 'Shift "Shift Piket" sudah dipakai jadwal atau presensi sehingga tidak bisa dihapus. Nonaktifkan saja.']);
 });
 
 test('06 §5 scope shift: Kepala Lokasi tidak melihat shift sebelum ada jadwal pegawainya; HRD melihat semua', function () {

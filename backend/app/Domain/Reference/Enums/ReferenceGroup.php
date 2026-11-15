@@ -18,7 +18,7 @@ enum ReferenceGroup: string
         return match ($this) {
             self::LocationType => 'Tipe lokasi',
             self::EmploymentStatus => 'Status kerja',
-            self::CorrectionReason => 'Alasan koreksi absen',
+            self::CorrectionReason => 'Alasan koreksi presensi',
             self::OffboardingReason => 'Alasan keluar',
         };
     }

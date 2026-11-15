@@ -69,11 +69,12 @@ const REPRESENTATIVE = [
     'employees.import' => ['GET', '/impor'],
     'devices.view' => ['GET', '/perangkat'],
     'devices.manage' => ['POST', '/perangkat/{device}/tolak', ['reason' => 'Bukan HP kantor']],
+    'attendance.view' => ['GET', '/absensi'],
+    'attendance.export' => ['GET', '/absensi/ekspor'],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
-    'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038',
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.create' => 'T-040', 'attendance_corrections.approve' => 'T-041',
     'field_trips.request' => 'T-036A bagian 2', 'field_trips.approve' => 'T-036A bagian 2',
 ];
@@ -84,6 +85,14 @@ const PENDING = [
  */
 const API_ONLY = [
     'attendance.self' => 'tests/Feature/Api/V1/Attendance/AttendanceApiTest.php',
+];
+
+/**
+ * Permission yang route-nya butuh syarat lain selain izin (mis. URL bertanda tangan) → di sini
+ * pemegang & bukan pemegang sama-sama ditolak; diuji per role di berkas test-nya.
+ */
+const DEDICATED = [
+    'attendance.view_photo' => 'tests/Feature/Attendance/AttendanceWebTest.php',
 ];
 
 dataset('role_permission', function () {
@@ -104,9 +113,10 @@ beforeEach(function () {
 });
 
 test('10 §4 setiap permission punya route perwakilan atau tercatat menunggu task-nya (tidak ada yang terlewat)', function () {
-    $covered = [...array_keys(REPRESENTATIVE), ...array_keys(PENDING), ...array_keys(API_ONLY)];
+    $covered = [...array_keys(REPRESENTATIVE), ...array_keys(PENDING), ...array_keys(API_ONLY), ...array_keys(DEDICATED)];
 
     expect(array_intersect(array_keys(REPRESENTATIVE), array_keys(PENDING)))->toBe([])
+        ->and(collect(DEDICATED)->every(fn (string $file) => is_file(base_path($file))))->toBeTrue()
         ->and(array_intersect(array_keys(REPRESENTATIVE), array_keys(API_ONLY)))->toBe([])
         ->and(collect(API_ONLY)->every(fn (string $file) => is_file(base_path($file))))->toBeTrue()
         ->and(collect($covered)->sort()->values()->all())->toBe(collect(PermissionCatalog::names())->sort()->values()->all());

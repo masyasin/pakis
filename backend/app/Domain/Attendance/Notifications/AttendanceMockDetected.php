@@ -30,7 +30,7 @@ class AttendanceMockDetected extends PakisNotification
 
     public function body(): string
     {
-        return "{$this->employeeName} ({$this->employeeNumber}) mencoba absen dengan lokasi palsu pada {$this->localTime}. Absen ditolak dan dicatat di Log Keamanan.";
+        return "{$this->employeeName} ({$this->employeeNumber}) mencoba presensi dengan lokasi palsu pada {$this->localTime}. Presensi ditolak dan dicatat di Log Keamanan.";
     }
 
     public function url(): ?string

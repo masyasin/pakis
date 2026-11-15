@@ -26,7 +26,7 @@ final class DeleteDepartment
 
             if ($this->usage->isUsed($locked)) {
                 throw ValidationException::withMessages([
-                    'department' => "Departemen \"{$locked->name}\" masih punya sub-departemen atau sudah dipakai jabatan/absensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
+                    'department' => "Departemen \"{$locked->name}\" masih punya sub-departemen atau sudah dipakai jabatan/presensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
                 ]);
             }
 

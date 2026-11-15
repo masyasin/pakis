@@ -121,7 +121,7 @@ final class AssignmentListing implements ExportableListing
             ->add('Departemen', fn (Assignment $a) => $a->position?->department?->name)
             ->add('Lokasi', fn (Assignment $a) => $a->location?->name)
             ->add('Atasan', fn (Assignment $a) => $a->supervisor?->full_name)
-            ->add('Mode absen', fn (Assignment $a) => $a->effectiveAttendanceMode()?->label())
+            ->add('Mode presensi', fn (Assignment $a) => $a->effectiveAttendanceMode()?->label())
             ->add('Utama', fn (Assignment $a) => $a->is_primary ? 'Ya' : 'Tidak')
             ->add('Mulai', fn (Assignment $a) => $a->start_date->toDateString())
             ->add('Selesai', fn (Assignment $a) => $a->end_date?->toDateString());

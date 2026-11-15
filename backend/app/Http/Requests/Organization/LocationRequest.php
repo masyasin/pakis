@@ -133,7 +133,7 @@ class LocationRequest extends FormRequest
             'longitude.between' => 'Longitude di luar wilayah Indonesia (94 sampai 142).',
             'latitude.required_with' => 'Isi latitude dan longitude bersamaan.',
             'longitude.required_with' => 'Isi latitude dan longitude bersamaan.',
-            'attendance_radius_m.between' => 'Radius absen 20–5.000 meter. Kosongkan untuk memakai radius bawaan.',
+            'attendance_radius_m.between' => 'Radius presensi 20–5.000 meter. Kosongkan untuk memakai radius bawaan.',
             'phone.regex' => 'Nomor telepon tidak valid. Contoh: 0291 123456 atau 0812-3456-7890.',
             'head_employee_id.exists' => 'Pegawai tidak ditemukan atau sudah nonaktif.',
         ];
@@ -147,7 +147,7 @@ class LocationRequest extends FormRequest
         return [
             'code' => 'kode', 'name' => 'nama', 'location_type_id' => 'tipe lokasi', 'address' => 'alamat',
             'village_code' => 'desa/kelurahan', 'latitude' => 'latitude', 'longitude' => 'longitude',
-            'attendance_radius_m' => 'radius absen', 'phone' => 'telepon', 'head_employee_id' => 'kepala lokasi', 'is_active' => 'status aktif',
+            'attendance_radius_m' => 'radius presensi', 'phone' => 'telepon', 'head_employee_id' => 'kepala lokasi', 'is_active' => 'status aktif',
         ];
     }
 }

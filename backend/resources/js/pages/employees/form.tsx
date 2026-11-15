@@ -687,7 +687,7 @@ export default function EmployeeForm({
                         </div>
                         <fieldset className="mt-4 grid gap-3">
                             <legend className="mb-2 text-sm font-medium">
-                                Mode absen
+                                Mode presensi
                             </legend>
                             <ModeOption
                                 checked={data.assignment.attendance_mode === ''}
@@ -695,7 +695,7 @@ export default function EmployeeForm({
                                     setAssignment('attendance_mode', '')
                                 }
                                 title="Ikut jabatan"
-                                help="Memakai mode absen bawaan jabatan yang dipilih. Pilihan paling umum."
+                                help="Memakai mode presensi bawaan jabatan yang dipilih. Pilihan paling umum."
                             />
                             {modes.map((m) => (
                                 <ModeOption

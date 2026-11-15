@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Access\Enums\DataScope as Scope;
 use App\Domain\Access\Support\AvatarStore;
 use App\Domain\Access\Support\ScopeResolver;
+use App\Domain\Attendance\Support\EmployeeAttendance;
 use App\Domain\Attendance\Support\EmployeeFieldTrips;
 use App\Domain\Attendance\Support\EmployeeSchedule;
 use App\Domain\Audit\Models\AuditLog;
@@ -199,6 +200,8 @@ class EmployeeController extends Controller
             'history' => $tab === 'riwayat' ? self::history($request, $employee) : null,
             // Tab Jadwal (T-035): pola berlaku, riwayat/terjadwal, pengecualian mendatang.
             'schedule' => $tab === 'jadwal' ? EmployeeSchedule::for($employee, $actor) : null,
+            // Tab Presensi (T-038): 14 hari terakhir + ringkasan 30 hari, ber-scope presensi.
+            'attendance' => $tab === 'presensi' ? EmployeeAttendance::for($employee, $actor) : null,
             // Tab Tugas Luar Kota (T-036A): tugas terbaru pegawai ini.
             'fieldTrips' => $tab === 'tugas' ? EmployeeFieldTrips::for($employee, $actor) : null,
             'historyEvents' => collect(self::HISTORY_EVENTS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),

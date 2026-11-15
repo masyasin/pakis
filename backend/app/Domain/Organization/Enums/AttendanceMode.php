@@ -24,9 +24,9 @@ enum AttendanceMode: string
     public function help(): string
     {
         return match ($this) {
-            self::Location => 'Absen hanya diterima di dalam radius lokasi penugasan pegawai. Cocok untuk staf kantor, gudang, dan toko.',
-            self::AnyLocation => 'Absen diterima di dalam radius lokasi Pakis mana saja. Cocok untuk driver atau staf yang berpindah antar-lokasi.',
-            self::Anywhere => 'Absen diterima di mana saja selama GPS aktif (titik tetap dicatat). Cocok untuk sales lapangan.',
+            self::Location => 'Presensi hanya diterima di dalam radius lokasi penugasan pegawai. Cocok untuk staf kantor, gudang, dan toko.',
+            self::AnyLocation => 'Presensi diterima di dalam radius lokasi Pakis mana saja. Cocok untuk driver atau staf yang berpindah antar-lokasi.',
+            self::Anywhere => 'Presensi diterima di mana saja selama GPS aktif (titik tetap dicatat). Cocok untuk sales lapangan.',
         };
     }
 

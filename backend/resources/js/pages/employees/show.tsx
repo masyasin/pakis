@@ -2,7 +2,6 @@ import { Head, Link, router, useHttp, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     BriefcaseBusiness,
-    CalendarClock,
     Contact,
     Fingerprint,
     History,
@@ -25,6 +24,8 @@ import {
     Timeline,
     TimelineItem,
 } from '@/components/employee/detail-ui';
+import { EmployeeAttendancePanel } from '@/components/attendance/employee-attendance-panel';
+import type { EmployeeAttendanceData } from '@/components/attendance/employee-attendance-panel';
 import { AssignmentsPanel } from '@/components/employee/assignments-panel';
 import type { AssignmentRow } from '@/components/employee/assignments-panel';
 import { EmployeeHero } from '@/components/employee/employee-hero';
@@ -158,6 +159,8 @@ type Props = {
     historyEvents: { value: string; label: string }[];
     /** Hanya terisi saat tab Jadwal dibuka (T-035). */
     schedule: EmployeeScheduleData | null;
+    /** Hanya terisi saat tab Presensi dibuka (T-038); null bila tanpa izin lihat presensi. */
+    attendance: EmployeeAttendanceData | null;
     /** Hanya terisi saat tab Tugas Luar Kota dibuka (T-036A). */
     fieldTrips: EmployeeFieldTripsData | null;
     modes: {
@@ -330,10 +333,9 @@ export default function EmployeeShow(props: Props) {
                         />
                     )}
                     {tab === 'presensi' && (
-                        <EmptyPanel
-                            icon={CalendarClock}
-                            title="Presensi belum tersedia"
-                            text="Riwayat presensi 30 hari terakhir akan tampil di sini setelah modul Presensi aktif."
+                        <EmployeeAttendancePanel
+                            employeeNumber={employee.employee_number}
+                            data={props.attendance}
                         />
                     )}
                     {tab === 'tugas' && props.fieldTrips && (

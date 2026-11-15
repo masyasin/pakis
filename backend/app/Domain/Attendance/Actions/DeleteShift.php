@@ -27,7 +27,7 @@ final class DeleteShift
 
             if ($this->usage->isUsed($locked)) {
                 throw ValidationException::withMessages([
-                    'shift' => "Shift \"{$locked->name}\" sudah dipakai jadwal atau absensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
+                    'shift' => "Shift \"{$locked->name}\" sudah dipakai jadwal atau presensi sehingga tidak bisa dihapus. Nonaktifkan saja.",
                 ]);
             }
 

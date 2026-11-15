@@ -20,5 +20,10 @@ class DatabaseSeeder extends Seeder
             SequenceSeeder::class,
             ReferenceSeeder::class,
         ]);
+
+        // Data demo (04 §4.2) hanya di luar produksi; DemoSeeder juga menolak sendiri bila produksi.
+        if (! app()->isProduction()) {
+            $this->call(DemoSeeder::class);
+        }
     }
 }

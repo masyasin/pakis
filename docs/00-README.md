@@ -36,6 +36,7 @@ Tiga prinsip yang berlaku di seluruh paket:
 | 13 | `docs/10-TEST-PLAN.md` | Strategi test, test kontrak listing, UAT |
 | 14 | `docs/11-GLOSSARY.md` | Istilah |
 | 15 | `docs/12-OPEN-QUESTIONS.md` | Keputusan yang belum final |
+| 16 | `docs/13-USULAN-RIWAYAT-PEGAWAI.md` | **Usulan** (belum disetujui) modul riwayat kepegawaian — bukan sumber kebenaran, jangan dibangun sebelum OQ-015–OQ-019 terjawab |
 
 ## 3. Sumber Kebenaran (satu hal, satu tempat)
 

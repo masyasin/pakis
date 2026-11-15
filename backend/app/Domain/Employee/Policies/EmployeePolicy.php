@@ -8,6 +8,7 @@ use App\Domain\Access\Support\ScopeResolver;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\EmployeeUsage;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 /**
  * Pegawai (06 §3–§5): permission + scope data. Route sudah dijaga `can:` dan binding ber-scope
@@ -60,16 +61,28 @@ class EmployeePolicy
         return $user->can('employees.view_sensitive') && $this->scope->allows($user, $employee->id);
     }
 
-    /** Nonaktifkan pegawai (BR-053): izin `employees.offboard` + pegawai dalam scope. */
+    /**
+     * Nonaktifkan pegawai (BR-053): izin `employees.offboard` + pegawai dalam scope + wewenang atas
+     * akun login-nya (`users.manage-account`). Offboarding menonaktifkan akun, jadi tanpa syarat
+     * ketiga HRD bisa mengunci Owner, Administrator, atau dirinya sendiri lewat jalur pegawai.
+     */
     public function offboard(User $user, Employee $employee): bool
     {
-        return $user->can('employees.offboard') && $this->scope->allows($user, $employee->id);
+        if (! $this->rehire($user, $employee)) {
+            return false;
+        }
+        $account = User::query()->where('employee_id', $employee->id)->first();
+
+        return $account === null || Gate::forUser($user)->allows('users.manage-account', $account);
     }
 
-    /** Aktifkan kembali (06 §7.3): izin yang sama dengan menonaktifkan. */
+    /**
+     * Aktifkan kembali (06 §7.3): izin `employees.offboard` + scope. Akun hanya ikut aktif bila
+     * pelaku berwenang atasnya (dicek di RehireEmployee), jadi tidak perlu syarat akun di sini.
+     */
     public function rehire(User $user, Employee $employee): bool
     {
-        return $this->offboard($user, $employee);
+        return $user->can('employees.offboard') && $this->scope->allows($user, $employee->id);
     }
 
     /** Mutasi / tambah penugasan tambahan untuk pegawai ini (T-025). */

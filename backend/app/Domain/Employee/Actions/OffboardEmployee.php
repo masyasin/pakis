@@ -18,7 +18,10 @@ use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Models\User;
 use App\Support\Time\DisplayTime;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -56,6 +59,11 @@ final class OffboardEmployee
             if ($exit < $locked->join_date->toDateString()) {
                 $fail('exit_date', 'Tanggal keluar tidak boleh sebelum tanggal masuk ('.$locked->join_date->translatedFormat('j F Y').').');
             }
+            $earliest = OffboardImpact::earliestExit($locked);
+            if ($exit < $earliest) {
+                $fail('exit_date', 'Tanggal keluar tidak boleh sebelum '.Carbon::parse($earliest)->translatedFormat('j F Y')
+                    .': riwayat penugasan menunjukkan pegawai masih bertugas sampai tanggal itu. Koreksi penugasannya dulu bila keliru.');
+            }
             if ($exit > $today) {
                 $fail('exit_date', 'Tanggal keluar tidak boleh melewati hari ini.');
             }
@@ -92,6 +100,13 @@ final class OffboardEmployee
             // 3. Akun: nonaktif + semua sesi web dihapus + token API dicabut (ToggleUser → RevokeUserSessions).
             $user = User::query()->where('employee_id', $locked->id)->lockForUpdate()->first();
             if ($user !== null) {
+                // Offboarding menonaktifkan akun, jadi batas UserPolicy (bukan diri sendiri, bukan Owner
+                // bagi non-Owner, tidak lebih berkuasa dari pelaku) wajib berlaku juga di jalur ini.
+                // Dicek juga di EmployeePolicy::offboard; ini lapis kedua di dalam transaksi.
+                if (! Gate::forUser($actor)->allows('users.manage-account', $user)) {
+                    throw new AuthorizationException('Akun login pegawai ini di luar wewenang Anda.');
+                }
+
                 // ToggleUser berhenti bila akun sudah nonaktif; sisa sesi/token tetap harus dicabut.
                 $user->is_active
                     ? $this->accounts->handle($actor, $user, false)

@@ -28,7 +28,7 @@ export function DetailCard({
                 className,
             )}
         >
-            <header className="flex items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
+            <header className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-5">
                 <h3 className="flex items-center gap-2.5 text-sm font-semibold">
                     <span className="grid size-7 place-items-center rounded-lg bg-sidebar-accent text-primary">
                         <Icon className="size-4" aria-hidden="true" />

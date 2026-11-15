@@ -96,8 +96,9 @@ export function AssignmentsPanel({
         openPrimary ? shiftDate(openPrimary.start_date, 1) : '',
     ].sort()[1];
 
+    // HP: baris sendiri di bawah judul, dua tombol sama lebar berdampingan; layar lebar: sebaris judul.
     const actions = canManage ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto">
             <Button
                 size="sm"
                 variant="outline"

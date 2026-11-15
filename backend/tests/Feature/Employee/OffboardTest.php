@@ -245,3 +245,52 @@ test('SEC-033 IDOR: nonaktifkan/aktifkan pegawai di luar scope → 404', functio
     $this->assertOutOfScope404($actor, 'POST', "/pegawai/{$outside->id}/nonaktifkan", offboardInput($outside));
     $this->assertOutOfScope404($actor, 'POST', "/pegawai/{$outside->id}/aktifkan", []);
 });
+
+test('BR-053 tanggal keluar mundur tidak boleh sebelum penugasan yang sudah berjalan (riwayat tidak terhapus)', function () {
+    $employee = $this->world->employee(attributes: ['join_date' => $this->today->subDays(60)->toDateString()]);
+    // Mutasi 10 hari lalu: lama ditutup H-11, baru mulai H-10 (sudah benar-benar berlaku).
+    Assignment::query()->where('employee_id', $employee->id)->update(['end_date' => $this->today->subDays(11)->toDateString()]);
+    $current = Assignment::query()->create([
+        'employee_id' => $employee->id, 'position_id' => $this->world->staff->id, 'location_id' => $this->world->toko->id,
+        'is_primary' => true, 'start_date' => $this->today->subDays(10)->toDateString(),
+    ]);
+    $url = "/pegawai/{$employee->id}/nonaktifkan";
+
+    $this->actingAs($this->hrd)->get("/pegawai/{$employee->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('offboardImpact.earliest_exit', $this->today->subDays(10)->toDateString()));
+
+    $this->actingAs($this->hrd)->post($url, offboardInput($employee, ['exit_date' => $this->today->subDays(20)->toDateString()]))
+        ->assertSessionHasErrors('exit_date');
+    expect(Assignment::query()->whereKey($current->id)->exists())->toBeTrue()
+        ->and($employee->fresh()->status)->toBe(EmployeeStatus::Active);
+
+    $this->actingAs($this->hrd)->post($url, offboardInput($employee, ['exit_date' => $this->today->subDays(10)->toDateString()]))
+        ->assertSessionHasNoErrors();
+    expect($current->fresh()->end_date->toDateString())->toBe($this->today->subDays(10)->toDateString());
+});
+
+test('SEC-021 06 §4 offboarding tunduk batas UserPolicy: HRD tidak bisa menonaktifkan pegawai berakun Owner, Administrator, atau dirinya sendiri', function (string $target) {
+    $employee = $this->world->employee($this->world->gudang);
+    $hrd = $target === 'self' ? $this->world->actor('hrd', $employee) : $this->hrd;
+    if ($target !== 'self') {
+        $this->world->actor($target, $employee);
+    }
+
+    $this->actingAs($hrd)->get("/pegawai/{$employee->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('can.offboard', false)->where('offboardImpact', null));
+    $this->actingAs($hrd)->post("/pegawai/{$employee->id}/nonaktifkan", offboardInput($employee))->assertForbidden();
+
+    expect($employee->fresh()->status)->toBe(EmployeeStatus::Active)
+        ->and(User::query()->where('employee_id', $employee->id)->value('is_active'))->toBeTrue();
+})->with(['owner', 'administrator', 'self']);
+
+test('SEC-021 Owner tetap bisa menonaktifkan pegawai berakun Administrator', function () {
+    $employee = $this->world->employee($this->world->gudang);
+    $admin = $this->world->actor('administrator', $employee);
+    $owner = $this->world->actor('owner');
+
+    $this->actingAs($owner)->post("/pegawai/{$employee->id}/nonaktifkan", offboardInput($employee))->assertSessionHasNoErrors();
+
+    expect($employee->fresh()->status)->toBe(EmployeeStatus::Inactive)
+        ->and($admin->fresh()->is_active)->toBeFalse();
+});

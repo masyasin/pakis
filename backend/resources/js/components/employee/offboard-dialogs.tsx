@@ -29,6 +29,8 @@ export type OffboardImpact = {
     assignments: number;
     headed_locations: string[];
     subordinates: { id: number; name: string; number: string }[];
+    /** Batas bawah tanggal keluar (tanggal masuk / penugasan yang sudah berjalan), BR-053. */
+    earliest_exit: string;
 };
 
 const one = (value: string) => (value === '' ? [] : [value]);
@@ -133,6 +135,7 @@ export function OffboardDialog({
                             <Input
                                 id="exit_date"
                                 type="date"
+                                min={impact.earliest_exit}
                                 max={today}
                                 value={form.data.exit_date}
                                 onChange={(e) =>

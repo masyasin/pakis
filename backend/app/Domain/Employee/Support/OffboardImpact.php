@@ -28,7 +28,8 @@ final class OffboardImpact
      *     devices_pending: int,
      *     assignments: int,
      *     headed_locations: list<string>,
-     *     subordinates: list<array{id: int, name: string, number: string}>
+     *     subordinates: list<array{id: int, name: string, number: string}>,
+     *     earliest_exit: string
      * }
      */
     public static function for(Employee $employee): array
@@ -53,6 +54,33 @@ final class OffboardImpact
                 ->get(['id', 'full_name', 'employee_number'])
                 ->map(fn (Employee $e) => ['id' => $e->id, 'name' => $e->full_name, 'number' => $e->employee_number])
                 ->all()),
+            'earliest_exit' => self::earliestExit($employee),
         ];
+    }
+
+    /**
+     * Tanggal keluar paling awal yang masih konsisten dengan riwayat (BR-053): tidak sebelum tanggal
+     * masuk, tidak sebelum penugasan yang SUDAH mulai, dan tidak sebelum akhir penugasan yang sudah
+     * selesai. Tanpa batas ini, tanggal keluar mundur akan menghapus penugasan yang benar-benar
+     * pernah berlaku (dikira "terjadwal") dan merusak riwayat. Format Y-m-d (tanggal lokal).
+     */
+    public static function earliestExit(Employee $employee): string
+    {
+        $today = DisplayTime::toLocal(now())->toDateString();
+        $assignments = Assignment::query()->where('employee_id', $employee->id);
+
+        // Tanggal masuk selalu ada, jadi daftar ini tidak pernah kosong.
+        return max([
+            $employee->join_date->toDateString(),
+            ...array_filter([
+                self::date((clone $assignments)->where('start_date', '<=', $today)->max('start_date')),
+                self::date((clone $assignments)->where('end_date', '<', $today)->max('end_date')),
+            ]),
+        ]);
+    }
+
+    private static function date(mixed $value): ?string
+    {
+        return $value === null ? null : substr((string) $value, 0, 10);
     }
 }

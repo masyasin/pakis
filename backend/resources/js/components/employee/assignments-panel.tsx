@@ -53,8 +53,8 @@ export type AssignmentRow = {
     can_manage?: boolean;
 };
 
-type Mode = 'location' | 'any_location' | 'anywhere';
-type ModeOption = { value: Mode; label: string; help: string };
+export type Mode = 'location' | 'any_location' | 'anywhere';
+export type ModeOption = { value: Mode; label: string; help: string };
 
 /** `YYYY-MM-DD` ± n hari, dihitung sebagai tanggal sipil (bebas zona perangkat). */
 function shiftDate(iso: string, days: number): string {
@@ -300,7 +300,7 @@ const one = (value: string) => (value === '' ? [] : [value]);
 const first = (value: Array<number | string>) => String(value[0] ?? '');
 
 /** Pilihan mode absen: "Ikut jabatan" (kosong) + tiga mode, dengan penjelasan. */
-function ModePicker({
+export function ModePicker({
     value,
     modes,
     onChange,

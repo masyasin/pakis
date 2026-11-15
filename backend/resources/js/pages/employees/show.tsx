@@ -11,8 +11,10 @@ import {
     KeyRound,
     MapPin,
     Smartphone,
+    UserCheck,
     UserPlus,
     UserRound,
+    UserX,
 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -28,6 +30,11 @@ import { AssignmentsPanel } from '@/components/employee/assignments-panel';
 import type { AssignmentRow } from '@/components/employee/assignments-panel';
 import { EmployeeHero } from '@/components/employee/employee-hero';
 import { EmployeeTabs, tabLabel } from '@/components/employee/employee-tabs';
+import {
+    OffboardDialog,
+    RehireDialog,
+} from '@/components/employee/offboard-dialogs';
+import type { OffboardImpact } from '@/components/employee/offboard-dialogs';
 import type { EmployeeTab } from '@/components/employee/employee-tabs';
 import InputError from '@/components/input-error';
 import { MaskedValue } from '@/components/pakis/masked-value';
@@ -138,6 +145,9 @@ type Props = {
         revealNik: boolean;
         createAccount: boolean;
         manageAssignments: boolean;
+        offboard: boolean;
+        rehire: boolean;
+        activateAccount: boolean;
     };
     deleteBlockers: string[];
     history: HistoryPage | null;
@@ -148,6 +158,13 @@ type Props = {
         help: string;
     }[];
     mutationBackdateDays: number;
+    offboardImpact: OffboardImpact | null;
+    offboardingReasons: { value: number; label: string }[];
+    exit: {
+        date: string | null;
+        reason: string | null;
+        note: string | null;
+    } | null;
 };
 
 /** Detail pegawai (07 §4 "Pegawai (detail)", FR-025). Data di luar scope tidak pernah sampai sini (404). */
@@ -156,6 +173,9 @@ export default function EmployeeShow(props: Props) {
     const { timezone } = usePage<{ timezone: string }>().props;
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
+    const [statusDialog, setStatusDialog] = useState<
+        'offboard' | 'rehire' | null
+    >(null);
 
     // Masa kerja dihitung sampai tanggal keluar (pegawai nonaktif) atau hari ini di zona kantor.
     const today = todayIn(timezone);
@@ -188,6 +208,51 @@ export default function EmployeeShow(props: Props) {
                     joinDate={employee.join_date}
                     editHref={can.update ? edit(employee.id) : null}
                     onDelete={can.delete ? () => setConfirmDelete(true) : null}
+                    extraActions={
+                        can.offboard ? (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                onClick={() => setStatusDialog('offboard')}
+                                aria-label={`Nonaktifkan ${employee.full_name}`}
+                            >
+                                <UserX aria-hidden="true" />
+                                <span className="hidden sm:inline">
+                                    Nonaktifkan
+                                </span>
+                            </Button>
+                        ) : can.rehire ? (
+                            <Button
+                                size="sm"
+                                onClick={() => setStatusDialog('rehire')}
+                            >
+                                <UserCheck aria-hidden="true" />
+                                Aktifkan kembali
+                            </Button>
+                        ) : undefined
+                    }
+                    notice={
+                        props.exit ? (
+                            <p className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-muted px-3 py-2 text-sm text-muted-foreground">
+                                <Info
+                                    className="size-4 shrink-0"
+                                    aria-hidden="true"
+                                />
+                                <span>
+                                    Nonaktif sejak{' '}
+                                    <strong className="text-foreground">
+                                        {props.exit.date
+                                            ? formatDate(props.exit.date)
+                                            : '–'}
+                                    </strong>
+                                    {props.exit.reason &&
+                                        ` · ${props.exit.reason}`}
+                                    {props.exit.note && ` · ${props.exit.note}`}
+                                </span>
+                            </p>
+                        ) : undefined
+                    }
                     summary={[
                         { label: 'Masa kerja', value: tenure },
                         {
@@ -214,7 +279,7 @@ export default function EmployeeShow(props: Props) {
                         <span>
                             Pegawai ini tidak bisa dihapus karena{' '}
                             {props.deleteBlockers.join(', ')}. Bila sudah
-                            keluar, gunakan Nonaktifkan (menyusul).
+                            keluar, gunakan Nonaktifkan.
                         </span>
                     </p>
                 )}
@@ -273,6 +338,29 @@ export default function EmployeeShow(props: Props) {
                     )}
                 </section>
             </div>
+
+            {statusDialog === 'offboard' && props.offboardImpact && (
+                <OffboardDialog
+                    employeeId={employee.id}
+                    employeeName={employee.full_name}
+                    impact={props.offboardImpact}
+                    reasons={props.offboardingReasons}
+                    today={today}
+                    onClose={() => setStatusDialog(null)}
+                />
+            )}
+            {statusDialog === 'rehire' && (
+                <RehireDialog
+                    employeeId={employee.id}
+                    employeeName={employee.full_name}
+                    exitDate={props.exit?.date ?? null}
+                    hasAccount={account !== null}
+                    canActivateAccount={can.activateAccount}
+                    modes={props.modes}
+                    today={today}
+                    onClose={() => setStatusDialog(null)}
+                />
+            )}
 
             <Dialog open={confirmDelete} onOpenChange={setConfirmDelete}>
                 <DialogContent>

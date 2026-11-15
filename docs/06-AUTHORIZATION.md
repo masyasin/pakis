@@ -157,6 +157,7 @@ stateDiagram-v2
 | `pending` | Setujui | `devices.manage` | `active` (perangkat aktif lama → `replaced`, token lama dicabut) |
 | `pending` | Tolak (alasan) | `devices.manage` | `rejected` |
 | `active` | Cabut | `devices.manage`, atau offboarding | `revoked` |
+| `pending` | Pegawai dinonaktifkan (offboarding, keputusan Mas 15 Nov 2026) | sistem | `rejected` (alasan "Pegawai dinonaktifkan") |
 
 ### 7.3 Pegawai
 `active` → **Nonaktifkan** (`employees.offboard`) → `inactive` → **Aktifkan kembali** (`employees.offboard`, wajib penugasan baru) → `active`.

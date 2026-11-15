@@ -60,13 +60,14 @@ const REPRESENTATIVE = [
     'employees.export' => ['GET', '/pegawai/ekspor'],
     'assignments.view' => ['GET', '/penugasan'],
     'assignments.manage' => ['POST', '/pegawai/{employee}/penugasan'],
+    'employees.offboard' => ['POST', '/pegawai/{employee}/nonaktifkan'],
     'devices.view' => ['GET', '/perangkat'],
     'devices.manage' => ['POST', '/perangkat/{device}/tolak', ['reason' => 'Bukan HP kantor']],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
-    'employees.offboard' => 'T-026', 'employees.import' => 'T-027',
+    'employees.import' => 'T-027',
     'schedules.view' => 'T-035', 'schedules.manage' => 'T-035',
     'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038', 'attendance.self' => 'T-036',
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.create' => 'T-040', 'attendance_corrections.approve' => 'T-041',

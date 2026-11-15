@@ -10,6 +10,8 @@ use App\Domain\Employee\Actions\CreateAccountForEmployee;
 use App\Domain\Employee\Actions\CreateEmployee;
 use App\Domain\Employee\Actions\DeleteEmployee;
 use App\Domain\Employee\Actions\MutateEmployee;
+use App\Domain\Employee\Actions\OffboardEmployee;
+use App\Domain\Employee\Actions\RehireEmployee;
 use App\Domain\Employee\Actions\RevealNik;
 use App\Domain\Employee\Actions\UpdateEmployee;
 use App\Domain\Employee\Enums\Gender;
@@ -17,6 +19,7 @@ use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\EmployeeUsage;
+use App\Domain\Employee\Support\OffboardImpact;
 use App\Domain\Employee\Support\UsernameSuggester;
 use App\Domain\Organization\Enums\AttendanceMode;
 use App\Domain\Reference\Enums\ReferenceGroup;
@@ -24,6 +27,8 @@ use App\Domain\Reference\Models\ReferenceItem;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\EmployeeAccountRequest;
 use App\Http\Requests\Employee\EmployeeRequest;
+use App\Http\Requests\Employee\OffboardRequest;
+use App\Http\Requests\Employee\RehireRequest;
 use App\Models\User;
 use App\Support\Export\StartExport;
 use App\Support\Listing\ListingQuery;
@@ -146,6 +151,8 @@ class EmployeeController extends Controller
         ]);
         $primary = $employee->primaryAssignment()->with(['position.department:id,name', 'location:id,name', 'supervisor:id,full_name'])->first();
         $canDelete = Gate::forUser($actor)->allows('delete', $employee);
+        $canOffboard = $employee->isActive() && Gate::forUser($actor)->allows('offboard', $employee);
+        $canRehire = ! $employee->isActive() && Gate::forUser($actor)->allows('rehire', $employee);
         // Akun terhapus tetap memegang `users.employee_id` (unik), jadi juga dihitung "sudah punya akun".
         $noAccount = ! User::withTrashed()->where('employee_id', $employee->id)->exists();
 
@@ -168,6 +175,22 @@ class EmployeeController extends Controller
                 'createAccount' => $noAccount && $employee->isActive() && Gate::forUser($actor)->allows('createAccount', $employee),
                 // Mutasi / penugasan tambahan / ubah / akhiri (T-025); pegawai nonaktif tidak dimutasi.
                 'manageAssignments' => $employee->isActive() && Gate::forUser($actor)->allows('manageAssignments', $employee),
+                // Nonaktifkan / aktifkan kembali (T-026, BR-053).
+                'offboard' => $canOffboard,
+                'rehire' => $canRehire,
+                'activateAccount' => $actor->can('users.deactivate'),
+            ],
+            // Ringkasan dampak + bawahan untuk dialog Nonaktifkan (hanya yang berhak menonaktifkan).
+            'offboardImpact' => $canOffboard ? OffboardImpact::for($employee) : null,
+            'offboardingReasons' => $canOffboard
+                ? ReferenceItem::query()->forGroup(ReferenceGroup::OffboardingReason)->where('is_active', true)->orderBy('sort_order')->get(['id', 'name'])
+                    ->map(fn (ReferenceItem $r) => ['value' => $r->id, 'label' => $r->name])->values()
+                : [],
+            // Data keluar untuk pegawai nonaktif (pita info di kartu hero).
+            'exit' => $employee->isActive() ? null : [
+                'date' => $employee->exit_date?->toDateString(),
+                'reason' => $employee->exit_reason_id !== null ? ReferenceItem::query()->whereKey($employee->exit_reason_id)->value('name') : null,
+                'note' => $employee->exit_note,
             ],
             // Alasan tombol Hapus disembunyikan (BR-055), hanya untuk yang berhak menghapus.
             'deleteBlockers' => $canDelete ? $usage->blockers($employee) : [],
@@ -245,6 +268,33 @@ class EmployeeController extends Controller
             'temporary_password' => $result['temporary_password'],
             'show_url' => route('admin.employees.show', ['employee' => $employee, 'tab' => 'akun']),
         ], 201));
+    }
+
+    /** Nonaktifkan pegawai (FR-027, BR-053, SEC-021): satu transaksi, data tetap tersimpan. */
+    public function offboard(OffboardRequest $request, Employee $employee, OffboardEmployee $action): RedirectResponse
+    {
+        Gate::authorize('offboard', $employee);
+        $action->handle(self::actor($request), $employee, $request->offboardData());
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => "{$employee->full_name} dinonaktifkan. Akses login & Pakis Pro dicabut."]);
+
+        return to_route('admin.employees.show', $employee);
+    }
+
+    /** Aktifkan kembali (06 §7.3): penugasan baru wajib, akun ikut aktif bila dicentang & berwenang. */
+    public function rehire(RehireRequest $request, Employee $employee, RehireEmployee $action): RedirectResponse
+    {
+        Gate::authorize('rehire', $employee);
+        $result = $action->handle(self::actor($request), $employee, $request->rehireData(), (bool) $request->validated('activate_account'));
+
+        $message = match ($result['account']) {
+            'activated' => "{$employee->full_name} aktif kembali, akun login juga diaktifkan.",
+            'not_allowed' => "{$employee->full_name} aktif kembali. Akun login tetap nonaktif karena Anda tidak berwenang mengaktifkannya.",
+            default => "{$employee->full_name} aktif kembali.",
+        };
+        Inertia::flash('toast', ['type' => $result['account'] === 'not_allowed' ? 'warning' : 'success', 'message' => $message]);
+
+        return to_route('admin.employees.show', ['employee' => $employee, 'tab' => 'penugasan']);
     }
 
     /** Foto pegawai dari disk privat (SEC-050): hanya lewat route ber-auth & ber-scope. */

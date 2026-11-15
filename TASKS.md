@@ -382,9 +382,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Domain/Employee/Actions/{OffboardEmployee,RehireEmployee}.php`, dialog di `pages/Employees/Show.tsx`
 - Deskripsi: Transaksi tunggal sesuai diagram `03` §7.2, termasuk pencabutan perangkat & token (tabel `devices` dari T-031). Action memancarkan event `EmployeeOffboarded`. Pembatalan koreksi `pending` **tidak** dikerjakan di sini karena tabelnya baru ada di T-040, yang menambahkan listener untuk event ini. Tampilkan ringkasan dampak & daftar bawahan sebelum konfirmasi.
 - Kriteria penerimaan:
-  - [ ] Setelah offboard: login web gagal, token API → 401, perangkat `revoked`, `head_employee_id` kosong
-  - [ ] Gagal di tengah → rollback penuh (test dengan exception paksa)
-  - [ ] Rehire wajib penugasan baru
+  - [x] Setelah offboard: login web gagal, token API → 401, perangkat `revoked`, `head_employee_id` kosong
+  - [x] Gagal di tengah → rollback penuh (test dengan exception paksa)
+  - [x] Rehire wajib penugasan baru
 - Verifikasi: `php artisan test --filter=Offboard`
 - Di luar lingkup: —
 

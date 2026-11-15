@@ -32,6 +32,8 @@ export function EmployeeHero({
     summary,
     editHref,
     onDelete,
+    extraActions,
+    notice,
 }: {
     name: string;
     number: string;
@@ -44,6 +46,10 @@ export function EmployeeHero({
     summary: HeroSummary;
     editHref: NonNullable<InertiaLinkProps['href']> | null;
     onDelete: (() => void) | null;
+    /** Aksi tambahan (Nonaktifkan / Aktifkan kembali, T-026). */
+    extraActions?: ReactNode;
+    /** Pita info di bawah identitas (mis. "Nonaktif sejak …"). */
+    notice?: ReactNode;
 }) {
     const initials = name
         .split(/\s+/)
@@ -55,7 +61,11 @@ export function EmployeeHero({
         <section className="overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]">
             <div
                 aria-hidden="true"
-                className="relative h-20 bg-gradient-to-r from-primary via-primary/85 to-primary-strong sm:h-24"
+                className={[
+                    'relative h-20 bg-gradient-to-r from-primary via-primary/85 to-primary-strong sm:h-24',
+                    // Pegawai nonaktif: pita merek diredupkan agar statusnya terbaca sekilas.
+                    status === 'inactive' ? 'opacity-60 grayscale' : '',
+                ].join(' ')}
             >
                 {/* Kilau halus agar pita tidak datar. */}
                 <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_-30%,rgb(255_255_255/0.22),transparent_50%),radial-gradient(circle_at_10%_130%,rgb(255_255_255/0.10),transparent_45%)]" />
@@ -78,8 +88,9 @@ export function EmployeeHero({
                         </span>
                     )}
 
-                    {(editHref || onDelete) && (
-                        <div className="flex gap-2">
+                    {(editHref || onDelete || extraActions) && (
+                        <div className="flex flex-wrap justify-end gap-2">
+                            {extraActions}
                             {editHref && (
                                 <Button variant="outline" size="sm" asChild>
                                     <Link
@@ -135,6 +146,7 @@ export function EmployeeHero({
                             Masuk {formatDate(joinDate)}
                         </Meta>
                     </ul>
+                    {notice}
                 </div>
             </div>
 

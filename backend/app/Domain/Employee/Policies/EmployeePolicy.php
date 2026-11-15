@@ -60,6 +60,18 @@ class EmployeePolicy
         return $user->can('employees.view_sensitive') && $this->scope->allows($user, $employee->id);
     }
 
+    /** Nonaktifkan pegawai (BR-053): izin `employees.offboard` + pegawai dalam scope. */
+    public function offboard(User $user, Employee $employee): bool
+    {
+        return $user->can('employees.offboard') && $this->scope->allows($user, $employee->id);
+    }
+
+    /** Aktifkan kembali (06 §7.3): izin yang sama dengan menonaktifkan. */
+    public function rehire(User $user, Employee $employee): bool
+    {
+        return $this->offboard($user, $employee);
+    }
+
     /** Mutasi / tambah penugasan tambahan untuk pegawai ini (T-025). */
     public function manageAssignments(User $user, Employee $employee): bool
     {

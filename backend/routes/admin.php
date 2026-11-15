@@ -211,6 +211,11 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         ->middleware(['can:employees.view_sensitive', 'throttle:30,1'])->whereNumber('employee')->name('employees.reveal-nik');
     Route::post('pegawai/{employee}/akun', [EmployeeController::class, 'account'])
         ->middleware(['can:users.create', 'throttle:30,1'])->whereNumber('employee')->name('employees.account');
+    // Nonaktifkan / aktifkan kembali (05 §4.6, FR-027, BR-053): wajib password pelaku.
+    Route::middleware(['can:employees.offboard', 'throttle:30,1'])->group(function () {
+        Route::post('pegawai/{employee}/nonaktifkan', [EmployeeController::class, 'offboard'])->whereNumber('employee')->name('employees.offboard');
+        Route::post('pegawai/{employee}/aktifkan', [EmployeeController::class, 'rehire'])->whereNumber('employee')->name('employees.rehire');
+    });
 
     // Penugasan & mutasi (05 §4.6, FR-026, BR-051, BR-052). Penugasan/pegawai di luar scope → 404.
     Route::middleware('can:assignments.view')->group(function () {

@@ -75,7 +75,7 @@ class _DevicePendingScreenState extends ConsumerState<DevicePendingScreen> {
           Icon(Icons.phonelink_lock_outlined, size: 56, color: tokens.primary),
           const SizedBox(height: 12),
           Text(
-            'Satu akun hanya bisa absen dari satu HP. Minta admin atau HRD menyetujui HP ini di menu '
+            'Satu akun hanya bisa presensi dari satu HP. Minta admin atau HRD menyetujui HP ini di menu '
             'Perangkat, lalu ketuk Coba Lagi. HP lama otomatis keluar setelah disetujui.',
             style: text.bodyLarge,
             textAlign: TextAlign.center,

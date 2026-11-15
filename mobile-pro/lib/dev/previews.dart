@@ -91,8 +91,8 @@ class _StatusBadges extends StatelessWidget {
 @Preview(group: 'Komponen', name: 'EmptyState — kosong', size: Size(360, 360), wrapper: lightApp)
 Widget emptyStateEmpty() => Scaffold(
   body: EmptyState(
-    title: 'Belum ada absen',
-    message: 'Riwayat absen Anda akan tampil di sini.',
+    title: 'Belum ada presensi',
+    message: 'Riwayat presensi Anda akan tampil di sini.',
     actionLabel: 'Muat Ulang',
     onAction: () {},
   ),
@@ -182,10 +182,10 @@ class _DemoList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Riwayat Absen')),
+    appBar: AppBar(title: const Text('Riwayat Presensi')),
     body: PagedList<_DemoRow>(
       fetch: _demoFetch,
-      emptyTitle: 'Belum ada absen',
+      emptyTitle: 'Belum ada presensi',
       itemBuilder: (context, row) => ListTile(
         title: Text(row.name),
         subtitle: Text(Fmt.isoDate(row.date)),

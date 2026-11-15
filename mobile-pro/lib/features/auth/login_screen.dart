@@ -104,7 +104,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       title: _needsOtp ? 'Verifikasi dua langkah' : 'Selamat datang',
       subtitle: _needsOtp
           ? 'Satu langkah lagi untuk menjaga akun Anda.'
-          : config?.loginTagline ?? 'Masuk untuk mulai absen hari ini.',
+          : config?.loginTagline ?? 'Masuk untuk mulai presensi hari ini.',
       child: AutofillGroup(
         child: AuthCard(
           children: [
@@ -121,7 +121,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 18),
             if (offline)
-              const FormNotice('Tidak ada koneksi. Memakai pengaturan terakhir yang tersimpan; masuk butuh internet.'),
+              const FormNotice(
+                'Tidak ada koneksi. Memakai pengaturan terakhir yang tersimpan; masuk ke akun butuh internet.',
+              ),
             if (message != null)
               FormNotice(message)
             else if (info != null)

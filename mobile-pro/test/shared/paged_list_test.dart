@@ -86,7 +86,7 @@ Future<_FakeServer> _pump(WidgetTester tester, {_FakeServer? server}) async {
         body: PagedList<String>(
           fetch: s.fetch,
           itemBuilder: (_, item) => ListTile(title: Text(item)),
-          emptyTitle: 'Belum ada absen',
+          emptyTitle: 'Belum ada presensi',
           searchDebounce: const Duration(milliseconds: 10),
         ),
       ),
@@ -171,7 +171,7 @@ void main() {
     await tester.tap(find.text('Terapkan Filter'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Belum ada absen'), findsOneWidget);
+    expect(find.text('Belum ada presensi'), findsOneWidget);
     expect(find.text('Tidak ada yang cocok. Coba ubah pencarian atau filter.'), findsOneWidget);
 
     await tester.tap(find.text('Hapus Filter'));

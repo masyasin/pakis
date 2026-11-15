@@ -66,7 +66,7 @@ final sessionHooksProvider = Provider<SessionHooks>((ref) => SyncSessionHooks(re
 /// Server tidak terjangkau → tetap masuk (absen offline butuh sesi); token ditolak (401) →
 /// [ApiClient.onSessionInvalid] → keluar dengan pesan.
 class SessionController extends AsyncNotifier<SessionState> {
-  static const expiredNotice = 'Sesi Anda sudah berakhir. Silakan masuk lagi.';
+  static const expiredNotice = 'Sesi Anda sudah berakhir. Silakan masuk lagi ke akun.';
 
   @override
   Future<SessionState> build() async {
@@ -101,7 +101,7 @@ class SessionController extends AsyncNotifier<SessionState> {
     return SignedIn(user);
   }
 
-  static const _mismatchNotice = 'Sesi ini tidak berlaku di HP ini lagi. Silakan masuk lagi.';
+  static const _mismatchNotice = 'Sesi ini tidak berlaku di HP ini lagi. Silakan masuk lagi ke akun.';
 
   /// `POST /auth/login` (05 §5.3). Melempar [ApiError] untuk ditampilkan layar Masuk
   /// (`MFA_REQUIRED` → minta kode, `DEVICE_PENDING` → layar menunggu, dst.).

@@ -93,7 +93,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 const SizedBox(height: 8),
                 Text(
                   'Jika akun ditemukan dan emailnya terverifikasi, tautan untuk membuat password baru sudah '
-                  'dikirim. Buka tautan itu, lalu kembali ke sini untuk masuk.',
+                  'dikirim. Buka tautan itu, lalu kembali ke sini untuk masuk ke akun.',
                   style: text.bodyLarge,
                   textAlign: TextAlign.center,
                 ),

@@ -22,7 +22,7 @@ void main() {
     expect(e.code, ApiErrorCode.deviceMismatch);
     expect(e.status, 401);
     expect(e.requestId, '01JBX8Q6V7M3T2K9R4N5P6W8YZ');
-    expect(e.message, 'Sesi ini tidak berlaku di perangkat ini. Silakan masuk lagi.');
+    expect(e.message, 'Sesi ini tidak berlaku di perangkat ini. Silakan masuk lagi ke akun.');
   });
 
   test('body bukan JSON galat (proxy 502/503) → ditebak dari status', () {

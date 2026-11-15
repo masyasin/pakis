@@ -16,7 +16,9 @@ class HomeScreen extends ConsumerWidget {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Keluar dari Pakis Pro?'),
-        content: const Text('Anda perlu masuk lagi untuk absen. Absen yang belum terkirim tetap tersimpan di HP.'),
+        content: const Text(
+          'Anda perlu masuk lagi ke akun untuk presensi. Presensi yang belum terkirim tetap tersimpan di HP.',
+        ),
         actions: [
           TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Batal')),
           FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Keluar')),
@@ -78,8 +80,9 @@ class HomeScreen extends ConsumerWidget {
               const Expanded(
                 child: EmptyState(
                   icon: Icons.fingerprint,
-                  title: 'Absen segera hadir',
-                  message: 'Anda sudah masuk. Tombol absen tampil di sini setelah modul absensi aktif.',
+                  title: 'Presensi segera hadir',
+                  message:
+                      'Anda sudah masuk ke akun. Tombol Masuk dan Pulang tampil di sini setelah modul presensi aktif.',
                 ),
               ),
             ],

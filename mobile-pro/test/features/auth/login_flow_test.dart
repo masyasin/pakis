@@ -242,7 +242,7 @@ void main() {
       );
 
       expect(find.byType(LoginScreen), findsOneWidget);
-      expect(find.text('Sesi Anda sudah berakhir. Silakan masuk lagi.'), findsOneWidget);
+      expect(find.text('Sesi Anda sudah berakhir. Silakan masuk lagi ke akun.'), findsOneWidget);
       expect(store.values.containsKey(StoreKeys.authToken), isFalse);
       expect(store.values.containsKey(StoreKeys.authUser), isFalse);
       expect(hooks.calls, ['signedIn', 'signedOut']);
@@ -390,7 +390,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(LoginScreen), findsOneWidget);
-      expect(find.text('Password baru tersimpan. Silakan masuk.'), findsOneWidget);
+      expect(find.text('Password baru tersimpan. Silakan masuk ke akun.'), findsOneWidget);
       final reset = adapter.requests.firstWhere((o) => o.path.endsWith('/reset-otp'));
       expect(bodyOf(reset), {
         'login': 'agus.s',

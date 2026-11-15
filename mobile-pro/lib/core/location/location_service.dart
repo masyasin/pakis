@@ -31,7 +31,7 @@ class LocationProblem implements Exception {
 
   String get message => switch (kind) {
     LocationProblemKind.serviceDisabled => 'GPS (Lokasi) di HP mati. Aktifkan lalu coba lagi.',
-    LocationProblemKind.denied => 'Pakis Pro perlu izin lokasi untuk absen. Pilih "Izinkan" saat diminta.',
+    LocationProblemKind.denied => 'Pakis Pro perlu izin lokasi untuk presensi. Pilih "Izinkan" saat diminta.',
     LocationProblemKind.deniedForever =>
       'Izin lokasi ditolak permanen. Buka Pengaturan → Aplikasi → Pakis Pro → Izin → Lokasi, lalu izinkan.',
     LocationProblemKind.timeout => 'GPS belum mendapat sinyal. Pindah ke tempat terbuka lalu coba lagi.',

@@ -13,7 +13,7 @@ class CameraProblem implements Exception {
   String get message => switch (kind) {
     CameraProblemKind.noCamera => 'Kamera depan tidak ditemukan di HP ini.',
     CameraProblemKind.denied =>
-      'Pakis Pro perlu izin kamera untuk foto absen. Buka Pengaturan → Aplikasi → Pakis Pro → Izin → Kamera.',
+      'Pakis Pro perlu izin kamera untuk foto presensi. Buka Pengaturan → Aplikasi → Pakis Pro → Izin → Kamera.',
     CameraProblemKind.failed => 'Kamera tidak bisa dibuka. Tutup aplikasi kamera lain lalu coba lagi.',
   };
 }

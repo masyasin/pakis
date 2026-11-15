@@ -13,7 +13,7 @@ import 'package:intl/intl.dart';
 /// dengan layar mobile dan tetap ada ketika jaringan putus sebelum server menjawab.
 enum ApiErrorCode {
   validationFailed('VALIDATION_FAILED', 'Data yang dikirim belum benar. Periksa isian yang ditandai.'),
-  unauthenticated('UNAUTHENTICATED', 'Sesi Anda sudah berakhir. Silakan masuk lagi.'),
+  unauthenticated('UNAUTHENTICATED', 'Sesi Anda sudah berakhir. Silakan masuk lagi ke akun.'),
   invalidCredentials('INVALID_CREDENTIALS', 'Username/email atau password salah.'),
   mfaRequired('MFA_REQUIRED', 'Masukkan kode 6 digit dari aplikasi authenticator.'),
   mfaInvalid('MFA_INVALID', 'Kode authenticator atau kode pemulihan salah.'),
@@ -21,10 +21,10 @@ enum ApiErrorCode {
     'MFA_SETUP_REQUIRED',
     'Akun Anda wajib memakai verifikasi dua langkah. Aktifkan dulu di web: Profil → Keamanan.',
   ),
-  accountLocked('ACCOUNT_LOCKED', 'Akun terkunci sementara karena terlalu banyak percobaan masuk.'),
+  accountLocked('ACCOUNT_LOCKED', 'Akun terkunci sementara karena terlalu banyak percobaan masuk ke akun.'),
   passwordChangeRequired('PASSWORD_CHANGE_REQUIRED', 'Anda wajib mengganti password sebelum melanjutkan.'),
   devicePending('DEVICE_PENDING', 'Perangkat ini menunggu persetujuan admin.'),
-  deviceMismatch('DEVICE_MISMATCH', 'Sesi ini tidak berlaku di perangkat ini. Silakan masuk lagi.'),
+  deviceMismatch('DEVICE_MISMATCH', 'Sesi ini tidak berlaku di perangkat ini. Silakan masuk lagi ke akun.'),
   appUpdateRequired(
     'APP_UPDATE_REQUIRED',
     'Versi Pakis Pro ini sudah tidak didukung. Perbarui aplikasi untuk melanjutkan.',
@@ -34,9 +34,9 @@ enum ApiErrorCode {
   rateLimited('RATE_LIMITED', 'Terlalu banyak permintaan dalam waktu singkat.'),
   stateConflict('STATE_CONFLICT', 'Data sudah berubah. Muat ulang lalu coba lagi.'),
   attendanceNoSchedule('ATTENDANCE_NO_SCHEDULE', 'Tidak ada jadwal kerja untuk Anda hari ini.'),
-  attendanceOutsideWindow('ATTENDANCE_OUTSIDE_WINDOW', 'Sekarang di luar jam absen untuk shift Anda.'),
-  attendanceAlreadyCheckedIn('ATTENDANCE_ALREADY_CHECKED_IN', 'Anda sudah absen masuk hari ini.'),
-  attendanceNotCheckedIn('ATTENDANCE_NOT_CHECKED_IN', 'Anda belum absen masuk hari ini.'),
+  attendanceOutsideWindow('ATTENDANCE_OUTSIDE_WINDOW', 'Sekarang di luar jam presensi untuk shift Anda.'),
+  attendanceAlreadyCheckedIn('ATTENDANCE_ALREADY_CHECKED_IN', 'Presensi masuk Anda hari ini sudah tercatat.'),
+  attendanceNotCheckedIn('ATTENDANCE_NOT_CHECKED_IN', 'Anda belum presensi masuk hari ini.'),
   attendanceOutOfRadius('ATTENDANCE_OUT_OF_RADIUS', 'Anda berada di luar radius lokasi kerja.'),
   attendanceMockLocation(
     'ATTENDANCE_MOCK_LOCATION',
@@ -45,7 +45,7 @@ enum ApiErrorCode {
   attendanceLowAccuracy('ATTENDANCE_LOW_ACCURACY', 'Sinyal GPS lemah. Pindah ke tempat terbuka lalu coba lagi.'),
   attendanceOfflineTooOld(
     'ATTENDANCE_OFFLINE_TOO_OLD',
-    'Absen offline ini sudah terlalu lama tersimpan dan tidak bisa dikirim. Ajukan koreksi absen.',
+    'Presensi offline ini sudah terlalu lama tersimpan dan tidak bisa dikirim. Ajukan koreksi presensi.',
   ),
   correctionDuplicatePending('CORRECTION_DUPLICATE_PENDING', 'Sudah ada koreksi yang menunggu untuk tanggal itu.'),
   correctionNotAllowed('CORRECTION_NOT_ALLOWED', 'Tanggal ini tidak bisa diajukan koreksi.'),

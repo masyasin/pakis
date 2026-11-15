@@ -62,7 +62,7 @@ class _ResetOtpScreenState extends ConsumerState<ResetOtpScreen> {
           .read(passwordRecoveryProvider)
           .resetWithCode(login: login, code: _code.text, password: _password.text, confirmation: _confirmation.text);
       ref.read(forgotLoginProvider.notifier).set(null);
-      ref.read(loginNoticeProvider.notifier).set('Password baru tersimpan. Silakan masuk.');
+      ref.read(loginNoticeProvider.notifier).set('Password baru tersimpan. Silakan masuk ke akun.');
       if (mounted) {
         context.go(Routes.login);
       }

@@ -2,10 +2,24 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Attendance\Models\Shift;
+use App\Domain\Employee\Enums\EmployeeStatus;
+use App\Domain\Employee\Enums\Gender;
+use App\Domain\Employee\Models\Assignment;
+use App\Domain\Employee\Models\Employee;
+use App\Domain\Employee\Support\NikCipher;
+use App\Domain\Employee\Support\UsernameSuggester;
+use App\Domain\Numbering\NumberGenerator;
 use App\Domain\Organization\Models\Department;
+use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
+use App\Domain\Reference\Enums\ReferenceGroup;
+use App\Domain\Reference\Models\ReferenceItem;
+use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use RuntimeException;
 
 /**
@@ -45,6 +59,44 @@ class DemoSeeder extends Seeder
         'STF-HRD' => ['Staf HRD', 'SDM', 'OWNER', 5, 'location'],
     ];
 
+    /**
+     * Lokasi demo 04 §4.2: kode => [nama, kode tipe lokasi, latitude, longitude]. Koordinat contoh di
+     * sekitar Undaan, Kudus, sengaja dibulatkan 3 desimal (±100 m): bukan titik presisi.
+     */
+    public const LOCATIONS = [
+        'KTR-01' => ['Kantor Pusat Kalirejo', 'office', '-6.880', '110.830'],
+        'GDG-01' => ['Gudang Undaan', 'warehouse', '-6.890', '110.845'],
+        'TKO-01' => ['Toko Kalirejo', 'store', '-6.878', '110.827'],
+    ];
+
+    /**
+     * 15 pegawai FIKTIF 04 §4.2 (nama Jawa umum, bukan pegawai Pakis): nama => [L/P, kode jabatan,
+     * kode lokasi, nama atasan, tanggal lahir, tanggal masuk, role akun]. Atasan didaftarkan lebih dulu.
+     */
+    public const EMPLOYEES = [
+        'Hadi Santoso' => ['L', 'OWNER', 'KTR-01', null, '1972-03-14', '2005-01-03', RoleCatalog::OWNER],
+        'Sri Wahyuni' => ['P', 'STF-HRD', 'KTR-01', 'Hadi Santoso', '1990-07-21', '2016-02-01', 'hrd'],
+        'Dwi Lestari' => ['P', 'ADM', 'KTR-01', 'Hadi Santoso', '1994-11-02', '2018-06-11', 'administrator'],
+        'Agus Prasetyo' => ['L', 'SPV-SLS', 'KTR-01', 'Hadi Santoso', '1985-05-09', '2010-09-01', 'supervisor'],
+        'Bayu Saputra' => ['L', 'SLS', 'KTR-01', 'Agus Prasetyo', '1996-01-17', '2020-03-02', RoleCatalog::PEGAWAI],
+        'Eko Wibowo' => ['L', 'SLS', 'KTR-01', 'Agus Prasetyo', '1993-08-25', '2019-01-07', RoleCatalog::PEGAWAI],
+        'Rina Kurniasih' => ['P', 'SLS', 'KTR-01', 'Agus Prasetyo', '1998-04-30', '2022-08-01', RoleCatalog::PEGAWAI],
+        'Joko Susilo' => ['L', 'KA-GDG', 'GDG-01', 'Hadi Santoso', '1980-12-05', '2008-04-14', 'kepala_lokasi'],
+        'Slamet Riyadi' => ['L', 'STF-GDG', 'GDG-01', 'Joko Susilo', '1988-02-11', '2012-10-01', RoleCatalog::PEGAWAI],
+        'Wahyu Hidayat' => ['L', 'STF-GDG', 'GDG-01', 'Joko Susilo', '1997-09-19', '2021-05-03', RoleCatalog::PEGAWAI],
+        'Teguh Purnomo' => ['L', 'DRV', 'GDG-01', 'Joko Susilo', '1987-06-08', '2014-07-07', RoleCatalog::PEGAWAI],
+        'Bambang Sutrisno' => ['L', 'DRV', 'GDG-01', 'Joko Susilo', '1982-10-27', '2011-03-01', RoleCatalog::PEGAWAI],
+        'Endang Rahayu' => ['P', 'KA-TKO', 'TKO-01', 'Hadi Santoso', '1984-01-23', '2009-11-02', 'kepala_lokasi'],
+        'Siti Aminah' => ['P', 'KSR', 'TKO-01', 'Endang Rahayu', '1995-03-08', '2019-09-02', RoleCatalog::PEGAWAI],
+        'Lestari Handayani' => ['P', 'KSR', 'TKO-01', 'Endang Rahayu', '1999-12-12', '2023-01-09', RoleCatalog::PEGAWAI],
+    ];
+
+    /** Kepala lokasi demo (menentukan scope `location`). */
+    public const LOCATION_HEADS = ['GDG-01' => 'Joko Susilo', 'TKO-01' => 'Endang Rahayu'];
+
+    /** Password akun demo, ditetapkan 04 §4.2 (bukan rahasia; seeder ini ditolak di produksi). */
+    public const DEMO_PASSWORD = 'password-demo-123';
+
     /** Shift demo 04 §4.2: [nama, masuk, pulang, toleransi telat (menit)]. */
     public const SHIFTS = [
         'PAGI' => ['Shift Pagi', '08:00:00', '16:00:00', 10],
@@ -78,5 +130,94 @@ class DemoSeeder extends Seeder
                 'name' => $name, 'start_time' => $start, 'end_time' => $end, 'late_tolerance_min' => $tolerance,
             ]);
         }
+
+        $this->seedEmployees();
+    }
+
+    /**
+     * Lokasi, 15 pegawai fiktif + penugasan utama, kepala lokasi, dan akun login (04 §4.2). Pegawai yang
+     * sudah ada (nama sama) dilewati, jadi perubahan dari layar tidak ditimpa. NIK dibuat acak saat
+     * seeding dengan kode provinsi 99 (tidak ada di Dukcapil) dan tidak pernah tertulis di kode.
+     */
+    private function seedEmployees(): void
+    {
+        // Seeder wajib idempoten (04 §4.1): agar `db:seed --class=DemoSeeder` tetap bisa berdiri sendiri.
+        $this->call([PermissionSeeder::class, RoleSeeder::class, ReferenceSeeder::class, SequenceSeeder::class]);
+
+        $types = ReferenceItem::query()->forGroup(ReferenceGroup::LocationType)->pluck('id', 'code');
+        foreach (self::LOCATIONS as $code => [$name, $type, $lat, $lng]) {
+            Location::withTrashed()->firstOrCreate(['code' => $code], [
+                'name' => $name, 'location_type_id' => $types[$type], 'latitude' => $lat, 'longitude' => $lng,
+            ]);
+        }
+
+        $status = (int) ReferenceItem::query()->forGroup(ReferenceGroup::EmploymentStatus)->where('code', 'permanent')->value('id');
+        $numbers = app(NumberGenerator::class);
+        $cipher = app(NikCipher::class);
+
+        foreach (self::EMPLOYEES as $name => [$gender, $position, $location, $supervisor, $birth, $join, $role]) {
+            $employee = Employee::withTrashed()->where('full_name', $name)->first();
+
+            if ($employee === null) {
+                $employee = DB::transaction(function () use ($name, $gender, $position, $location, $supervisor, $birth, $join, $status, $numbers, $cipher) {
+                    $nik = $this->randomNik($cipher);
+                    $employee = new Employee;
+                    $employee->fill([
+                        'full_name' => $name,
+                        'gender' => Gender::from($gender),
+                        'birth_date' => $birth,
+                        'employment_status_id' => $status,
+                        'join_date' => $join,
+                    ]);
+                    $employee->forceFill([
+                        'employee_number' => $numbers->next('employee', isTaken: fn (string $n) => Employee::withTrashed()->where('employee_number', $n)->exists()),
+                        'status' => EmployeeStatus::Active,
+                        'nik_enc' => $cipher->encrypt($nik),
+                        'nik_hash' => $cipher->hash($nik),
+                    ])->save();
+
+                    (new Assignment)->forceFill([
+                        'employee_id' => $employee->id,
+                        'position_id' => Position::withTrashed()->where('code', $position)->value('id'),
+                        'location_id' => Location::withTrashed()->where('code', $location)->value('id'),
+                        'supervisor_employee_id' => $supervisor === null ? null : Employee::query()->where('full_name', $supervisor)->value('id'),
+                        'is_primary' => true,
+                        'start_date' => $join,
+                    ])->save();
+
+                    return $employee;
+                });
+            }
+
+            if (! User::withTrashed()->where('employee_id', $employee->id)->exists()) {
+                $username = UsernameSuggester::suggest($name);
+                $user = new User;
+                $user->forceFill([
+                    'employee_id' => $employee->id,
+                    'name' => $name,
+                    'username' => $username,
+                    'email' => "{$username}@pakis-demo.test",
+                    'email_verified_at' => now(),
+                    'password' => Hash::make(self::DEMO_PASSWORD),
+                    'must_change_password' => false,
+                    'is_active' => true,
+                ])->save();
+                $user->assignRole($role);
+            }
+        }
+
+        foreach (self::LOCATION_HEADS as $code => $name) {
+            Location::query()->where('code', $code)->whereNull('head_employee_id')
+                ->update(['head_employee_id' => Employee::query()->where('full_name', $name)->value('id')]);
+        }
+    }
+
+    private function randomNik(NikCipher $cipher): string
+    {
+        do {
+            $nik = '99'.str_pad((string) random_int(0, 99_999_999_999_999), 14, '0', STR_PAD_LEFT);
+        } while (Employee::withTrashed()->where('nik_hash', $cipher->hash($nik))->exists());
+
+        return $nik;
     }
 }

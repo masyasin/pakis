@@ -2,6 +2,7 @@
 
 use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Employee\Support\NikCipher;
 use App\Domain\Organization\Enums\AttendanceMode;
 use App\Domain\Organization\Models\Department;
 use App\Domain\Organization\Models\Location;
@@ -63,10 +64,20 @@ test('04 §4.2 data demo: 3 lokasi, 15 pegawai fiktif dengan penugasan, kepala l
         ->and($account->hasRole('kepala_lokasi'))->toBeTrue()
         ->and(User::query()->where('employee_id', Employee::query()->where('full_name', 'Hadi Santoso')->value('id'))->sole()->hasRole('owner'))->toBeTrue();
 
-    // NIK fiktif: terenkripsi + hash, tidak pernah plaintext di tabel.
-    $dump = json_encode(DB::table('employees')->get()->all(), JSON_THROW_ON_ERROR);
-    expect(preg_match('/(?<!\d)\d{16}(?!\d)/', $dump))->toBe(0)
+    // NIK fiktif: terenkripsi + hash, tidak pernah plaintext di tabel. Pola 16 digit hanya diperiksa
+    // di kolom plaintext: hash hex/ciphertext kadang kebetulan memuat 16 digit beruntun (test goyah).
+    $plain = json_encode(DB::table('employees')->get()->map(fn ($row) => array_diff_key((array) $row, array_flip(['nik_enc', 'nik_hash'])))->all(), JSON_THROW_ON_ERROR);
+    expect(preg_match('/(?<!\d)\d{16}(?!\d)/', $plain))->toBe(0)
         ->and(Employee::query()->whereNull('nik_hash')->count())->toBe(0);
+
+    // Kolom kripto tidak memuat NIK aslinya.
+    $cipher = app(NikCipher::class);
+    $dump = json_encode(DB::table('employees')->get()->all(), JSON_THROW_ON_ERROR);
+    foreach (Employee::query()->get() as $employee) {
+        $nik = $cipher->decrypt((string) $employee->nik_enc);
+        expect($nik)->toMatch('/^99\d{14}$/')
+            ->and($dump)->not->toContain($nik);
+    }
 });
 
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {

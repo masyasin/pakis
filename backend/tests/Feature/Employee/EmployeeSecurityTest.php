@@ -25,9 +25,12 @@ test('SEC-010 dump tabel employees tidak memuat NIK plaintext; audit NIK = ***',
     $nik = EmployeeWorld::nik();
     $this->actingAs($this->hrd)->postJson('/pegawai', $this->world->payload(['nik' => $nik]))->assertCreated();
 
+    // NIK asli tidak muncul di kolom mana pun; pola 16 digit hanya di kolom plaintext, karena hash
+    // hex/ciphertext kadang kebetulan memuat 16 digit beruntun (test goyah).
     $dump = json_encode(DB::table('employees')->get()->all(), JSON_THROW_ON_ERROR);
+    $plain = json_encode(DB::table('employees')->get()->map(fn ($row) => array_diff_key((array) $row, array_flip(['nik_enc', 'nik_hash'])))->all(), JSON_THROW_ON_ERROR);
     expect($dump)->not->toContain($nik)
-        ->and(preg_match('/(?<!\d)\d{16}(?!\d)/', $dump))->toBe(0);
+        ->and(preg_match('/(?<!\d)\d{16}(?!\d)/', $plain))->toBe(0);
 
     $employee = Employee::query()->sole();
     expect($employee->nik_hash)->toBe(app(NikCipher::class)->hash($nik))

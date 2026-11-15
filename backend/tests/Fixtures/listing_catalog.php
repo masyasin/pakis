@@ -23,6 +23,7 @@ return [
     'holidays', // T-034
     'schedules', // T-035
     'schedule_overrides', // T-035
+    'field_trips', // T-036A
     'notifications', // T-029
     'locations', // T-021
     'departments', // T-022

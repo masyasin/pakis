@@ -59,8 +59,8 @@ function docMatrix(): array
     return $matrix;
 }
 
-test('ADR-011 katalog permission identik dengan 06 §3 (50 permission, urutan & nama sama)', function () {
-    expect(docPermissions())->toHaveCount(50)
+test('ADR-011 katalog permission identik dengan 06 §3 (54 permission, urutan & nama sama)', function () {
+    expect(docPermissions())->toHaveCount(54)
         ->and(PermissionCatalog::names())->toBe(docPermissions());
 });
 
@@ -70,13 +70,13 @@ test('BR-030 fixture permission_matrix identik dengan matriks 06 §4', function 
     expect($fixture)->toBe(docMatrix());
 });
 
-test('ADR-011 PermissionSeeder: 50 permission di DB, nama identik 06 §3, idempoten & membuang yang asing', function () {
+test('ADR-011 PermissionSeeder: 54 permission di DB, nama identik 06 §3, idempoten & membuang yang asing', function () {
     Permission::findOrCreate('lama.tidak_dipakai', 'web');
 
     $this->seed(PermissionSeeder::class);
     $this->seed(PermissionSeeder::class);
 
-    expect(Permission::query()->count())->toBe(50)
+    expect(Permission::query()->count())->toBe(54)
         ->and(Permission::query()->orderBy('id')->pluck('name')->sort()->values()->all())
         ->toBe(collect(docPermissions())->sort()->values()->all());
 });
@@ -92,7 +92,7 @@ test('FR-017 RoleSeeder: 7 role bawaan + matriks identik fixture 06 §4', functi
     }
 
     expect(Role::query()->count())->toBe(7)
-        ->and(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(50)
+        ->and(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(54)
         ->and(Role::findByName('kepala_lokasi', 'web')->data_scope)->toBe(DataScope::Location)
         ->and(Role::findByName('supervisor', 'web')->data_scope)->toBe(DataScope::Team)
         ->and(Role::findByName('pegawai', 'web')->is_system)->toBeTrue()

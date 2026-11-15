@@ -49,16 +49,22 @@ final class PermissionCatalog
         'shifts' => ['Shift', ['shifts.view' => 'Lihat', 'shifts.manage' => 'Kelola']],
         'schedules' => ['Jadwal', ['schedules.view' => 'Lihat', 'schedules.manage' => 'Kelola pola & pengecualian']],
         'holidays' => ['Hari libur', ['holidays.view' => 'Lihat', 'holidays.manage' => 'Kelola']],
-        'attendance' => ['Absensi', [
+        'attendance' => ['Presensi', [
             'attendance.view' => 'Lihat',
             'attendance.view_photo' => 'Lihat foto selfie',
             'attendance.export' => 'Ekspor',
-            'attendance.self' => 'Absen & lihat milik sendiri (Pakis Pro)',
+            'attendance.self' => 'Presensi & lihat milik sendiri (Pakis Pro)',
         ]],
-        'attendance_corrections' => ['Koreksi absen', [
+        'attendance_corrections' => ['Koreksi presensi', [
             'attendance_corrections.view' => 'Lihat',
             'attendance_corrections.create' => 'Ajukan milik sendiri',
             'attendance_corrections.approve' => 'Setujui / tolak',
+        ]],
+        'field_trips' => ['Tugas luar kota', [
+            'field_trips.view' => 'Lihat',
+            'field_trips.manage' => 'Buat / ubah / batalkan',
+            'field_trips.request' => 'Ajukan milik sendiri (Pakis Pro)',
+            'field_trips.approve' => 'Setujui / tolak pengajuan',
         ]],
     ];
 

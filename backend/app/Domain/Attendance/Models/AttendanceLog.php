@@ -68,10 +68,21 @@ class AttendanceLog extends Model
         ];
     }
 
-    /** Ada penanda anomali (BR-068 `has_anomaly`): flags terisi atau di luar radius (mode anywhere). */
+    /** Kunci `flags` yang hanya informasi, bukan anomali (BR-071: absen sah karena tugas luar kota). */
+    public const INFO_FLAGS = ['field_trip_id', 'field_trip_rule', 'field_trip_place'];
+
+    /**
+     * Ada penanda anomali (BR-068 `has_anomaly`): flags selain informasi tugas, atau di luar radius
+     * (mode `anywhere`) — kecuali di luar radius itu sah karena tugas luar kota `anywhere` (BR-071).
+     */
     public function isAnomalous(): bool
     {
-        return ($this->flags !== null && $this->flags !== []) || ! $this->within_radius;
+        $flags = $this->flags ?? [];
+        if (array_diff_key($flags, array_flip(self::INFO_FLAGS)) !== []) {
+            return true;
+        }
+
+        return ! $this->within_radius && ($flags['field_trip_rule'] ?? null) !== 'anywhere';
     }
 
     /** @return BelongsTo<Location, $this> */

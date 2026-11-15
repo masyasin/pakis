@@ -4,12 +4,14 @@ namespace App\Domain\Attendance\Actions;
 
 use App\Domain\Attendance\Enums\AttendanceStatus;
 use App\Domain\Attendance\Enums\AttendanceType;
+use App\Domain\Attendance\Enums\FieldTripRule;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Models\AttendanceLog;
 use App\Domain\Attendance\Notifications\AttendanceMockDetected;
 use App\Domain\Attendance\Support\AttendanceInput;
 use App\Domain\Attendance\Support\ClockGuard;
 use App\Domain\Attendance\Support\DayStatusResolver;
+use App\Domain\Attendance\Support\FieldTripAreas;
 use App\Domain\Attendance\Support\GeoFence;
 use App\Domain\Attendance\Support\GeoResult;
 use App\Domain\Attendance\Support\SelfieStore;
@@ -58,6 +60,7 @@ final class RecordAttendance
         private readonly DayStatusResolver $status,
         private readonly AuditLogger $audit,
         private readonly SecurityLogger $security,
+        private readonly FieldTripAreas $trips,
     ) {}
 
     /** @return Recorded */
@@ -85,7 +88,22 @@ final class RecordAttendance
 
         $assignment = self::primaryAssignmentOn($employee->id, $candidate->workDate);
         $mode = $assignment?->effectiveAttendanceMode() ?? AttendanceMode::Location;
-        $geo = $this->geo->check($input->latitude, $input->longitude, $input->accuracyM, $mode, $assignment?->location);
+        // BR-071: tugas luar kota yang berlaku pada work_date menambah lokasi sah.
+        $trip = $this->trips->for($employee->id, $candidate->workDate);
+        $geo = $this->geo->check($input->latitude, $input->longitude, $input->accuracyM, $mode, $assignment?->location, $trip['areas'], $trip['anywhereTripId']);
+        if ($geo->fieldTripId !== null) {
+            // Penanda informasi (bukan anomali): absen ini sah karena tugas itu.
+            $flags['field_trip_id'] = $geo->fieldTripId;
+            $flags['field_trip_rule'] = match (true) {
+                ! $geo->withinRadius => FieldTripRule::Anywhere->value,
+                $geo->area?->locationId === null => FieldTripRule::Destination->value,
+                default => FieldTripRule::AnyLocation->value,
+            };
+            // Titik tujuan yang dipakai (nama tempat, bukan koordinat): atasan tahu presensi di mana.
+            if ($flags['field_trip_rule'] === FieldTripRule::Destination->value && $geo->area !== null) {
+                $flags['field_trip_place'] = $geo->area->name;
+            }
+        }
 
         $selfiePath = $input->selfie === null
             ? null
@@ -106,7 +124,7 @@ final class RecordAttendance
     }
 
     /**
-     * @param  array<string, int>  $flags
+     * @param  array<string, int|string>  $flags
      * @return Recorded
      */
     private function persist(

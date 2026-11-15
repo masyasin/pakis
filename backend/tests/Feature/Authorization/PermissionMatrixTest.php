@@ -49,6 +49,8 @@ const REPRESENTATIVE = [
     'schedules.view' => ['GET', '/jadwal'],
     // Payload kosong: pemegang izin lolos ke validasi (302), bukan pemegang 403.
     'schedules.manage' => ['POST', '/jadwal/pengecualian'],
+    'field_trips.view' => ['GET', '/tugas-luar-kota'],
+    'field_trips.manage' => ['GET', '/tugas-luar-kota/baru'],
     'locations.view' => ['GET', '/lokasi'],
     'locations.manage' => ['GET', '/lokasi/baru'],
     'departments.view' => ['GET', '/departemen'],
@@ -73,6 +75,7 @@ const REPRESENTATIVE = [
 const PENDING = [
     'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038',
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.create' => 'T-040', 'attendance_corrections.approve' => 'T-041',
+    'field_trips.request' => 'T-036A bagian 2', 'field_trips.approve' => 'T-036A bagian 2',
 ];
 
 /**

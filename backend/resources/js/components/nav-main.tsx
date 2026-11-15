@@ -15,6 +15,7 @@ import {
     KeyRound,
     LayoutDashboard,
     ListTree,
+    Luggage,
     Map,
     MapPin,
     Network,
@@ -63,6 +64,7 @@ const ICONS: Record<string, LucideIcon> = {
     schedule: CalendarClock,
     shift: Clock3,
     holiday: CalendarOff,
+    trip: Luggage,
     employee: UsersRound,
     assignment: BriefcaseBusiness,
     import: FileUp,
@@ -82,7 +84,7 @@ const ICONS: Record<string, LucideIcon> = {
 
 /** Ikon grup menu (judul grup 06 §8). Grup lain memakai ikon item pertamanya. */
 const GROUP_ICONS: Record<string, LucideIcon> = {
-    Absensi: ClipboardCheck,
+    Presensi: ClipboardCheck,
     Kepegawaian: UsersRound,
     Organisasi: Building2,
     Akses: KeyRound,

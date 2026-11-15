@@ -118,7 +118,7 @@ test('BR-031 owner & super_admin terkunci penuh: ubah/hapus ditolak, form baca-s
     confirmed()->delete("/role/{$role->id}")->assertForbidden();
     confirmed()->get("/role/{$role->id}/ubah")->assertOk()->assertInertia(fn (Assert $page) => $page->where('readOnly', 'locked'));
 
-    expect($role->fresh()->permissions)->toHaveCount(50);
+    expect($role->fresh()->permissions)->toHaveCount(54);
 })->with(['owner', 'super_admin']);
 
 test('BR-031 pengguna tidak bisa mengubah role yang sedang ia pegang (cegah naik hak sendiri)', function () {

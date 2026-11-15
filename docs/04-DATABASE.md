@@ -495,6 +495,42 @@ CREATE TABLE holiday_locations (
   CONSTRAINT hl_location_fk FOREIGN KEY (location_id) REFERENCES locations(id)
 );
 
+CREATE TABLE field_trips (                   -- tugas luar kota / dinas luar (T-036A, BR-071)
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  number VARCHAR(30) NOT NULL,                -- NumberGenerator('field_trip')
+  start_date DATE NOT NULL, end_date DATE NOT NULL,   -- inklusif, tanggal lokal
+  destination VARCHAR(150) NOT NULL,          -- ringkasan tujuan, mis. "Semarang & Pati"
+  purpose VARCHAR(500) NULL,
+  attendance_rule ENUM('anywhere','destination','any_location') NOT NULL,   -- destination = titik di field_trip_destinations
+  status ENUM('pending','approved','rejected','cancelled') NOT NULL,
+  requested_by BIGINT UNSIGNED NULL,          -- pengaju dari Pakis Pro (bagian 2); NULL = dibuat admin/atasan
+  decided_by BIGINT UNSIGNED NULL, decided_at TIMESTAMP NULL,
+  decision_note VARCHAR(255) NULL,
+  [audit],
+  UNIQUE KEY field_trips_number_unique (number),
+  KEY field_trips_status_dates_idx (status, start_date, end_date),
+  CONSTRAINT field_trips_range_chk CHECK (end_date >= start_date),
+  CONSTRAINT field_trips_requested_fk FOREIGN KEY (requested_by) REFERENCES users(id),
+  CONSTRAINT field_trips_decided_fk FOREIGN KEY (decided_by) REFERENCES users(id)
+);
+CREATE TABLE field_trip_destinations (       -- titik tujuan aturan destination, 1–10 per tugas (keputusan Mas 16 Nov 2026)
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  field_trip_id BIGINT UNSIGNED NOT NULL,
+  name VARCHAR(150) NOT NULL,                 -- nama tempat, mis. "Toko Tani Makmur, Semarang"
+  latitude DECIMAL(10,7) NOT NULL, longitude DECIMAL(10,7) NOT NULL,
+  radius_m SMALLINT UNSIGNED NULL,            -- NULL = attendance.default_radius_m
+  sort_order TINYINT UNSIGNED NOT NULL DEFAULT 0,
+  KEY ftd_trip_order_idx (field_trip_id, sort_order),
+  CONSTRAINT ftd_trip_fk FOREIGN KEY (field_trip_id) REFERENCES field_trips(id) ON DELETE CASCADE
+);
+CREATE TABLE field_trip_employees (           -- satu tugas banyak pegawai (sales + driver + kenek)
+  field_trip_id BIGINT UNSIGNED NOT NULL, employee_id BIGINT UNSIGNED NOT NULL,
+  PRIMARY KEY (field_trip_id, employee_id),
+  KEY fte_employee_idx (employee_id),
+  CONSTRAINT fte_trip_fk FOREIGN KEY (field_trip_id) REFERENCES field_trips(id) ON DELETE CASCADE,
+  CONSTRAINT fte_employee_fk FOREIGN KEY (employee_id) REFERENCES employees(id)
+);
+
 CREATE TABLE attendance_logs (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   client_uuid CHAR(36) NOT NULL,
@@ -646,7 +682,7 @@ Pencarian teks memakai `LIKE 'kata%'` di kolom ber-index untuk nama/kode. `LIKE 
   - `correction_reason`: `forgot` Lupa absen, `gps_error` GPS/HP bermasalah, `field_duty` Tugas luar, `system_error` Gangguan sistem, `other` Lainnya.
   - `offboarding_reason`: `resign` Mengundurkan diri, `contract_end` Kontrak berakhir, `terminated` Diberhentikan, `retired` Pensiun, `deceased` Meninggal dunia, `other` Lainnya.
   - Semua item seed `is_system = true`.
-- `SequenceSeeder`: `employee` → `PJA-{YY}{SEQ:4}`, reset `never`. `attendance_correction` → `KOR-{YYYY}{MM}-{SEQ:4}`, reset `monthly`.
+- `SequenceSeeder`: `employee` → `PJA-{YY}{SEQ:4}`, reset `never`. `attendance_correction` → `KOR-{YYYY}{MM}-{SEQ:4}`, reset `monthly`. `field_trip` → `DL/{YYYY}/{MM}/{SEQ:4}`, reset `monthly` (T-036A, keputusan Mas 15 Nov 2026).
 - `SuperAdminSeeder`: membaca `SUPERADMIN_USERNAME`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` dari env. **Gagal** bila env kosong atau password < 16 karakter (SEC-008). `must_change_password = true`.
 - Wilayah: tidak lewat seeder. Pakai `php artisan regions:import {path.sql}` (T-012).
 

@@ -6,15 +6,18 @@ use App\Domain\Attendance\AttendanceStatusResolver;
 use App\Domain\Attendance\Events\ScheduleChanged;
 use App\Domain\Attendance\Listeners\RecomputeAttendanceDays;
 use App\Domain\Attendance\Lookup\ShiftLookup;
+use App\Domain\Attendance\Models\FieldTrip;
+use App\Domain\Attendance\Policies\FieldTripPolicy;
 use App\Domain\Attendance\Support\DayStatusResolver;
 use App\Domain\Attendance\Support\ShiftScope;
 use App\Domain\Employee\Events\AssignmentChanged;
 use App\Support\Lookup\LookupRegistry;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 /**
- * Absensi (T-033 shift, T-035 jadwal, T-036 absen). Provider terpisah agar modul ini tidak
+ * Absensi (T-033 shift, T-035 jadwal, T-036 absen, T-036A tugas luar kota). Provider terpisah agar modul ini tidak
  * menyentuh registrasi modul lain di AppServiceProvider/OrganizationServiceProvider.
  */
 class AttendanceServiceProvider extends ServiceProvider
@@ -40,5 +43,7 @@ class AttendanceServiceProvider extends ServiceProvider
         // Hitung ulang status harian yang sudah ada (BR-052 mutasi, OQ-021 jadwal/libur lampau).
         Event::listen(AssignmentChanged::class, [RecomputeAttendanceDays::class, 'assignmentChanged']);
         Event::listen(ScheduleChanged::class, [RecomputeAttendanceDays::class, 'scheduleChanged']);
+
+        Gate::policy(FieldTrip::class, FieldTripPolicy::class);
     }
 }

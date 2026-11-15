@@ -101,6 +101,7 @@ Notasi filter: **S** select, **MS** multi select, **B** boolean, **DR** rentang 
 | `shifts` | `admin.shifts.index` | Kode, nama, jam, lintas hari, toleransi, jumlah pegawai, aktif | kode, nama | aktif (B), lintas hari (B) | **start_time**, name | ❌ |
 | `schedules` | `admin.schedules.index` | Pegawai, lokasi, jabatan, pola Sen–Min (kode shift), berlaku sejak | nama/no. pegawai | lokasi (R), departemen (R), jabatan (R), shift (R, dipakai di pola), tanpa jadwal (B) | **employee_name**, -effective_from | ❌ |
 | `schedule_overrides` | `admin.schedule-overrides.index` | Tanggal, pegawai, shift pengganti / Libur, catatan | nama/no. pegawai, catatan | tanggal (DR, default bulan ini), lokasi (R), shift (R), libur (B) | **-date**, employee_name | ✅ |
+| `field_trips` | `admin.field-trips.index` | Nomor, tanggal (rentang + jumlah hari), tujuan, pegawai (ringkas), aturan lokasi, status | nomor, tujuan, nama pegawai | status (MS, default disetujui + menunggu), tanggal (DR, default bulan ini; tugas yang beririsan), lokasi (R; penugasan utama pegawai), aturan (S) | **-start_date**, number | ❌ |
 | `holidays` | `admin.holidays.index` | Tanggal (rentang + jumlah hari), nama + keterangan, nasional, berlaku | nama, keterangan | tahun (S, default tahun ini; libur yang beririsan dengan tahun itu), nasional (B), lokasi (R; libur yang berlaku di lokasi itu = semua lokasi + khusus lokasi itu) | **date** (tanggal mulai), name | ✅ |
 | `attendance_days` | `admin.attendance.index` | Tanggal, pegawai, lokasi, shift, masuk, pulang, telat (mnt), status, penanda (offline/koreksi/anomali) | nama/no. pegawai | tanggal (DR, default hari ini), status (MS), lokasi (R), departemen (R), jabatan (R), offline (B), dikoreksi (B), anomali (B) | **-work_date**, employee_name, check_in_at, late_minutes | ✅ |
 | `attendance_summary` | `admin.attendance-summary.index` | Pegawai, lokasi, hari dijadwalkan, hadir, telat, total menit telat, pulang cepat, tidak absen pulang, alpa, libur, % kehadiran | nama/no. pegawai | bulan (S `YYYY-MM`, wajib, default bulan ini), lokasi (R), departemen (R), jabatan (R), % kehadiran (NR) | **employee_name**, attendance_pct, late_count | ✅ |
@@ -131,6 +132,7 @@ Halaman non-daftar yang tetap butuh paging/cari/filter: **Kalender Jadwal** (`ad
 | Absensi harian (detail) | Data jadwal & hasil, dua kartu log (masuk/pulang): waktu, sumber (online/offline), akurasi, jarak, lokasi cocok, foto (bila berhak), peta. Riwayat koreksi. |
 | Rekap bulanan | Tabel per pegawai. Klik baris → kalender bulan pegawai itu dengan warna status. |
 | Koreksi (detail) | Data pengajuan, absensi asli vs usulan, lampiran, tombol Setujui / Tolak (alasan wajib) untuk yang berhak. |
+| Tugas Luar Kota | Daftar + form (tanggal, tujuan, keperluan, pegawai banyak, aturan lokasi: di mana saja / radius titik tujuan (1–10 titik, tiap titik: nama tempat + tempel tautan Google Maps + radius) / lokasi Pakis mana pun). Batalkan dengan konfirmasi. Tab "Tugas Luar Kota" di detail pegawai (grup Kehadiran). |
 | Jadwal | Daftar pola + aksi massal "Tetapkan pola" (pilih pegawai via filter/centang, berlaku mulai, shift per hari). Kalender: grid pegawai × tanggal, klik sel untuk override. |
 | Perangkat | Daftar dengan aksi baris Setujui/Tolak/Cabut. Pending disorot. |
 | Profil & Keamanan | Data diri, ubah password, MFA (QR + kode konfirmasi + kode pemulihan sekali tampil), daftar sesi aktif + perangkat mobile, "Keluarkan semua sesi lain". |
@@ -165,6 +167,7 @@ Struktur dan gaya mengikuti prototipe (header hijau, kartu, tab bawah). Teks bes
 | `holiday` | Libur | info |
 | `off` | Tidak dijadwalkan | muted |
 | Koreksi `pending`/`approved`/`rejected`/`cancelled` | Menunggu / Disetujui / Ditolak / Dibatalkan | accent / success / danger / muted |
+| Tugas luar kota `pending`/`approved`/`rejected`/`cancelled` | Menunggu / Disetujui / Ditolak / Dibatalkan | accent / success / danger / muted |
 | Perangkat `pending`/`active`/`revoked`/`replaced`/`rejected` | Menunggu / Aktif / Dicabut / Diganti / Ditolak | accent / success / danger / muted / danger |
 | Pegawai `active`/`inactive` | Aktif / Nonaktif | success / muted |
 

@@ -6,6 +6,7 @@ use App\Domain\Attendance\Actions\RecordAttendance;
 use App\Domain\Attendance\EffectiveSchedule;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Models\AttendanceLog;
+use App\Domain\Attendance\Models\FieldTrip;
 use App\Domain\Attendance\Models\Shift;
 use App\Domain\Attendance\Support\WorkDateResolver;
 use App\Domain\Device\Models\Device;
@@ -74,6 +75,14 @@ class AttendanceController extends Controller
     private static function day(AttendanceDay $day, ?AttendanceLog $log): array
     {
         $location = $log?->matchedLocation;
+        $locationName = $location?->name;
+        $tripId = $log?->flags['field_trip_id'] ?? null;
+        if ($locationName === null && is_int($tripId)) {
+            // Titik tujuan tugas luar kota bukan lokasi Pakis (BR-071): tampilkan tugasnya.
+            $trip = FieldTrip::query()->find($tripId, ['id', 'number', 'destination']);
+            $place = $log?->flags['field_trip_place'] ?? null;
+            $locationName = $trip === null ? null : "Tugas {$trip->number}: ".(is_string($place) ? $place : $trip->destination);
+        }
 
         return [
             'work_date' => $day->work_date->toDateString(),
@@ -83,7 +92,7 @@ class AttendanceController extends Controller
             'check_in_at' => self::time($day->check_in_at),
             'check_out_at' => self::time($day->check_out_at),
             'location' => $log === null ? null : [
-                'name' => $location?->name,
+                'name' => $locationName,
                 'distance_m' => $log->distance_m,
             ],
             'is_offline' => $day->is_offline,

@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Access\Enums\DataScope as Scope;
 use App\Domain\Access\Support\AvatarStore;
 use App\Domain\Access\Support\ScopeResolver;
+use App\Domain\Attendance\Support\EmployeeFieldTrips;
 use App\Domain\Attendance\Support\EmployeeSchedule;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Employee\Actions\CreateAccountForEmployee;
@@ -73,7 +74,7 @@ class EmployeeController extends Controller
      * Sub-tab detail pegawai (kunci URL `?tab=`). Pengelompokannya ditentukan halaman (grup Data Diri,
      * Kepegawaian, Kehadiran, …); modul riwayat kepegawaian berikutnya menambah kunci di sini.
      */
-    private const TABS = ['profil', 'alamat', 'penugasan', 'jadwal', 'presensi', 'akun', 'riwayat'];
+    private const TABS = ['profil', 'alamat', 'penugasan', 'jadwal', 'presensi', 'tugas', 'akun', 'riwayat'];
 
     /** Kunci lama tetap berlaku agar tautan yang sudah dibagikan tidak rusak. */
     private const TAB_ALIASES = ['data' => 'profil', 'absensi' => 'presensi'];
@@ -198,6 +199,8 @@ class EmployeeController extends Controller
             'history' => $tab === 'riwayat' ? self::history($request, $employee) : null,
             // Tab Jadwal (T-035): pola berlaku, riwayat/terjadwal, pengecualian mendatang.
             'schedule' => $tab === 'jadwal' ? EmployeeSchedule::for($employee, $actor) : null,
+            // Tab Tugas Luar Kota (T-036A): tugas terbaru pegawai ini.
+            'fieldTrips' => $tab === 'tugas' ? EmployeeFieldTrips::for($employee, $actor) : null,
             'historyEvents' => collect(self::HISTORY_EVENTS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
             // Pilihan dialog Mutasi/Ubah penugasan (T-025).
             'modes' => AttendanceMode::options(),

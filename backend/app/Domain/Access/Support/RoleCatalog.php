@@ -32,7 +32,7 @@ final class RoleCatalog
             ['name' => 'hrd', 'label' => 'HRD', 'data_scope' => DataScope::All, 'mfa_required' => true, 'is_system' => false, 'description' => 'Staf HRD: data pegawai, jadwal, absensi.'],
             ['name' => 'kepala_lokasi', 'label' => 'Kepala Lokasi', 'data_scope' => DataScope::Location, 'mfa_required' => false, 'is_system' => false, 'description' => 'Kepala gudang / toko, terbatas lokasinya.'],
             ['name' => 'supervisor', 'label' => 'Supervisor', 'data_scope' => DataScope::Team, 'mfa_required' => false, 'is_system' => false, 'description' => 'Supervisor sales, terbatas timnya.'],
-            ['name' => self::PEGAWAI, 'label' => 'Pegawai', 'data_scope' => DataScope::Self, 'mfa_required' => false, 'is_system' => true, 'description' => 'Absen lewat Pakis Pro. Tidak masuk web admin.'],
+            ['name' => self::PEGAWAI, 'label' => 'Pegawai', 'data_scope' => DataScope::Self, 'mfa_required' => false, 'is_system' => true, 'description' => 'Presensi lewat Pakis Pro. Tidak masuk web admin.'],
         ];
     }
 
@@ -55,7 +55,7 @@ final class RoleCatalog
                 'audit.export', 'employees.create', 'employees.update', 'employees.delete', 'employees.view_sensitive',
                 'employees.offboard', 'employees.import', 'employees.export', 'assignments.manage', 'shifts.manage',
                 'schedules.manage', 'holidays.manage', 'attendance.view_photo', 'attendance.export',
-                'attendance_corrections.approve',
+                'attendance_corrections.approve', 'field_trips.manage', 'field_trips.approve',
             ]),
             'hrd' => $except([
                 'settings.view', 'settings.update', 'sequences.view', 'sequences.update', 'users.reset_mfa',
@@ -65,14 +65,16 @@ final class RoleCatalog
                 'dashboard.view', 'locations.view', 'employees.view', 'assignments.view', 'devices.view', 'shifts.view',
                 'schedules.view', 'schedules.manage', 'holidays.view', 'attendance.view', 'attendance.view_photo',
                 'attendance.export', 'attendance.self', 'attendance_corrections.view', 'attendance_corrections.create',
-                'attendance_corrections.approve',
+                'attendance_corrections.approve', 'field_trips.view', 'field_trips.manage', 'field_trips.request',
+                'field_trips.approve',
             ],
             'supervisor' => [
                 'dashboard.view', 'employees.view', 'assignments.view', 'schedules.view', 'holidays.view',
                 'attendance.view', 'attendance.view_photo', 'attendance.self', 'attendance_corrections.view',
-                'attendance_corrections.create', 'attendance_corrections.approve',
+                'attendance_corrections.create', 'attendance_corrections.approve', 'field_trips.view',
+                'field_trips.manage', 'field_trips.request', 'field_trips.approve',
             ],
-            self::PEGAWAI => ['attendance.self', 'attendance_corrections.create'],
+            self::PEGAWAI => ['attendance.self', 'attendance_corrections.create', 'field_trips.request'],
             default => [],
         };
     }

@@ -29,6 +29,8 @@ import { AssignmentsPanel } from '@/components/employee/assignments-panel';
 import type { AssignmentRow } from '@/components/employee/assignments-panel';
 import { EmployeeHero } from '@/components/employee/employee-hero';
 import { EmployeeTabs, tabLabel } from '@/components/employee/employee-tabs';
+import { EmployeeFieldTripsPanel } from '@/components/field-trip/employee-field-trips-panel';
+import type { EmployeeFieldTripsData } from '@/components/field-trip/employee-field-trips-panel';
 import { EmployeeSchedulePanel } from '@/components/schedule/employee-schedule-panel';
 import type { EmployeeScheduleData } from '@/components/schedule/employee-schedule-panel';
 import {
@@ -156,6 +158,8 @@ type Props = {
     historyEvents: { value: string; label: string }[];
     /** Hanya terisi saat tab Jadwal dibuka (T-035). */
     schedule: EmployeeScheduleData | null;
+    /** Hanya terisi saat tab Tugas Luar Kota dibuka (T-036A). */
+    fieldTrips: EmployeeFieldTripsData | null;
     modes: {
         value: 'location' | 'any_location' | 'anywhere';
         label: string;
@@ -329,7 +333,13 @@ export default function EmployeeShow(props: Props) {
                         <EmptyPanel
                             icon={CalendarClock}
                             title="Presensi belum tersedia"
-                            text="Riwayat absen 30 hari terakhir akan tampil di sini setelah modul Absensi aktif."
+                            text="Riwayat presensi 30 hari terakhir akan tampil di sini setelah modul Presensi aktif."
+                        />
+                    )}
+                    {tab === 'tugas' && props.fieldTrips && (
+                        <EmployeeFieldTripsPanel
+                            employeeName={employee.full_name}
+                            data={props.fieldTrips}
                         />
                     )}
                     {tab === 'akun' && (
@@ -614,7 +624,7 @@ function AccountTab({
                 <EmptyPanel
                     icon={UserRound}
                     title="Belum punya akun login"
-                    text="Akun dipakai untuk absen lewat Pakis Pro dan, sesuai role, masuk ke web admin."
+                    text="Akun dipakai untuk presensi lewat Pakis Pro dan, sesuai role, masuk ke web admin."
                     action={
                         canCreate ? (
                             <Button size="sm" onClick={() => setOpen(true)}>
@@ -842,7 +852,7 @@ const FIELD_LABELS: Record<string, string> = {
     position_id: 'Jabatan',
     location_id: 'Lokasi',
     supervisor_employee_id: 'Atasan',
-    attendance_mode: 'Mode absen',
+    attendance_mode: 'Mode presensi',
     start_date: 'Mulai',
     end_date: 'Selesai',
 };

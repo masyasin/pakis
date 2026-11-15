@@ -543,9 +543,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
   - Pembuat: HRD/Kepala Lokasi/Supervisor membuat langsung dalam scope-nya (langsung `approved`); pegawai mengajukan dari Pakis Pro → penyetuju & notifikasi mengikuti pola koreksi (06 §6, BR-070). Permission baru (mis. `field_trips.view`/`manage`/`request`/`approve`) → 06 §3–§4 + `PermissionCatalog`.
   - Web: daftar `field_trips` (cari nomor/tujuan/nama pegawai; filter status, tanggal DR default bulan ini, lokasi R, aturan; sort **-start_date**) + form + tab di detail pegawai (Kehadiran). Mobile (lanjutan di T-043): kartu "Tugas luar kota aktif" di beranda, ajukan tugas.
 - Kriteria penerimaan:
-  - [ ] Test BR-071: absen di luar radius kantor pada tanggal tugas diterima sesuai aturan tugas (3 aturan), di luar tanggal tugas ditolak; absen di kantor pada tanggal tugas tetap sah
-  - [ ] Tugas tumpang tindih ditolak; tugas `pending`/`rejected` tidak membuka lokasi tambahan
-  - [ ] Listing lolos test kontrak; IDOR test untuk route ber-ID
+  - [x] Test BR-071: absen di luar radius kantor pada tanggal tugas diterima sesuai aturan tugas (3 aturan), di luar tanggal tugas ditolak; absen di kantor pada tanggal tugas tetap sah
+  - [x] Tugas tumpang tindih ditolak; tugas `pending`/`rejected` tidak membuka lokasi tambahan
+  - [x] Listing lolos test kontrak; IDOR test untuk route ber-ID
+  - [ ] Bagian 2 (setelah T-040): pengajuan dari Pakis Pro + persetujuan (06 §6) + notifikasi. Bagian 1 (dibuat admin/atasan, BR-071, web, tab pegawai, beberapa titik tujuan) selesai 16 Nov 2026
 - Verifikasi: `php artisan test --filter=FieldTrip`
 
 ### T-037 — Resolver status harian & job

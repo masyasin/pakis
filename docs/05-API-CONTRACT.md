@@ -285,6 +285,10 @@ Semua route `*.export`: bila baris ≤ `export.sync_max_rows` → unduh langsung
 | `admin.holidays.index` | GET | `/hari-libur` | `holidays.view` | ✅ |
 | `admin.holidays.export` | GET | `/hari-libur/ekspor` | `holidays.view` | |
 | `admin.holidays.create`/`store`/`edit`/`update`/`destroy` | | `/hari-libur/...` | `holidays.manage` | |
+| `admin.field-trips.index` | GET | `/tugas-luar-kota` | `field_trips.view` | ✅ (scope: tugas yang punya pegawai dalam scope) |
+| `admin.field-trips.create`/`store` | GET/POST | `/tugas-luar-kota/baru`, `/tugas-luar-kota` | `field_trips.manage` | Langsung `approved` (T-036A bagian 1); semua pegawai harus dalam scope |
+| `admin.field-trips.edit`/`update` | GET/PUT | `/tugas-luar-kota/{trip}/ubah`, `/tugas-luar-kota/{trip}` | `field_trips.manage` | Hanya `approved` yang belum selesai; semua pegawai tugas dalam scope (selain itu 403); di luar scope → 404 |
+| `admin.field-trips.cancel` | POST | `/tugas-luar-kota/{trip}/batalkan` | `field_trips.manage` | `approved` → `cancelled` |
 
 ### 4.10 Absensi & Koreksi
 

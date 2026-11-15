@@ -16,16 +16,18 @@ final readonly class GeoArea
         public float $longitude,
         public int $radiusM,
         public ?int $locationId = null,
+        /** Area ini sah karena tugas luar kota itu (BR-071), bukan aturan biasa. */
+        public ?int $fieldTripId = null,
     ) {}
 
     /** Null bila lokasi belum punya koordinat (BR-041: tidak bisa dipakai validasi radius). */
-    public static function fromLocation(Location $location): ?self
+    public static function fromLocation(Location $location, ?int $fieldTripId = null): ?self
     {
         if (! $location->hasCoordinates()) {
             return null;
         }
 
-        return new self($location->name, (float) $location->latitude, (float) $location->longitude, $location->effectiveRadius(), $location->id);
+        return new self($location->name, (float) $location->latitude, (float) $location->longitude, $location->effectiveRadius(), $location->id, $fieldTripId);
     }
 
     public function distanceTo(float $latitude, float $longitude): float

@@ -22,7 +22,7 @@ final class SettingRegistry
         'security' => 'Keamanan',
         'auth' => 'Lupa password',
         'mobile' => 'Aplikasi Pakis Pro',
-        'attendance' => 'Absensi',
+        'attendance' => 'Presensi',
         'ui' => 'Tampilan',
         'export' => 'Ekspor',
         'import' => 'Impor',
@@ -123,19 +123,20 @@ final class SettingRegistry
             $t('mobile.auto_approve_first_device', SettingType::Bool, true, 'Setujui otomatis HP pertama pegawai'),
             $t('mobile.token_days', SettingType::Int, 90, 'Masa berlaku login aplikasi (hari)', min: 7, max: 365),
 
-            // 2.4 Absensi
-            $t('attendance.require_selfie', SettingType::Bool, true, 'Wajib selfie saat absen', isPublic: true),
+            // 2.4 Presensi
+            $t('attendance.require_selfie', SettingType::Bool, true, 'Wajib selfie saat presensi', isPublic: true),
             $t('attendance.default_radius_m', SettingType::Int, 100, 'Radius lokasi bawaan (meter)', 'Dipakai bila lokasi tidak punya radius sendiri.', min: 20, max: 5000),
             $t('attendance.max_accuracy_m', SettingType::Int, 100, 'Akurasi GPS maksimal (meter)', isPublic: true, min: 10, max: 500),
-            $t('attendance.offline_max_hours', SettingType::Int, 72, 'Batas absen offline (jam)', isPublic: true, min: 1, max: 168),
+            $t('attendance.offline_max_hours', SettingType::Int, 72, 'Batas presensi offline (jam)', isPublic: true, min: 1, max: 168),
             $t('attendance.max_clock_skew_minutes', SettingType::Int, 10, 'Toleransi selisih jam HP (menit)', min: 1, max: 120),
-            $t('attendance.allow_unscheduled', SettingType::Bool, false, 'Izinkan absen tanpa jadwal'),
-            $t('attendance.allow_checkout_without_checkin', SettingType::Bool, false, 'Izinkan absen pulang tanpa absen masuk'),
+            $t('attendance.allow_unscheduled', SettingType::Bool, false, 'Izinkan presensi tanpa jadwal'),
+            $t('attendance.allow_checkout_without_checkin', SettingType::Bool, false, 'Izinkan presensi pulang tanpa presensi masuk'),
             $t('attendance.min_minutes_between_in_out', SettingType::Int, 5, 'Jeda minimal masuk–pulang (menit)', min: 0, max: 240),
             $t('attendance.early_leave_tolerance_min', SettingType::Int, 0, 'Toleransi pulang cepat (menit)', min: 0, max: 120),
-            $t('attendance.daily_close_time', SettingType::Time, '23:30', 'Jam tutup harian', 'Setelah jam ini pegawai yang tidak absen ditandai.'),
+            $t('attendance.daily_close_time', SettingType::Time, '23:30', 'Jam tutup harian', 'Setelah jam ini pegawai yang tidak presensi ditandai.'),
             $t('attendance.correction_max_days', SettingType::Int, 7, 'Batas pengajuan koreksi (hari)', isPublic: true, min: 1, max: 60),
             $t('attendance.selfie_retention_days', SettingType::Int, 365, 'Masa simpan selfie (hari)', min: 30, max: 1825),
+            $t('attendance.field_trip_max_days', SettingType::Int, 7, 'Lama maksimal tugas luar kota (hari)', 'Batas satu tugas luar kota/dinas luar (BR-071).', min: 1, max: 31),
 
             // 2.5 Tampilan, Ekspor, Impor, Notifikasi, Monitoring, Retensi
             $t('ui.default_per_page', SettingType::Enum, 25, 'Baris per halaman bawaan', options: [10, 25, 50, 100]),

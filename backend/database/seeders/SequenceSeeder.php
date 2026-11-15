@@ -16,7 +16,8 @@ class SequenceSeeder extends Seeder
     {
         $sequences = [
             ['code' => 'employee', 'name' => 'Nomor pegawai', 'pattern' => 'PJA-{YY}{SEQ:4}', 'reset_period' => ResetPeriod::Never],
-            ['code' => 'attendance_correction', 'name' => 'Nomor koreksi absen', 'pattern' => 'KOR-{YYYY}{MM}-{SEQ:4}', 'reset_period' => ResetPeriod::Monthly],
+            ['code' => 'attendance_correction', 'name' => 'Nomor koreksi presensi', 'pattern' => 'KOR-{YYYY}{MM}-{SEQ:4}', 'reset_period' => ResetPeriod::Monthly],
+            ['code' => 'field_trip', 'name' => 'Nomor tugas luar kota', 'pattern' => 'DL/{YYYY}/{MM}/{SEQ:4}', 'reset_period' => ResetPeriod::Monthly],
         ];
 
         foreach ($sequences as $sequence) {

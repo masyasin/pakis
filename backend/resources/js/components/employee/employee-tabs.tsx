@@ -10,6 +10,7 @@ export type EmployeeTab =
     | 'penugasan'
     | 'jadwal'
     | 'presensi'
+    | 'tugas'
     | 'akun'
     | 'riwayat';
 
@@ -44,6 +45,7 @@ export const TAB_GROUPS: TabGroup[] = [
         tabs: [
             { key: 'jadwal', label: 'Jadwal' },
             { key: 'presensi', label: 'Presensi' },
+            { key: 'tugas', label: 'Tugas Luar Kota' },
         ],
     },
     {

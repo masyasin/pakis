@@ -25,7 +25,7 @@ Model: **RBAC dinamis** (Spatie) + **scope data per role** + **Policy per resour
 
 `super_admin` otomatis lolos semua permission lewat `Gate::before`, **kecuali** satu hal: Super Admin tidak bisa mengubah role/permission akun Owner. Role `is_system` tidak bisa dihapus atau diganti kodenya, tetapi permission-nya tetap bisa diubah, kecuali `super_admin` dan `owner` yang terkunci penuh. Satu pengguna bisa memegang beberapa role. Scope efektif = scope **terluas** dari role-role itu, dan MFA wajib bila salah satu role mewajibkan.
 
-## 3. Daftar Permission (50)
+## 3. Daftar Permission (54)
 
 | Modul | Permission | Arti |
 |---|---|---|
@@ -46,8 +46,9 @@ Model: **RBAC dinamis** (Spatie) + **scope data per role** + **Policy per resour
 | Shift | `shifts.view`, `shifts.manage` | |
 | Jadwal | `schedules.view`, `schedules.manage` | Pola & pengecualian |
 | Hari libur | `holidays.view`, `holidays.manage` | |
-| Absensi | `attendance.view`, `attendance.view_photo`, `attendance.export`, `attendance.self` | `self` = absen & lihat milik sendiri via mobile |
-| Koreksi absen | `attendance_corrections.view`, `attendance_corrections.create`, `attendance_corrections.approve` | `create` = mengajukan milik sendiri |
+| Presensi | `attendance.view`, `attendance.view_photo`, `attendance.export`, `attendance.self` | `self` = presensi & lihat milik sendiri via mobile. `view_photo` juga membuka koordinat presisi & diagram lokasi di detail presensi (T-038, keputusan Mas 15 Nov 2026) |
+| Koreksi presensi | `attendance_corrections.view`, `attendance_corrections.create`, `attendance_corrections.approve` | `create` = mengajukan milik sendiri |
+| Tugas luar kota | `field_trips.view`, `field_trips.manage`, `field_trips.request`, `field_trips.approve` | `manage` = buat/ubah/batalkan langsung berlaku; `request` = ajukan milik sendiri dari Pakis Pro (T-036A bagian 2); `approve` = putuskan pengajuan (bagian 2) |
 
 ## 4. Matriks Kewenangan (default seeder)
 
@@ -99,6 +100,10 @@ Model: **RBAC dinamis** (Spatie) + **scope data per role** + **Policy per resour
 | `attendance_corrections.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
 | `attendance_corrections.create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | `attendance_corrections.approve` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ |
+| `field_trips.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
+| `field_trips.manage` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ |
+| `field_trips.request` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `field_trips.approve` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ |
 
 Catatan: `administrator` sengaja **tidak** bisa membuka NIK, mengubah data pegawai, atau melihat foto. Peran ini mengurus sistem, bukan data SDM. Pemisahan ini mengurangi risiko orang dalam (threat T-05, `09` §2).
 
@@ -161,6 +166,18 @@ stateDiagram-v2
 | `active` | Cabut | `devices.manage`, atau offboarding | `revoked` |
 | `pending` | Pegawai dinonaktifkan (offboarding, keputusan Mas 15 Nov 2026) | sistem | `rejected` (alasan "Pegawai dinonaktifkan") |
 
+### 7.2a Tugas luar kota (T-036A)
+
+| Dari | Aksi | Oleh | Ke |
+|---|---|---|---|
+| — | Buat (langsung berlaku) | `field_trips.manage`, semua pegawai tugas dalam scope | `approved` |
+| `approved` | Ubah (belum selesai) / Batalkan | `field_trips.manage`, semua pegawai tugas dalam scope | `approved` / `cancelled` |
+| — | Ajukan dari Pakis Pro | pegawai sendiri (`field_trips.request`) — bagian 2 | `pending` |
+| `pending` | Setujui / Tolak (catatan wajib) | `field_trips.approve` mengikuti §6 — bagian 2 | `approved` / `rejected` |
+| `rejected`/`cancelled` | — | — | final |
+
+Tugas terlihat bila **salah satu** pegawainya dalam scope pelaku (selain itu 404); mengubah/membatalkan butuh **semua** pegawainya dalam scope (selain itu 403), agar atasan tidak mengubah tugas pegawai lokasi lain.
+
 ### 7.3 Pegawai
 `active` → **Nonaktifkan** (`employees.offboard`) → `inactive` → **Aktifkan kembali** (`employees.offboard`, wajib penugasan baru) → `active`.
 
@@ -174,12 +191,13 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat".
 | Grup | Menu | Syarat | owner | admin | hrd | kepala_lokasi | supervisor |
 |---|---|---|---|---|---|---|---|
 | — | Dasbor | `dashboard.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Absensi | Absensi Harian | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Absensi | Rekap Bulanan | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Absensi | Koreksi Absen | `attendance_corrections.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Absensi | Jadwal | `schedules.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
-| Absensi | Shift | `shifts.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
-| Absensi | Hari Libur | `holidays.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Presensi | Presensi Harian | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Presensi | Rekap Bulanan | `attendance.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Presensi | Koreksi Presensi | `attendance_corrections.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Presensi | Jadwal | `schedules.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Presensi | Shift | `shifts.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
+| Presensi | Hari Libur | `holidays.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| Presensi | Tugas Luar Kota | `field_trips.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Kepegawaian | Pegawai | `employees.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Kepegawaian | Penugasan | `assignments.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | Kepegawaian | Impor Pegawai | `employees.import` | ✅ | ❌ | ✅ | ❌ | ❌ |

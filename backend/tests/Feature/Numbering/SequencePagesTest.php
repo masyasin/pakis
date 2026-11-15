@@ -52,7 +52,7 @@ test('daftar menampilkan pola, nomor terakhir, dan contoh nomor berikut', functi
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('sequences/index')
-            ->has('rows', 2)
+            ->has('rows', 3)
             ->where('rows.0.code', 'attendance_correction')
             ->where('rows.0.last_number', null)
             ->where('rows.0.next', 'KOR-202611-0001')
@@ -72,11 +72,12 @@ test('cari kode/nama, filter periode reset, dan sort nama', function () {
         ->assertInertia(fn (Assert $page) => $page->has('rows', 1)->where('rows.0.code', 'employee'));
 
     $this->actingAs($this->user)->get('/pengaturan/penomoran?filter[reset_period][]=monthly')
-        ->assertInertia(fn (Assert $page) => $page->has('rows', 1)->where('rows.0.code', 'attendance_correction'));
+        ->assertInertia(fn (Assert $page) => $page->has('rows', 2)->where('rows.0.code', 'attendance_correction')->where('rows.1.code', 'field_trip'));
 
     $this->actingAs($this->user)->get('/pengaturan/penomoran?sort=-name')
         ->assertInertia(fn (Assert $page) => $page
-            ->where('rows.0.name', $this->employee->name)
+            ->where('rows.0.code', 'field_trip')
+            ->where('rows.1.name', $this->employee->name)
             ->where('listing.state.sort', '-name'));
 });
 

@@ -137,7 +137,7 @@ Kontak darurat & pembagian tanggung jawab Sintech ↔ Pakis: diisi di manual adm
 ## 7. Event Audit & Checklist Rilis
 
 ### 7.1 Event audit minimum
-`setting.updated`, `sequence.updated`, `reference.*`, `user.created|updated|deactivated|activated|password_reset|mfa_reset`, `role.created|updated|deleted`, `location.*`, `department.*`, `position.*`, `employee.created|updated|deleted|offboarded|rehired|nik_viewed`, `assignment.created|updated|ended`, `import.processed`, `export.created`, `device.approved|rejected|revoked`, `shift.*`, `schedule.pattern_set|override_*`, `holiday.*`, `attendance.recorded` (ringkas: tanpa foto/koordinat presisi), `attendance_correction.submitted|approved|rejected|cancelled`.
+`setting.updated`, `sequence.updated`, `reference.*`, `user.created|updated|deactivated|activated|password_reset|mfa_reset`, `role.created|updated|deleted`, `location.*`, `department.*`, `position.*`, `employee.created|updated|deleted|offboarded|rehired|nik_viewed`, `assignment.created|updated|ended`, `import.processed`, `export.created`, `device.approved|rejected|revoked`, `shift.*`, `schedule.pattern_set|override_*`, `holiday.*`, `field_trip.created|updated|cancelled`, `attendance.recorded` (ringkas: tanpa foto/koordinat presisi), `attendance_correction.submitted|approved|rejected|cancelled`.
 
 ### 7.2 Checklist keamanan sebelum rilis
 - [ ] `APP_DEBUG=false`, galat generik, Telescope/Debugbar tidak ada di produksi

@@ -158,93 +158,139 @@ export function AsyncSelect({
                 : 'Belum ada pilihan.'
             : null;
 
+    const comboboxProps = {
+        ref: inputRef,
+        id,
+        role: 'combobox' as const,
+        'aria-label': ariaLabel,
+        'aria-expanded': open,
+        'aria-controls': listId,
+        'aria-autocomplete': 'list' as const,
+        'aria-activedescendant':
+            open && options[active] ? `${listId}-${active}` : undefined,
+        autoComplete: 'off',
+        disabled,
+        onFocus: () => !disabled && setOpen(true),
+        onBlur: () => setOpen(false),
+        onKeyDown,
+    };
+
     return (
-        <div className="relative grid gap-2">
-            {multiple && value.length > 0 && (
-                <ul className="flex flex-wrap gap-1.5" aria-label="Terpilih">
-                    {value.map((item) => {
-                        const label = cachedLabel(source, item) ?? `#${item}`;
-
-                        return (
-                            <li
-                                key={String(item)}
-                                className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted/60 py-0.5 pr-1 pl-2.5 text-xs"
-                            >
-                                <span className="truncate">{label}</span>
-                                <button
-                                    type="button"
-                                    disabled={disabled}
-                                    className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                                    aria-label={`Hapus pilihan ${label}`}
-                                    onClick={() => remove(item)}
-                                >
-                                    <X
-                                        className="size-3.5"
-                                        aria-hidden="true"
-                                    />
-                                </button>
-                            </li>
-                        );
-                    })}
-                </ul>
-            )}
-
-            <div className="relative">
-                <Input
-                    ref={inputRef}
-                    id={id}
-                    role="combobox"
-                    aria-label={ariaLabel}
-                    aria-expanded={open}
-                    aria-controls={listId}
-                    aria-autocomplete="list"
-                    aria-activedescendant={
-                        open && options[active]
-                            ? `${listId}-${active}`
-                            : undefined
-                    }
-                    autoComplete="off"
-                    disabled={disabled}
-                    placeholder={
-                        open && selectedLabel ? selectedLabel : placeholder
-                    }
-                    value={open ? query : (selectedLabel ?? query)}
+        <div className="relative">
+            {multiple ? (
+                // Mode banyak: chip DI DALAM kotak isian (seperti kolom tag), input mengisi sisa baris.
+                // Klik area kosong kotak memfokuskan input; fokus ditandai seperti Input biasa.
+                <div
                     className={cn(
-                        selectedLabel && 'pr-9',
-                        selectedLabel && !open && 'font-medium text-foreground',
+                        'flex min-h-10 w-full flex-wrap items-center gap-1.5 rounded-md border border-input bg-card px-2 py-1.5 shadow-xs transition-[color,border-color,box-shadow] duration-150 ease-out hover:border-foreground/40',
+                        'focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50',
+                        disabled && 'pointer-events-none opacity-50',
                     )}
-                    onChange={(e) => {
-                        setQuery(e.target.value);
-                        setOpen(true);
+                    onMouseDown={(e) => {
+                        if (e.target === e.currentTarget) {
+                            e.preventDefault();
+                            inputRef.current?.focus();
+                        }
                     }}
-                    onFocus={() => !disabled && setOpen(true)}
-                    onBlur={() => setOpen(false)}
-                    onKeyDown={onKeyDown}
-                />
-                {loading ? (
-                    <Loader2
-                        className="absolute top-1/2 right-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
-                        aria-hidden="true"
+                >
+                    {value.length > 0 && (
+                        <ul className="contents" aria-label="Terpilih">
+                            {value.map((item) => {
+                                const label =
+                                    cachedLabel(source, item) ?? `#${item}`;
+
+                                return (
+                                    <li
+                                        key={String(item)}
+                                        className="inline-flex max-w-full items-center gap-1 rounded-full border bg-muted/60 py-0.5 pr-1 pl-2.5 text-xs"
+                                    >
+                                        <span className="truncate">
+                                            {label}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            disabled={disabled}
+                                            className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                            aria-label={`Hapus pilihan ${label}`}
+                                            // mousedown: jangan buka daftar saat menghapus chip.
+                                            onMouseDown={(e) =>
+                                                e.preventDefault()
+                                            }
+                                            onClick={() => remove(item)}
+                                        >
+                                            <X
+                                                className="size-3.5"
+                                                aria-hidden="true"
+                                            />
+                                        </button>
+                                    </li>
+                                );
+                            })}
+                        </ul>
+                    )}
+                    <input
+                        {...comboboxProps}
+                        placeholder={
+                            value.length === 0 ? placeholder : 'Tambah…'
+                        }
+                        value={query}
+                        className="h-7 min-w-32 flex-1 border-0 bg-transparent px-1 text-base outline-none placeholder:text-muted-foreground md:text-sm"
+                        onChange={(e) => {
+                            setQuery(e.target.value);
+                            setOpen(true);
+                        }}
                     />
-                ) : (
-                    selectedLabel &&
-                    !disabled && (
-                        <button
-                            type="button"
-                            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                            aria-label={`Hapus pilihan ${selectedLabel}`}
-                            // mousedown: jangan sampai input kehilangan fokus lalu membuka daftar.
-                            onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => {
-                                onChange([]);
-                                setQuery('');
-                            }}
-                        >
-                            <X className="size-4" aria-hidden="true" />
-                        </button>
-                    )
-                )}
-            </div>
+                    {loading && (
+                        <Loader2
+                            className="size-4 shrink-0 animate-spin text-muted-foreground"
+                            aria-hidden="true"
+                        />
+                    )}
+                </div>
+            ) : (
+                <div className="relative">
+                    <Input
+                        {...comboboxProps}
+                        placeholder={
+                            open && selectedLabel ? selectedLabel : placeholder
+                        }
+                        value={open ? query : (selectedLabel ?? query)}
+                        className={cn(
+                            selectedLabel && 'pr-9',
+                            selectedLabel &&
+                                !open &&
+                                'font-medium text-foreground',
+                        )}
+                        onChange={(e) => {
+                            setQuery(e.target.value);
+                            setOpen(true);
+                        }}
+                    />
+                    {loading ? (
+                        <Loader2
+                            className="absolute top-1/2 right-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
+                            aria-hidden="true"
+                        />
+                    ) : (
+                        selectedLabel &&
+                        !disabled && (
+                            <button
+                                type="button"
+                                className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                                aria-label={`Hapus pilihan ${selectedLabel}`}
+                                // mousedown: jangan sampai input kehilangan fokus lalu membuka daftar.
+                                onMouseDown={(e) => e.preventDefault()}
+                                onClick={() => {
+                                    onChange([]);
+                                    setQuery('');
+                                }}
+                            >
+                                <X className="size-4" aria-hidden="true" />
+                            </button>
+                        )
+                    )}
+                </div>
+            )}
 
             {open && !disabled && (
                 <ul

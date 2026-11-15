@@ -7,6 +7,7 @@ use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DeviceController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\FieldTripController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\HolidayController;
 use App\Http\Controllers\Admin\ImportController;
@@ -115,6 +116,17 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('jadwal/pola', [ScheduleController::class, 'storePatterns'])->name('schedules.patterns.store');
         Route::post('jadwal/pengecualian', [ScheduleOverrideController::class, 'store'])->name('schedule-overrides.store');
         Route::delete('jadwal/pengecualian/{override}', [ScheduleOverrideController::class, 'destroy'])->whereNumber('override')->name('schedule-overrides.destroy');
+    });
+
+    // Tugas luar kota (05 §4.9, BR-071, T-036A bagian 1). `{trip}` ber-scope (salah satu pegawai
+    // dalam scope); ubah/batal juga FieldTripPolicy (semua pegawai dalam scope). `baru` sebelum `{trip}`.
+    Route::get('tugas-luar-kota', [FieldTripController::class, 'index'])->middleware('can:field_trips.view')->name('field-trips.index');
+    Route::middleware('can:field_trips.manage')->group(function () {
+        Route::get('tugas-luar-kota/baru', [FieldTripController::class, 'create'])->name('field-trips.create');
+        Route::post('tugas-luar-kota', [FieldTripController::class, 'store'])->name('field-trips.store');
+        Route::get('tugas-luar-kota/{trip}/ubah', [FieldTripController::class, 'edit'])->whereNumber('trip')->name('field-trips.edit');
+        Route::put('tugas-luar-kota/{trip}', [FieldTripController::class, 'update'])->whereNumber('trip')->name('field-trips.update');
+        Route::post('tugas-luar-kota/{trip}/batalkan', [FieldTripController::class, 'cancel'])->whereNumber('trip')->name('field-trips.cancel');
     });
 
     // Hari libur (05 §4.9, FR-033, BR-062). Tidak ber-scope data. `baru` & `ekspor` sebelum `{holiday}`.

@@ -58,6 +58,10 @@ return [
         'attendance_corrections.view',
         'attendance_corrections.create',
         'attendance_corrections.approve',
+        'field_trips.view',
+        'field_trips.manage',
+        'field_trips.request',
+        'field_trips.approve',
     ],
     'administrator' => [
         'dashboard.view',
@@ -95,6 +99,8 @@ return [
         'attendance.self',
         'attendance_corrections.view',
         'attendance_corrections.create',
+        'field_trips.view',
+        'field_trips.request',
     ],
     'hrd' => [
         'dashboard.view',
@@ -137,6 +143,10 @@ return [
         'attendance_corrections.view',
         'attendance_corrections.create',
         'attendance_corrections.approve',
+        'field_trips.view',
+        'field_trips.manage',
+        'field_trips.request',
+        'field_trips.approve',
     ],
     'kepala_lokasi' => [
         'dashboard.view',
@@ -155,6 +165,10 @@ return [
         'attendance_corrections.view',
         'attendance_corrections.create',
         'attendance_corrections.approve',
+        'field_trips.view',
+        'field_trips.manage',
+        'field_trips.request',
+        'field_trips.approve',
     ],
     'supervisor' => [
         'dashboard.view',
@@ -168,9 +182,14 @@ return [
         'attendance_corrections.view',
         'attendance_corrections.create',
         'attendance_corrections.approve',
+        'field_trips.view',
+        'field_trips.manage',
+        'field_trips.request',
+        'field_trips.approve',
     ],
     'pegawai' => [
         'attendance.self',
         'attendance_corrections.create',
+        'field_trips.request',
     ],
 ];

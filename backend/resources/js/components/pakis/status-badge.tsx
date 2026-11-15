@@ -22,6 +22,11 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'correction.approved': { label: 'Disetujui', tone: 'success' },
     'correction.rejected': { label: 'Ditolak', tone: 'danger' },
     'correction.cancelled': { label: 'Dibatalkan', tone: 'muted' },
+    // Tugas luar kota (07 §6, T-036A)
+    'field_trip.pending': { label: 'Menunggu', tone: 'warning' },
+    'field_trip.approved': { label: 'Disetujui', tone: 'success' },
+    'field_trip.rejected': { label: 'Ditolak', tone: 'danger' },
+    'field_trip.cancelled': { label: 'Dibatalkan', tone: 'muted' },
     // Perangkat
     'device.pending': { label: 'Menunggu', tone: 'warning' },
     'device.active': { label: 'Aktif', tone: 'success' },

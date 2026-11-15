@@ -276,9 +276,10 @@ Semua route `*.export`: bila baris ≤ `export.sync_max_rows` → unduh langsung
 | `admin.shifts.index` | GET | `/shift` | `shifts.view` | ✅ |
 | `admin.shifts.create`/`store`/`edit`/`update`/`destroy` | | `/shift/...` | `shifts.manage` | Hapus ditolak bila dipakai jadwal (nonaktifkan) |
 | `admin.schedules.index` | GET | `/jadwal` | `schedules.view` | ✅ (pegawai + pola aktif, scope data) |
-| `admin.schedules.calendar` | GET | `/jadwal/kalender` | `schedules.view` | Grid bulan × pegawai, paging per 25 pegawai + filter lokasi/jabatan + cari |
+| `admin.schedules.calendar` | GET | `/jadwal/kalender` | `schedules.view` | Grid bulan × pegawai, paging per 25 pegawai + cari + filter `month` (`filter[month]=YYYY-MM`, wajib, default bulan ini)/lokasi/departemen/jabatan |
 | `admin.schedules.patterns.store` | POST | `/jadwal/pola` | `schedules.manage` | Massal: `employee_ids[]`, `effective_from`, `days{mon..sun}` |
 | `admin.schedule-overrides.index` | GET | `/jadwal/pengecualian` | `schedules.view` | ✅ |
+| `admin.schedule-overrides.export` | GET | `/jadwal/pengecualian/ekspor` | `schedules.view` | |
 | `admin.schedule-overrides.store` | POST | `/jadwal/pengecualian` | `schedules.manage` | Massal per tanggal |
 | `admin.schedule-overrides.destroy` | DELETE | `/jadwal/pengecualian/{override}` | `schedules.manage` | |
 | `admin.holidays.index` | GET | `/hari-libur` | `holidays.view` | ✅ |

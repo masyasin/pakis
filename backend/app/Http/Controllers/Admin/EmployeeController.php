@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Access\Enums\DataScope as Scope;
 use App\Domain\Access\Support\AvatarStore;
 use App\Domain\Access\Support\ScopeResolver;
+use App\Domain\Attendance\Support\EmployeeSchedule;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Employee\Actions\CreateAccountForEmployee;
 use App\Domain\Employee\Actions\CreateEmployee;
@@ -195,6 +196,8 @@ class EmployeeController extends Controller
             // Alasan tombol Hapus disembunyikan (BR-055), hanya untuk yang berhak menghapus.
             'deleteBlockers' => $canDelete ? $usage->blockers($employee) : [],
             'history' => $tab === 'riwayat' ? self::history($request, $employee) : null,
+            // Tab Jadwal (T-035): pola berlaku, riwayat/terjadwal, pengecualian mendatang.
+            'schedule' => $tab === 'jadwal' ? EmployeeSchedule::for($employee, $actor) : null,
             'historyEvents' => collect(self::HISTORY_EVENTS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
             // Pilihan dialog Mutasi/Ubah penugasan (T-025).
             'modes' => AttendanceMode::options(),

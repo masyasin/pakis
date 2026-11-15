@@ -46,6 +46,9 @@ const REPRESENTATIVE = [
     'shifts.manage' => ['GET', '/shift/baru'],
     'holidays.view' => ['GET', '/hari-libur'],
     'holidays.manage' => ['GET', '/hari-libur/baru'],
+    'schedules.view' => ['GET', '/jadwal'],
+    // Payload kosong: pemegang izin lolos ke validasi (302), bukan pemegang 403.
+    'schedules.manage' => ['POST', '/jadwal/pengecualian'],
     'locations.view' => ['GET', '/lokasi'],
     'locations.manage' => ['GET', '/lokasi/baru'],
     'departments.view' => ['GET', '/departemen'],
@@ -68,7 +71,6 @@ const REPRESENTATIVE = [
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
-    'schedules.view' => 'T-035', 'schedules.manage' => 'T-035',
     'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038', 'attendance.self' => 'T-036',
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.create' => 'T-040', 'attendance_corrections.approve' => 'T-041',
 ];

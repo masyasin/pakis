@@ -3,7 +3,6 @@ import {
     ArrowLeft,
     BriefcaseBusiness,
     CalendarClock,
-    CalendarDays,
     Contact,
     Fingerprint,
     History,
@@ -30,6 +29,8 @@ import { AssignmentsPanel } from '@/components/employee/assignments-panel';
 import type { AssignmentRow } from '@/components/employee/assignments-panel';
 import { EmployeeHero } from '@/components/employee/employee-hero';
 import { EmployeeTabs, tabLabel } from '@/components/employee/employee-tabs';
+import { EmployeeSchedulePanel } from '@/components/schedule/employee-schedule-panel';
+import type { EmployeeScheduleData } from '@/components/schedule/employee-schedule-panel';
 import {
     OffboardDialog,
     RehireDialog,
@@ -153,6 +154,8 @@ type Props = {
     deleteBlockers: string[];
     history: HistoryPage | null;
     historyEvents: { value: string; label: string }[];
+    /** Hanya terisi saat tab Jadwal dibuka (T-035). */
+    schedule: EmployeeScheduleData | null;
     modes: {
         value: 'location' | 'any_location' | 'anywhere';
         label: string;
@@ -311,11 +314,15 @@ export default function EmployeeShow(props: Props) {
                             backdateDays={props.mutationBackdateDays}
                         />
                     )}
-                    {tab === 'jadwal' && (
-                        <EmptyPanel
-                            icon={CalendarDays}
-                            title="Jadwal kerja belum tersedia"
-                            text="Pola shift dan jadwal pegawai akan tampil di sini setelah modul Jadwal aktif."
+                    {tab === 'jadwal' && props.schedule && (
+                        <EmployeeSchedulePanel
+                            employee={{
+                                id: employee.id,
+                                name: employee.full_name,
+                                number: employee.employee_number,
+                            }}
+                            schedule={props.schedule}
+                            today={today}
                         />
                     )}
                     {tab === 'presensi' && (

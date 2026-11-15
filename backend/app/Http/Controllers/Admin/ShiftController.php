@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Access\DataScope;
 use App\Domain\Attendance\Actions\CreateShift;
 use App\Domain\Attendance\Actions\DeleteShift;
 use App\Domain\Attendance\Actions\UpdateShift;
@@ -26,13 +27,17 @@ use Inertia\Response;
 class ShiftController extends Controller
 {
     #[UsesListing(ShiftListing::class)]
-    public function index(Request $request, ShiftScope $scope, ShiftUsage $usage): Response
+    public function index(Request $request, ShiftScope $scope, ShiftUsage $usage, DataScope $dataScope): Response
     {
         $user = self::user($request);
         $query = $scope->apply(Shift::query(), $user);
 
         $result = ListingQuery::apply($query, new ShiftListing, $request);
-        $counts = $usage->employeeCounts(array_values(array_map(fn (Shift $s): int => $s->id, $result->paginator()->items())));
+        // Jumlah pegawai dibatasi scope pelaku: Kepala Lokasi tidak melihat hitungan lokasi lain.
+        $counts = $usage->employeeCounts(
+            array_values(array_map(fn (Shift $s): int => $s->id, $result->paginator()->items())),
+            $dataScope->visibleEmployeeIds($user),
+        );
 
         $result = $result->through(fn (Shift $s) => [
             ...self::row($s),

@@ -19,6 +19,8 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\ScheduleController;
+use App\Http\Controllers\Admin\ScheduleOverrideController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
@@ -99,6 +101,20 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('shift/{shift}/ubah', [ShiftController::class, 'edit'])->whereNumber('shift')->name('shifts.edit');
         Route::put('shift/{shift}', [ShiftController::class, 'update'])->whereNumber('shift')->name('shifts.update');
         Route::delete('shift/{shift}', [ShiftController::class, 'destroy'])->whereNumber('shift')->name('shifts.destroy');
+    });
+
+    // Jadwal: pola, kalender, pengecualian (05 §4.9, FR-032, BR-061/BR-062). Ber-scope data lewat
+    // pegawai (06 §5): pegawai sasaran di luar scope ditolak, `{override}` di luar scope → 404.
+    Route::middleware('can:schedules.view')->group(function () {
+        Route::get('jadwal', [ScheduleController::class, 'index'])->name('schedules.index');
+        Route::get('jadwal/kalender', [ScheduleController::class, 'calendar'])->name('schedules.calendar');
+        Route::get('jadwal/pengecualian', [ScheduleOverrideController::class, 'index'])->name('schedule-overrides.index');
+        Route::get('jadwal/pengecualian/ekspor', [ScheduleOverrideController::class, 'export'])->name('schedule-overrides.export');
+    });
+    Route::middleware('can:schedules.manage')->group(function () {
+        Route::post('jadwal/pola', [ScheduleController::class, 'storePatterns'])->name('schedules.patterns.store');
+        Route::post('jadwal/pengecualian', [ScheduleOverrideController::class, 'store'])->name('schedule-overrides.store');
+        Route::delete('jadwal/pengecualian/{override}', [ScheduleOverrideController::class, 'destroy'])->whereNumber('override')->name('schedule-overrides.destroy');
     });
 
     // Hari libur (05 §4.9, FR-033, BR-062). Tidak ber-scope data. `baru` & `ekspor` sebelum `{holiday}`.

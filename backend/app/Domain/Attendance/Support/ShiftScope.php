@@ -13,9 +13,9 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Scope data untuk `shifts` (06 §5: "shifts — hanya yang dipakai pegawai di lokasinya"). Scope
  * `all` = semua shift. Scope lain = shift yang dipakai pola jadwal pegawai dalam DataScope
- * pengguna. Sebelum tabel pola ada (T-035) tidak ada shift yang "dipakai", jadi scope sempit tidak
- * melihat shift apa pun (fail-closed, bukan terbuka).
- * TODO(T-035): test dengan tabel `employee_shift_patterns` nyata.
+ * pengguna (riwayat, berlaku, dan terjadwal). Tanpa pola sama sekali, scope sempit tidak melihat
+ * shift apa pun (fail-closed, bukan terbuka). Akibatnya Kepala Lokasi hanya bisa memilih shift yang
+ * sudah dipakai di lokasinya; shift baru untuk lokasi itu ditetapkan HRD lebih dulu (dicatat di 12).
  */
 final class ShiftScope
 {

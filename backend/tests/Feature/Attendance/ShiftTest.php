@@ -1,6 +1,8 @@
 <?php
 
+use App\Domain\Attendance\Models\ScheduleOverride;
 use App\Domain\Attendance\Models\Shift;
+use App\Domain\Attendance\Models\ShiftPattern;
 use App\Domain\Attendance\Support\ShiftUsage;
 use App\Domain\Audit\Models\AuditLog;
 use App\Models\User;
@@ -8,8 +10,10 @@ use Database\Seeders\DemoSeeder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Database\QueryException;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\EmployeeWorld;
 use Tests\Support\FakeOrgStructure;
 
 /*
@@ -149,13 +153,61 @@ test('07 §3.4 shifts: cari kode/nama, filter aktif & lintas hari, sort jam masu
         ->and($codes('/shift?sort=-start_time'))->toBe(['MLM', 'SIANG', 'PAGI']);
 });
 
+test('06 §5 scope shift (pola nyata): Kepala Lokasi melihat shift yang dipakai pola pegawai lokasinya saja', function () {
+    $world = EmployeeWorld::make($this);
+    $pagi = makeShift(['code' => 'PAGI']);
+    $toko = makeShift(['code' => 'TOKO']);
+    makeShift(['code' => 'LAIN']);
+    $kepala = $world->employee($world->gudang);
+    $staf = $world->employee($world->gudang, $kepala);
+    $luar = $world->employee($world->toko);
+    ShiftPattern::query()->create(['employee_id' => $staf->id, 'effective_from' => '2026-01-01', 'mon_shift_id' => $pagi->id]);
+    ShiftPattern::query()->create(['employee_id' => $luar->id, 'effective_from' => '2026-01-01', 'mon_shift_id' => $toko->id]);
+    $actor = $world->actor('kepala_lokasi', $kepala);
+
+    $this->actingAs($actor)->get('/shift')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->has('rows', 1)->where('rows.0.code', 'PAGI')->where('rows.0.employees_count', 1));
+    $this->actingAs($actor)->getJson('/lookup/shifts')->assertOk()->assertJsonCount(1)->assertJsonPath('0.value', $pagi->id);
+    // SEC-033: shift yang hanya dipakai lokasi lain = tidak ada.
+    $this->actingAs($actor)->getJson("/shift/{$toko->id}/ubah")->assertNotFound();
+});
+
+test('07 §3.4 shifts: jumlah pegawai = pegawai aktif yang pola BERLAKU HARI INI memakai shift itu', function () {
+    Carbon::setTestNow('2026-11-16 03:00:00');
+    $world = EmployeeWorld::make($this);
+    $pagi = makeShift(['code' => 'PAGI']);
+    $siang = makeShift(['code' => 'SIANG']);
+    $a = $world->employee();
+    $b = $world->employee();
+    $c = $world->employee(attributes: ['status' => 'inactive', 'exit_date' => '2026-06-01']);
+    // a: dulu SIANG, sekarang PAGI (dua hari dihitung sekali). b: PAGI sekarang, SIANG mulai Desember.
+    ShiftPattern::query()->create(['employee_id' => $a->id, 'effective_from' => '2026-01-01', 'mon_shift_id' => $siang->id]);
+    ShiftPattern::query()->create(['employee_id' => $a->id, 'effective_from' => '2026-06-01', 'mon_shift_id' => $pagi->id, 'tue_shift_id' => $pagi->id]);
+    ShiftPattern::query()->create(['employee_id' => $b->id, 'effective_from' => '2026-01-01', 'mon_shift_id' => $pagi->id]);
+    ShiftPattern::query()->create(['employee_id' => $b->id, 'effective_from' => '2026-12-01', 'mon_shift_id' => $siang->id]);
+    ShiftPattern::query()->create(['employee_id' => $c->id, 'effective_from' => '2026-01-01', 'mon_shift_id' => $siang->id]);
+
+    expect((new ShiftUsage)->employeeCounts([$pagi->id, $siang->id]))->toBe([$pagi->id => 2, $siang->id => 0])
+        ->and((new ShiftUsage)->employeeCounts([$pagi->id], [$a->id]))->toBe([$pagi->id => 1])
+        ->and((new ShiftUsage)->employeeCounts([$pagi->id], []))->toBe([$pagi->id => 0]);
+    Carbon::setTestNow();
+});
+
+test('05 §4.9 shift yang dipakai pengecualian jadwal (tabel nyata) tidak bisa dihapus', function () {
+    $world = EmployeeWorld::make($this);
+    $shift = makeShift(['name' => 'Shift Piket']);
+    ScheduleOverride::query()->create(['employee_id' => $world->employee()->id, 'date' => '2026-11-20', 'shift_id' => $shift->id]);
+
+    $this->actingAs($this->hrd)->from('/shift')->delete("/shift/{$shift->id}")
+        ->assertSessionHasErrors(['shift' => 'Shift "Shift Piket" sudah dipakai jadwal atau absensi sehingga tidak bisa dihapus. Nonaktifkan saja.']);
+});
+
 test('06 §5 scope shift: Kepala Lokasi tidak melihat shift sebelum ada jadwal pegawainya; HRD melihat semua', function () {
     $org = FakeOrgStructure::bind();
     $org->employee(1)->at(10);
     $shift = makeShift(['code' => 'PAGI']);
     $kepala = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('kepala_lokasi');
 
-    // TODO(T-035): dengan pola jadwal nyata, shift yang dipakai pegawai lokasinya terlihat.
     $this->actingAs($kepala)->get('/shift')->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('shifts/index')->where('rows', [])->where('can.manage', false));
     $this->actingAs($kepala)->getJson('/lookup/shifts')->assertOk()->assertExactJson([]);

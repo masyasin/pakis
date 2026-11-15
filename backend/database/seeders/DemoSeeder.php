@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Attendance\Models\Shift;
+use App\Domain\Attendance\Models\ShiftPattern;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Models\Assignment;
@@ -94,6 +95,9 @@ class DemoSeeder extends Seeder
         'Lestari Handayani' => ['P', 'KSR', 'TKO-01', 'Endang Rahayu', '1999-12-12', '2023-01-09', RoleCatalog::PEGAWAI],
     ];
 
+    /** Shift pola demo per jabatan; jabatan lain memakai PAGI. */
+    public const PATTERN_SHIFT_BY_POSITION = ['SPV-SLS' => 'SLS', 'SLS' => 'SLS', 'KA-GDG' => 'GDG', 'STF-GDG' => 'GDG', 'DRV' => 'GDG'];
+
     /** Kepala lokasi demo (menentukan scope `location`). */
     public const LOCATION_HEADS = ['GDG-01' => 'Joko Susilo', 'TKO-01' => 'Endang Rahayu'];
 
@@ -144,6 +148,7 @@ class DemoSeeder extends Seeder
         }
 
         $this->seedEmployees();
+        $this->seedPatterns();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -164,6 +169,31 @@ class DemoSeeder extends Seeder
      * sudah ada (nama sama) dilewati, jadi perubahan dari layar tidak ditimpa. NIK dibuat acak saat
      * seeding dengan kode provinsi 99 (tidak ada di Dukcapil) dan tidak pernah tertulis di kode.
      */
+    /**
+     * Pola demo 04 §4.2: Senin–Sabtu, Minggu libur, berlaku sejak 1 Januari tahun berjalan (atau
+     * tanggal masuk bila lebih baru). Shift mengikuti jabatan. Pegawai yang sudah punya pola
+     * dilewati agar ubahan HRD di DB dev tidak tertimpa (idempoten).
+     */
+    private function seedPatterns(): void
+    {
+        $shifts = Shift::withTrashed()->whereIn('code', array_keys(self::SHIFTS))->pluck('id', 'code');
+        $yearStart = CarbonImmutable::now(DisplayTime::timezone())->startOfYear()->toDateString();
+
+        foreach (self::EMPLOYEES as $name => [, $position, , , , $join]) {
+            $employee = Employee::query()->where('full_name', $name)->first();
+            if ($employee === null || ShiftPattern::query()->where('employee_id', $employee->id)->exists()) {
+                continue;
+            }
+
+            $shiftId = $shifts[self::PATTERN_SHIFT_BY_POSITION[$position] ?? 'PAGI'] ?? null;
+            $row = ['employee_id' => $employee->id, 'effective_from' => max($yearStart, $join)];
+            foreach (ShiftPattern::DAYS as $day) {
+                $row[ShiftPattern::column($day)] = $day === 'sun' ? null : $shiftId;
+            }
+            ShiftPattern::query()->create($row);
+        }
+    }
+
     private function seedEmployees(): void
     {
         // Seeder wajib idempoten (04 §4.1): agar `db:seed --class=DemoSeeder` tetap bisa berdiri sendiri.

@@ -72,6 +72,23 @@ class Holiday extends Model
         self::constrainToLocation($query, $locationId);
     }
 
+    /** Tanggal (`Y-m-d` lokal) berada di rentang libur (inklusif). Kembaran dalam memori scopeAppliesTo. */
+    public function covers(string $date): bool
+    {
+        return $this->start_date->toDateString() <= $date && $this->end_date->toDateString() >= $date;
+    }
+
+    /**
+     * Kembaran dalam memori constrainToLocation, untuk ScheduleResolver yang menilai banyak
+     * (pegawai, tanggal) sekaligus tanpa query per sel. Butuh relasi `locations` sudah dimuat.
+     * Kesetaraannya dengan scope query dijaga test (ScheduleResolverTest).
+     */
+    public function appliesToLocation(?int $locationId): bool
+    {
+        return $this->applies_to_all
+            || ($locationId !== null && $this->locations->contains(fn (Location $l) => $l->id === $locationId));
+    }
+
     /** Jumlah hari kalender libur (inklusif), mis. 30 Mar–1 Apr = 3. */
     public function dayCount(): int
     {

@@ -35,7 +35,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
-        'Absensi' => ['Shift', 'Hari Libur'],
+        'Absensi' => ['Jadwal', 'Shift', 'Hari Libur'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna', 'Role & Hak Akses', 'Perangkat'],
@@ -46,7 +46,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
 test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function () {
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
-        'Absensi' => ['Shift', 'Hari Libur'],
+        'Absensi' => ['Jadwal', 'Shift', 'Hari Libur'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna', 'Perangkat'],
@@ -54,12 +54,12 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function (
     ]);
 });
 
-test('06 §8 kepala lokasi: Dasbor + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul absensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Shift', 'Hari Libur'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Organisasi' => ['Lokasi'], 'Akses' => ['Perangkat']]);
+test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Jadwal', 'Shift', 'Hari Libur'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Organisasi' => ['Lokasi'], 'Akses' => ['Perangkat']]);
 });
 
-test('06 §8 supervisor: Dasbor + Hari Libur (T-034) sampai modul absensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Hari Libur'], 'Kepegawaian' => ['Pegawai', 'Penugasan']]);
+test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Jadwal', 'Hari Libur'], 'Kepegawaian' => ['Pegawai', 'Penugasan']]);
 });
 
 test('auth.permissions: super_admin = 50 permission; tamu tanpa menu', function () {

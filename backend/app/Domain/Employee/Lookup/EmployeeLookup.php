@@ -22,7 +22,8 @@ final class EmployeeLookup extends LookupSource
 {
     public function authorize(User $user): bool
     {
-        return $user->canAny(['employees.view', 'users.create', 'users.update', 'locations.manage']);
+        // `schedules.manage`: pemilih pegawai di pengecualian jadwal (T-035); hasil tetap ber-scope.
+        return $user->canAny(['employees.view', 'users.create', 'users.update', 'locations.manage', 'schedules.manage']);
     }
 
     public function rules(): array

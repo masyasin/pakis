@@ -2,6 +2,7 @@
 
 use App\Domain\Access\Listings\UserListing;
 use App\Domain\Attendance\Listings\HolidayListing;
+use App\Domain\Attendance\Listings\ScheduleOverrideListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Device\Listings\DeviceListing;
@@ -52,6 +53,7 @@ return [
         'employees' => EmployeeListing::class,
         'assignments' => AssignmentListing::class,
         'devices' => DeviceListing::class,
+        'schedule_overrides' => ScheduleOverrideListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

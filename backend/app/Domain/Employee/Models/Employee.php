@@ -2,6 +2,7 @@
 
 namespace App\Domain\Employee\Models;
 
+use App\Domain\Attendance\Models\ShiftPattern;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Support\NikCipher;
@@ -127,6 +128,30 @@ class Employee extends Model
             ->where('start_date', '<=', $today)
             ->where(fn (Builder $q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $today))
             ->orderByDesc('start_date');
+    }
+
+    /**
+     * Riwayat pola shift mingguan (T-035), termasuk pola terjadwal yang belum berlaku.
+     *
+     * @return HasMany<ShiftPattern, $this>
+     */
+    public function shiftPatterns(): HasMany
+    {
+        return $this->hasMany(ShiftPattern::class);
+    }
+
+    /**
+     * Pola yang berlaku HARI INI (tanggal lokal): `effective_from` terbaru ≤ hari ini (BR-061).
+     * Pola yang baru berlaku besok belum dihitung, sama seperti primaryAssignment.
+     *
+     * @return HasOne<ShiftPattern, $this>
+     */
+    public function currentShiftPattern(): HasOne
+    {
+        $today = DisplayTime::toLocal(now())->toDateString();
+
+        return $this->hasOne(ShiftPattern::class)
+            ->ofMany(['effective_from' => 'max'], fn (Builder $q) => $q->where('effective_from', '<=', $today));
     }
 
     /** @return HasOne<User, $this> */

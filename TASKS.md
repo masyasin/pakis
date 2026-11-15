@@ -510,9 +510,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migrations, `app/Domain/Attendance/{ScheduleResolver,Actions/{SetShiftPattern,SetScheduleOverride,DeleteScheduleOverride}}`, `Listings/{ScheduleListing,ScheduleOverrideListing}`, controller + `pages/Schedules/{Index,Calendar}.tsx`, tab Jadwal di detail pegawai
 - Deskripsi: Penetapan pola massal (pilih dari daftar ber-filter atau centang), pengecualian per tanggal (massal), kalender bulan × pegawai dengan paging/cari/filter. Resolver efektif (override > pola > libur).
 - Kriteria penerimaan:
-  - [ ] Resolver: unit test override vs pola vs libur lokasi vs override shift di hari libur
-  - [ ] Pola dengan `effective_from` baru tidak menghapus pola lama (riwayat)
-  - [ ] 2 listing lolos test kontrak. Kalender ber-paging 25 pegawai
+  - [x] Resolver: unit test override vs pola vs libur lokasi vs override shift di hari libur
+  - [x] Pola dengan `effective_from` baru tidak menghapus pola lama (riwayat)
+  - [x] 2 listing lolos test kontrak. Kalender ber-paging 25 pegawai
 - Verifikasi: `php artisan test --filter=Schedule`
 
 ### T-036 — API absen (inti)

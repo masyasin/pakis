@@ -21,6 +21,8 @@ return [
     'users', // T-020
     'shifts', // T-033
     'holidays', // T-034
+    'schedules', // T-035
+    'schedule_overrides', // T-035
     'notifications', // T-029
     'locations', // T-021
     'departments', // T-022

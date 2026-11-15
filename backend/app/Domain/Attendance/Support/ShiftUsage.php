@@ -3,13 +3,14 @@
 namespace App\Domain\Attendance\Support;
 
 use App\Domain\Attendance\Models\Shift;
+use App\Domain\Employee\Enums\EmployeeStatus;
+use App\Support\Time\DisplayTime;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 /**
  * Apakah shift sudah dipakai data lain (05 §4.9: hapus ditolak bila dipakai, nonaktifkan saja).
- * Tabel pemakai dibuat di T-035 (pola & pengecualian jadwal) dan T-036 (absensi); sebelum ada,
- * pemakai itu dilewati. Setelah ada, FK di DB juga menolak penghapusan — cek ini memberi pesan yang
+ * Tabel pemakai: pola & pengecualian jadwal (T-035) dan absensi (T-036); yang belum ada dilewati. Setelah ada, FK di DB juga menolak penghapusan — cek ini memberi pesan yang
  * ramah. Pola sama dengan LocationUsage (T-021).
  */
 class ShiftUsage
@@ -50,29 +51,52 @@ class ShiftUsage
     }
 
     /**
-     * Jumlah pegawai yang pola jadwalnya memakai tiap shift (kolom daftar 07 §3.4), atau null bila
-     * tabel pola belum ada (T-035).
-     * TODO(T-035): hanya pola yang berlaku hari ini (effective_from terakhir per pegawai).
+     * Jumlah pegawai AKTIF yang pola jadwal BERLAKU HARI INI (`effective_from` terakhir ≤ hari ini,
+     * BR-061) memakai tiap shift di salah satu hari (kolom daftar 07 §3.4). Pola lama (riwayat) dan
+     * pola terjadwal tidak dihitung. Null bila tabel pola belum ada.
      *
      * @param  list<int>  $shiftIds
+     * @param  list<int>|null  $employeeIds  batas scope pelaku (null = semua pegawai)
      * @return array<int, int>|null shift id → jumlah pegawai
      */
-    public function employeeCounts(array $shiftIds): ?array
+    public function employeeCounts(array $shiftIds, ?array $employeeIds = null): ?array
     {
         if ($shiftIds === [] || ! Schema::hasTable(self::PATTERN_TABLE)) {
             return $shiftIds === [] ? [] : null;
         }
 
-        $counts = [];
-        foreach ($shiftIds as $id) {
-            $counts[$id] = (int) DB::table(self::PATTERN_TABLE)
-                ->where(function ($q) use ($id) {
-                    foreach (self::PATTERN_COLUMNS as $column) {
-                        $q->orWhere($column, $id);
-                    }
-                })
-                ->distinct()
-                ->count('employee_id');
+        $counts = array_fill_keys($shiftIds, 0);
+        if ($employeeIds === []) {
+            return $counts;
+        }
+
+        $today = DisplayTime::toLocal(now())->toDateString();
+        $latest = DB::table(self::PATTERN_TABLE)
+            ->select('employee_id', DB::raw('MAX(effective_from) AS effective_from'))
+            ->where('effective_from', '<=', $today)
+            ->when($employeeIds !== null, fn ($q) => $q->whereIn('employee_id', $employeeIds))
+            ->groupBy('employee_id');
+
+        // Satu query: pola berlaku per pegawai aktif, lalu dihitung per shift di memori
+        // (satu pegawai dihitung sekali per shift walau shift itu dipakai di beberapa hari).
+        $rows = DB::table(self::PATTERN_TABLE.' AS p')
+            ->joinSub($latest, 'cur', fn ($join) => $join->on('cur.employee_id', '=', 'p.employee_id')->on('cur.effective_from', '=', 'p.effective_from'))
+            ->join('employees AS e', 'e.id', '=', 'p.employee_id')
+            ->where('e.status', EmployeeStatus::Active->value)
+            ->whereNull('e.deleted_at')
+            ->get(array_map(fn (string $c) => "p.{$c}", self::PATTERN_COLUMNS));
+
+        foreach ($rows as $row) {
+            $used = [];
+            foreach (self::PATTERN_COLUMNS as $column) {
+                $id = $row->{$column};
+                if ($id !== null && array_key_exists((int) $id, $counts)) {
+                    $used[(int) $id] = true;
+                }
+            }
+            foreach (array_keys($used) as $id) {
+                $counts[$id]++;
+            }
         }
 
         return $counts;

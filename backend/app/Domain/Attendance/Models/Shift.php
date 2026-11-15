@@ -65,6 +65,23 @@ class Shift extends Model
     }
 
     /**
+     * Ringkasan untuk halaman jadwal (pola, kalender, pengecualian, detail pegawai). `active` false
+     * = shift sudah dinonaktifkan/dihapus tetapi masih tercatat di jadwal lama.
+     *
+     * @return array{id: int, code: string, name: string, color: string, active: bool}
+     */
+    public function summary(): array
+    {
+        return [
+            'id' => $this->id,
+            'code' => $this->code,
+            'name' => $this->name,
+            'color' => $this->color,
+            'active' => $this->is_active && $this->deleted_at === null,
+        ];
+    }
+
+    /**
      * Route binding ber-scope (SEC-033): shift di luar scope pengguna diperlakukan tidak ada → 404.
      *
      * @param  mixed  $value

@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\MeController;
@@ -31,6 +32,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::put('me', [MeController::class, 'update'])->name('me.update');
             Route::put('me/password', [MeController::class, 'password'])->name('me.password');
             Route::post('me/sessions/revoke-others', [MeController::class, 'revokeOthers'])->name('me.revoke-others');
+
+            // Absen (05 §5.4, T-036). Unggah absen dibatasi lebih ketat per pengguna (SEC-068).
+            Route::middleware('can:attendance.self')->group(function () {
+                Route::get('attendance/today', [AttendanceController::class, 'today'])->name('attendance.today');
+                Route::post('attendance', [AttendanceController::class, 'store'])->middleware('throttle:attendance')->name('attendance.store');
+            });
         });
     });
 });

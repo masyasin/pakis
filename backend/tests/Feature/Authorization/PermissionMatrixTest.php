@@ -71,8 +71,16 @@ const REPRESENTATIVE = [
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
-    'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038', 'attendance.self' => 'T-036',
+    'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038',
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.create' => 'T-040', 'attendance_corrections.approve' => 'T-041',
+];
+
+/**
+ * Permission khusus API Pakis Pro (token + perangkat terikat) → harness web di sini tidak bisa
+ * memanggilnya; diuji di test API-nya (permission → berkas test).
+ */
+const API_ONLY = [
+    'attendance.self' => 'tests/Feature/Api/V1/Attendance/AttendanceApiTest.php',
 ];
 
 dataset('role_permission', function () {
@@ -93,9 +101,11 @@ beforeEach(function () {
 });
 
 test('10 §4 setiap permission punya route perwakilan atau tercatat menunggu task-nya (tidak ada yang terlewat)', function () {
-    $covered = [...array_keys(REPRESENTATIVE), ...array_keys(PENDING)];
+    $covered = [...array_keys(REPRESENTATIVE), ...array_keys(PENDING), ...array_keys(API_ONLY)];
 
     expect(array_intersect(array_keys(REPRESENTATIVE), array_keys(PENDING)))->toBe([])
+        ->and(array_intersect(array_keys(REPRESENTATIVE), array_keys(API_ONLY)))->toBe([])
+        ->and(collect(API_ONLY)->every(fn (string $file) => is_file(base_path($file))))->toBeTrue()
         ->and(collect($covered)->sort()->values()->all())->toBe(collect(PermissionCatalog::names())->sort()->values()->all());
 });
 

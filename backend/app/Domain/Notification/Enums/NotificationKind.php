@@ -14,6 +14,7 @@ enum NotificationKind: string
     case NewDeviceLogin = 'new_device_login';
     case AccountLocked = 'account_locked';
     case DevicePending = 'device_pending';
+    case AttendanceMock = 'attendance_mock';
 
     public function label(): string
     {
@@ -24,6 +25,7 @@ enum NotificationKind: string
             self::NewDeviceLogin => 'Login perangkat baru',
             self::AccountLocked => 'Akun dikunci',
             self::DevicePending => 'Perangkat menunggu persetujuan',
+            self::AttendanceMock => 'Lokasi palsu terdeteksi',
         };
     }
 

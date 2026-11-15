@@ -19,6 +19,9 @@ class DeviceServiceProvider extends ServiceProvider
     /** SEC-068: request API umum per token per menit. */
     private const API_PER_MINUTE = 120;
 
+    /** SEC-068: unggah absen per pengguna per menit (selfie + validasi berat; antrean offline cukup lambat). */
+    private const ATTENDANCE_PER_MINUTE = 10;
+
     /** Lupa/reset password per jaringan per menit (lapisan kasar; batas per identifier ada di action). */
     private const PASSWORD_PER_MINUTE = 10;
 
@@ -30,6 +33,12 @@ class DeviceServiceProvider extends ServiceProvider
             $key = $token instanceof PersonalAccessToken ? 'token:'.$token->getKey() : 'ip:'.ClientNetwork::key($request->ip());
 
             return Limit::perMinute(self::API_PER_MINUTE)->by($key);
+        });
+
+        RateLimiter::for('attendance', function (Request $request) {
+            $user = $request->user();
+
+            return Limit::perMinute(self::ATTENDANCE_PER_MINUTE)->by($user instanceof User ? 'user:'.$user->getAuthIdentifier() : 'ip:'.ClientNetwork::key($request->ip()));
         });
 
         RateLimiter::for('password', fn (Request $request) => Limit::perMinute(self::PASSWORD_PER_MINUTE)->by(ClientNetwork::key($request->ip())));

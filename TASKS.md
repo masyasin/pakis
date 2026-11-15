@@ -523,11 +523,11 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migrations `attendance_logs`, `attendance_days`, `app/Domain/Attendance/{Actions/RecordAttendance,Support/{WorkDateResolver,GeoFence,Haversine,SelfieStore,ClockGuard}}`, `Api/V1/AttendanceController@{store,today}`, `Requests/StoreAttendanceRequest`
 - Deskripsi: Seluruh validasi absen (jendela, radius sesuai mode, akurasi, mock, offline, skew), idempotensi `client_uuid`, simpan selfie (validasi JPEG asli, buang EXIF, nama acak, disk privat), upsert `attendance_days` (memanggil resolver T-037 bila sudah ada, sementara hitung telat dasar), event `attendance_mock_detected` + notifikasi HRD & kepala lokasi.
 - Kriteria penerimaan:
-  - [ ] Test BR-063 shift lintas tengah malam (pulang 06.05 → `work_date` kemarin)
-  - [ ] Test BR-064 tiga mode × dalam/luar radius, akurasi 250 m ditolak
-  - [ ] Test BR-065 mock ditolak & tidak tersimpan sebagai log
-  - [ ] Test BR-067 offline 70 jam diterima, 80 jam ditolak, replay `client_uuid` → 200 `replayed`
-  - [ ] Unggah PNG/berkas palsu → 422
+  - [x] Test BR-063 shift lintas tengah malam (pulang 06.05 → `work_date` kemarin)
+  - [x] Test BR-064 tiga mode × dalam/luar radius, akurasi 250 m ditolak
+  - [x] Test BR-065 mock ditolak & tidak tersimpan sebagai log
+  - [x] Test BR-067 offline 70 jam diterima, 80 jam ditolak, replay `client_uuid` → 200 `replayed`
+  - [x] Unggah PNG/berkas palsu → 422
 - Verifikasi: `php artisan test --filter=Attendance`
 - Di luar lingkup: status harian lengkap (T-037)
 

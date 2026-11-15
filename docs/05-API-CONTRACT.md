@@ -393,6 +393,17 @@ Respons 201 (atau 200 + `meta.replayed=true` bila `client_uuid` sudah ada):
   "meta": { "request_id": "01JBX...", "replayed": false } }
 ```
 
+`client_uuid` yang sudah dipakai kiriman **akun lain** → 409 `STATE_CONFLICT` (tanpa data). Pegawai selalu diambil dari akun pemilik token. Batas laju unggah 10/menit per pengguna (SEC-068).
+
+### 5.4a `GET /api/v1/attendance/today`
+Hari kerja "sekarang" untuk beranda Pakis Pro (T-036). Shift malam yang sudah masuk dan belum pulang tetap ditampilkan sebagai hari kerja kemarin sampai jendela pulangnya lewat. `attendance` = bentuk `data` 5.4 (null bila belum absen). `next_action` = `in` / `out` / `null` (tidak ada jadwal, atau jendela pulang sudah lewat).
+```json
+{ "data": { "work_date": "2026-11-03",
+  "schedule": { "kind": "shift", "shift": { "code": "SLS", "name": "Sales", "start": "07:30", "end": "16:30" }, "holiday": null },
+  "attendance": null, "next_action": "in" },
+  "meta": { "request_id": "01JBX..." } }
+```
+
 ### 5.5 `GET /api/v1/attendance` (daftar)
 Spec listing `my_attendance_days`: filter `month` (`YYYY-MM`, default bulan berjalan), `status` (multi), sort `-work_date` (default) / `work_date`, `per_page` 20 (opsi 20, 50). Pencarian `q` mencari di nama shift.
 

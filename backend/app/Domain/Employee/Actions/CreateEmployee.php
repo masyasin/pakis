@@ -37,15 +37,18 @@ final class CreateEmployee
 
     /**
      * @param  array<string, mixed>  $data  dari EmployeeRequest::employeeData() + `assignment` + `account`
+     * @param  string|null  $employeeNumber  nomor yang sudah ada di berkas impor (BR-054). Hanya untuk
+     *                                       pemanggil internal (ApplyImportRow); request tidak pernah
+     *                                       mengisinya (SEC-034). Kosong = dari NumberGenerator.
      * @return array{employee: Employee, temporary_password: string|null, account: User|null}
      */
-    public function handle(User $actor, array $data, ?UploadedFile $photo = null): array
+    public function handle(User $actor, array $data, ?UploadedFile $photo = null, ?string $employeeNumber = null): array
     {
         // Disimpan sebelum transaksi (berkas tidak ikut rollback), dihapus lagi bila simpan gagal.
         $photoPath = $photo !== null ? $this->photos->store($photo, 'photo', self::PHOTO_DIRECTORY) : null;
 
         try {
-            return DB::transaction(function () use ($actor, $data, $photoPath) {
+            return DB::transaction(function () use ($actor, $data, $photoPath, $employeeNumber) {
                 $nik = $data['nik'] ?? null;
                 $hash = $nik !== null ? $this->nik->hash($nik) : null;
 
@@ -56,7 +59,7 @@ final class CreateEmployee
                 $employee = new Employee;
                 $employee->fill([...array_intersect_key($data, array_flip(Employee::AUDITED)), 'photo_path' => $photoPath]);
                 $employee->forceFill([
-                    'employee_number' => $this->numbers->next('employee', isTaken: fn (string $n) => Employee::withTrashed()->where('employee_number', $n)->exists()),
+                    'employee_number' => $employeeNumber ?? $this->numbers->next('employee', isTaken: fn (string $n) => Employee::withTrashed()->where('employee_number', $n)->exists()),
                     'status' => EmployeeStatus::Active,
                     'nik_enc' => $nik !== null ? $this->nik->encrypt($nik) : null,
                     'nik_hash' => $hash,

@@ -411,9 +411,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Domain/Employee/Import/ProcessEmployeeImport.php` (job), `Actions/ApplyImportRow.php`, unduh galat, notifikasi selesai
 - Deskripsi: Proses idempoten per baris (create/update/skip), membuat penugasan untuk pegawai baru, peringatan beda penugasan, laporan akhir, berkas galat .xlsx dengan kolom pesan, audit `import.processed`.
 - Kriteria penerimaan:
-  - [ ] Proses berkas yang sama 2× → tidak ada duplikat (test)
-  - [ ] Opsi "perbarui data" off → baris yang sudah ada `skipped`
-  - [ ] Gagal di tengah → batch `failed`, baris yang sudah sukses tetap konsisten (transaksi per baris)
+  - [x] Proses berkas yang sama 2× → tidak ada duplikat (test)
+  - [x] Opsi "perbarui data" off → baris yang sudah ada `skipped`
+  - [x] Gagal di tengah → batch `failed`, baris yang sudah sukses tetap konsisten (transaksi per baris)
 - Verifikasi: `php artisan test --filter=ImportProcess`
 - Di luar lingkup: import jadwal/absensi
 

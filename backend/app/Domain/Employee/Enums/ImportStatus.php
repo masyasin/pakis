@@ -40,4 +40,22 @@ enum ImportStatus: string
     {
         return $this->canRemap();
     }
+
+    /** 06 §7.4: proses hanya dari `validated`. */
+    public function canProcess(): bool
+    {
+        return $this === self::Validated;
+    }
+
+    /** Proses sudah berakhir (laporan akhir tersedia). */
+    public function isFinished(): bool
+    {
+        return in_array($this, [self::Completed, self::Failed], true);
+    }
+
+    /** Berkas galat bisa diunduh sebelum proses (perbaiki berkas) maupun sesudahnya (laporan). */
+    public function hasErrorReport(): bool
+    {
+        return $this === self::Validated || $this->isFinished();
+    }
 }

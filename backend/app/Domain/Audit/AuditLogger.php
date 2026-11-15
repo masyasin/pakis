@@ -19,6 +19,31 @@ use Illuminate\Support\Str;
  */
 final class AuditLogger
 {
+    /** Label aktor berlingkup (mis. `import#12`), dipakai bila pemanggil `record` tidak memberi label. */
+    private static ?string $scopedLabel = null;
+
+    /**
+     * Jalankan `$callback` dengan label aktor tertentu untuk semua audit di dalamnya. Dipakai proses
+     * massal (impor T-028) yang memanggil Action biasa (`CreateEmployee` dst.): audit tiap pegawai
+     * tetap bisa ditelusuri ke batch asalnya tanpa mengubah tanda tangan setiap Action.
+     *
+     * @template T
+     *
+     * @param  callable(): T  $callback
+     * @return T
+     */
+    public static function actingAs(string $label, callable $callback): mixed
+    {
+        $previous = self::$scopedLabel;
+        self::$scopedLabel = $label;
+
+        try {
+            return $callback();
+        } finally {
+            self::$scopedLabel = $previous;
+        }
+    }
+
     /**
      * @param  array<string, mixed>|null  $old
      * @param  array<string, mixed>|null  $new
@@ -42,8 +67,11 @@ final class AuditLogger
         $log = new AuditLog([
             'occurred_at' => now(),
             'user_id' => $actor?->getAuthIdentifier(),
-            // SEC-009: semua aksi Super Admin (vendor Sintech) ditandai agar mudah ditinjau Owner.
-            'actor_label' => $actorLabel ?? ($actor instanceof User && $actor->hasRole(RoleCatalog::SUPER_ADMIN) ? 'vendor' : null),
+            // SEC-009: semua aksi Super Admin (vendor Sintech) ditandai agar mudah ditinjau Owner;
+            // tanda itu menang atas label berlingkup supaya impor oleh vendor tetap terlihat.
+            'actor_label' => $actorLabel
+                ?? ($actor instanceof User && $actor->hasRole(RoleCatalog::SUPER_ADMIN) ? 'vendor' : null)
+                ?? self::$scopedLabel,
             'event' => $event,
             'auditable_type' => $auditable?->getMorphClass(),
             'auditable_id' => $auditable?->getKey(),

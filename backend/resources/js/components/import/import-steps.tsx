@@ -4,10 +4,16 @@ import { cn } from '@/lib/utils';
 const STEPS = ['Unggah', 'Pemetaan kolom', 'Validasi', 'Proses'] as const;
 
 /**
- * Langkah wizard impor pegawai (07 §4). Langkah 4 "Proses" menyusul di T-028, jadi selalu tampil
- * belum aktif.
+ * Langkah wizard impor pegawai (07 §4). `complete` menandai langkah terakhir selesai (impor sudah
+ * diproses), sehingga semua langkah tampil tercentang.
  */
-export function ImportSteps({ current }: { current: 1 | 2 | 3 }) {
+export function ImportSteps({
+    current,
+    complete = false,
+}: {
+    current: 1 | 2 | 3 | 4;
+    complete?: boolean;
+}) {
     return (
         <ol
             className="grid grid-cols-4 gap-2"
@@ -15,8 +21,8 @@ export function ImportSteps({ current }: { current: 1 | 2 | 3 }) {
         >
             {STEPS.map((label, i) => {
                 const step = i + 1;
-                const done = step < current;
-                const active = step === current;
+                const done = step < current || complete;
+                const active = step === current && !complete;
 
                 return (
                     <li
@@ -80,6 +86,11 @@ export type ImportBatchSummary = {
     total_rows: number;
     valid_rows: number;
     error_rows: number;
+    created_rows: number;
+    updated_rows: number;
+    skipped_rows: number;
+    update_existing: boolean;
+    completed_at_local: string | null;
     failure: string | null;
     file_available: boolean;
     created_at: string | null;

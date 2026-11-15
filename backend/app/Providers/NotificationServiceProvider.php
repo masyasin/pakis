@@ -2,8 +2,10 @@
 
 namespace App\Providers;
 
+use App\Domain\Employee\Events\ImportProcessed;
 use App\Domain\Notification\Channels\ChannelAvailability;
 use App\Domain\Notification\Listeners\SendExportReady;
+use App\Domain\Notification\Listeners\SendImportDone;
 use App\Support\Export\Events\ExportReady;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
@@ -19,5 +21,6 @@ class NotificationServiceProvider extends ServiceProvider
         ChannelAvailability::assertSafeForEnvironment();
 
         Event::listen(ExportReady::class, SendExportReady::class);
+        Event::listen(ImportProcessed::class, SendImportDone::class);
     }
 }

@@ -244,6 +244,9 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('impor/{batch}/pemetaan', [ImportController::class, 'updateMapping'])->whereNumber('batch')->middleware('throttle:30,1')->name('imports.mapping.update');
         Route::get('impor/{batch}/baris', [ImportController::class, 'rows'])->whereNumber('batch')->name('imports.rows.index');
         Route::post('impor/{batch}/batal', [ImportController::class, 'cancel'])->whereNumber('batch')->name('imports.cancel');
+        // Langkah 4 (T-028): proses hanya dari `validated`; unduh galat dari import_rows (NIK termasking).
+        Route::post('impor/{batch}/proses', [ImportController::class, 'process'])->whereNumber('batch')->middleware('throttle:10,1')->name('imports.process');
+        Route::get('impor/{batch}/galat', [ImportController::class, 'errors'])->whereNumber('batch')->middleware('throttle:30,1')->name('imports.errors');
     });
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.

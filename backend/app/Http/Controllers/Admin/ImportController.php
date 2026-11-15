@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Audit\AuditLogger;
 use App\Domain\Employee\Actions\CancelImport;
+use App\Domain\Employee\Actions\ProcessImportBatch;
 use App\Domain\Employee\Actions\SaveImportMapping;
 use App\Domain\Employee\Actions\StoreImportUpload;
 use App\Domain\Employee\Enums\ImportStatus;
 use App\Domain\Employee\Import\EmployeeImportFields;
+use App\Domain\Employee\Import\ImportErrorFile;
 use App\Domain\Employee\Import\ImportFile;
 use App\Domain\Employee\Import\ImportTemplate;
 use App\Domain\Employee\Import\MappingSuggester;
@@ -17,6 +20,7 @@ use App\Domain\Employee\Models\ImportBatch;
 use App\Domain\Employee\Models\ImportRow;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\ImportMappingRequest;
+use App\Http\Requests\Employee\ImportProcessRequest;
 use App\Http\Requests\Employee\ImportUploadRequest;
 use App\Models\User;
 use App\Support\Listing\ListingQuery;
@@ -31,9 +35,9 @@ use Inertia\Response;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
- * Impor pegawai langkah 1–3 (05 §4.7, FR-028, BR-054, T-027): unggah → pemetaan → validasi.
- * Semua route `can:employees.import`; batch di luar visibilitas pengguna → 404 (route binding).
- * Proses tulis ke DB & unduh galat = T-028.
+ * Impor pegawai (05 §4.7, FR-028, BR-054): unggah → pemetaan → validasi (T-027) → proses &
+ * laporan + unduh galat (T-028). Semua route `can:employees.import`; batch di luar visibilitas
+ * pengguna → 404 (route binding).
  */
 class ImportController extends Controller
 {
@@ -142,6 +146,8 @@ class ImportController extends Controller
                 'status' => $r->status->value,
                 'data' => $r->data,
                 'errors' => self::errorList($r->errors ?? []),
+                'warnings' => array_values(array_filter((array) ($r->data['warnings'] ?? []), is_string(...))),
+                'employee_id' => is_int($r->data['employee_id'] ?? null) ? $r->data['employee_id'] : null,
             ]);
 
         $mapped = array_values(array_intersect(EmployeeImportFields::keys(), $batch->columnMapping()));
@@ -150,8 +156,43 @@ class ImportController extends Controller
             ...$result->toInertia(),
             'batch' => self::summary($batch),
             'mappedFields' => array_map(fn (string $f) => ['key' => $f, 'label' => EmployeeImportFields::label($f)], $mapped),
-            'can' => ['remap' => $batch->status->canRemap(), 'cancel' => $batch->status->canCancel()],
+            'can' => [
+                'remap' => $batch->status->canRemap(),
+                'cancel' => $batch->status->canCancel(),
+                'process' => $batch->status->canProcess() && $batch->valid_rows > 0 && Storage::disk(ImportFile::DISK)->exists($batch->stored_path),
+                'download_errors' => $batch->status->hasErrorReport() && $batch->error_rows > 0,
+                'view_employee' => $request->user()?->can('employees.view') ?? false,
+            ],
         ]);
+    }
+
+    public function process(ImportProcessRequest $request, ImportBatch $batch, ProcessImportBatch $action): RedirectResponse
+    {
+        $batch = $action->start(self::actor($request), $batch, $request->updateExisting());
+
+        Inertia::flash('toast', match ($batch->status) {
+            ImportStatus::Completed => ['type' => 'success', 'message' => sprintf('Impor selesai: %d dibuat, %d diperbarui, %d dilewati, %d galat.', $batch->created_rows, $batch->updated_rows, $batch->skipped_rows, $batch->error_rows)],
+            ImportStatus::Failed => ['type' => 'error', 'message' => 'Impor berhenti di tengah jalan. Baris yang sudah diproses tetap tersimpan; unggah ulang berkasnya untuk melanjutkan.'],
+            default => ['type' => 'success', 'message' => 'Impor sedang diproses di latar belakang. Anda akan mendapat notifikasi saat selesai.'],
+        });
+
+        return to_route('admin.imports.rows.index', $batch);
+    }
+
+    /**
+     * Unduh baris galat (.xlsx + kolom pesan). Tercatat di audit seperti ekspor lain (SEC-051).
+     */
+    public function errors(Request $request, ImportBatch $batch, ImportErrorFile $file, AuditLogger $audit): BinaryFileResponse
+    {
+        abort_unless($batch->status->hasErrorReport() && $batch->error_rows > 0, 404);
+
+        $path = tempnam(sys_get_temp_dir(), 'galat').'.xlsx';
+        $count = $file->write($batch, $path);
+        $audit->record('export.created', $batch, null, ['listing' => 'import_rows', 'rows' => $count, 'format' => 'xlsx']);
+
+        $name = 'galat_'.pathinfo($batch->original_name, PATHINFO_FILENAME).'.xlsx';
+
+        return response()->download($path, $name)->deleteFileAfterSend();
     }
 
     public function cancel(Request $request, ImportBatch $batch, CancelImport $action): RedirectResponse
@@ -174,6 +215,11 @@ class ImportController extends Controller
             'total_rows' => $batch->total_rows,
             'valid_rows' => $batch->valid_rows,
             'error_rows' => $batch->error_rows,
+            'created_rows' => $batch->created_rows,
+            'updated_rows' => $batch->updated_rows,
+            'skipped_rows' => $batch->skipped_rows,
+            'update_existing' => ProcessImportBatch::updateExisting($batch),
+            'completed_at_local' => $batch->completed_at !== null ? DisplayTime::toLocal($batch->completed_at)->format('Y-m-d H:i') : null,
             'failure' => $batch->mapping['failure'] ?? null,
             'file_available' => Storage::disk(ImportFile::DISK)->exists($batch->stored_path),
             'created_at' => $batch->created_at?->toIso8601String(),

@@ -312,9 +312,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/04-DATABASE.md` §2.8, `docs/07-UI-SPEC.md` §3.4 (`locations`)
 - File: migration, `app/Domain/Organization/{Models/Location,Actions/*,Policies/LocationPolicy}`, `Listings/LocationListing`, controller + `pages/Locations/{Index,Form}.tsx` (input koordinat + pratinjau peta + tombol "ambil dari tautan Google Maps" yang mem-parse koordinat dari URL yang ditempel)
 - Kriteria penerimaan:
-  - [ ] Koordinat di luar Indonesia ditolak. Radius 20–5000
-  - [ ] Hapus lokasi yang dipakai → ditolak dengan arahan nonaktifkan
-  - [ ] Listing `locations` + ekspor lolos test kontrak. `kepala_lokasi` hanya melihat lokasinya
+  - [x] Koordinat di luar Indonesia ditolak. Radius 20–5000
+  - [x] Hapus lokasi yang dipakai → ditolak dengan arahan nonaktifkan
+  - [x] Listing `locations` + ekspor lolos test kontrak. `kepala_lokasi` hanya melihat lokasinya
 - Verifikasi: `php artisan test --filter=Location`
 - Di luar lingkup: kepala lokasi (`head_employee_id`) dipilih setelah T-024 ada (field disiapkan, lookup aktif di T-024)
 

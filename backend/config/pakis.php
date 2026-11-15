@@ -2,6 +2,7 @@
 
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
+use App\Domain\Organization\Listings\LocationListing;
 
 /*
  * Konfigurasi TEKNIS PAKIS ONE yang bukan secret dan bukan parameter bisnis.
@@ -30,6 +31,7 @@ return [
     'exports' => [
         'audit_logs' => AuditLogListing::class,
         'security_events' => SecurityEventListing::class,
+        'locations' => LocationListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

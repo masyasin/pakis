@@ -4,6 +4,7 @@ use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
+use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MfaSetupController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -81,6 +82,20 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     Route::get('wilayah', [RegionController::class, 'index'])
         ->middleware('can:regions.view')
         ->name('regions.index');
+
+    // Lokasi (05 §4.5, FR-022, BR-041). `baru` & `ekspor` sebelum `{location}`; lokasi di luar
+    // scope 404 lewat route binding ber-scope.
+    Route::middleware('can:locations.view')->group(function () {
+        Route::get('lokasi', [LocationController::class, 'index'])->name('locations.index');
+        Route::get('lokasi/ekspor', [LocationController::class, 'export'])->name('locations.export');
+    });
+    Route::middleware('can:locations.manage')->group(function () {
+        Route::get('lokasi/baru', [LocationController::class, 'create'])->name('locations.create');
+        Route::post('lokasi', [LocationController::class, 'store'])->name('locations.store');
+        Route::get('lokasi/{location}/ubah', [LocationController::class, 'edit'])->whereNumber('location')->name('locations.edit');
+        Route::put('lokasi/{location}', [LocationController::class, 'update'])->whereNumber('location')->name('locations.update');
+        Route::delete('lokasi/{location}', [LocationController::class, 'destroy'])->whereNumber('location')->name('locations.destroy');
+    });
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.
     Route::get('referensi', [ReferenceController::class, 'index'])

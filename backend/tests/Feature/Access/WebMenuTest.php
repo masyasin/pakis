@@ -35,7 +35,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
-        'Organisasi' => ['Wilayah'],
+        'Organisasi' => ['Lokasi', 'Wilayah'],
         'Akses' => ['Role & Hak Akses'],
         'Sistem' => ['Pengaturan', 'Penomoran', 'Referensi', 'Audit Log', 'Log Keamanan'],
     ]);
@@ -44,14 +44,18 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
 test('06 §8 HRD: tanpa Role, Pengaturan, Penomoran, Audit', function () {
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
-        'Organisasi' => ['Wilayah'],
+        'Organisasi' => ['Lokasi', 'Wilayah'],
         'Sistem' => ['Referensi'],
     ]);
 });
 
-test('06 §8 kepala lokasi & supervisor: hanya Dasbor sampai modul absensi/pegawai dibangun', function (string $role) {
-    expect(menuOf($role))->toBe(['' => ['Dasbor']]);
-})->with(['kepala_lokasi', 'supervisor']);
+test('06 §8 kepala lokasi: Dasbor + Lokasi (T-021) sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Organisasi' => ['Lokasi']]);
+});
+
+test('06 §8 supervisor: hanya Dasbor sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor']]);
+});
 
 test('auth.permissions: super_admin = 50 permission; tamu tanpa menu', function () {
     $this->actingAs(User::factory()->withTwoFactor()->create()->assignRole('super_admin'))->get('/dasbor')

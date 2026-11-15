@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Audit\Models\AuditLog;
+use App\Domain\Organization\Models\Location;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Domain\Reference\ReferenceUsage;
@@ -223,9 +224,18 @@ test('BR-026 item yang sudah dipakai data lain tidak bisa dihapus, hanya dinonak
         ->and(AuditLog::query()->where('event', 'reference.deleted')->where('auditable_id', $item->id)->exists())->toBeTrue();
 });
 
-test('pemakai yang tabelnya belum ada dilewati (sebelum T-021/T-024/T-040)', function () {
-    expect(Schema::hasTable('locations'))->toBeFalse()
-        ->and(app(ReferenceUsage::class)->isUsed(customItem()))->toBeFalse();
+test('pemakai yang tabelnya belum ada dilewati (sebelum T-024/T-040)', function () {
+    expect(Schema::hasTable('employees'))->toBeFalse()
+        ->and(app(ReferenceUsage::class)->isUsed(customItem('kosong', 'employment_status')))->toBeFalse();
+});
+
+test('BR-026 tipe lokasi yang dipakai lokasi (T-021) terhitung "sudah dipakai"', function () {
+    $item = customItem();
+    expect(app(ReferenceUsage::class)->isUsed($item))->toBeFalse();
+
+    Location::query()->create(['code' => 'MES-01', 'name' => 'Mes Karyawan', 'location_type_id' => $item->id]);
+
+    expect(app(ReferenceUsage::class)->isUsed($item))->toBeTrue();
 });
 
 // --- Urutan -----------------------------------------------------------------------------------

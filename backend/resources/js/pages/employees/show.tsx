@@ -73,6 +73,7 @@ import {
     revealNik,
     show,
 } from '@/routes/admin/employees';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type EmployeeDetail = {
     id: number;
@@ -185,6 +186,10 @@ export default function EmployeeShow(props: Props) {
     );
     const hrefFor = (key: EmployeeTab) =>
         show(employee.id, { query: { tab: key } }).url;
+    useBreadcrumbTail([
+        { title: employee.full_name, href: show(employee.id).url },
+        { title: tabLabel(tab), href: hrefFor(tab) },
+    ]);
 
     return (
         <>

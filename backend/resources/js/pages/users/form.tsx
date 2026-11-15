@@ -15,6 +15,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { rememberLabels } from '@/lib/lookup';
 import { cn } from '@/lib/utils';
 import { index, show, store, update } from '@/routes/admin/users';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type RoleOption = {
     name: string;
@@ -154,6 +155,14 @@ export default function UserForm({ user, roleOptions, canAssignRoles }: Props) {
     };
 
     const title = user ? `Ubah ${user.name}` : 'Tambah pengguna';
+    useBreadcrumbTail(
+        user
+            ? [
+                  { title: user.name, href: show(user.id).url },
+                  { title: 'Ubah', href: '#' },
+              ]
+            : [{ title: 'Tambah', href: '#' }],
+    );
 
     return (
         <>

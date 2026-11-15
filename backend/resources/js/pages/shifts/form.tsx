@@ -11,6 +11,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { shiftWindowSummary } from '@/lib/shift-time';
 import { index, store, update } from '@/routes/admin/shifts';
 import type { ShiftRow } from './index';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type Props = { shift: Omit<ShiftRow, 'employees_count'> | null };
 
@@ -39,6 +40,11 @@ export default function ShiftForm({ shift }: Props) {
     };
 
     const title = shift ? `Ubah shift ${shift.name}` : 'Tambah shift';
+    useBreadcrumbTail(
+        shift
+            ? [{ title: `Ubah ${shift.name}`, href: '#' }]
+            : [{ title: 'Tambah', href: '#' }],
+    );
 
     return (
         <>

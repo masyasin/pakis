@@ -14,6 +14,7 @@ import { rememberLabels } from '@/lib/lookup';
 import type { LookupOption } from '@/lib/lookup';
 import { cn } from '@/lib/utils';
 import { index, store, update } from '@/routes/admin/positions';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type Mode = 'location' | 'any_location' | 'anywhere';
 
@@ -71,6 +72,11 @@ export default function PositionForm({
     };
 
     const title = position ? `Ubah jabatan ${position.name}` : 'Tambah jabatan';
+    useBreadcrumbTail(
+        position
+            ? [{ title: `Ubah ${position.name}`, href: '#' }]
+            : [{ title: 'Tambah', href: '#' }],
+    );
     const err = form.errors;
 
     return (

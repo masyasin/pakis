@@ -30,7 +30,7 @@ export function HeaderUserMenu() {
                     data-test="user-menu-button"
                     className="group flex h-10 items-center gap-2 rounded-full p-1 transition-colors duration-150 ease-out outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring data-[state=open]:bg-accent md:pr-2.5"
                 >
-                    <Avatar className="size-8 overflow-hidden rounded-full ring-1 ring-border">
+                    <Avatar className="size-8 overflow-hidden rounded-full ring-2 ring-primary/25 ring-offset-1 ring-offset-background">
                         <AvatarImage
                             src={auth.user.avatar ?? undefined}
                             className="object-cover"

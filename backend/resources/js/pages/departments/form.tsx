@@ -13,6 +13,7 @@ import { Spinner } from '@/components/ui/spinner';
 import { rememberLabels } from '@/lib/lookup';
 import type { LookupOption } from '@/lib/lookup';
 import { index, store, update } from '@/routes/admin/departments';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type DepartmentData = {
     id: number;
@@ -49,6 +50,11 @@ export default function DepartmentForm({ department, parentLabel }: Props) {
     const title = department
         ? `Ubah departemen ${department.name}`
         : 'Tambah departemen';
+    useBreadcrumbTail(
+        department
+            ? [{ title: `Ubah ${department.name}`, href: '#' }]
+            : [{ title: 'Tambah', href: '#' }],
+    );
     const err = form.errors;
 
     return (

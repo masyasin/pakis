@@ -8,6 +8,7 @@ import type {
     SettingValue,
 } from '@/components/pakis/setting-field';
 import { Button } from '@/components/ui/button';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type Props = {
     groups: Array<{ key: string; label: string }>;
@@ -35,6 +36,7 @@ export default function SiteSettingsEdit({
 
     const url = `/pengaturan/${group}`;
     const groupLabel = groups.find((g) => g.key === group)?.label ?? group;
+    useBreadcrumbTail([{ title: groupLabel, href: url }]);
 
     const submit = (reset: string[] = []) => {
         const payload: Record<string, unknown> = {

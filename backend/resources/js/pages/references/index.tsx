@@ -32,6 +32,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import type { ListingProps } from '@/types/listing';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type ReferenceRow = {
     id: number;
@@ -74,6 +75,9 @@ export default function ReferencesIndex({
     const [deleting, setDeleting] = useState<ReferenceRow | null>(null);
     const [ordering, setOrdering] = useState(false);
     const groupLabel = groups.find((g) => g.value === group)?.label ?? group;
+    useBreadcrumbTail([
+        { title: groupLabel, href: `/referensi?filter[group]=${group}` },
+    ]);
 
     const columns: DataTableColumn<ReferenceRow>[] = [
         {

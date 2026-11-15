@@ -17,6 +17,7 @@ import { rememberLabels } from '@/lib/lookup';
 import type { LookupOption } from '@/lib/lookup';
 import { cn } from '@/lib/utils';
 import { index, show, store, update } from '@/routes/admin/employees';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type Mode = 'location' | 'any_location' | 'anywhere';
 
@@ -264,6 +265,14 @@ export default function EmployeeForm({
     };
 
     const title = employee ? `Ubah ${employee.full_name}` : 'Tambah pegawai';
+    useBreadcrumbTail(
+        employee
+            ? [
+                  { title: employee.full_name, href: show(employee.id).url },
+                  { title: 'Ubah', href: '#' },
+              ]
+            : [{ title: 'Tambah', href: '#' }],
+    );
 
     return (
         <>

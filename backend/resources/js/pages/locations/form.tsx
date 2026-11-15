@@ -20,6 +20,7 @@ import {
     parseMapsLink,
 } from '@/lib/maps-link';
 import { index, store, update } from '@/routes/admin/locations';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type LocationData = {
     id: number;
@@ -149,6 +150,11 @@ export default function LocationForm({
     };
 
     const title = location ? `Ubah lokasi ${location.name}` : 'Tambah lokasi';
+    useBreadcrumbTail(
+        location
+            ? [{ title: `Ubah ${location.name}`, href: '#' }]
+            : [{ title: 'Tambah', href: '#' }],
+    );
     const err = form.errors;
 
     return (

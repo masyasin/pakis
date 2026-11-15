@@ -15,6 +15,7 @@ import { rememberLabels } from '@/lib/lookup';
 import type { LookupOption } from '@/lib/lookup';
 import { cn } from '@/lib/utils';
 import { index, store, update } from '@/routes/admin/holidays';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type HolidayData = {
     id: number;
@@ -78,6 +79,11 @@ export default function HolidayForm({ holiday, locationLabels }: Props) {
     const title = holiday
         ? `Ubah hari libur ${holiday.name}`
         : 'Tambah hari libur';
+    useBreadcrumbTail(
+        holiday
+            ? [{ title: `Ubah ${holiday.name}`, href: '#' }]
+            : [{ title: 'Tambah', href: '#' }],
+    );
 
     return (
         <>

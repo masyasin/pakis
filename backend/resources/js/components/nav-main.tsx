@@ -100,10 +100,10 @@ export function NavMain() {
                     key={group.title ?? `grup-${index}`}
                     className="px-2 py-0"
                 >
-                    <SidebarGroupLabel>
+                    <SidebarGroupLabel className="mt-1 h-7">
                         {group.title ?? 'Menu'}
                     </SidebarGroupLabel>
-                    <SidebarMenu>
+                    <SidebarMenu className="gap-0.5">
                         {group.items.map((item) => {
                             const Icon = ICONS[item.icon] ?? CircleDot;
 
@@ -113,9 +113,9 @@ export function NavMain() {
                                         asChild
                                         isActive={item.href === activeHref}
                                         tooltip={{ children: item.title }}
-                                        // Seperti tab layar prototipe: tinggi 44 px, sudut 10 px, item aktif tint hijau + teks
-                                        // hijau tebal + garis tipis hijau. Item lain abu-abu.
-                                        className="h-11 gap-2.5 rounded-[10px] px-3 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-sidebar-foreground data-[active=true]:font-bold data-[active=true]:ring-1 data-[active=true]:ring-sidebar-primary/30 [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-sidebar-accent-foreground"
+                                        // Gaya tab prototipe (sudut 10 px, item aktif tint hijau + teks hijau tebal + garis tipis
+                                        // hijau), tinggi 36 px agar daftar menu lebih rapat (permintaan Mas 15 Nov 2026).
+                                        className="h-9 gap-2.5 rounded-[10px] px-3 text-muted-foreground transition-colors duration-150 hover:bg-muted hover:text-sidebar-foreground data-[active=true]:font-bold data-[active=true]:ring-1 data-[active=true]:ring-sidebar-primary/30 [&>svg]:text-muted-foreground data-[active=true]:[&>svg]:text-sidebar-accent-foreground"
                                     >
                                         <Link href={item.href} prefetch>
                                             <Icon />

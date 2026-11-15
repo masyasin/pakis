@@ -47,6 +47,7 @@ import {
     show,
     toggle,
 } from '@/routes/admin/users';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type Tab = 'profil' | 'role' | 'sesi' | 'perangkat' | 'riwayat';
 
@@ -153,6 +154,13 @@ export default function UserShow(props: Props) {
         ...t,
         href: show(user.id, { query: { tab: t.key } }),
     }));
+    useBreadcrumbTail([
+        { title: user.name, href: show(user.id).url },
+        {
+            title: tabs.find((t) => t.key === tab)?.label ?? tab,
+            href: show(user.id, { query: { tab } }).url,
+        },
+    ]);
 
     const post = (
         url: string,

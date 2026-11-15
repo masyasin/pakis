@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { index } from '@/routes/admin/roles';
+import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 
 type Module = {
     module: string;
@@ -109,6 +110,16 @@ export default function RoleForm({
             ? `Role ${role.label}`
             : `Ubah role ${role.label}`
         : 'Tambah role';
+    useBreadcrumbTail(
+        role
+            ? [
+                  {
+                      title: disabled ? role.label : `Ubah ${role.label}`,
+                      href: '#',
+                  },
+              ]
+            : [{ title: 'Tambah', href: '#' }],
+    );
 
     return (
         <>

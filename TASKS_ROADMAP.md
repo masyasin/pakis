@@ -96,6 +96,8 @@ Exit gate: faktur = jumlah diterima, alokasi pembayaran teruji, kwitansi tidak b
 
 ## Paket C — Lapangan & Mitra (T-114–T-140)
 
+> ✅ **Sudah dirinci:** `TASKS_PAKET_C.md` + `docs/17-PAKET-C-LAPANGAN-MITRA.md` (251 jam). Baris di bawah hanya ringkasan.
+
 Tujuan: semua peran lapangan bekerja dari Pakis Pro (offline-first) dan kios memesan & membayar dari Pakis Mitra.
 Exit gate: sinkron offline tanpa data ganda, kwitansi offline dari blok server, rekonsiliasi canvas teruji, red flag berjalan, IDOR antar kios teruji.
 
@@ -130,6 +132,8 @@ Exit gate: sinkron offline tanpa data ganda, kwitansi offline dari blok server, 
 | T-140 | Hardening & UAT Paket C, pilot lapangan | — | `09` §7.2 | 14 | Semua T-114–T-139 |
 
 ## Paket D — Armada & BBM (T-141–T-153)
+
+> ✅ **Sudah dirinci:** `TASKS_PAKET_D.md` + `docs/18-PAKET-D-ARMADA-BBM.md` (107 jam). Baris di bawah hanya ringkasan.
 
 Tujuan: setiap liter BBM dan kilometer terhubung ke trip nyata.
 Exit gate: trip tidak bisa dimulai tanpa kelayakan, cek BBM wajar teruji, km/liter & selisih odometer–GPS menjadi red flag.

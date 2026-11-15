@@ -112,8 +112,8 @@ Status per 16 Nov 2026 berdasarkan `TASKS.md` repo: ✅ selesai · 🟡 sebagian
 | HR | Riwayat Kepegawaian | HR-01 (lanjut), HR-04..06 | T-049–T-066 | ±132 jam | **Ditunda**, kecuali T-049 + T-060 (§3.2) |
 | **A** | Master & Gudang | CORE-02/03/06, MST-01..05, PRC-01, INV-01..05, GAR-01 (terima) | T-067–T-087 | ±160 jam | ✅ Dirinci: `15` + `TASKS_PAKET_A.md` |
 | **B** | Penjualan & Uang Aman | SAL-01..03/05, DLV-01 (web), FIN-01/04, FLD-03 (web), AUD-01, POS-01, GAR-01 (jual), WEB-01, BI-01 | T-088–T-113 | ±211 jam | ✅ Dirinci: `16` + `TASKS_PAKET_B.md` |
-| **C** | Lapangan & Mitra | MOB-01 (mode lapangan), MOB-02, FLD-01..04, DLV-01 (driver), SAL-04, MKT-01, GAR-02, AUD-02, CORE-04 (WA & push) | T-114–T-140 | ±244 jam | Outline |
-| **D** | Armada & BBM | FLT-01..05 | T-141–T-153 | ±101 jam | Outline |
+| **C** | Lapangan & Mitra | MOB-01 (mode lapangan), MOB-02, FLD-01..04, DLV-01 (driver), SAL-04, MKT-01, GAR-02, AUD-02, CORE-04 (WA & push) | T-114–T-140 | ±251 jam | ✅ Dirinci: `17` + `TASKS_PAKET_C.md` |
+| **D** | Armada & BBM | FLT-01..05 | T-141–T-153 | ±107 jam | ✅ Dirinci: `18` + `TASKS_PAKET_D.md` |
 | **E** | SDM Lanjut & Payroll | HR-04..06, HR-08 (lanjut) + Fase HR yang ditunda | T-049–T-066 + T-154–T-158 | ±132 + ±35 jam | Outline (sebagian sudah detail di `13`) |
 | **F** | Keuangan & Prinsipal | FIN-02/03/05, PRC-02/03, SAL-06, INV-06, POS-02 | T-159–T-178 | ±172 jam | Outline |
 | **G** | Cerdas & Kinerja | AI-01..03, HR-07, WEB-02/03, FLT-06, BI-01 lanjut | T-179–T-192 | ±142 jam | Outline. Butuh data operasional ±6 bulan |
@@ -171,10 +171,17 @@ Nomor ADR 101+ dipakai agar tidak bentrok dengan ADR di `03` repo.
 | ADR-109 | **Pakis Mitra = aplikasi Flutter terpisah** dengan guard `mitra` dan tabel `customer_users` (pengguna kios), bukan role di `users`. | Kios adalah pihak luar. Pemisahan guard mencegah eskalasi ke data internal. | API `/api/mitra/v1`. Rate limit & ability terpisah. |
 | ADR-110 | **POS toko = PWA** offline (IndexedDB + service worker), sinkron lewat API yang sama dengan mobile. | Konsep §7: perangkat tetap di toko, tanpa toko aplikasi. | Struk dicetak via printer yang didukung browser (USB/jaringan). Printer Bluetooth tetap via Pakis Pro (canvas). |
 | ADR-111 | **Sinkron offline generik** untuk Pakis Pro/POS: snapshot master berversi (`sync_cursor`), outbox klien dengan `idempotency_key`, dan resolusi konflik di server (server menang + notifikasi). | Pola absensi Fase 0,5 diperluas ke pesanan, kunjungan, kwitansi, POD, BBM. | Kontrak sinkron ditulis di dokumen paket C sebelum layar mobile dibuat. |
-| ADR-112 | **Kwitansi offline memakai blok nomor per perangkat** yang dialokasikan server (`receipt_number_blocks`). Nomor tidak kembali dalam batas waktu → red flag. | BR-127. Nomor tetap berasal dari server walau dibuat offline. | Pola yang sama dipakai nota canvas. |
+| ADR-112 | **Kwitansi offline memakai blok nomor per perangkat** yang dialokasikan server (`number_blocks`, ADR-119). Nomor tidak kembali dalam batas waktu → red flag. | BR-127. Nomor tetap berasal dari server walau dibuat offline. | Pola yang sama dipakai nota canvas. |
 | ADR-113 | **Semua integrasi luar lewat adapter** + antrean + retry dengan backoff + log pengiriman (`integration_logs`). Daftar adapter di §12. | Penyedia WA/VA/GPS/pajak bisa berganti per distributor (self-hosted). | Driver `log`/`fake` untuk dev & test di setiap adapter. |
 | ADR-114 | **Satu library PDF** untuk faktur, surat jalan, kwitansi, nota, slip gaji, CV, dan berita acara. Library dipilih sekali (OQ-109) sebelum T-058 atau T-092, mana yang lebih dulu. | Konsistensi tampilan & satu dependency untuk diaudit. | Template PDF memakai branding dari setting. |
 | ADR-115 | **Periode akuntansi & tanggal kunci** (`accounting.lock_date`): transaksi bertanggal ≤ tanggal kunci ditolak. Koreksi lewat dokumen pembalik di periode terbuka. | BR-113 jurnal tidak diedit. | Berlaku sejak B untuk dokumen keuangan (faktur, pembayaran, setoran), walau jurnal baru dibuat di F. |
+| ADR-116 | `mobile-mitra/` + paket Dart bersama `mobile-shared/` | Dua aplikasi Flutter berbagi kontrak & komponen | Detail `17` §0.2 |
+| ADR-117 | Perubahan sinkron dicatat eksplisit oleh Action (`sync_changes`) | Audiens hanya diketahui Action; logika tidak di observer | Detail `17` §0.2 |
+| ADR-118 | Penjualan canvas = dokumen jual langsung dari lokasi stok kendaraan | Satu jalur faktur & piutang | Detail `17` §0.2 |
+| ADR-119 | Blok nomor generik `number_blocks` (menggantikan nama `receipt_number_blocks` di ADR-112) | Kwitansi & nota canvas satu mekanisme | Detail `17` §0.2 |
+| ADR-120 | Trip sebagai pusat biaya armada | Setiap liter & km terhubung ke trip | Detail `18` §0.1 |
+| ADR-121 | Satu tabel `gps_positions` berpartisi bulanan untuk tracker & ponsel | Retensi cepat, satu jalur jarak/geofence | Detail `18` §0.1 |
+| ADR-122 | Alert armada terpisah dari red flag | Operasi harian vs pengendalian kecurangan | Detail `18` §0.1 |
 
 ## 5. Peta Domain (folder `app/Domain/`)
 
@@ -188,18 +195,19 @@ Nomor ADR 101+ dipakai agar tidak bentrok dengan ADR di `03` repo.
 | `Pricing` | Price list, tier, promo | A | `price_lists`, `price_list_versions`, `price_list_items`, `promotions`, `promotion_targets`, `promotion_scopes`, `promotion_tiers` |
 | `Inventory` | Lokasi stok, rak, batch, buku stok, reservasi, mutasi, opname, karantina, pemusnahan | A | `stock_locations`, `stock_bins`, `stock_batches`, `stock_movements`, `stock_reservations`, `stock_transfers` (+ lines), `stock_opnames` (+ lines), `disposal_reports` (+ lines), `product_costs`, `product_stock_levels`, `stock_batch_status_logs`, `serial_numbers` |
 | `Purchasing` | Prinsipal, supplier, PO, penerimaan, retur beli | A | `principals`, `suppliers`, `supplier_products`, `purchase_orders` (+ lines), `goods_receipts` (+ lines), `purchase_returns` (+ lines) |
-| `Warranty` | Kartu garansi, servis (nomor seri milik `Inventory`) | B / C | `warranty_cards`, `service_tickets`, `warranty_claims` |
-| `Sales` | Pesanan, retur, lost sales, target | B / C | `sales_orders` (+ lines), `sales_returns` (+ lines), `lost_sales`, `sales_targets`, `incentive_schemes`, `incentive_results` |
+| `Warranty` | Kartu garansi, servis (nomor seri milik `Inventory`) | B / C | `warranty_cards`, `service_tickets` (+ parts, events), `warranty_claims` |
+| `Sales` | Pesanan, retur, lost sales | B / C | `sales_orders` (+ lines), `sales_returns` (+ lines), `lost_sales` |
+| `Incentive` | Target & insentif | C | `incentive_periods`, `sales_targets`, `incentive_schemes`, `incentive_results`, `incentive_adjustments` |
 | `Delivery` | Surat jalan, rute, bukti terima | B / C | `deliveries`, `delivery_lines`, `delivery_routes`, `proofs_of_delivery` |
 | `Receivable` | Faktur, nota kredit, pembayaran, alokasi, giro, VA, kwitansi, konfirmasi saldo, titipan | B | `invoices` (+ lines), `credit_notes`, `payments`, `payment_allocations`, `giros`, `virtual_accounts`, `unidentified_payments`, `receipts`, `receipt_number_blocks`, `customer_deposits` (titipan), `balance_confirmations` |
 | `Cash` | Setoran, plafon tunai, kas kecil, piutang karyawan | B | `cash_deposits` (+ lines), `cash_on_hand_limits`, `petty_cash_funds`, `petty_cash_expenses`, `petty_cash_counts`, `employee_receivables` |
 | `Pos` | Shift kasir, penjualan eceran, struk, member | B / F | `pos_registers`, `pos_shifts`, `pos_sales` (+ lines, payments), `farmer_members`, `loyalty_points` |
-| `Field` | Kunjungan, rute, canvas, harga pesaing | C | `visit_plans`, `visits`, `canvas_sessions` (+ lines), `competitor_prices` |
-| `Marketing` | Demplot & kegiatan promosi | C | `promo_activities`, `promo_activity_products`, `promo_activity_attendees` |
-| `Mitra` | Akun kios & portal | C | `customer_users`, `customer_devices`, `customer_complaints` |
-| `Fraud` | Red flag & investigasi | C | `red_flag_rules`, `red_flags`, `investigation_cases`, `case_evidence` |
-| `Sync` | Sinkron offline | C | `sync_cursors`, `client_outbox_receipts` |
-| `Fleet` | Kendaraan, dokumen, trip, BBM, GPS, servis | A (minimal) / D | `vehicles`, `vehicle_documents`, `vehicle_assignments`, `trips`, `trip_checks` (P2H), `trip_allowances`, `fuel_prices`, `fuel_logs`, `gps_positions`, `geofences`, `maintenance_schedules`, `maintenance_orders` |
+| `Field` | Kunjungan, rute, canvas, harga pesaing, rotasi | C | `visit_plans` (+ items), `visits`, `customer_location_proposals`, `canvas_sessions` (+ lines), `competitor_prices`, `collection_rotations` |
+| `Marketing` | Demplot & kegiatan promosi | C | `promo_activities`, `promo_activity_products`, `promo_activity_attendees`, `promo_activity_photos` |
+| `Mitra` | Akun kios & portal | C | `customer_users`, `customer_devices`, `mitra_activation_codes`, `customer_point_entries` (keluhan memakai `customer_inquiries` B) |
+| `Fraud` | Red flag & investigasi | C | `red_flag_rules`, `red_flags`, `investigation_cases`, `case_evidence`, `transaction_freezes` |
+| `Sync` | Sinkron offline & blok nomor | C | `sync_changes`, `sync_device_states`, `client_outbox_receipts`, `number_blocks`, `number_block_usages` |
+| `Fleet` | Kendaraan, dokumen, trip, BBM, GPS, servis | A (minimal) / D | `vehicles`, `vehicle_assignments`, `vehicle_documents`, `vehicle_daily_checks` (P2H), `trips`, `vehicle_handovers`, `trip_allowance_rules`, `trip_allowances`, `trip_expenses`, `fuel_prices`, `fuel_logs`, `gps_devices`, `gps_positions`, `trip_gps_summaries`, `gps_daily_summaries`, `geofences`, `geofence_events`, `fleet_alerts`, `maintenance_schedules`, `maintenance_orders` (+ items), `vehicle_tires` |
 | `Payroll` | Komponen, periode, slip | E | mengikuti `13-FASE-HR.md` |
 | `Accounting` | CoA, periode, jurnal, rekonsiliasi, laporan | B (outbox) / F | `accounting_events`, `chart_of_accounts`, `account_mappings`, `fiscal_periods`, `journal_entries`, `journal_lines`, `bank_accounts`, `bank_statements`, `bank_statement_lines` |
 | `Tax` | PPN & ekspor faktur pajak | F | `tax_invoices`, `tax_exports` |
@@ -357,6 +365,9 @@ Peran akun (mis. `inventory`, `receivable`) dipetakan ke kode akun di `account_m
 | `cash.employee_receivable_settled` / `cash.employee_receivable_written_off` | Pelunasan / hapus piutang karyawan | B | D `cash_head_office` / `other_expense` · K `employee_receivable` |
 | `cash.petty_count_variance` | Selisih hitung kas kecil | B | D `employee_receivable` · K `petty_cash` (kurang) |
 | `pos.cash_dropped` | Setoran laci toko diverifikasi | B | D `cash_head_office` · K `cash_store` |
+| `marketing.promo_goods_returned` | Sisa produk promosi kembali | C | D `inventory` · K `promotion_expense` |
+| `service.parts_used` | Suku cadang servis garansi | C | D `warranty_expense` · K `inventory` |
+| `receivable.restoration` | Pemulihan saldo kios (investigasi) | C | D `employee_receivable` · K `receivable` |
 
 Rincian payload Paket B: `16` §11.2.
 | `field.canvas_shortage` | Selisih stok canvas → piutang karyawan | C | D `employee_receivable` · K `inventory` |
@@ -365,6 +376,7 @@ Rincian payload Paket B: `16` §11.2.
 | `fleet.trip_allowance_issued` | Uang jalan diberikan | D | D `trip_advance` · K `cash_head_office` |
 | `fleet.trip_allowance_settled` | Uang jalan dipertanggungjawabkan | D | D `travel_expense` (+ D `cash_head_office` sisa) · K `trip_advance` |
 | `fleet.maintenance_approved` | Servis disetujui | D | D `vehicle_maintenance_expense` · K `payable`/`bank` |
+| `fleet.trip_allowance_shortage` | Kurang setor uang jalan → piutang karyawan | D | D `employee_receivable` · K `trip_advance` |
 | `payroll.period_approved` | Payroll disetujui | E | D `salary_expense` · K `salary_payable`, `bpjs_payable`, `pph21_payable`, `employee_receivable` (cicilan kasbon) |
 | `purchase.invoice_posted` | Faktur pembelian dicatat | F | D `goods_received_not_invoiced` (+ D `vat_input`) · K `payable` |
 | `purchase.payment_made` | Bayar ke supplier | F | D `payable` · K `bank` |
@@ -412,7 +424,7 @@ Pola default mengikuti prototipe (`XX-{YY}{MM}-{SEQ:4}`, reset bulanan). Semua b
 
 ## 9. Grup Setting Baru (registri)
 
-Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B final di `16` §9** (nama kunci di sana yang berlaku bila berbeda dengan tabel ini). Daftar final (tipe, validasi, publik) ditulis di `08` §2 oleh task yang membuatnya, dan test registri ikut diperbarui. Nilai default diambil dari konsep v1.4. Angka rupiah adalah **contoh** yang wajib ditetapkan Pakis.
+Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B di `16` §9, Paket C di `17` §9, Paket D di `18` §9** (nama kunci di sana yang berlaku bila berbeda dengan tabel ini). Daftar final (tipe, validasi, publik) ditulis di `08` §2 oleh task yang membuatnya, dan test registri ikut diperbarui. Nilai default diambil dari konsep v1.4. Angka rupiah adalah **contoh** yang wajib ditetapkan Pakis.
 
 | Grup | Kunci utama (default) | Paket |
 |---|---|---|
@@ -471,8 +483,8 @@ Nama final, matriks per role, dan jumlah total ditulis di `06` §3–§4 oleh ta
 |---|---|---|
 | A | **Final: `15` §6.3 (53 permission).** Ringkas: `approvals.*`, `stock_locations.*`, `vehicles.view/manage`, `products.*`, `product_registrations.manage`, `suppliers.*`, `sales_areas.*`, `customers.*`, `credit_limits.set/set_high`, `prices.*`, `promotions.*`, `purchase_orders.*`, `goods_receipts.*`, `purchase_returns.*`, `stock.view/view_cost`, `stock_transfers.*`, `stock_opnames.*`, `stock_quarantine.*`, `stock_disposals.*`, `serials.*`, `master_imports.manage` | `produk.manage`, `harga.manage`, `pelanggan.manage`, `limit_kredit.set`, `po.create`, `po.approve`, `penerimaan.create`, `stok.view`, `mutasi.create`, `opname.selisih.approve` |
 | B | **Final: `16` §6.3 (74 permission).** Ringkas: `sales_orders.*`, `credit.*`, `lost_sales.*`, `deliveries.*`, `invoices.*`, `sales_returns.*`, `payments.*`, `giros.*`, `virtual_accounts.manage`, `unidentified_payments.*`, `receivables.*`, `receipts.*`, `deposits.*`, `cash_limits.manage`, `employee_receivables.*`, `balance_confirmations.*`, `customer_inquiries.*`, `petty_cash.*`, `pos.*`, `warranty.*`, `sales_reports.view`, `margin_reports.view`, `cash_control_reports.view`, `exports.mass`, `bank_accounts.manage`, `tax.manage`, `message_templates.manage`, `catalog_public.manage`, `accounting.lock` | `so.create`, `so.approve_exception`, `pengiriman.pod`, `pos.sell`, `pembayaran.terima`, `setoran.verify`, `retur.approve`, `piutang.view`, `laporan.margin.view`, `export.massal`, `kwitansi.terbit`, `kwitansi.batal.approve`, `pembayaran.alokasi.ubah`, `kas_kecil.*` |
-| C | `visits.view/plan/checkin`, `canvas.load/sell/reconcile/approve_variance`, `competitor_prices.create`, `promo_activities.request/approve/realize`, `service_tickets.manage`, `warranty_claims.manage`, `red_flags.view/handle`, `investigations.manage/freeze_user`, `incentives.configure/view`, `mitra_users.manage` | — |
-| D | `vehicles.view/manage` (sudah dari A, D menambah kolom armada), `vehicle_documents.manage`, `trips.view/start/override_check`, `fuel_logs.submit/verify`, `fuel_prices.manage`, `gps.view`, `maintenance.manage/approve` | — |
+| C | **Final: `17` §6.3 (27 permission).** `visits.*`, `competitor_prices.*`, `canvas.*`, `red_flags.*`, `investigations.manage`, `incentives.*`, `promo_activities.*`, `service_tickets.*`, `rotations.manage`, `mitra_users.manage`, `customer_points.manage`. Pengguna Mitra memakai guard `mitra` (bukan Spatie) | `investigasi.manage`, `garansi.klaim.manage`, `promosi.manage` |
+| D | **Final: `18` §6.3 (25 permission) + role `koordinator_armada`.** `vehicle_documents.*`, `vehicle_checks.*`, `trips.*`, `trip_allowances.*`, `fuel_logs.*`, `fuel_prices.manage`, `gps.*`, `geofences.manage`, `fleet_alerts.handle`, `maintenance.*`, `fleet_reports.view` (+ `vehicles.view/manage` dari A) | `kendaraan.manage`, `trip.manage`, `trip.execute`, `bbm.input`, `bbm.verify`, `tracking.view`, `servis.approve`, `uang_jalan.settle` |
 | E | mengikuti `13-FASE-HR.md` + `employees.bank_account.approve` | `pegawai.manage`, `pegawai.rekening.approve` |
 | F | `accounts.manage`, `journals.view/create_manual/reverse`, `periods.close`, `bank_reconciliation.manage`, `reports.financial.view`, `tax.manage`, `purchase_invoices.manage`, `supplier_payments.manage/approve`, `principal_programs.manage`, `consignments.manage`, `assets.manage`, `members.manage` | `jurnal.manual.create` |
 | G | `ai.assistant.use`, `forecasts.view`, `anomalies.view`, `principal_portal.access`, `marketplace.manage`, `kpi.view/configure` | — |
@@ -499,14 +511,14 @@ Kode bahasa Inggris (P-4). Siapa boleh melakukan aksi ditetapkan di matriks tran
 | `petty_cash_expenses` | `submitted` → `approved` → `reimbursed` | `rejected` | B |
 | `pos_shifts` | `open` → `closed` | `closed_with_variance` → approval | B |
 | `balance_confirmations` | `sent` → `confirmed` | `disputed` → `resolved`; `expired` | B |
-| `canvas_sessions` | `loading` → `active` → `reconciling` → `closed` | `variance` → approval | C |
-| `promo_activities` | `planned` → `approved` → `realized` → `closed` | `rejected`, `cancelled` | C |
-| `service_tickets` | `open` → `inspecting` → `repairing` → `ready` → `closed` | `claimed_to_principal`, `paid_service` | C |
-| `red_flags` | `open` → `reviewed` | `escalated` → `investigation_cases` | C |
+| `canvas_sessions` | `loading` → `active` → `reconciling` → `closed` | `pending_approval` (selisih), `cancelled` | C |
+| `promo_activities` | `planned` → `pending_approval` → `approved` → `realized` → `closed` | `rejected`, `cancelled` | C |
+| `service_tickets` | `open` → `inspecting` → `repairing` → `ready` → `closed` | `waiting_customer_approval`, `claimed_to_principal`, `cancelled` | C |
+| `red_flags` | `open` → `reviewed` | `dismissed`, `escalated` → `investigation_cases` | C |
 | `investigation_cases` | `open` → `investigating` → `resolved` → `closed` | — | C |
-| `trips` | `planned` → `checked` → `in_progress` → `completed` → `settled` | `blocked` (P2H/dokumen gagal) → override | D |
-| `fuel_logs` | `submitted` → `accepted` | `needs_review` → `approved`/`rejected` | D |
-| `maintenance_orders` | `planned` → `approved` → `in_service` → `done` | `rejected` | D |
+| `trips` | `planned` → `checked` → `in_progress` → `completed` → `settled` | `blocked` → override → `checked`; `cancelled` | D |
+| `fuel_logs` | `accepted` (cek lulus) | `needs_review` → `approved`/`rejected` | D |
+| `maintenance_orders` | `planned` → `pending_approval` → `approved` → `in_service` → `done` | `rejected`, `cancelled` | D |
 | `journal_entries` | `posted` | `reversed` (oleh jurnal pembalik) | F |
 | `fiscal_periods` | `open` → `closed` | `reopened` (Owner + alasan) | F |
 
@@ -614,6 +626,23 @@ Threat model lengkap ditulis per paket. Fokus yang wajib muncul:
 | OQ-125 | Kebijakan retur penjualan | BR-212 | B |
 | OQ-126 | Biaya giro ditolak dibebankan ke kios? | BR-216 | B |
 | OQ-127 | Siapa menginput penggunaan label untuk katalog publik | Katalog | B |
+| OQ-128 | Ukuran & masa berlaku blok nomor | Kwitansi offline | C |
+| OQ-129 | Printer Bluetooth canvas | Nota canvas | C |
+| OQ-130 | Canvas boleh kredit? | Canvas | C |
+| OQ-131 | Skema insentif sales nyata | Insentif | C / E |
+| OQ-132 | Prosedur klaim demplot ke prinsipal | Promosi | C / F |
+| OQ-133 | Hadiah & penukaran poin kios | Mitra | C |
+| OQ-134 | Domain API final (pinning) | Keamanan mobile | C |
+| OQ-135 | Mitra di iOS | Distribusi | C |
+| OQ-136 | Cuti wajib & rotasi | Anti-penggelapan | C |
+| OQ-137 | Distribusi APK | Rilis | C |
+| OQ-138 | Data kendaraan, jenis BBM, tangki, target km/l | Armada | D |
+| OQ-139 | Aturan uang jalan nyata | Uang jalan | D |
+| OQ-140 | Metode bayar BBM (uang jalan/kartu/voucher) | BBM | D |
+| OQ-141 | Sensor level BBM truk | BBM | D (opsional) |
+| OQ-142 | Estimasi jarak rute jalan | Uang jalan | D |
+| OQ-143 | Kendaraan dibawa pulang & jam operasional | Alert | D |
+| OQ-144 | Data SIM driver | Kelayakan | D |
 
 ## 16. Pemeriksaan & Penggabungan ke Repo
 

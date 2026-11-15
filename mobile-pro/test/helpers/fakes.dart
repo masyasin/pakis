@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 import 'package:pakis_pro/core/device/native_device.dart';
+import 'package:pakis_pro/features/auth/session.dart';
 
 /// Jawaban palsu server: status + body JSON (atau [error] untuk galat jaringan).
 class FakeReply {
@@ -66,6 +67,9 @@ class FakeNativeDevice implements NativeDevice {
   }
 
   @override
+  Future<DeviceInfo> deviceInfo() async => const DeviceInfo(model: 'Samsung SM-A045F', osVersion: 'Android 13');
+
+  @override
   Future<String> privateDir() async => 'memory';
 
   @override
@@ -89,6 +93,7 @@ Map<String, Object?> configJson({
   String minVersion = '1.0.0',
   String primaryColor = '#2F6B3B',
   String? downloadUrl,
+  List<String> forgotChannels = const ['email'],
 }) => {
   'data': {
     'app_name': 'PAKIS ONE',
@@ -106,14 +111,46 @@ Map<String, Object?> configJson({
       'update_message': 'Versi baru tersedia.',
     },
     'attendance': {'require_selfie': true, 'max_accuracy_m': 100, 'offline_max_hours': 72, 'correction_max_days': 7},
-    'auth': {
-      'password_min_length': 10,
-      'forgot_channels': ['email'],
-    },
+    'auth': {'password_min_length': 10, 'forgot_channels': forgotChannels},
   },
   'meta': {'request_id': '01JBX8Q6V7M3T2K9R4N5P6W8YZ'},
 };
 
 Map<String, Object?> errorJson(String code, {Map<String, Object?> details = const {}}) => {
   'error': {'code': code, 'message': 'Pesan server.', 'details': details, 'request_id': '01JBX8Q6V7M3T2K9R4N5P6W8YZ'},
+};
+
+/// Pengganti hook sesi (sinkron antrean T-042): hanya mencatat panggilan.
+class FakeSessionHooks implements SessionHooks {
+  final calls = <String>[];
+
+  @override
+  Future<void> signedIn() async => calls.add('signedIn');
+
+  @override
+  Future<void> signedOut() async => calls.add('signedOut');
+}
+
+/// Pengguna `/auth/login` & `/me` (05 §5.3).
+Map<String, Object?> userJson({bool mustChangePassword = false, String name = 'Agus Santoso'}) => {
+  'id': 31,
+  'name': name,
+  'username': 'agus.s',
+  'email': null,
+  'phone': '6281234567890',
+  'has_avatar': false,
+  'must_change_password': mustChangePassword,
+  'employee': {'id': 24, 'employee_number': 'PJA-260024', 'position': 'Sales', 'location': 'Kantor Pusat Kalirejo'},
+  'permissions': ['attendance.self', 'attendance_corrections.create'],
+};
+
+Map<String, Object?> loginJson({bool mustChangePassword = false}) => {
+  'data': {
+    'token': '12|tokenuji',
+    'token_type': 'Bearer',
+    'expires_at': '2027-02-13T03:00:00+00:00',
+    'user': userJson(mustChangePassword: mustChangePassword),
+    'device': {'status': 'active'},
+  },
+  'meta': {'request_id': '01JBX8Q6V7M3T2K9R4N5P6W8YZ'},
 };

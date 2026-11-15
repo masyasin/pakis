@@ -158,10 +158,13 @@ void main() {
       expect(requiredLocation(startup: ready, updateForced: true, location: Routes.update), isNull);
     });
 
-    test('siap → splash/update diarahkan ke masuk, rute lain bebas', () {
+    test('siap → splash/update diarahkan ke masuk; setelah masuk rute lain bebas', () {
       final ready = StartupReady(_config(), fromCache: false);
       expect(requiredLocation(startup: ready, updateForced: false, location: Routes.splash), Routes.login);
-      expect(requiredLocation(startup: ready, updateForced: false, location: '/riwayat'), isNull);
+      expect(
+        requiredLocation(startup: ready, updateForced: false, location: '/riwayat', auth: AuthGate.signedIn),
+        isNull,
+      );
     });
   });
 }

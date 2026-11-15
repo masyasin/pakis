@@ -470,8 +470,8 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `lib/features/auth/*`, `lib/features/profile/change_password_*`
 - Deskripsi: Login (username/email), input OTP MFA bila diminta, layar perangkat menunggu (tombol coba lagi), lupa password (kanal dari config), reset OTP, wajib ganti password, logout. Validasi password memakai panjang minimum dari config.
 - Kriteria penerimaan:
-  - [ ] Widget test semua cabang galat login (`INVALID_CREDENTIALS`, `MFA_REQUIRED`, `MFA_SETUP_REQUIRED`, `DEVICE_PENDING`, `ACCOUNT_LOCKED`, `APP_UPDATE_REQUIRED`)
-  - [ ] Token hanya di secure storage (tidak di SharedPreferences)
+  - [x] Widget test semua cabang galat login (`INVALID_CREDENTIALS`, `MFA_REQUIRED`, `MFA_SETUP_REQUIRED`, `DEVICE_PENDING`, `ACCOUNT_LOCKED`, `APP_UPDATE_REQUIRED`)
+  - [x] Token hanya di secure storage (tidak di SharedPreferences)
 - Verifikasi: `fvm flutter test test/features/auth`
 - Di luar lingkup: absensi
 

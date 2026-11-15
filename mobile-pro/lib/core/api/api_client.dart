@@ -40,6 +40,8 @@ class ApiClient {
     required DeviceIdReader deviceId,
     TokenReader? token,
     this.onUpdateRequired,
+    this.onSessionInvalid,
+    this.onPasswordChangeRequired,
     this.onServerClock,
     HttpClientAdapter? adapter,
     String Function() requestId = newUlid,
@@ -95,6 +97,15 @@ class ApiClient {
   /// mana pun, agar aplikasi langsung pindah ke layar wajib update.
   final void Function(ApiError error)? onUpdateRequired;
 
+  /// Dipanggil bila request **ber-token** ditolak `401 UNAUTHENTICATED` / `DEVICE_MISMATCH`:
+  /// token kedaluwarsa, dicabut admin, atau dipakai dari HP lain (BR-040). Sesi lokal dihapus.
+  /// Login sendiri (tanpa token) tidak memicu ini: `INVALID_CREDENTIALS`/`MFA_*` bukan sesi.
+  final void Function(ApiError error)? onSessionInvalid;
+
+  /// Dipanggil saat server menjawab `403 PASSWORD_CHANGE_REQUIRED` (SEC-006) dari endpoint mana
+  /// pun, agar aplikasi pindah ke layar wajib ganti password.
+  final void Function(ApiError error)? onPasswordChangeRequired;
+
   /// Selisih detik jam server − jam HP dari header `Date` setiap respons (termasuk galat).
   /// Dikirim sebagai `device_clock_offset_s` saat absen (05 §5.4, BR-067).
   final void Function(int offsetSeconds)? onServerClock;
@@ -126,8 +137,16 @@ class ApiClient {
       response = await call();
     } on DioException catch (e) {
       final error = e.error is ApiError ? e.error! as ApiError : ApiError.fromDio(e);
-      if (error.code == ApiErrorCode.appUpdateRequired) {
-        onUpdateRequired?.call(error);
+      final hadToken = e.requestOptions.headers.containsKey('Authorization');
+      switch (error.code) {
+        case ApiErrorCode.appUpdateRequired:
+          onUpdateRequired?.call(error);
+        case ApiErrorCode.unauthenticated || ApiErrorCode.deviceMismatch when hadToken:
+          onSessionInvalid?.call(error);
+        case ApiErrorCode.passwordChangeRequired:
+          onPasswordChangeRequired?.call(error);
+        default:
+          break;
       }
       throw error;
     }

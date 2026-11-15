@@ -14,6 +14,10 @@ abstract final class StoreKeys {
   /// Token Sanctum (SEC-020). Diisi oleh alur login T-032.
   static const authToken = 'auth.token';
 
+  /// JSON pengguna terakhir dari login / `GET /me` (05 §5.3), agar aplikasi bisa dibuka offline
+  /// tanpa login ulang. Tidak memuat token atau password.
+  static const authUser = 'auth.user';
+
   /// Kunci SQLCipher antrean offline (64 hex = 256 bit), dibuat sekali (T-042).
   static const queueDbKey = 'offline.queue_key';
 

@@ -44,6 +44,9 @@ final apiClientProvider = Provider<ApiClient>((ref) {
     token: () => store.read(StoreKeys.authToken),
     adapter: ref.watch(httpAdapterProvider),
     onUpdateRequired: (error) => ref.read(updateGateProvider.notifier).require(error),
+    onSessionInvalid: (error) => ref.read(sessionEventsProvider.notifier).emit(SessionEvent.invalid(error)),
+    onPasswordChangeRequired: (error) =>
+        ref.read(sessionEventsProvider.notifier).emit(SessionEvent.passwordChangeRequired(error)),
     onServerClock: (seconds) => ref.read(clockOffsetProvider.notifier).set(seconds),
   );
 });
@@ -62,6 +65,29 @@ class UpdateGate extends Notifier<ApiError?> {
 }
 
 final updateGateProvider = NotifierProvider<UpdateGate, ApiError?>(UpdateGate.new);
+
+/// Kejadian sesi dari [ApiClient] (token ditolak, wajib ganti password). Didengar
+/// `SessionController` di fitur auth; dipisah di sini agar core tidak mengimpor fitur.
+class SessionEvent {
+  const SessionEvent.invalid(this.error) : passwordChange = false;
+
+  const SessionEvent.passwordChangeRequired(this.error) : passwordChange = true;
+
+  final ApiError error;
+
+  /// `true` = `PASSWORD_CHANGE_REQUIRED`; `false` = token tidak berlaku lagi.
+  final bool passwordChange;
+}
+
+class SessionEvents extends Notifier<SessionEvent?> {
+  @override
+  SessionEvent? build() => null;
+
+  /// Objek baru setiap kali, jadi pendengar tetap terpanggil untuk kejadian yang sama berulang.
+  void emit(SessionEvent event) => state = event;
+}
+
+final sessionEventsProvider = NotifierProvider<SessionEvents, SessionEvent?>(SessionEvents.new);
 
 class ThemeModeController extends Notifier<ThemeMode> {
   @override

@@ -3,6 +3,7 @@ package com.pakisjayaabadi.pakispro
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.provider.Settings
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -34,6 +35,18 @@ class MainActivity : FlutterActivity() {
                         result.success(sha256Hex(input))
                     }
                 }
+
+                // Model & versi Android untuk halaman Perangkat admin (T-032, pengganti device_info_plus).
+                "deviceInfo" -> result.success(
+                    mapOf(
+                        "model" to listOf(Build.MANUFACTURER, Build.MODEL)
+                            .filter { it.isNotBlank() }
+                            .distinct()
+                            .joinToString(" ")
+                            .take(100),
+                        "os_version" to "Android ${Build.VERSION.RELEASE}".take(40),
+                    ),
+                )
 
                 // Folder privat yang tidak ikut cadangan Android: DB antrean offline (T-042).
                 "noBackupDir" -> result.success(noBackupFilesDir.absolutePath)

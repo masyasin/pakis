@@ -239,6 +239,9 @@ class _PreviewNative implements NativeDevice {
   Future<bool> openUrl(String url) async => false; // tidak ada browser native di pratinjau
 
   @override
+  Future<DeviceInfo> deviceInfo() async => const DeviceInfo(model: 'Pratinjau', osVersion: 'Android');
+
+  @override
   Future<String> privateDir() async => '';
 }
 

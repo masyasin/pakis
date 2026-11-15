@@ -5,6 +5,7 @@ import 'package:pakis_pro/app/app.dart';
 import 'package:pakis_pro/core/format.dart';
 import 'package:pakis_pro/core/providers.dart';
 import 'package:pakis_pro/core/storage/secure_store.dart';
+import 'package:pakis_pro/features/auth/session.dart';
 
 import 'fakes.dart';
 
@@ -14,6 +15,7 @@ Future<ProviderContainer> pumpPakisPro(
   required FakeAdapter adapter,
   SecureStore? store,
   FakeNativeDevice? native,
+  FakeSessionHooks? hooks,
   String version = '1.0.0',
 }) async {
   await Fmt.init();
@@ -28,6 +30,7 @@ Future<ProviderContainer> pumpPakisPro(
       nativeDeviceProvider.overrideWithValue(native ?? FakeNativeDevice()),
       httpAdapterProvider.overrideWithValue(adapter),
       apiBaseUrlProvider.overrideWithValue('https://pakis.test'),
+      sessionHooksProvider.overrideWithValue(hooks ?? FakeSessionHooks()),
     ],
   );
   addTearDown(container.dispose);

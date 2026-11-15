@@ -92,7 +92,7 @@ class _ResetOtpScreenState extends ConsumerState<ResetOtpScreen> {
         children: login == null
             ? [
                 const FormNotice('Mulai lagi dari Lupa password.'),
-                FilledButton(onPressed: () => context.go(Routes.forgot), child: const Text('Lupa Password')),
+                AuthPrimaryButton(label: 'Lupa Password', onPressed: () => context.go(Routes.forgot)),
               ]
             : [
                 if (message != null) FormNotice(message),
@@ -101,7 +101,13 @@ class _ResetOtpScreenState extends ConsumerState<ResetOtpScreen> {
                   keyboardType: TextInputType.number,
                   autofillHints: const [AutofillHints.oneTimeCode],
                   textInputAction: TextInputAction.next,
-                  decoration: InputDecoration(labelText: 'Kode', errorText: fieldErrors['code']?.first),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(letterSpacing: 2),
+                  decoration: authInputDecoration(
+                    context,
+                    label: 'Kode',
+                    icon: Icons.pin_outlined,
+                    errorText: fieldErrors['code']?.first,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 PasswordField(
@@ -120,12 +126,11 @@ class _ResetOtpScreenState extends ConsumerState<ResetOtpScreen> {
                   onSubmitted: (_) => _submit(login),
                 ),
                 const SizedBox(height: 24),
-                FilledButton(
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                  onPressed: _busy ? null : () => _submit(login),
-                  child: _busy
-                      ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
-                      : const Text('Simpan Password Baru'),
+                AuthPrimaryButton(
+                  label: 'Simpan Password Baru',
+                  icon: Icons.check_rounded,
+                  busy: _busy,
+                  onPressed: () => _submit(login),
                 ),
               ],
       ),

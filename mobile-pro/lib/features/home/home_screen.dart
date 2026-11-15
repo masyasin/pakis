@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -34,51 +35,55 @@ class HomeScreen extends ConsumerWidget {
     final session = ref.watch(sessionProvider).value;
     final user = session is SignedIn ? session.user : null;
 
-    return Scaffold(
-      backgroundColor: tokens.bg,
-      body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            ColoredBox(
-              color: tokens.primaryStrong,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 8, 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            user?.name ?? 'Pakis Pro',
-                            style: text.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
-                          ),
-                          if (user?.subtitle != null)
+    // Ikon status bar putih di atas header hijau tua.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light.copyWith(statusBarColor: Colors.transparent),
+      child: Scaffold(
+        backgroundColor: tokens.bg,
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ColoredBox(
+                color: tokens.primaryStrong,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 16, 8, 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Text(
-                              user!.subtitle!,
-                              style: text.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+                              user?.name ?? 'Pakis Pro',
+                              style: text.titleLarge?.copyWith(color: Colors.white, fontWeight: FontWeight.w700),
                             ),
-                        ],
+                            if (user?.subtitle != null)
+                              Text(
+                                user!.subtitle!,
+                                style: text.bodyMedium?.copyWith(color: Colors.white.withValues(alpha: 0.85)),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                    IconButton(
-                      tooltip: 'Keluar',
-                      icon: const Icon(Icons.logout, color: Colors.white),
-                      onPressed: () => _confirmLogout(context, ref),
-                    ),
-                  ],
+                      IconButton(
+                        tooltip: 'Keluar',
+                        icon: const Icon(Icons.logout, color: Colors.white),
+                        onPressed: () => _confirmLogout(context, ref),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            const Expanded(
-              child: EmptyState(
-                icon: Icons.fingerprint,
-                title: 'Absen segera hadir',
-                message: 'Anda sudah masuk. Tombol absen tampil di sini setelah modul absensi aktif.',
+              const Expanded(
+                child: EmptyState(
+                  icon: Icons.fingerprint,
+                  title: 'Absen segera hadir',
+                  message: 'Anda sudah masuk. Tombol absen tampil di sini setelah modul absensi aktif.',
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

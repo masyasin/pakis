@@ -98,11 +98,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 24),
-                FilledButton(
-                  style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                  onPressed: () => context.go(Routes.login),
-                  child: const Text('Kembali ke Masuk'),
-                ),
+                AuthPrimaryButton(label: 'Kembali ke Masuk', onPressed: () => context.go(Routes.login)),
               ]
             : [
                 if (message != null) FormNotice(message),
@@ -115,8 +111,10 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     autocorrect: false,
                     enableSuggestions: false,
                     textInputAction: TextInputAction.done,
-                    decoration: InputDecoration(
-                      labelText: 'Username atau email',
+                    decoration: authInputDecoration(
+                      context,
+                      label: 'Username atau email',
+                      icon: Icons.person_outline,
                       errorText: fieldErrors['login']?.first,
                     ),
                   ),
@@ -141,12 +139,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                     style: text.bodyMedium?.copyWith(color: tokens.muted),
                   ),
                   const SizedBox(height: 24),
-                  FilledButton(
-                    style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-                    onPressed: _busy || channel == null ? null : () => _submit(channel),
-                    child: _busy
-                        ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
-                        : Text(channel == 'email' ? 'Kirim Tautan' : 'Kirim Kode'),
+                  AuthPrimaryButton(
+                    label: channel == 'email' ? 'Kirim Tautan' : 'Kirim Kode',
+                    icon: Icons.send_rounded,
+                    busy: _busy,
+                    onPressed: channel == null ? null : () => _submit(channel),
                   ),
                 ],
               ],

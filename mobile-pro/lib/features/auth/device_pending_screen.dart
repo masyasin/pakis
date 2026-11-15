@@ -82,14 +82,7 @@ class _DevicePendingScreenState extends ConsumerState<DevicePendingScreen> {
           ),
           if (_message != null) ...[const SizedBox(height: 16), FormNotice(_message!)],
           const SizedBox(height: 24),
-          FilledButton.icon(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            onPressed: _busy ? null : _retry,
-            icon: _busy
-                ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2.5))
-                : const Icon(Icons.refresh),
-            label: const Text('Coba Lagi'),
-          ),
+          AuthPrimaryButton(label: 'Coba Lagi', icon: Icons.refresh_rounded, busy: _busy, onPressed: _retry),
           const SizedBox(height: 8),
           TextButton(
             style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),

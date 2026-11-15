@@ -4,6 +4,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../../app/router.dart';
 import '../../core/api/api_error.dart';
+import '../../core/theme/pakis_tokens.dart';
 import '../startup/startup_controller.dart';
 import 'session.dart';
 import 'widgets/auth_scaffold.dart';
@@ -97,12 +98,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final message = _localError ?? (error != null && fieldErrors.isEmpty ? error.message : null);
     final config = startup is StartupReady ? startup.config : null;
 
+    final tokens = context.tokens;
+
     return AuthScaffold(
-      title: 'Masuk',
-      subtitle: config?.loginTagline ?? 'Absen kerja ${config?.companyName ?? 'CV Pakis Jaya Abadi'}',
+      title: _needsOtp ? 'Verifikasi dua langkah' : 'Selamat datang',
+      subtitle: _needsOtp
+          ? 'Satu langkah lagi untuk menjaga akun Anda.'
+          : config?.loginTagline ?? 'Masuk untuk mulai absen hari ini.',
       child: AutofillGroup(
         child: AuthCard(
           children: [
+            Text(
+              _needsOtp ? 'Kode verifikasi' : 'Masuk ke akun Anda',
+              style: text.titleMedium?.copyWith(fontWeight: FontWeight.w800),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _needsOtp
+                  ? 'Masukkan 6 digit dari aplikasi authenticator, atau salah satu kode pemulihan.'
+                  : 'Gunakan akun dari admin atau HRD kantor.',
+              style: text.bodyMedium?.copyWith(color: tokens.muted),
+            ),
+            const SizedBox(height: 18),
             if (offline)
               const FormNotice('Tidak ada koneksi. Memakai pengaturan terakhir yang tersimpan; masuk butuh internet.'),
             if (message != null)
@@ -111,33 +128,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               FormNotice(info, isError: false)
             else if (warning != null)
               FormNotice(warning),
-            TextField(
-              controller: _login,
-              enabled: !_needsOtp,
-              keyboardType: TextInputType.emailAddress,
-              autocorrect: false,
-              enableSuggestions: false,
-              autofillHints: const [AutofillHints.username],
-              textInputAction: TextInputAction.next,
-              decoration: InputDecoration(labelText: 'Username atau email', errorText: fieldErrors['login']?.first),
-            ),
-            const SizedBox(height: 16),
-            if (!_needsOtp)
+            if (!_needsOtp) ...[
+              TextField(
+                controller: _login,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                enableSuggestions: false,
+                autofillHints: const [AutofillHints.username],
+                textInputAction: TextInputAction.next,
+                decoration: authInputDecoration(
+                  context,
+                  label: 'Username atau email',
+                  icon: Icons.person_outline,
+                  errorText: fieldErrors['login']?.first,
+                ),
+              ),
+              const SizedBox(height: 14),
               PasswordField(
                 controller: _password,
                 label: 'Password',
                 errorText: fieldErrors['password']?.first,
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
-              )
-            else ...[
-              Text('Verifikasi dua langkah', style: text.titleSmall),
-              const SizedBox(height: 4),
-              Text(
-                'Masukkan 6 digit dari aplikasi authenticator, atau salah satu kode pemulihan.',
-                style: text.bodyMedium,
               ),
-              const SizedBox(height: 12),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: _busy ? null : () => context.go(Routes.forgot),
+                  child: const Text('Lupa password?'),
+                ),
+              ),
+            ] else ...[
               TextField(
                 controller: _otp,
                 autofocus: true,
@@ -147,21 +168,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 autofillHints: const [AutofillHints.oneTimeCode],
                 textInputAction: TextInputAction.done,
                 onSubmitted: (_) => _submit(),
-                decoration: InputDecoration(labelText: 'Kode verifikasi', errorText: fieldErrors['otp']?.first),
+                style: text.titleMedium?.copyWith(letterSpacing: 2),
+                decoration: authInputDecoration(
+                  context,
+                  label: 'Kode verifikasi',
+                  icon: Icons.shield_outlined,
+                  errorText: fieldErrors['otp']?.first,
+                ),
               ),
+              const SizedBox(height: 18),
             ],
-            const SizedBox(height: 24),
-            FilledButton(
-              style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-              onPressed: _busy ? null : _submit,
-              child: _busy
-                  ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
-                  : Text(_needsOtp ? 'Verifikasi & Masuk' : 'Masuk'),
+            AuthPrimaryButton(
+              label: _needsOtp ? 'Verifikasi & Masuk' : 'Masuk',
+              icon: Icons.arrow_forward_rounded,
+              busy: _busy,
+              onPressed: _submit,
             ),
-            const SizedBox(height: 8),
-            if (_needsOtp)
+            if (_needsOtp) ...[
+              const SizedBox(height: 8),
               TextButton(
-                style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),
                 onPressed: _busy
                     ? null
                     : () => setState(() {
@@ -170,14 +195,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         _error = null;
                         _localError = null;
                       }),
-                child: const Text('Ganti akun'),
-              )
-            else
-              TextButton(
-                style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                onPressed: _busy ? null : () => context.go(Routes.forgot),
-                child: const Text('Lupa password?'),
+                child: Text('Bukan ${_login.text.trim()}? Ganti akun'),
               ),
+            ],
           ],
         ),
       ),

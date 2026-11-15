@@ -110,13 +110,7 @@ class _ChangePasswordScreenState extends ConsumerState<ChangePasswordScreen> {
             onSubmitted: (_) => _submit(),
           ),
           const SizedBox(height: 24),
-          FilledButton(
-            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(52)),
-            onPressed: _busy ? null : _submit,
-            child: _busy
-                ? const SizedBox(height: 22, width: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
-                : const Text('Simpan Password'),
-          ),
+          AuthPrimaryButton(label: 'Simpan Password', icon: Icons.check_rounded, busy: _busy, onPressed: _submit),
           const SizedBox(height: 8),
           TextButton(
             style: TextButton.styleFrom(minimumSize: const Size.fromHeight(48)),

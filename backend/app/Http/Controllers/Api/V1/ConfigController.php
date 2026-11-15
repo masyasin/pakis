@@ -35,6 +35,7 @@ class ConfigController extends Controller
         'attendance.max_accuracy_m' => 'attendance.max_accuracy_m',
         'attendance.offline_max_hours' => 'attendance.offline_max_hours',
         'attendance.correction_max_days' => 'attendance.correction_max_days',
+        'attendance.correction_attachment_max_kb' => 'attendance.correction_attachment_max_kb',
         'security.password_min_length' => 'auth.password_min_length',
         'auth.forgot_channels' => 'auth.forgot_channels',
     ];

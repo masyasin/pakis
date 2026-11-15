@@ -62,11 +62,21 @@ function fetchListing(TestCase $test, Route $route, array $query): array
 {
     $name = (string) $route->getName();
     $url = route($name, ListingRouteFixtures::parameters($name)).'?'.http_build_query($query);
-    $test->actingAs(ListingRouteFixtures::actor($name));
 
     $isApi = str_starts_with($name, 'api.v1.');
-    /** @var TestResponse $response */
-    $response = $isApi ? $test->getJson($url) : $test->get($url);
+    if ($isApi) {
+        // Token + perangkat asli (bukan actingAs): grup API memeriksa perangkat terikat (BR-040).
+        app('auth')->forgetGuards();
+        /** @var TestResponse $response */
+        $response = $test->getJson($url, ListingRouteFixtures::apiHeaders($name));
+    } else {
+        // Request API sebelumnya memindahkan guard default ke sanctum (auth:sanctum → shouldUse).
+        app('auth')->forgetGuards();
+        app('auth')->shouldUse('web');
+        $test->actingAs(ListingRouteFixtures::actor($name), 'web');
+        /** @var TestResponse $response */
+        $response = $test->get($url);
+    }
     $response->assertOk();
 
     if ($isApi) {

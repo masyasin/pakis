@@ -348,7 +348,7 @@ Satu route `admin.lookup.show`, GET `/lookup/<sumber>?q=&parent=&limit=&ids[]=` 
     "primary_color": "#2F6B3B",
     "timezone": "Asia/Jakarta",
     "mobile": { "min_version": "1.0.0", "latest_version": "1.0.3", "download_url": "https://pakis.example/unduh/pakis-pro.apk", "update_message": "Versi baru tersedia." },
-    "attendance": { "require_selfie": true, "max_accuracy_m": 100, "offline_max_hours": 72, "correction_max_days": 7 },
+    "attendance": { "require_selfie": true, "max_accuracy_m": 100, "offline_max_hours": 72, "correction_max_days": 7, "correction_attachment_max_kb": 2048 },
     "auth": { "password_min_length": 10, "forgot_channels": ["email"] }
   }
 }
@@ -418,7 +418,22 @@ Spec listing `my_attendance_days`: filter `month` (`YYYY-MM`, default bulan berj
 ```
 
 ### 5.7 `POST /api/v1/attendance-corrections` (multipart)
-`work_date` (date), `type` (`check_in`/`check_out`/`both`), `proposed_check_in` (HH:mm), `proposed_check_out` (HH:mm), `reason_code` (kode `correction_reason`), `note` (10–500 karakter), `attachment` (opsional, JPEG/PNG/PDF ≤ 2 MB). Respons 201 berisi `number`, `status: "pending"`, `approver.name`.
+`work_date` (date), `type` (`check_in`/`check_out`/`both`), `proposed_check_in` (HH:mm), `proposed_check_out` (HH:mm), `reason_code` (kode `correction_reason`), `note` (10–500 karakter), `attachment` (opsional, JPEG/PNG/PDF ≤ `attendance.correction_attachment_max_kb`, default 2048 KB; isi berkas diperiksa). `proposed_check_in` wajib untuk `check_in`/`both`, `proposed_check_out` untuk `check_out`/`both`, lainnya diabaikan. Respons 201 `{ data: <koreksi §5.7a>, meta }`.
+
+Galat: tanggal di masa depan / lebih tua dari `attendance.correction_max_days` → 422 `CORRECTION_NOT_ALLOWED`; sudah ada `pending` untuk tanggal itu → 409 `CORRECTION_DUPLICATE_PENDING`; jam di luar jendela shift (BR-060) → 422 `VALIDATION_FAILED` pada field jam; akun tanpa data pegawai → 403 `FORBIDDEN`.
+
+`GET /api/v1/attendance-corrections` = listing `my_corrections` (§3, 07 §3.4) milik sendiri. `POST /api/v1/attendance-corrections/{id}/cancel` → 200 objek koreksi; bukan milik sendiri → 404; bukan `pending` → 409 `STATE_CONFLICT`.
+
+### 5.7a Objek koreksi
+```json
+{ "id": 12, "number": "KOR-202611-0001", "status": "pending", "work_date": "2026-11-16", "type": "check_in",
+  "proposed_check_in": "07:55", "proposed_check_out": null,
+  "reason": { "code": "forgot", "name": "Lupa absen" }, "note": "Lupa menekan Masuk", "has_attachment": false,
+  "employee": { "id": 7, "employee_number": "PJA-260007", "name": "Bayu Saputra" },
+  "approver": { "name": "Eko Wibowo" }, "is_manual": false,
+  "submitted_at": "2026-11-16T09:12:00+07:00", "decided_at": null, "decided_by": null, "decision_note": null }
+```
+`approver` = atasan langsung saat diajukan (null bila tidak ada; diputuskan kepala lokasi/HRD, 06 §6). `is_manual` = presensi manual oleh admin/atasan (BR-069). `decided_by` = `{ "name" }`. Waktu ISO-8601 dengan offset `general.timezone`.
 
 ### 5.8 Approve / Reject
-`POST .../approve` body `{ "note": "opsional" }`. `POST .../reject` body `{ "note": "wajib, 5–500 karakter" }`. Respons 200 berisi objek koreksi terbaru. Bila status sudah bukan `pending` → `409 STATE_CONFLICT`.
+`GET /api/v1/approvals/attendance-corrections` = listing `approval_corrections` (07 §3.4): koreksi yang boleh diputuskan pengguna (06 §6), tanpa milik sendiri. `POST .../approve` body `{ "note": "opsional, ≤ 500" }`. `POST .../reject` body `{ "note": "wajib, 5–500 karakter" }`. Respons 200 berisi objek koreksi terbaru (§5.7a). Bila status sudah bukan `pending` → `409 STATE_CONFLICT`. Koreksi di luar wewenang → 404; milik sendiri → 403 `CORRECTION_SELF_APPROVAL`.

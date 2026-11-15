@@ -679,7 +679,7 @@ Pencarian teks memakai `LIKE 'kata%'` di kolom ber-index untuk nama/kode. `LIKE 
 - `ReferenceSeeder`:
   - `location_type`: `office` Kantor, `warehouse` Gudang, `store` Toko, `other` Lainnya.
   - `employment_status`: `permanent` Tetap, `contract` Kontrak, `probation` Percobaan, `daily` Harian Lepas.
-  - `correction_reason`: `forgot` Lupa absen, `gps_error` GPS/HP bermasalah, `field_duty` Tugas luar, `system_error` Gangguan sistem, `other` Lainnya.
+  - `correction_reason`: `forgot` Lupa absen, `gps_error` GPS/HP bermasalah, `field_duty` Tugas luar, `system_error` Gangguan sistem, `phone_broken` HP rusak, `phone_lost` HP hilang, `phone_left` HP ketinggalan, `other` Lainnya.
   - `offboarding_reason`: `resign` Mengundurkan diri, `contract_end` Kontrak berakhir, `terminated` Diberhentikan, `retired` Pensiun, `deceased` Meninggal dunia, `other` Lainnya.
   - Semua item seed `is_system = true`.
 - `SequenceSeeder`: `employee` → `PJA-{YY}{SEQ:4}`, reset `never`. `attendance_correction` → `KOR-{YYYY}{MM}-{SEQ:4}`, reset `monthly`. `field_trip` → `DL/{YYYY}/{MM}/{SEQ:4}`, reset `monthly` (T-036A, keputusan Mas 15 Nov 2026).

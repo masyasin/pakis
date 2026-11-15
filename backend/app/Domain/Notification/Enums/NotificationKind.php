@@ -15,6 +15,8 @@ enum NotificationKind: string
     case AccountLocked = 'account_locked';
     case DevicePending = 'device_pending';
     case AttendanceMock = 'attendance_mock';
+    case CorrectionSubmitted = 'correction_submitted';
+    case CorrectionDecided = 'correction_decided';
 
     public function label(): string
     {
@@ -26,6 +28,8 @@ enum NotificationKind: string
             self::AccountLocked => 'Akun dikunci',
             self::DevicePending => 'Perangkat menunggu persetujuan',
             self::AttendanceMock => 'Lokasi palsu terdeteksi',
+            self::CorrectionSubmitted => 'Koreksi presensi diajukan',
+            self::CorrectionDecided => 'Koreksi presensi diputuskan',
         };
     }
 

@@ -132,6 +132,10 @@ Pengguna **U** boleh memutuskan koreksi **K** bila semua syarat terpenuhi:
 
 Bila atasan langsung tidak ada atau nonaktif, koreksi tetap bisa diputuskan oleh `kepala_lokasi` di lokasi itu atau HRD (fallback lewat syarat 4b).
 
+**Presensi manual** (keputusan Mas 16 Nov 2026, BR-069): pengguna boleh mengisi presensi atas nama pegawai **P** bila syarat 2–4 di atas terpenuhi terhadap P (syarat 4a memakai atasan langsung P pada penugasan utama hari ini). Hasilnya koreksi yang langsung `approved`. Tidak ada izin baru.
+
+Di API, koreksi yang tidak boleh diputuskan U (di luar syarat 4) → 404; milik sendiri → 403 `CORRECTION_SELF_APPROVAL`; sudah bukan `pending` → 409 `STATE_CONFLICT`.
+
 ## 7. Transisi Status
 
 ### 7.1 Koreksi absen

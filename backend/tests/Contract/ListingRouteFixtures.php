@@ -3,7 +3,11 @@
 namespace Tests\Contract;
 
 use App\Domain\Access\Support\RoleCatalog;
+use App\Domain\Device\Enums\DeviceStatus;
+use App\Domain\Device\Models\Device;
+use App\Domain\Device\Support\DeviceTokens;
 use App\Domain\Employee\Enums\ImportStatus;
+use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Models\ImportBatch;
 use App\Domain\Region\Models\Province;
 use App\Models\User;
@@ -43,11 +47,35 @@ final class ListingRouteFixtures
     }
 
     /**
-     * Pengguna yang membuka daftar. Web: super_admin; API: pegawai/supervisor dengan perangkat aktif.
+     * Header API untuk route `api.v1.*`: token Sanctum + perangkat aktif + versi app, karena grup API
+     * mewajibkan perangkat terikat (BR-040). Persetujuan = HRD (scope all), lainnya = pegawai.
+     *
+     * @return array<string, string>
+     */
+    public static function apiHeaders(string $routeName): array
+    {
+        (new PermissionSeeder)->run();
+        (new RoleSeeder)->run();
+
+        $role = str_starts_with($routeName, 'api.v1.approvals.') ? 'hrd' : RoleCatalog::PEGAWAI;
+        $employee = Employee::factory()->create();
+        $user = User::factory()->withTwoFactor()->create(['employee_id' => $employee->id])->assignRole($role);
+        $uid = hash('sha256', 'kontrak-'.$user->id);
+        $device = Device::query()->create(['user_id' => $user->id, 'device_uid' => $uid, 'status' => DeviceStatus::Active, 'model' => 'Uji Kontrak']);
+
+        return [
+            'Accept' => 'application/json',
+            'X-App-Version' => '1.0.0',
+            'X-Device-Id' => $uid,
+            'Authorization' => 'Bearer '.app(DeviceTokens::class)->issue($user, $device)->plainTextToken,
+        ];
+    }
+
+    /**
+     * Pengguna yang membuka daftar web: super_admin. Route API memakai apiHeaders().
      */
     public static function actor(string $routeName): Authenticatable
     {
-        // TODO(T-031): pengguna + perangkat aktif untuk api.v1.*.
         if (str_starts_with($routeName, 'admin.')) {
             // Web: super_admin (lolos semua permission) — kontrak listing menguji bentuk daftar,
             // bukan otorisasi (itu harness T-019).

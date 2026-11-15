@@ -31,6 +31,10 @@ class ReferenceSeeder extends Seeder
             'gps_error' => 'GPS/HP bermasalah',
             'field_duty' => 'Tugas luar',
             'system_error' => 'Gangguan sistem',
+            // Presensi manual oleh admin/atasan (keputusan Mas 16 Nov 2026, BR-069).
+            'phone_broken' => 'HP rusak',
+            'phone_lost' => 'HP hilang',
+            'phone_left' => 'HP ketinggalan',
             'other' => 'Lainnya',
         ],
         'offboarding_reason' => [

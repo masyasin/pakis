@@ -51,8 +51,14 @@ final class ListingContract
     public static function spec(Route $route): ?ListingSpec
     {
         $class = self::listingClass($route);
+        if ($class === null) {
+            return null;
+        }
 
-        return $class === null ? null : app($class)->spec();
+        // Sama dengan ListingQuery: route `api/*` memakai opsi mobile (per_page dsb.).
+        $spec = app($class)->spec();
+
+        return str_starts_with($route->uri(), 'api/') ? $spec->forApi() : $spec;
     }
 
     /**

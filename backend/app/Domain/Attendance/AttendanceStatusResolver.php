@@ -5,7 +5,7 @@ namespace App\Domain\Attendance;
 use App\Domain\Attendance\Enums\AttendanceStatus;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Support\BasicDayStatus;
-use App\Domain\Attendance\Support\ShiftTimes;
+use App\Domain\Attendance\Support\DaySnapshot;
 use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
 use App\Support\Time\DisplayTime;
@@ -220,16 +220,7 @@ class AttendanceStatusResolver extends BasicDayStatus
      */
     private function snapshot(AttendanceDay $day, string $date, EffectiveSchedule $schedule, ?Assignment $assignment): void
     {
-        $shift = $schedule->isWorkday() ? $schedule->shift : null;
-        [$start, $end] = $shift !== null ? ShiftTimes::on($date, $shift) : [null, null];
-
-        $day->location_id = $assignment?->location_id;
-        $day->position_id = $assignment?->position_id;
-        $day->department_id = $assignment?->position?->department_id;
-        $day->shift_id = $shift?->id;
-        $day->scheduled_start = $start;
-        $day->scheduled_end = $end;
-        $day->setRelation('shift', $shift);
+        DaySnapshot::apply($day, $date, $schedule, $assignment);
     }
 
     private function scheduleOf(AttendanceDay $day): EffectiveSchedule

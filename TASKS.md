@@ -592,12 +592,13 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/06-AUTHORIZATION.md` §6, §7.1, `docs/08-BUSINESS-RULES.md` BR-069, `docs/05-API-CONTRACT.md` §5.7–§5.8, `docs/04-DATABASE.md` §2.13
 - File: migration `attendance_corrections`, `app/Domain/Attendance/{Actions/{SubmitCorrection,ApproveCorrection,RejectCorrection,CancelCorrection},Policies/AttendanceCorrectionPolicy}`, `Api/V1/{AttendanceCorrectionController,ApprovalController}`, `Listings/{MyCorrectionListing,ApprovalCorrectionListing}`, listener `EmployeeOffboarded` → batalkan pending
 - Kriteria penerimaan:
-  - [ ] Menyetujui milik sendiri → 403 `CORRECTION_SELF_APPROVAL`
-  - [ ] Pending ganda untuk tanggal sama → 409
-  - [ ] Disetujui → `attendance_days` diperbarui, `is_corrected`, log asli utuh, audit lama/baru
-  - [ ] Keputusan ganda paralel → satu sukses, satu 409 `STATE_CONFLICT`
-  - [ ] Listing API `my_corrections` & `approval_corrections` lolos test kontrak
-  - [ ] **Presensi manual oleh admin/atasan** (keputusan Mas 16 Nov 2026, `12`): pemegang `attendance_corrections.approve` dalam scope mengisi jam masuk/pulang + alasan atas nama pegawai saat pegawai tidak bisa presensi dari HP (rusak/hilang/ketinggalan) → koreksi langsung `approved` (`submitted_by` = pengisi, `decided_by` = pengisi), hari ditandai `is_corrected`, status dihitung ulang, audit. Tidak untuk diri sendiri (403 `CORRECTION_SELF_APPROVAL`), batas tanggal = BR-069. Tanggal tanpa baris `attendance_days` → baris dibuat (snapshot sama dengan resolver). Alasan baru di referensi `correction_reason`: HP rusak, HP hilang, HP ketinggalan. Perbarui BR-069, 05 §4.10 (route web baru), 07 §4 sebelum mulai
+  - [x] Menyetujui milik sendiri → 403 `CORRECTION_SELF_APPROVAL`
+  - [x] Pending ganda untuk tanggal sama → 409
+  - [x] Disetujui → `attendance_days` diperbarui, `is_corrected`, log asli utuh, audit lama/baru
+  - [x] Keputusan ganda paralel → satu sukses, satu 409 `STATE_CONFLICT`
+  - [x] Listing API `my_corrections` & `approval_corrections` lolos test kontrak
+  - [x] **Presensi manual oleh admin/atasan** (keputusan Mas 16 Nov 2026, `12`): pemegang `attendance_corrections.approve` dalam scope mengisi jam masuk/pulang + alasan atas nama pegawai saat pegawai tidak bisa presensi dari HP (rusak/hilang/ketinggalan) → koreksi langsung `approved` (`submitted_by` = pengisi, `decided_by` = pengisi), hari ditandai `is_corrected`, status dihitung ulang, audit. Tidak untuk diri sendiri (403 `CORRECTION_SELF_APPROVAL`), batas tanggal = BR-069. Tanggal tanpa baris `attendance_days` → baris dibuat (snapshot sama dengan resolver). Alasan baru di referensi `correction_reason`: HP rusak, HP hilang, HP ketinggalan. Perbarui BR-069, 05 §4.10 (route web baru), 07 §4 sebelum mulai
+  - Catatan 16 Nov 2026: presensi manual = Action `RecordManualAttendance` + test; route web & form di T-041
 - Verifikasi: `php artisan test --filter=Correction`
 
 ### T-041 — Koreksi absen (web)

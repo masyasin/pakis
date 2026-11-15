@@ -75,7 +75,8 @@ const REPRESENTATIVE = [
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
-    'attendance_corrections.view' => 'T-041', 'attendance_corrections.create' => 'T-040', 'attendance_corrections.approve' => 'T-041',
+    // `approve` sudah punya route API (T-040); route web perwakilannya dibuat T-041.
+    'attendance_corrections.view' => 'T-041', 'attendance_corrections.approve' => 'T-041',
     'field_trips.request' => 'T-036A bagian 2', 'field_trips.approve' => 'T-036A bagian 2',
 ];
 
@@ -85,6 +86,7 @@ const PENDING = [
  */
 const API_ONLY = [
     'attendance.self' => 'tests/Feature/Api/V1/Attendance/AttendanceApiTest.php',
+    'attendance_corrections.create' => 'tests/Feature/Api/V1/Attendance/CorrectionApiTest.php',
 ];
 
 /**

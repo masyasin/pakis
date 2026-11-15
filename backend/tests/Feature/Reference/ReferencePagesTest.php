@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Attendance\Models\AttendanceCorrection;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Organization\Models\Location;
@@ -225,9 +226,18 @@ test('BR-026 item yang sudah dipakai data lain tidak bisa dihapus, hanya dinonak
         ->and(AuditLog::query()->where('event', 'reference.deleted')->where('auditable_id', $item->id)->exists())->toBeTrue();
 });
 
-test('pemakai yang tabelnya belum ada dilewati (sebelum T-040)', function () {
-    expect(Schema::hasTable('attendance_corrections'))->toBeFalse()
-        ->and(app(ReferenceUsage::class)->isUsed(customItem('kosong', 'correction_reason')))->toBeFalse();
+test('BR-026 alasan koreksi yang dipakai koreksi presensi (T-040) terhitung "sudah dipakai"', function () {
+    expect(Schema::hasTable('attendance_corrections'))->toBeTrue();
+    $item = customItem('banjir', 'correction_reason');
+    expect(app(ReferenceUsage::class)->isUsed($item))->toBeFalse();
+
+    $employee = Employee::factory()->create();
+    AttendanceCorrection::query()->create([
+        'number' => 'KOR-202611-9999', 'employee_id' => $employee->id, 'work_date' => '2026-11-16', 'type' => 'check_in',
+        'proposed_check_in' => '08:00', 'reason_id' => $item->id, 'note' => 'Jalan banjir', 'submitted_by' => User::factory()->create()->id,
+    ]);
+
+    expect(app(ReferenceUsage::class)->isUsed($item))->toBeTrue();
 });
 
 test('BR-026 status kerja yang dipakai pegawai (T-024) terhitung "sudah dipakai"', function () {

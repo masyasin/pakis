@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ApprovalController;
 use App\Http\Controllers\Api\V1\AttendanceController;
+use App\Http\Controllers\Api\V1\AttendanceCorrectionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\MeController;
@@ -37,6 +39,18 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::middleware('can:attendance.self')->group(function () {
                 Route::get('attendance/today', [AttendanceController::class, 'today'])->name('attendance.today');
                 Route::post('attendance', [AttendanceController::class, 'store'])->middleware('throttle:attendance')->name('attendance.store');
+            });
+
+            // Koreksi presensi (05 §5.7–5.8, T-040). `{id}` milik sendiri / dalam wewenang 06 §6, selain itu 404.
+            Route::middleware('can:attendance_corrections.create')->group(function () {
+                Route::get('attendance-corrections', [AttendanceCorrectionController::class, 'index'])->name('attendance-corrections.index');
+                Route::post('attendance-corrections', [AttendanceCorrectionController::class, 'store'])->name('attendance-corrections.store');
+                Route::post('attendance-corrections/{id}/cancel', [AttendanceCorrectionController::class, 'cancel'])->whereNumber('id')->name('attendance-corrections.cancel');
+            });
+            Route::middleware('can:attendance_corrections.approve')->prefix('approvals')->name('approvals.')->group(function () {
+                Route::get('attendance-corrections', [ApprovalController::class, 'corrections'])->name('attendance-corrections.index');
+                Route::post('attendance-corrections/{id}/approve', [ApprovalController::class, 'approve'])->whereNumber('id')->name('attendance-corrections.approve');
+                Route::post('attendance-corrections/{id}/reject', [ApprovalController::class, 'reject'])->whereNumber('id')->name('attendance-corrections.reject');
             });
         });
     });

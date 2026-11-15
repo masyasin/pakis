@@ -281,6 +281,102 @@ paths:
                       attendance: { oneOf: [{ $ref: '#/components/schemas/AttendanceDay' }, { type: 'null' }] }
                       next_action: { type: [string, 'null'], enum: [in, out, null] }
                   meta: { $ref: '#/components/schemas/Meta' }
+  /attendance-corrections:
+    get:
+      tags: [Koreksi]
+      summary: Koreksi presensi milik sendiri (listing my_corrections, 07 §3.4)
+      parameters:
+        - { $ref: '#/components/parameters/AppVersion' }
+        - { $ref: '#/components/parameters/DeviceId' }
+        - { name: q, in: query, schema: { type: string }, description: Awal nomor koreksi }
+        - { name: 'filter[status][]', in: query, schema: { type: string, enum: [pending, approved, rejected, cancelled] } }
+        - { name: 'filter[month]', in: query, schema: { type: string, example: 2026-11 } }
+        - { name: sort, in: query, schema: { type: string, enum: [created_at, -created_at, work_date, -work_date], default: -created_at } }
+      responses:
+        '200': { $ref: '#/components/responses/CorrectionPage' }
+        '403': { $ref: '#/components/responses/Error', description: 'FORBIDDEN (tanpa attendance_corrections.create / akun tanpa pegawai)' }
+    post:
+      tags: [Koreksi]
+      summary: Ajukan koreksi presensi (05 §5.7, BR-069)
+      description: |
+        Pegawai = pemilik token. `work_date` ≤ hari ini dan ≥ hari ini − `attendance.correction_max_days`. Jam `HH:mm`
+        lokal harus di jendela shift (BR-060); shift lintas malam: jam sebelum jendela masuk = keesokan harinya.
+        Lampiran opsional JPEG/PNG/PDF ≤ `attendance.correction_attachment_max_kb` (isi berkas diperiksa).
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [work_date, type, reason_code, note]
+              properties:
+                work_date: { type: string, format: date }
+                type: { type: string, enum: [check_in, check_out, both] }
+                proposed_check_in: { type: string, example: '07:55', description: Wajib untuk check_in/both }
+                proposed_check_out: { type: string, example: '16:05', description: Wajib untuk check_out/both }
+                reason_code: { type: string, description: Kode correction_reason aktif }
+                note: { type: string, minLength: 10, maxLength: 500 }
+                attachment: { type: string, format: binary }
+      responses:
+        '201': { $ref: '#/components/responses/CorrectionOne' }
+        '403': { $ref: '#/components/responses/Error', description: FORBIDDEN }
+        '409': { $ref: '#/components/responses/Error', description: CORRECTION_DUPLICATE_PENDING }
+        '422': { $ref: '#/components/responses/Error', description: 'CORRECTION_NOT_ALLOWED / VALIDATION_FAILED (field jam, lampiran, alasan)' }
+  /attendance-corrections/{id}/cancel:
+    post:
+      tags: [Koreksi]
+      summary: Batalkan koreksi pending milik sendiri (06 §7.1)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }, { $ref: '#/components/parameters/CorrectionId' }]
+      responses:
+        '200': { $ref: '#/components/responses/CorrectionOne' }
+        '404': { $ref: '#/components/responses/Error', description: 'NOT_FOUND (bukan milik sendiri)' }
+        '409': { $ref: '#/components/responses/Error', description: STATE_CONFLICT }
+  /approvals/attendance-corrections:
+    get:
+      tags: [Koreksi]
+      summary: Koreksi yang boleh diputuskan pengguna (listing approval_corrections, 06 §6)
+      parameters:
+        - { $ref: '#/components/parameters/AppVersion' }
+        - { $ref: '#/components/parameters/DeviceId' }
+        - { name: q, in: query, schema: { type: string }, description: Nama/nomor pegawai atau nomor koreksi }
+        - { name: 'filter[status][]', in: query, schema: { type: string, enum: [pending, approved, rejected, cancelled], default: pending } }
+        - { name: 'filter[work_date][from]', in: query, schema: { type: string, format: date } }
+        - { name: 'filter[work_date][to]', in: query, schema: { type: string, format: date } }
+        - { name: sort, in: query, schema: { type: string, enum: [created_at, -created_at, work_date, -work_date], default: created_at } }
+      responses:
+        '200': { $ref: '#/components/responses/CorrectionPage' }
+        '403': { $ref: '#/components/responses/Error', description: 'FORBIDDEN (tanpa attendance_corrections.approve)' }
+  /approvals/attendance-corrections/{id}/approve:
+    post:
+      tags: [Koreksi]
+      summary: Setujui koreksi (05 §5.8); jam diterapkan ke presensi hari itu, log asli utuh
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }, { $ref: '#/components/parameters/CorrectionId' }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { note: { type: [string, 'null'], maxLength: 500 } } }
+      responses:
+        '200': { $ref: '#/components/responses/CorrectionOne' }
+        '403': { $ref: '#/components/responses/Error', description: CORRECTION_SELF_APPROVAL }
+        '404': { $ref: '#/components/responses/Error', description: 'NOT_FOUND (di luar wewenang 06 §6)' }
+        '409': { $ref: '#/components/responses/Error', description: STATE_CONFLICT }
+  /approvals/attendance-corrections/{id}/reject:
+    post:
+      tags: [Koreksi]
+      summary: Tolak koreksi (05 §5.8)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }, { $ref: '#/components/parameters/CorrectionId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [note], properties: { note: { type: string, minLength: 5, maxLength: 500 } } }
+      responses:
+        '200': { $ref: '#/components/responses/CorrectionOne' }
+        '403': { $ref: '#/components/responses/Error', description: CORRECTION_SELF_APPROVAL }
+        '404': { $ref: '#/components/responses/Error', description: NOT_FOUND }
+        '409': { $ref: '#/components/responses/Error', description: STATE_CONFLICT }
+        '422': { $ref: '#/components/responses/Error', description: 'VALIDATION_FAILED (note)' }
 components:
   securitySchemes:
     bearer:
@@ -297,6 +393,11 @@ components:
       in: header
       required: true
       schema: { type: string }
+    CorrectionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer }
   schemas:
     Meta:
       type: object
@@ -345,6 +446,27 @@ components:
             name: { type: [string, 'null'] }
             distance_m: { type: [integer, 'null'] }
         is_offline: { type: boolean }
+    Correction:
+      type: object
+      description: Objek koreksi (05 §5.7a). Waktu ISO-8601 dengan offset general.timezone.
+      properties:
+        id: { type: integer }
+        number: { type: string, example: KOR-202611-0001 }
+        status: { type: string, enum: [pending, approved, rejected, cancelled] }
+        work_date: { type: string, format: date }
+        type: { type: string, enum: [check_in, check_out, both] }
+        proposed_check_in: { type: [string, 'null'], example: '07:55' }
+        proposed_check_out: { type: [string, 'null'] }
+        reason: { type: object, properties: { code: { type: string }, name: { type: string } } }
+        note: { type: string }
+        has_attachment: { type: boolean }
+        employee: { type: object, properties: { id: { type: integer }, employee_number: { type: string }, name: { type: string } } }
+        approver: { type: [object, 'null'], properties: { name: { type: string } } }
+        is_manual: { type: boolean, description: Presensi manual oleh admin/atasan (BR-069) }
+        submitted_at: { type: string, format: date-time }
+        decided_at: { type: [string, 'null'], format: date-time }
+        decided_by: { type: [object, 'null'], properties: { name: { type: string } } }
+        decision_note: { type: [string, 'null'] }
     Error:
       type: object
       properties:
@@ -356,6 +478,24 @@ components:
             details: { type: object }
             request_id: { type: string }
   responses:
+    CorrectionOne:
+      description: Objek koreksi terbaru
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/components/schemas/Correction' }
+              meta: { $ref: '#/components/schemas/Meta' }
+    CorrectionPage:
+      description: Satu halaman listing (03 §, meta.pagination & meta.listing)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { $ref: '#/components/schemas/Correction' } }
+              meta: { type: object }
     Error:
       description: Galat (05 §2.2)
       content:

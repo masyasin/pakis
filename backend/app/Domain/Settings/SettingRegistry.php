@@ -135,6 +135,7 @@ final class SettingRegistry
             $t('attendance.early_leave_tolerance_min', SettingType::Int, 0, 'Toleransi pulang cepat (menit)', min: 0, max: 120),
             $t('attendance.daily_close_time', SettingType::Time, '23:30', 'Jam tutup harian', 'Setelah jam ini pegawai yang tidak presensi ditandai.'),
             $t('attendance.correction_max_days', SettingType::Int, 7, 'Batas pengajuan koreksi (hari)', isPublic: true, min: 1, max: 60),
+            $t('attendance.correction_attachment_max_kb', SettingType::Int, 2048, 'Ukuran maksimal lampiran koreksi (KB)', 'Foto/PDF bukti koreksi presensi.', isPublic: true, min: 256, max: 5120),
             $t('attendance.selfie_retention_days', SettingType::Int, 365, 'Masa simpan selfie (hari)', min: 30, max: 1825),
             $t('attendance.field_trip_max_days', SettingType::Int, 7, 'Lama maksimal tugas luar kota (hari)', 'Batas satu tugas luar kota/dinas luar (BR-071).', min: 1, max: 31),
 
@@ -157,6 +158,8 @@ final class SettingRegistry
             $t('notification.on_account_locked', SettingType::MultiEnum, ['email'], 'Kanal: akun dikunci', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.on_device_pending', SettingType::MultiEnum, [], 'Kanal: perangkat menunggu persetujuan', 'Penerima: admin yang bisa mengelola perangkat. Notifikasi lonceng selalu dikirim.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.on_attendance_mock', SettingType::MultiEnum, [], 'Kanal: lokasi palsu terdeteksi', 'Penerima: HRD dan kepala lokasi pegawai. Notifikasi lonceng selalu dikirim.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_correction_submitted', SettingType::MultiEnum, [], 'Kanal: koreksi presensi diajukan', 'Penerima: atasan langsung, atau kepala lokasi + HRD bila tidak ada atasan aktif. Notifikasi lonceng selalu dikirim.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_correction_decided', SettingType::MultiEnum, ['email'], 'Kanal: koreksi presensi diputuskan', 'Penerima: pengaju koreksi, atau pegawai yang presensinya diisi manual.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.whatsapp_daily_limit', SettingType::Int, 300, 'Batas WhatsApp per hari', 'Lebih dari ini notifikasi dialihkan ke Telegram/Email. 0 = WhatsApp tidak dipakai untuk notifikasi.', min: 0, max: 10000),
             $t('notification.whatsapp_hourly_per_user', SettingType::Int, 5, 'Batas WhatsApp per orang per jam', 'Mencegah nomor dianggap spam dan diblokir.', min: 1, max: 50),
             $t('notification.circuit_failures', SettingType::Int, 5, 'Jeda kanal setelah gagal berturut-turut', 'Kanal yang gagal sebanyak ini dijeda sementara dan notifikasi dialihkan ke cadangan.', min: 3, max: 20),

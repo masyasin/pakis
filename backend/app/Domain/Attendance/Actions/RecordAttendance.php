@@ -10,10 +10,12 @@ use App\Domain\Attendance\Models\AttendanceLog;
 use App\Domain\Attendance\Notifications\AttendanceMockDetected;
 use App\Domain\Attendance\Support\AttendanceInput;
 use App\Domain\Attendance\Support\ClockGuard;
+use App\Domain\Attendance\Support\DaySnapshot;
 use App\Domain\Attendance\Support\DayStatusResolver;
 use App\Domain\Attendance\Support\FieldTripAreas;
 use App\Domain\Attendance\Support\GeoFence;
 use App\Domain\Attendance\Support\GeoResult;
+use App\Domain\Attendance\Support\LocationOverseers;
 use App\Domain\Attendance\Support\SelfieStore;
 use App\Domain\Attendance\Support\WorkDateCandidate;
 use App\Domain\Attendance\Support\WorkDateResolver;
@@ -86,7 +88,7 @@ final class RecordAttendance
         [$recordedAt, $flags] = $this->clock->resolve($input->isOffline, $input->clientTime, $input->deviceClockOffsetS, $receivedAt);
         $candidate = $this->workDates->forRecord($employee->id, $input->type, $recordedAt);
 
-        $assignment = self::primaryAssignmentOn($employee->id, $candidate->workDate);
+        $assignment = DaySnapshot::primaryAssignmentOn($employee->id, $candidate->workDate);
         $mode = $assignment?->effectiveAttendanceMode() ?? AttendanceMode::Location;
         // BR-071: tugas luar kota yang berlaku pada work_date menambah lokasi sah.
         $trip = $this->trips->for($employee->id, $candidate->workDate);
@@ -265,37 +267,10 @@ final class RecordAttendance
         ]);
 
         $today = DisplayTime::toLocal(now())->toDateString();
-        $location = self::primaryAssignmentOn($employee->id, $today)?->location;
-        $headUserId = $location?->head_employee_id === null
-            ? null
-            : User::query()->where('employee_id', $location->head_employee_id)->where('is_active', true)->value('id');
-
-        // (HRD ∪ kepala lokasi) ∩ aktif ∩ bukan pelaku — OR dibungkus agar syarat lain berlaku ke keduanya.
-        $recipients = User::query()
-            ->where('is_active', true)
-            ->whereKeyNot($user->id)
-            ->where(function (Builder $q) use ($headUserId) {
-                $q->role('hrd');
-                if ($headUserId !== null) {
-                    $q->orWhere('users.id', $headUserId);
-                }
-            })
-            ->get();
+        $location = DaySnapshot::primaryAssignmentOn($employee->id, $today)?->location;
+        $recipients = LocationOverseers::for($location, $user->id);
 
         $when = $input->clientTime->setTimezone(DisplayTime::timezone())->format('d-m-Y H:i');
         Notification::send($recipients, new AttendanceMockDetected($employee->full_name, $employee->employee_number, $when));
-    }
-
-    /** Penugasan utama yang berlaku pada tanggal itu (bukan hari ini: absen offline/hari kemarin). */
-    private static function primaryAssignmentOn(int $employeeId, string $date): ?Assignment
-    {
-        return Assignment::query()
-            ->with(['location', 'position'])
-            ->where('employee_id', $employeeId)
-            ->where('is_primary', true)
-            ->where('start_date', '<=', $date)
-            ->where(fn (Builder $q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $date))
-            ->orderByDesc('start_date')
-            ->first();
     }
 }

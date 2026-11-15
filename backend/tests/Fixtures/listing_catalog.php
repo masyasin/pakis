@@ -21,4 +21,5 @@ return [
     'users', // T-020
     'notifications', // T-029
     'locations', // T-021
+    'departments', // T-022
 ];

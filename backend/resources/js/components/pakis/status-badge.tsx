@@ -37,6 +37,9 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     // Lokasi (T-021)
     'location.active': { label: 'Aktif', tone: 'success' },
     'location.inactive': { label: 'Nonaktif', tone: 'muted' },
+    // Departemen (T-022)
+    'department.active': { label: 'Aktif', tone: 'success' },
+    'department.inactive': { label: 'Nonaktif', tone: 'muted' },
     // Akun pengguna (T-020)
     'user.active': { label: 'Aktif', tone: 'success' },
     'user.inactive': { label: 'Nonaktif', tone: 'muted' },

@@ -2,6 +2,7 @@
 
 use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\LocationController;
@@ -120,6 +121,19 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('lokasi/{location}/ubah', [LocationController::class, 'edit'])->whereNumber('location')->name('locations.edit');
         Route::put('lokasi/{location}', [LocationController::class, 'update'])->whereNumber('location')->name('locations.update');
         Route::delete('lokasi/{location}', [LocationController::class, 'destroy'])->whereNumber('location')->name('locations.destroy');
+    });
+
+    // Departemen (05 §4.5, FR-023). `baru` & `ekspor` sebelum `{department}`. Tidak ber-scope data.
+    Route::middleware('can:departments.view')->group(function () {
+        Route::get('departemen', [DepartmentController::class, 'index'])->name('departments.index');
+        Route::get('departemen/ekspor', [DepartmentController::class, 'export'])->name('departments.export');
+    });
+    Route::middleware('can:departments.manage')->group(function () {
+        Route::get('departemen/baru', [DepartmentController::class, 'create'])->name('departments.create');
+        Route::post('departemen', [DepartmentController::class, 'store'])->name('departments.store');
+        Route::get('departemen/{department}/ubah', [DepartmentController::class, 'edit'])->whereNumber('department')->name('departments.edit');
+        Route::put('departemen/{department}', [DepartmentController::class, 'update'])->whereNumber('department')->name('departments.update');
+        Route::delete('departemen/{department}', [DepartmentController::class, 'destroy'])->whereNumber('department')->name('departments.destroy');
     });
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.

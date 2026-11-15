@@ -3,6 +3,7 @@
 use App\Domain\Access\Listings\UserListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
+use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 
 /*
@@ -34,6 +35,7 @@ return [
         'security_events' => SecurityEventListing::class,
         'users' => UserListing::class,
         'locations' => LocationListing::class,
+        'departments' => DepartmentListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

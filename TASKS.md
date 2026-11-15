@@ -325,8 +325,8 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/04-DATABASE.md` §2.8, `docs/07-UI-SPEC.md` §3.4 (`departments`)
 - File: migration, `app/Domain/Organization/...Department...`, `Listings/DepartmentListing`, `pages/Departments/{Index,Form}.tsx`
 - Kriteria penerimaan:
-  - [ ] Induk tidak boleh membentuk siklus
-  - [ ] Listing + ekspor lolos test kontrak
+  - [x] Induk tidak boleh membentuk siklus
+  - [x] Listing + ekspor lolos test kontrak
 - Verifikasi: `php artisan test --filter=Department`
 - Di luar lingkup: —
 

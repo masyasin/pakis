@@ -42,7 +42,7 @@ final class ImportTemplate
             ));
 
             // Satu baris contoh (data dummy): hapus sebelum mengisi.
-            $example = $this->example();
+            $example = $this->example($user);
             $values = [];
             $styles = [];
             foreach (array_keys($fields) as $i => $key) {
@@ -78,15 +78,22 @@ final class ImportTemplate
         }
     }
 
-    /** @return array<string, string> */
-    private function example(): array
+    /**
+     * Contoh lokasi diambil dari lokasi dalam scope pengunduh, sama seperti daftar di sheet Petunjuk.
+     *
+     * @return array<string, string>
+     */
+    private function example(User $user): array
     {
+        $locations = Location::query()->where('is_active', true)->orderBy('code');
+        app(LocationScope::class)->apply($locations, $user, 'locations.id');
+
         return [
             'full_name' => 'Contoh Pegawai (hapus baris ini)',
             'gender' => 'L',
             'join_date' => '01/02/2024',
             'employment_status' => (string) ReferenceItem::query()->forGroup(ReferenceGroup::EmploymentStatus)->where('is_active', true)->orderBy('sort_order')->value('name'),
-            'location' => (string) Location::query()->where('is_active', true)->orderBy('code')->value('code'),
+            'location' => (string) $locations->value('code'),
             'position' => (string) Position::query()->where('is_active', true)->orderBy('code')->value('code'),
             'birth_date' => '15/08/1995',
             'phone' => '0812-0000-0000',

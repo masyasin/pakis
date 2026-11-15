@@ -334,3 +334,34 @@ test('T-027 profil: daftar & hapus', function () {
 
     expect(ImportMappingProfile::query()->count())->toBe(0);
 });
+
+test('SEC-010 contoh nilai di pemetaan: NIK bersela spasi/titik/strip ikut dimasking, HP tidak', function () {
+    $batch = impUpload($this->hrd, impXlsx([
+        ['Nama', 'No KTP', 'No HP', 'Catatan'],
+        ['Andi', '3319 0101.0101-0001', '0812-3456-7890', 'KTP lama 3319010101010002 hilang'],
+    ]));
+
+    $this->actingAs($this->hrd)->get("/impor/{$batch->id}/pemetaan")->assertInertia(fn (Assert $page) => $page
+        ->where('samples.1.0', '3319********0001')
+        ->where('samples.2.0', '0812-3456-7890')
+        ->where('samples.3.0', 'KTP lama 3319********0002 hilang'));
+});
+
+test('SEC-033 templat: contoh lokasi diambil dari lokasi dalam scope pengunduh', function () {
+    $self = $this->world->employee($this->world->toko);
+    $role = Role::query()->create(['name' => 'hrd_toko', 'label' => 'HRD Toko', 'guard_name' => 'web', 'data_scope' => DataScope::Location]);
+    $role->givePermissionTo(['employees.view', 'employees.import']);
+    $local = User::factory()->withTwoFactor()->create(['employee_id' => $self->id])->assignRole('hrd_toko');
+
+    $path = $this->actingAs($local)->get('/impor/pegawai/templat')->assertOk()->baseResponse->getFile()->getPathname();
+    $example = null;
+    foreach ((new EmployeeImportReader)->rows($path, 'xlsx') as $number => $cells) {
+        if ($number === 2) {
+            $example = $cells;
+            break;
+        }
+    }
+
+    // GD-01 (di luar scope) lebih dulu menurut kode; contoh harus TK-01.
+    expect($example[4])->toBe('TK-01');
+});

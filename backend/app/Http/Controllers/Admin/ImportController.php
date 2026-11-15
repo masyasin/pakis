@@ -208,7 +208,7 @@ class ImportController extends Controller
             for ($i = 0; $i < $columns; $i++) {
                 $text = RowNormalizer::text($cells[$i] ?? null);
                 if ($text !== null) {
-                    $samples[$i][] = (string) preg_replace_callback('/\d{15,}/', fn (array $m) => substr($m[0], 0, 4).str_repeat('*', strlen($m[0]) - 8).substr($m[0], -4), mb_strimwidth($text, 0, 60, '…'));
+                    $samples[$i][] = mb_strimwidth(self::maskLongDigits($text), 0, 60, '…');
                 }
             }
             if (++$taken >= self::SAMPLE_ROWS) {
@@ -217,6 +217,19 @@ class ImportController extends Controller
         }
 
         return $samples;
+    }
+
+    /**
+     * Deretan ≥ 15 digit, termasuk yang bersela spasi/titik/strip seperti yang diterima parser NIK
+     * ("3319 0101 0101 0001"), dimasking SEBELUM teks dipotong agar potongan NIK tidak lolos.
+     */
+    private static function maskLongDigits(string $text): string
+    {
+        return (string) preg_replace_callback('/\d(?:[\s.\-]*\d){14,}/', function (array $m): string {
+            $digits = (string) preg_replace('/\D/', '', $m[0]);
+
+            return substr($digits, 0, 4).str_repeat('*', strlen($digits) - 8).substr($digits, -4);
+        }, $text);
     }
 
     /**

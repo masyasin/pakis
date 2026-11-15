@@ -33,8 +33,18 @@ type SummaryRow = {
 type Calendar = {
     employee: { id: number; name: string | null; number: string | null };
     month: string;
+    today: string;
     days: CalendarDay[];
 };
+
+/** Inisial untuk avatar kecil di kepala dialog ("Eko Wibowo" → "EW"). */
+const initials = (name: string | null) =>
+    (name ?? '?')
+        .split(/\s+/)
+        .filter(Boolean)
+        .slice(0, 2)
+        .map((p) => p[0]?.toUpperCase())
+        .join('');
 
 type Props = ListingProps<SummaryRow> & {
     month: string;
@@ -243,27 +253,44 @@ export default function AttendanceSummary({
                     }
                 }}
             >
-                <DialogContent className="max-h-[92vh] overflow-y-auto sm:max-w-xl">
+                <DialogContent className="max-h-[92vh] gap-4 overflow-y-auto p-4 sm:max-w-2xl sm:p-6">
                     {calendar && (
                         <>
-                            <DialogTitle className="flex items-center gap-2">
-                                <CalendarDays
-                                    className="size-5 text-primary"
+                            <div className="flex items-center gap-3 pr-8">
+                                <span
+                                    className="grid size-11 shrink-0 place-items-center rounded-full bg-primary/10 text-sm font-bold text-primary"
                                     aria-hidden="true"
-                                />
-                                {calendar.employee.name}
-                            </DialogTitle>
-                            <DialogDescription>
-                                <span className="font-mono">
-                                    {calendar.employee.number}
-                                </span>{' '}
-                                · {monthLabel(calendar.month)}. Klik tanggal
-                                untuk rincian.
-                            </DialogDescription>
+                                >
+                                    {initials(calendar.employee.name)}
+                                </span>
+                                <div className="min-w-0">
+                                    <DialogTitle className="truncate text-lg">
+                                        {calendar.employee.name}
+                                    </DialogTitle>
+                                    <DialogDescription className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
+                                        <span className="font-mono text-xs">
+                                            {calendar.employee.number}
+                                        </span>
+                                        <span className="inline-flex items-center gap-1">
+                                            <CalendarDays
+                                                className="size-3.5"
+                                                aria-hidden="true"
+                                            />
+                                            {monthLabel(calendar.month)}
+                                        </span>
+                                    </DialogDescription>
+                                </div>
+                            </div>
                             <MonthCalendar
                                 month={calendar.month}
+                                today={calendar.today}
                                 days={calendar.days}
                             />
+                            <p className="text-xs text-muted-foreground">
+                                Klik tanggal berwarna untuk rincian presensi.
+                                Tanggal tanpa warna belum ada data (belum
+                                ditutup atau tidak dijadwalkan).
+                            </p>
                         </>
                     )}
                 </DialogContent>

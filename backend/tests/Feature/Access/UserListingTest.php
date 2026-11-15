@@ -20,7 +20,7 @@ uses(AssertsIdor::class);
 beforeEach(function () {
     $this->seed([PermissionSeeder::class, RoleSeeder::class]);
     $this->useRealPermissions();
-    $this->owner = User::factory()->withTwoFactor()->create(['name' => 'Owner Uji'])->assignRole('owner');
+    $this->owner = User::factory()->withTwoFactor()->create(['name' => 'Owner Uji', 'email' => 'owner@contoh.test'])->assignRole('owner');
 });
 
 /** @return list<string> */
@@ -30,9 +30,10 @@ function ulUsernames(Assert $page): array
 }
 
 test('07 §3.4 users: cari nama/username, filter role & aktif, sort login terakhir', function () {
-    User::factory()->create(['name' => 'Agus Salim', 'username' => 'agus', 'last_login_at' => now()->subDays(3)])->assignRole('supervisor');
-    User::factory()->create(['name' => 'Bambang', 'username' => 'bambang.k', 'is_active' => false, 'last_login_at' => now()->subDay()])->assignRole('pegawai');
-    User::factory()->create(['name' => 'Citra', 'username' => 'citra', 'last_login_at' => now()->subDays(2)])->assignRole('supervisor');
+    // Email tetap: pencarian juga mencocokkan email, dan email acak Faker bisa memuat kata yang dicari.
+    User::factory()->create(['name' => 'Agus Salim', 'username' => 'agus', 'email' => 'u1@contoh.test', 'last_login_at' => now()->subDays(3)])->assignRole('supervisor');
+    User::factory()->create(['name' => 'Bambang', 'username' => 'bambang.k', 'email' => 'u2@contoh.test', 'is_active' => false, 'last_login_at' => now()->subDay()])->assignRole('pegawai');
+    User::factory()->create(['name' => 'Citra', 'username' => 'citra', 'email' => 'u3@contoh.test', 'last_login_at' => now()->subDays(2)])->assignRole('supervisor');
 
     $this->actingAs($this->owner)->get('/pengguna?q=agus')->assertOk()
         ->assertInertia(fn (Assert $page) => expect(ulUsernames($page))->toBe(['agus']));

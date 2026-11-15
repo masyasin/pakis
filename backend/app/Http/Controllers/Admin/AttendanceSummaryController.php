@@ -13,6 +13,7 @@ use App\Models\User;
 use App\Support\Export\StartExport;
 use App\Support\Listing\ListingQuery;
 use App\Support\Listing\UsesListing;
+use App\Support\Time\DisplayTime;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -90,6 +91,8 @@ class AttendanceSummaryController extends Controller
         return [
             'employee' => ['id' => (int) $raw, 'name' => $employee?->full_name, 'number' => $employee?->employee_number],
             'month' => $month,
+            // Tanggal lokal kantor (bukan zona browser) untuk penanda "hari ini" di kalender.
+            'today' => DisplayTime::toLocal(now())->toDateString(),
             'days' => array_values($days->map(fn (AttendanceDay $d) => [
                 'id' => $d->id,
                 'date' => $d->work_date->toDateString(),

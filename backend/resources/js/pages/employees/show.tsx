@@ -35,7 +35,14 @@ import {
     show,
 } from '@/routes/admin/employees';
 
-type Tab = 'data' | 'penugasan' | 'akun' | 'jadwal' | 'absensi' | 'riwayat';
+type Tab =
+    | 'profil'
+    | 'alamat'
+    | 'penugasan'
+    | 'jadwal'
+    | 'presensi'
+    | 'akun'
+    | 'riwayat';
 
 type EmployeeDetail = {
     id: number;
@@ -124,13 +131,47 @@ type Props = {
     historyEvents: { value: string; label: string }[];
 };
 
-const TABS: { key: Tab; label: string }[] = [
-    { key: 'data', label: 'Data Pribadi' },
-    { key: 'penugasan', label: 'Penugasan' },
-    { key: 'akun', label: 'Akun & Perangkat' },
-    { key: 'jadwal', label: 'Jadwal' },
-    { key: 'absensi', label: 'Absensi' },
-    { key: 'riwayat', label: 'Riwayat' },
+/**
+ * Tab detail pegawai dikelompokkan: grup di baris pertama, sub-tab di baris kedua (dropdown di HP).
+ * Modul riwayat kepegawaian berikutnya (status kerja, pangkat, pendidikan, diklat, …) cukup menambah
+ * sub-tab di grupnya; grup tanpa isi tidak ditampilkan.
+ */
+const GROUPS: {
+    key: string;
+    label: string;
+    tabs: { key: Tab; label: string }[];
+}[] = [
+    {
+        key: 'data-diri',
+        label: 'Data Diri',
+        tabs: [
+            { key: 'profil', label: 'Profil' },
+            { key: 'alamat', label: 'Alamat' },
+        ],
+    },
+    {
+        key: 'kepegawaian',
+        label: 'Kepegawaian',
+        tabs: [{ key: 'penugasan', label: 'Penugasan & Jabatan' }],
+    },
+    {
+        key: 'kehadiran',
+        label: 'Kehadiran',
+        tabs: [
+            { key: 'jadwal', label: 'Jadwal' },
+            { key: 'presensi', label: 'Presensi' },
+        ],
+    },
+    {
+        key: 'akun',
+        label: 'Akun & Perangkat',
+        tabs: [{ key: 'akun', label: 'Akun & Perangkat' }],
+    },
+    {
+        key: 'riwayat',
+        label: 'Riwayat Perubahan',
+        tabs: [{ key: 'riwayat', label: 'Riwayat Perubahan' }],
+    },
 ];
 
 const Dash = () => <span className="text-muted-foreground">–</span>;
@@ -141,10 +182,13 @@ export default function EmployeeShow(props: Props) {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
 
-    const tabs: PageTab[] = TABS.map((t) => ({
-        key: t.key,
-        label: t.label,
-        href: show(employee.id, { query: { tab: t.key } }),
+    const group =
+        GROUPS.find((g) => g.tabs.some((t) => t.key === tab)) ?? GROUPS[0];
+    const current = group.tabs.find((t) => t.key === tab) ?? group.tabs[0];
+    const groupTabs: PageTab[] = GROUPS.map((g) => ({
+        key: g.key,
+        label: g.label,
+        href: show(employee.id, { query: { tab: g.tabs[0].key } }),
     }));
 
     const initials = employee.full_name
@@ -243,18 +287,28 @@ export default function EmployeeShow(props: Props) {
                 )}
 
                 <PageTabs
-                    tabs={tabs}
-                    active={tab}
-                    label="Bagian detail pegawai"
+                    tabs={groupTabs}
+                    active={group.key}
+                    label="Kelompok data pegawai"
                 />
 
-                <section aria-label={TABS.find((t) => t.key === tab)?.label}>
-                    {tab === 'data' && (
+                {group.tabs.length > 1 && (
+                    <SubTabs
+                        employeeId={employee.id}
+                        tabs={group.tabs}
+                        active={current.key}
+                        label={group.label}
+                    />
+                )}
+
+                <section aria-label={current.label}>
+                    {tab === 'profil' && (
                         <DataTab
                             employee={employee}
                             canReveal={can.revealNik}
                         />
                     )}
+                    {tab === 'alamat' && <AddressTab employee={employee} />}
                     {tab === 'penugasan' && (
                         <AssignmentsTab rows={props.assignments} />
                     )}
@@ -270,7 +324,7 @@ export default function EmployeeShow(props: Props) {
                     {tab === 'jadwal' && (
                         <Empty text="Jadwal kerja pegawai akan tampil di sini setelah modul Jadwal aktif." />
                     )}
-                    {tab === 'absensi' && (
+                    {tab === 'presensi' && (
                         <Empty text="Absensi 30 hari terakhir akan tampil di sini setelah modul Absensi aktif." />
                     )}
                     {tab === 'riwayat' && props.history && (
@@ -368,21 +422,6 @@ function DataTab({
                 {employee.phone ? formatPhone(employee.phone) : <Dash />}
             </Item>
             <Item label="Email">{employee.email ?? <Dash />}</Item>
-            <Item label="Alamat">
-                {employee.address || employee.village_label ? (
-                    <>
-                        {employee.address}
-                        {employee.address && employee.village_label && <br />}
-                        {employee.village_label && (
-                            <span className="text-muted-foreground">
-                                {employee.village_label}
-                            </span>
-                        )}
-                    </>
-                ) : (
-                    <Dash />
-                )}
-            </Item>
             <Item label="Status kerja">
                 {employee.employment_status ?? <Dash />}
             </Item>
@@ -393,6 +432,81 @@ function DataTab({
                 </Item>
             )}
         </dl>
+    );
+}
+
+function AddressTab({ employee }: { employee: EmployeeDetail }) {
+    return (
+        <dl className="grid gap-3 rounded-xl border bg-card p-4 sm:p-5">
+            <Item label="Alamat jalan">{employee.address ?? <Dash />}</Item>
+            <Item label="Desa, kecamatan, kab/kota">
+                {employee.village_label ?? <Dash />}
+            </Item>
+        </dl>
+    );
+}
+
+/**
+ * Sub-tab dalam satu grup: deretan tautan di layar lebar, dropdown di HP (hemat ruang, picker
+ * bawaan OS). Keduanya mengubah `?tab=` sehingga posisi bisa dibagikan lewat URL.
+ */
+function SubTabs({
+    employeeId,
+    tabs,
+    active,
+    label,
+}: {
+    employeeId: number;
+    tabs: { key: Tab; label: string }[];
+    active: Tab;
+    label: string;
+}) {
+    const href = (key: Tab) => show(employeeId, { query: { tab: key } }).url;
+
+    return (
+        <>
+            <nav
+                aria-label={`Bagian ${label}`}
+                className="hidden gap-1 border-b sm:flex"
+            >
+                {tabs.map((t) => (
+                    <Link
+                        key={t.key}
+                        href={href(t.key)}
+                        preserveScroll
+                        aria-current={t.key === active ? 'page' : undefined}
+                        className={cn(
+                            '-mb-px border-b-2 px-3 py-2 text-sm transition-colors',
+                            t.key === active
+                                ? 'border-primary font-semibold text-primary'
+                                : 'border-transparent text-muted-foreground hover:text-foreground',
+                        )}
+                    >
+                        {t.label}
+                    </Link>
+                ))}
+            </nav>
+            <div className="sm:hidden">
+                <Label htmlFor="employee-subtab" className="sr-only">
+                    Bagian {label}
+                </Label>
+                <NativeSelect
+                    id="employee-subtab"
+                    value={active}
+                    onChange={(e) =>
+                        router.visit(href(e.target.value as Tab), {
+                            preserveScroll: true,
+                        })
+                    }
+                >
+                    {tabs.map((t) => (
+                        <option key={t.key} value={t.key}>
+                            {t.label}
+                        </option>
+                    ))}
+                </NativeSelect>
+            </div>
+        </>
     );
 }
 

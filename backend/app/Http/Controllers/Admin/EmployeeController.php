@@ -62,7 +62,14 @@ class EmployeeController extends Controller
         'assignment.ended' => 'Penugasan diakhiri',
     ];
 
-    private const TABS = ['data', 'penugasan', 'akun', 'jadwal', 'absensi', 'riwayat'];
+    /**
+     * Sub-tab detail pegawai (kunci URL `?tab=`). Pengelompokannya ditentukan halaman (grup Data Diri,
+     * Kepegawaian, Kehadiran, …); modul riwayat kepegawaian berikutnya menambah kunci di sini.
+     */
+    private const TABS = ['profil', 'alamat', 'penugasan', 'jadwal', 'presensi', 'akun', 'riwayat'];
+
+    /** Kunci lama tetap berlaku agar tautan yang sudah dibagikan tidak rusak. */
+    private const TAB_ALIASES = ['data' => 'profil', 'absensi' => 'presensi'];
 
     #[UsesListing(EmployeeListing::class)]
     public function index(Request $request): Response
@@ -125,7 +132,9 @@ class EmployeeController extends Controller
     {
         Gate::authorize('view', $employee);
         $actor = self::actor($request);
-        $tab = in_array($request->query('tab'), self::TABS, true) ? (string) $request->query('tab') : 'data';
+        $requested = $request->query('tab');
+        $requested = is_string($requested) ? (self::TAB_ALIASES[$requested] ?? $requested) : null;
+        $tab = in_array($requested, self::TABS, true) ? $requested : 'profil';
 
         $employee->load([
             'employmentStatus:id,name',

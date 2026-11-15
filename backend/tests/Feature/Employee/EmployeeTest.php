@@ -241,7 +241,7 @@ test('07 §4 detail pegawai: header, tab, NIK termasking, penugasan aktif', func
     $this->actingAs($this->hrd)->get("/pegawai/{$employee->id}")
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page->component('employees/show')
-            ->where('tab', 'data')
+            ->where('tab', 'profil')
             ->where('employee.full_name', 'Sri Wahyuni')
             ->where('primary.position', 'Staf Gudang')
             ->where('primary.location', 'Gudang Uji')
@@ -252,6 +252,14 @@ test('07 §4 detail pegawai: header, tab, NIK termasking, penugasan aktif', func
 
     $this->actingAs($this->hrd)->get("/pegawai/{$employee->id}?tab=riwayat")
         ->assertInertia(fn (Assert $page) => $page->where('tab', 'riwayat')->has('history.rows'));
+
+    // Kunci tab lama (sebelum dikelompokkan) tetap berlaku; kunci tak dikenal → Profil.
+    $this->actingAs($this->hrd)->get("/pegawai/{$employee->id}?tab=data")
+        ->assertInertia(fn (Assert $page) => $page->where('tab', 'profil'));
+    $this->actingAs($this->hrd)->get("/pegawai/{$employee->id}?tab=absensi")
+        ->assertInertia(fn (Assert $page) => $page->where('tab', 'presensi'));
+    $this->actingAs($this->hrd)->get("/pegawai/{$employee->id}?tab=ngawur")
+        ->assertInertia(fn (Assert $page) => $page->where('tab', 'profil'));
 });
 
 test('06 §4 kepala lokasi & supervisor hanya melihat: tambah/ubah/hapus pegawai 403', function (string $role) {

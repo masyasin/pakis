@@ -41,9 +41,16 @@ class ProcessImportBatchJob implements ShouldQueue
         }
 
         // Audit (`employee.created`, dst.) membaca pelaku dari request; di antrean tidak ada sesi.
+        // Worker berumur panjang: pengguna WAJIB dilepas lagi, kalau tidak job berikutnya di proses
+        // yang sama mewarisi identitas ini (audit salah atribusi).
+        $guard = Auth::guard();
         Auth::setUser($actor);
 
-        $action->handle($batch, $actor);
+        try {
+            $action->handle($batch, $actor);
+        } finally {
+            $guard->forgetUser();
+        }
     }
 
     /** Worker mati/timeout: batch jangan tertahan `processing` selamanya (06 §7.4 → `failed`). */

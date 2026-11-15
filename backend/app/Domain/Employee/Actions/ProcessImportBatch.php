@@ -49,6 +49,9 @@ final class ProcessImportBatch
             if ($locked->valid_rows === 0) {
                 $fail('Tidak ada baris valid untuk diproses.');
             }
+            if ($updateExisting && ! $actor->can('employees.update')) {
+                $fail('Anda tidak punya izin mengubah data pegawai. Hapus centang "Perbarui data yang sudah ada".');
+            }
             if (! Storage::disk(ImportFile::DISK)->exists($locked->stored_path)) {
                 $fail('Berkas asli sudah tidak tersedia. Unggah ulang berkasnya.');
             }

@@ -10,6 +10,7 @@ use App\Domain\Employee\Models\Employee;
 use App\Models\User;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -107,6 +108,13 @@ final class ApplyImportRow
             return ['status' => ImportRowStatus::Skipped, 'employee_id' => $employee->id, 'warnings' => ['Pegawai sudah terdaftar; data tidak diubah (opsi "Perbarui data yang sudah ada" tidak dicentang).', ...$warnings]];
         }
 
+        // `employees.import` tidak otomatis berarti boleh mengubah pegawai: role bisa disusun bebas
+        // (06 §4). Policy yang sama dengan form Ubah, dicek per baris (juga di antrean, karena izin
+        // bisa dicabut setelah proses dimulai).
+        if (! Gate::forUser($actor)->allows('update', $employee)) {
+            throw ValidationException::withMessages(['_row' => 'Anda tidak punya izin mengubah data pegawai; baris ini tidak diperbarui.']);
+        }
+
         $payload = [];
         foreach (self::UPDATABLE as $field) {
             if (array_key_exists($field, $raw) && $data[$field] !== null) {
@@ -172,6 +180,10 @@ final class ApplyImportRow
      */
     private function newRow(User $actor, array $raw, array $data, ?string $nik, array $resolved): array
     {
+        if (! Gate::forUser($actor)->allows('create', Employee::class)) {
+            throw ValidationException::withMessages(['_row' => 'Anda tidak punya izin menambah pegawai; baris ini tidak dibuat.']);
+        }
+
         $ids = $data['ids'];
 
         $supervisorId = $ids['supervisor_employee_id'] ?? null;

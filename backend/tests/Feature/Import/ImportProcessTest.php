@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\AssertsIdor;
 use Tests\Support\EmployeeWorld;
 
@@ -320,7 +321,7 @@ test('SEC-051 ImportProcess: unduh galat .xlsx — baris galat + kolom pesan, NI
 test('SEC-033 ImportProcess: batch orang lain → 404; pegawai cocok di luar scope tidak diubah; kepala lokasi/supervisor ditolak', function () {
     $self = $this->world->employee($this->world->gudang);
     $role = Role::query()->create(['name' => 'hrd_lokasi', 'label' => 'HRD Lokasi', 'guard_name' => 'web', 'data_scope' => DataScope::Location]);
-    $role->givePermissionTo(['employees.view', 'employees.import']);
+    $role->givePermissionTo(['employees.view', 'employees.update', 'employees.import']);
     $local = User::factory()->withTwoFactor()->create(['employee_id' => $self->id])->assignRole('hrd_lokasi');
 
     $others = procValidated($this->hrd, [procRow('Sari Salah', ['lokasi' => 'XX-99'])]);
@@ -371,4 +372,48 @@ test('E2E-08 ImportProcess: 30 baris (5 galat) → perbaiki pemetaan → proses 
 
     expect([$again->created_rows, $again->skipped_rows, $again->error_rows])->toBe([0, 25, 5])
         ->and(Employee::query()->count())->toBe(25);
+});
+
+test('06 §4 ImportProcess: role kustom dengan employees.import saja tidak bisa membuat/mengubah pegawai lewat impor', function () {
+    $role = Role::query()->create(['name' => 'importir_saja', 'label' => 'Importir saja', 'guard_name' => 'web', 'data_scope' => DataScope::All]);
+    $role->givePermissionTo(['employees.view', 'employees.import']);
+    $importer = User::factory()->withTwoFactor()->create()->assignRole('importir_saja');
+    $old = $this->world->employee(attributes: ['employee_number' => 'LAMA-09', 'full_name' => 'Nama Lama']);
+
+    // Opsi "perbarui" ditolak sejak awal; batch tetap bisa diproses ulang tanpa opsi.
+    $batch = procValidated($importer, [procRow('Nama Diubah', ['no' => 'LAMA-09']), procRow('Pegawai Baru Ilegal')]);
+    $this->actingAs($importer)->post("/impor/{$batch->id}/proses", ['update_existing' => true])->assertSessionHasErrors('status');
+    $this->actingAs($importer)->get("/impor/{$batch->id}/baris")->assertInertia(fn (Assert $page) => $page->where('can.update_existing', false));
+
+    $batch = procRun($importer, $batch->refresh());
+    $rows = procRows($batch);
+    expect($rows[0]->status)->toBe(ImportRowStatus::Skipped)
+        ->and($rows[1]->status)->toBe(ImportRowStatus::Invalid)
+        ->and($rows[1]->errors['_row'][0])->toContain('tidak punya izin menambah')
+        ->and($old->refresh()->full_name)->toBe('Nama Lama')
+        ->and(Employee::query()->where('full_name', 'Pegawai Baru Ilegal')->exists())->toBeFalse();
+
+    // Izin dicabut setelah proses dimulai (antrean): dicek ulang per baris.
+    $role->givePermissionTo('employees.update');
+    $importer->refresh();
+    $queued = procValidated($importer, [procRow('Nama Diubah', ['no' => 'LAMA-09'])]);
+    $queued->forceFill(['status' => ImportStatus::Processing, 'mapping' => [...$queued->mapping, 'options' => ['update_existing' => true]]])->save();
+    $role->revokePermissionTo('employees.update');
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    (new ProcessImportBatchJob($queued->id, $importer->id))->handle(app(ProcessImportBatch::class));
+    expect(procRows($queued->refresh())[0]->errors['_row'][0])->toContain('tidak punya izin mengubah')
+        ->and($old->refresh()->full_name)->toBe('Nama Lama');
+});
+
+test('T-028 ImportProcess: job antrean melepas identitas pengunggah setelah selesai (worker dipakai ulang)', function () {
+    Queue::fake();
+    $batch = procValidated($this->hrd, [procRow('Andi Pratama')]);
+    $batch->forceFill(['status' => ImportStatus::Processing])->save();
+    auth()->forgetGuards();
+
+    (new ProcessImportBatchJob($batch->id, $this->hrd->id))->handle(app(ProcessImportBatch::class));
+
+    expect($batch->refresh()->status)->toBe(ImportStatus::Completed)
+        ->and(AuditLog::query()->where('event', 'employee.created')->value('user_id'))->toBe($this->hrd->id)
+        ->and(auth()->guard()->user())->toBeNull();
 });

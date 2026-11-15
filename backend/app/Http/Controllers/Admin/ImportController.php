@@ -162,6 +162,7 @@ class ImportController extends Controller
                 'process' => $batch->status->canProcess() && $batch->valid_rows > 0 && Storage::disk(ImportFile::DISK)->exists($batch->stored_path),
                 'download_errors' => $batch->status->hasErrorReport() && $batch->error_rows > 0,
                 'view_employee' => $request->user()?->can('employees.view') ?? false,
+                'update_existing' => $request->user()?->can('employees.update') ?? false,
             ],
         ]);
     }

@@ -66,6 +66,7 @@ type Props = ListingProps<ImportRowItem> & {
         process: boolean;
         download_errors: boolean;
         view_employee: boolean;
+        update_existing: boolean;
     };
 };
 
@@ -537,7 +538,8 @@ export default function ImportRows({
                     <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3">
                         <Checkbox
                             id="update-existing"
-                            checked={updateExisting}
+                            checked={updateExisting && can.update_existing}
+                            disabled={!can.update_existing}
                             onCheckedChange={(v) =>
                                 setUpdateExisting(v === true)
                             }
@@ -553,6 +555,8 @@ export default function ImportRows({
                                 dengan isi sel yang tidak kosong. Bila tidak
                                 dicentang, baris itu dilewati. Lokasi & jabatan
                                 pegawai lama tidak pernah diubah otomatis.
+                                {!can.update_existing &&
+                                    ' Anda tidak punya izin mengubah data pegawai, jadi opsi ini tidak tersedia.'}
                             </p>
                         </div>
                     </div>
@@ -565,7 +569,11 @@ export default function ImportRows({
                             onClick={() =>
                                 router.post(
                                     process(batch.id).url,
-                                    { update_existing: updateExisting },
+                                    {
+                                        update_existing:
+                                            updateExisting &&
+                                            can.update_existing,
+                                    },
                                     {
                                         onStart: () => setSubmitting(true),
                                         onFinish: () => {

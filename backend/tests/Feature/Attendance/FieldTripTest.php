@@ -180,6 +180,30 @@ test('SEC-033 Kepala Lokasi: pegawai lokasi lain → galat umum; tugas lokasi la
     $this->actingAs($actor)->post("/tugas-luar-kota/{$mixed->id}/batalkan")->assertForbidden();
 });
 
+test('SEC-031 maker-checker: tidak bisa membuat, mengubah, atau membatalkan tugas yang memuat diri sendiri', function () {
+    $kepala = $this->world->employee($this->world->gudang, attributes: ['full_name' => 'Kepala Gudang']);
+    $staf = $this->world->employee($this->world->gudang, $kepala);
+    $actor = $this->world->actor('kepala_lokasi', $kepala);
+
+    $this->actingAs($actor)->post('/tugas-luar-kota', tripPayload([$staf, $kepala], ['attendance_rule' => 'anywhere']))
+        ->assertSessionHasErrors(['employee_ids' => 'Tugas luar kota untuk diri sendiri harus dibuat atau disetujui orang lain.']);
+    expect(FieldTrip::query()->count())->toBe(0);
+
+    // Dibuat HRD untuk kepala + staf: kepala tidak bisa mengubah/membatalkannya, HRD bisa.
+    $this->actingAs($this->hrd)->post('/tugas-luar-kota', tripPayload([$kepala, $staf]))->assertSessionHasNoErrors();
+    $trip = FieldTrip::query()->sole();
+    app()->forgetScopedInstances();
+    $this->actingAs($actor)->get("/tugas-luar-kota/{$trip->id}/ubah")->assertForbidden();
+    $this->actingAs($actor)->put("/tugas-luar-kota/{$trip->id}", tripPayload([$staf]))->assertForbidden();
+    $this->actingAs($actor)->post("/tugas-luar-kota/{$trip->id}/batalkan")->assertForbidden();
+    expect($trip->fresh()->status)->toBe(FieldTripStatus::Approved)
+        ->and($trip->fresh()->employeeIds())->toEqualCanonicalizing([$kepala->id, $staf->id]);
+
+    app()->forgetScopedInstances();
+    $this->actingAs($this->hrd)->post("/tugas-luar-kota/{$trip->id}/batalkan")->assertRedirect();
+    expect($trip->fresh()->status)->toBe(FieldTripStatus::Cancelled);
+});
+
 test('06 §4 izin: administrator hanya melihat; pegawai tidak punya menu', function () {
     $admin = User::factory()->withTwoFactor()->create()->assignRole('administrator');
     $this->useRealPermissions();

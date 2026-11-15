@@ -7,7 +7,7 @@ Model: **RBAC dinamis** (Spatie) + **scope data per role** + **Policy per resour
 1. **Least privilege.** Role baru dibuat tanpa permission.
 2. **Permission ≠ scope.** Permission menentukan *boleh melakukan apa*, sedangkan `data_scope` menentukan *terhadap data siapa*.
 3. **Cek di backend per resource.** Menyembunyikan menu hanya untuk UX. Data di luar scope menghasilkan **404**, bukan 403 (SEC-033).
-4. **Maker-checker.** Tidak ada yang bisa menyetujui koreksi absennya sendiri (SEC-031).
+4. **Maker-checker.** Tidak ada yang bisa menyetujui koreksi absennya sendiri, atau membuat/mengubah/membatalkan tugas luar kota yang memuat dirinya sendiri (SEC-031).
 5. **Super Admin (Sintech) terpisah dari Owner.** Super Admin hanya untuk dukungan teknis. Owner bisa menonaktifkan akun Super Admin kapan saja, dan semua aksinya tercatat (SEC-009).
 6. **Aksi sensitif butuh konfirmasi ulang password** (`password.confirm`, berlaku `security.password_confirm_minutes`): reset password pengguna, reset MFA, ubah role/permission, offboarding, ubah setting grup `security`, export audit.
 
@@ -176,7 +176,7 @@ stateDiagram-v2
 | `pending` | Setujui / Tolak (catatan wajib) | `field_trips.approve` mengikuti §6 — bagian 2 | `approved` / `rejected` |
 | `rejected`/`cancelled` | — | — | final |
 
-Tugas terlihat bila **salah satu** pegawainya dalam scope pelaku (selain itu 404); mengubah/membatalkan butuh **semua** pegawainya dalam scope (selain itu 403), agar atasan tidak mengubah tugas pegawai lokasi lain.
+Tugas terlihat bila **salah satu** pegawainya dalam scope pelaku (selain itu 404); mengubah/membatalkan butuh **semua** pegawainya dalam scope (selain itu 403), agar atasan tidak mengubah tugas pegawai lokasi lain. **Maker-checker (SEC-031, keputusan Mas 16 Nov 2026):** pelaku tidak bisa membuat tugas yang memuat dirinya sendiri (galat validasi) dan tidak bisa mengubah/membatalkan tugas yang memuat dirinya (403), karena tugas yang dibuat langsung berlaku; tugas untuk diri sendiri dibuat orang lain, atau diajukan dari Pakis Pro dan disetujui orang lain (bagian 2).
 
 ### 7.3 Pegawai
 `active` → **Nonaktifkan** (`employees.offboard`) → `inactive` → **Aktifkan kembali** (`employees.offboard`, wajib penugasan baru) → `active`.

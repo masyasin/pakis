@@ -69,7 +69,7 @@
 | ID | Kontrol | Verifikasi |
 |---|---|---|
 | SEC-030 | Nomor dokumen hanya dari server (BR-025, ADR-009). Field `number`/`employee_number` tidak diterima dari request (tidak ada di `$fillable` input). | Test mass assignment |
-| SEC-031 | Maker-checker koreksi: tidak bisa menyetujui milik sendiri (`06` §6). | Test `CORRECTION_SELF_APPROVAL` |
+| SEC-031 | Maker-checker koreksi: tidak bisa menyetujui milik sendiri (`06` §6). Tugas luar kota (langsung berlaku): tidak bisa membuat/mengubah/membatalkan tugas yang memuat diri sendiri (`06` §7.2a). | Test `CORRECTION_SELF_APPROVAL`; `FieldTripTest` SEC-031 |
 | SEC-032 | Listing hanya memproses filter/sort di allowlist spec. Tidak ada `orderBy`/`where` dari input mentah. Query builder/Eloquent saja, tanpa interpolasi string SQL. | Test kontrak listing dengan parameter jahat (`sort=password`, `filter[role]=1 OR 1=1`) |
 | SEC-033 | Semua resource ber-scope di-resolve lewat DataScope. Di luar scope → 404. **Test IDOR wajib** untuk setiap route `show/update/destroy/approve` yang menyentuh data pegawai. | Matriks test otorisasi (`10` §4) |
 | SEC-034 | Mass assignment: Form Request + `$request->validated()` + DTO/Action. Kolom `is_system`, `status`, `must_change_password`, `employee_number`, `nik_hash`, `created_by` tidak bisa diisi dari request. | Test |

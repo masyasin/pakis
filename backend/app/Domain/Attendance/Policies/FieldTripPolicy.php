@@ -12,7 +12,7 @@ use App\Support\Time\DisplayTime;
  * Tugas luar kota (06 §7.2a), didaftarkan di AttendanceServiceProvider. Melihat = binding
  * ber-scope (salah satu pegawai dalam scope). Mengubah/membatalkan
  * butuh SEMUA pegawai tugas dalam scope pelaku, agar atasan tidak mengubah tugas yang juga
- * mengikat pegawai lokasi/tim lain.
+ * mengikat pegawai lokasi/tim lain, dan tidak pernah tugas yang memuat dirinya sendiri (SEC-031).
  */
 class FieldTripPolicy
 {
@@ -33,6 +33,11 @@ class FieldTripPolicy
     private function manages(User $user, FieldTrip $trip): bool
     {
         if (! $user->can('field_trips.manage')) {
+            return false;
+        }
+
+        // Maker-checker (SEC-031): tugas yang memuat diri sendiri hanya diubah/dibatalkan orang lain.
+        if ($user->employee_id !== null && in_array((int) $user->employee_id, $trip->employeeIds(), true)) {
             return false;
         }
 

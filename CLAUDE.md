@@ -19,6 +19,9 @@ PAKIS ONE adalah sistem internal **CV Pakis Jaya Abadi** (distributor pestisida 
 | Test yang diharapkan | `docs/10-TEST-PLAN.md` |
 | Stack, versi, struktur, ADR | `docs/03-ARCHITECTURE.md` |
 | Keputusan yang belum final | `docs/12-OPEN-QUESTIONS.md` |
+| Kontrak lintas modul Paket A–G (ADR-101+, event akuntansi, penomoran, role, state machine) | `docs/14-ROADMAP-LENGKAP.md` |
+| Paket A — Master & Gudang | `docs/15-PAKET-A-MASTER-GUDANG.md` + `TASKS_PAKET_A.md` |
+| Paket B — Penjualan & Uang Aman | `docs/16-PAKET-B-PENJUALAN-UANG.md` + `TASKS_PAKET_B.md` |
 
 `docs/reference/` (konsep v1.4) hanya bacaan latar. **Jangan membangun fitur dari sana tanpa task.**
 
@@ -89,6 +92,8 @@ Berhenti dan tanyakan ke manusia, **jangan menebak**, bila:
 - Perlu mengubah skema DB, route/API, permission, kunci setting, atau transisi status yang tidak disebut task. Perubahan dicatat dulu di dokumen sumber kebenaran + `12-OPEN-QUESTIONS.md`.
 - Task terblokir OQ (kolom "Task terblokir" di `12`).
 - Test keamanan/otorisasi/kontrak listing gagal dan perbaikannya menuntut melonggarkan kontrol.
+- Diminta mengerjakan task dari `TASKS_ROADMAP.md`. Itu outline, **bukan** task siap eksekusi; hanya task di `TASKS.md` / `TASKS_PAKET_*.md` yang boleh dikerjakan.
+- Akan memulai Paket A sebelum exit gate Fase 0 + 0,5 lulus dan checklist penyelarasan `15` §0 dicentang, atau Paket B sebelum exit gate Paket A lulus dan checklist `16` §0 dicentang. Temuan penyelarasan yang masih terbuka ada di `12` bagian "Penyelarasan Paket A–B".
 
 Catat pertanyaan di `Implementasi_Plan.md` §6.3.
 

@@ -337,9 +337,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/04-DATABASE.md` §2.8, `docs/07-UI-SPEC.md` §3.4 (`positions`)
 - File: migration, `app/Domain/Organization/...Position...`, `Listings/PositionListing`, `pages/Positions/{Index,Form}.tsx`
 - Kriteria penerimaan:
-  - [ ] Mode absen default tersimpan & tampil dengan penjelasan
-  - [ ] Atasan jabatan tidak membentuk siklus
-  - [ ] Listing + ekspor lolos test kontrak
+  - [x] Mode absen default tersimpan & tampil dengan penjelasan
+  - [x] Atasan jabatan tidak membentuk siklus
+  - [x] Listing + ekspor lolos test kontrak
 - Verifikasi: `php artisan test --filter=Position`
 - Di luar lingkup: —
 

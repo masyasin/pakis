@@ -23,4 +23,5 @@ return [
     'notifications', // T-029
     'locations', // T-021
     'departments', // T-022
+    'positions', // T-023
 ];

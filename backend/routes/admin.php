@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MfaSetupController;
+use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
@@ -145,6 +146,19 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('departemen/{department}/ubah', [DepartmentController::class, 'edit'])->whereNumber('department')->name('departments.edit');
         Route::put('departemen/{department}', [DepartmentController::class, 'update'])->whereNumber('department')->name('departments.update');
         Route::delete('departemen/{department}', [DepartmentController::class, 'destroy'])->whereNumber('department')->name('departments.destroy');
+    });
+
+    // Jabatan (05 §4.5, FR-024, BR-042). `baru` & `ekspor` sebelum `{position}`. Tidak ber-scope data.
+    Route::middleware('can:positions.view')->group(function () {
+        Route::get('jabatan', [PositionController::class, 'index'])->name('positions.index');
+        Route::get('jabatan/ekspor', [PositionController::class, 'export'])->name('positions.export');
+    });
+    Route::middleware('can:positions.manage')->group(function () {
+        Route::get('jabatan/baru', [PositionController::class, 'create'])->name('positions.create');
+        Route::post('jabatan', [PositionController::class, 'store'])->name('positions.store');
+        Route::get('jabatan/{position}/ubah', [PositionController::class, 'edit'])->whereNumber('position')->name('positions.edit');
+        Route::put('jabatan/{position}', [PositionController::class, 'update'])->whereNumber('position')->name('positions.update');
+        Route::delete('jabatan/{position}', [PositionController::class, 'destroy'])->whereNumber('position')->name('positions.destroy');
     });
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.

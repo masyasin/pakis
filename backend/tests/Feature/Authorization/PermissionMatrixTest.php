@@ -47,11 +47,12 @@ const REPRESENTATIVE = [
     'locations.manage' => ['GET', '/lokasi/baru'],
     'departments.view' => ['GET', '/departemen'],
     'departments.manage' => ['GET', '/departemen/baru'],
+    'positions.view' => ['GET', '/jabatan'],
+    'positions.manage' => ['GET', '/jabatan/baru'],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
-    'positions.view' => 'T-023', 'positions.manage' => 'T-023',
     'employees.view' => 'T-024', 'employees.create' => 'T-024', 'employees.update' => 'T-024', 'employees.delete' => 'T-024',
     'employees.view_sensitive' => 'T-024', 'employees.offboard' => 'T-026', 'employees.import' => 'T-027', 'employees.export' => 'T-024',
     'assignments.view' => 'T-025', 'assignments.manage' => 'T-025',

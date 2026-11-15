@@ -5,6 +5,7 @@ use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
+use App\Domain\Organization\Listings\PositionListing;
 
 /*
  * Konfigurasi TEKNIS PAKIS ONE yang bukan secret dan bukan parameter bisnis.
@@ -36,6 +37,7 @@ return [
         'users' => UserListing::class,
         'locations' => LocationListing::class,
         'departments' => DepartmentListing::class,
+        'positions' => PositionListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

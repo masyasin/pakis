@@ -107,7 +107,7 @@ Catatan: `administrator` sengaja **tidak** bisa membuka NIK, mengubah data pegaw
 | `data_scope` | Pegawai yang terlihat | Diterapkan pada |
 |---|---|---|
 | `all` | Semua | — |
-| `location` | Pegawai yang penugasan utama aktifnya di **lokasi pengguna**: (a) lokasi penugasan utama pengguna, dan (b) lokasi yang `head_employee_id` = pegawai pengguna. Untuk `attendance_days` dipakai snapshot `attendance_days.location_id`. | employees, assignments, devices (lewat user→employee), schedules, attendance_days, attendance_corrections, locations (hanya lokasinya), shifts (hanya yang dipakai pegawai di lokasinya), users (lewat `users.employee_id`; akun tanpa pegawai hanya terlihat scope `all`, keputusan Mas 15 Nov 2026) |
+| `location` | Pegawai yang punya penugasan aktif (utama **atau tambahan**) di **lokasi pengguna**: (a) lokasi penugasan aktif pengguna (utama + tambahan/rangkap, BR-051, keputusan Mas 15 Nov 2026), dan (b) lokasi yang `head_employee_id` = pegawai pengguna. Untuk `attendance_days` dipakai snapshot `attendance_days.location_id`. | employees, assignments, devices (lewat user→employee), schedules, attendance_days, attendance_corrections, locations (hanya lokasinya), shifts (hanya yang dipakai pegawai di lokasinya), users (lewat `users.employee_id`; akun tanpa pegawai hanya terlihat scope `all`, keputusan Mas 15 Nov 2026) |
 | `team` | Diri sendiri + bawahan langsung & tidak langsung lewat `assignments.supervisor_employee_id` (penugasan aktif, CTE rekursif maks 5 tingkat) | sama dengan baris atas |
 | `self` | Diri sendiri | API mobile milik sendiri |
 

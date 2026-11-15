@@ -10,7 +10,6 @@ import {
     Info,
     KeyRound,
     MapPin,
-    Network,
     Smartphone,
     UserPlus,
     UserRound,
@@ -25,6 +24,8 @@ import {
     Timeline,
     TimelineItem,
 } from '@/components/employee/detail-ui';
+import { AssignmentsPanel } from '@/components/employee/assignments-panel';
+import type { AssignmentRow } from '@/components/employee/assignments-panel';
 import { EmployeeHero } from '@/components/employee/employee-hero';
 import { EmployeeTabs, tabLabel } from '@/components/employee/employee-tabs';
 import type { EmployeeTab } from '@/components/employee/employee-tabs';
@@ -82,19 +83,6 @@ type EmployeeDetail = {
     status: 'active' | 'inactive';
 };
 
-type AssignmentRow = {
-    id: number;
-    position: string | null;
-    department: string | null;
-    location: string | null;
-    supervisor: { id: number; name: string } | null;
-    effective_mode_label: string | null;
-    mode_from_position: boolean;
-    is_primary: boolean;
-    start_date: string;
-    end_date: string | null;
-};
-
 type AccountInfo = {
     id: number;
     username: string;
@@ -145,10 +133,17 @@ type Props = {
         delete: boolean;
         revealNik: boolean;
         createAccount: boolean;
+        manageAssignments: boolean;
     };
     deleteBlockers: string[];
     history: HistoryPage | null;
     historyEvents: { value: string; label: string }[];
+    modes: {
+        value: 'location' | 'any_location' | 'anywhere';
+        label: string;
+        help: string;
+    }[];
+    mutationBackdateDays: number;
 };
 
 /** Detail pegawai (07 §4 "Pegawai (detail)", FR-025). Data di luar scope tidak pernah sampai sini (404). */
@@ -233,7 +228,14 @@ export default function EmployeeShow(props: Props) {
                     )}
                     {tab === 'alamat' && <AddressTab employee={employee} />}
                     {tab === 'penugasan' && (
-                        <AssignmentsTab rows={props.assignments} />
+                        <AssignmentsPanel
+                            employeeId={employee.id}
+                            rows={props.assignments}
+                            canManage={can.manageAssignments}
+                            modes={props.modes}
+                            today={today}
+                            backdateDays={props.mutationBackdateDays}
+                        />
                     )}
                     {tab === 'jadwal' && (
                         <EmptyPanel
@@ -433,89 +435,6 @@ function AddressTab({ employee }: { employee: EmployeeDetail }) {
                 />
             </FieldGrid>
         </DetailCard>
-    );
-}
-
-function AssignmentsTab({ rows }: { rows: AssignmentRow[] }) {
-    if (rows.length === 0) {
-        return (
-            <EmptyPanel
-                icon={Network}
-                title="Belum ada penugasan"
-                text="Penugasan menentukan jabatan, lokasi tugas, dan atasan pegawai."
-            />
-        );
-    }
-
-    return (
-        <DetailCard title="Riwayat penugasan" icon={Network}>
-            <Timeline>
-                {rows.map((a, i) => (
-                    <TimelineItem
-                        key={a.id}
-                        active={a.end_date === null}
-                        last={i === rows.length - 1}
-                    >
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="font-semibold">
-                                {a.position ?? '–'}
-                            </span>
-                            {a.department && (
-                                <span className="text-muted-foreground">
-                                    · {a.department}
-                                </span>
-                            )}
-                            {a.is_primary ? (
-                                <Badge variant="secondary">Utama</Badge>
-                            ) : (
-                                <Badge variant="outline">Tambahan</Badge>
-                            )}
-                            {a.end_date === null && (
-                                <StatusBadge
-                                    status="assignment.active"
-                                    label="Berjalan"
-                                    tone="success"
-                                />
-                            )}
-                        </div>
-                        <dl className="mt-2 grid gap-x-6 gap-y-1 text-muted-foreground sm:grid-cols-2 lg:grid-cols-4">
-                            <TimelineFact label="Lokasi" value={a.location} />
-                            <TimelineFact
-                                label="Atasan"
-                                value={a.supervisor?.name ?? 'Tidak ada'}
-                            />
-                            <TimelineFact
-                                label="Mode absen"
-                                value={
-                                    a.effective_mode_label
-                                        ? `${a.effective_mode_label}${a.mode_from_position ? ' (ikut jabatan)' : ''}`
-                                        : null
-                                }
-                            />
-                            <TimelineFact
-                                label="Periode"
-                                value={`${formatDate(a.start_date)} – ${a.end_date ? formatDate(a.end_date) : 'sekarang'}`}
-                            />
-                        </dl>
-                    </TimelineItem>
-                ))}
-            </Timeline>
-        </DetailCard>
-    );
-}
-
-function TimelineFact({
-    label,
-    value,
-}: {
-    label: string;
-    value: string | null;
-}) {
-    return (
-        <div className="min-w-0">
-            <dt className="text-xs">{label}</dt>
-            <dd className="truncate text-foreground/85">{value ?? '–'}</dd>
-        </div>
     );
 }
 

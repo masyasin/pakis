@@ -60,6 +60,12 @@ class EmployeePolicy
         return $user->can('employees.view_sensitive') && $this->scope->allows($user, $employee->id);
     }
 
+    /** Mutasi / tambah penugasan tambahan untuk pegawai ini (T-025). */
+    public function manageAssignments(User $user, Employee $employee): bool
+    {
+        return $user->can('assignments.manage') && $this->scope->allows($user, $employee->id);
+    }
+
     /**
      * Buat akun dari pegawai: izin akun (`users.create`) + scope `all`. Menautkan akun ke pegawai
      * menentukan data yang terlihat akun itu; pelaku ber-scope sempit bisa memilih pegawai yang

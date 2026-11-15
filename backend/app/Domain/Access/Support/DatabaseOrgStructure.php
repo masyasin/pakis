@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
  * `start_date ≤ hari ini` dan (`end_date` kosong atau ≥ hari ini), memakai tanggal LOKAL
  * (`general.timezone`) karena tanggal penugasan adalah tanggal kalender kantor.
  *
- * TODO(T-025): test integrasi dengan tabel nyata (T-019 menguji aturan scope lewat FakeOrgStructure).
+ * Penugasan tambahan (`is_primary = false`) ikut scope `location` dua arah (BR-051): pegawai yang
+ * merangkap di lokasi X terlihat oleh scope X, dan pemegang scope lokasi yang merangkap di X ikut
+ * melihat pegawai X. Diuji dengan tabel nyata di tests/Feature/Employee (T-024, T-025).
  */
 final class DatabaseOrgStructure implements OrgStructure
 {
@@ -20,6 +22,12 @@ final class DatabaseOrgStructure implements OrgStructure
         $location = $this->active()->where('employee_id', $employeeId)->where('is_primary', true)->value('location_id');
 
         return $location === null ? null : (int) $location;
+    }
+
+    public function assignedLocationsOf(int $employeeId): array
+    {
+        return array_values($this->active()->where('employee_id', $employeeId)
+            ->distinct()->pluck('location_id')->map(fn ($id): int => (int) $id)->values()->all());
     }
 
     public function locationsHeadedBy(int $employeeId): array
@@ -33,7 +41,6 @@ final class DatabaseOrgStructure implements OrgStructure
     public function employeesAtLocations(array $locationIds): array
     {
         return array_values($this->active()
-            ->where('is_primary', true)
             ->whereIn('location_id', $locationIds)
             ->distinct()
             ->pluck('employee_id')->map(fn ($id): int => (int) $id)->values()->all());

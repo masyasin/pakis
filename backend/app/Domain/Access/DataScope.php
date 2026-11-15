@@ -14,7 +14,8 @@ use InvalidArgumentException;
  * lookup ber-scope, dan route-model binding (ScopedRouteBinding) → data di luar scope = 404.
  *
  * - `all`      : semua pegawai.
- * - `location` : pegawai berpenugasan utama aktif di lokasi tugas pengguna + lokasi yang ia kepalai.
+ * - `location` : pegawai bertugas (utama/tambahan) di lokasi tugas pengguna (utama/tambahan) + lokasi
+ *                 yang ia kepalai (BR-051: rangkap berlaku dua arah).
  * - `team`     : diri + bawahan langsung & tidak langsung, maksimal 5 tingkat.
  * - `self`     : diri sendiri.
  * Pengguna tanpa pegawai dengan scope selain `all` tidak melihat data apa pun.
@@ -131,11 +132,7 @@ final class DataScope
     /** @return list<int> */
     private function location(int $self): array
     {
-        $locations = $this->org->locationsHeadedBy($self);
-        $own = $this->org->primaryLocationOf($self);
-        if ($own !== null) {
-            $locations[] = $own;
-        }
+        $locations = [...$this->org->locationsHeadedBy($self), ...$this->org->assignedLocationsOf($self)];
 
         $ids = $locations === [] ? [] : $this->org->employeesAtLocations(array_values(array_unique($locations)));
 

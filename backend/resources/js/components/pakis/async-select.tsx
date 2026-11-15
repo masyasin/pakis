@@ -27,6 +27,9 @@ type Props = {
  * Select dengan pencarian ke server (07 §2, filter relasi R). Combobox ARIA tanpa dependency:
  * ↑/↓ memilih, Enter mengambil, Esc menutup, Backspace di isian kosong menghapus pilihan terakhir.
  * Opsi maksimal 20 dari server (BR-006), jadi tidak pernah memuat seluruh tabel.
+ *
+ * Mode tunggal tampil seperti select biasa: label terpilih ada DI DALAM kolom (+ tombol hapus);
+ * saat kolom difokus untuk mencari, label itu menjadi placeholder. Mode banyak memakai chip.
  */
 export function AsyncSelect({
     source,
@@ -140,6 +143,11 @@ export function AsyncSelect({
         }
     };
 
+    const selectedLabel =
+        !multiple && value.length > 0
+            ? (cachedLabel(source, value[0]) ?? `#${value[0]}`)
+            : null;
+
     const status = failed
         ? 'Gagal memuat pilihan. Coba lagi.'
         : loading && options.length === 0
@@ -152,7 +160,7 @@ export function AsyncSelect({
 
     return (
         <div className="relative grid gap-2">
-            {value.length > 0 && (
+            {multiple && value.length > 0 && (
                 <ul className="flex flex-wrap gap-1.5" aria-label="Terpilih">
                     {value.map((item) => {
                         const label = cachedLabel(source, item) ?? `#${item}`;
@@ -197,8 +205,14 @@ export function AsyncSelect({
                     }
                     autoComplete="off"
                     disabled={disabled}
-                    placeholder={placeholder}
-                    value={query}
+                    placeholder={
+                        open && selectedLabel ? selectedLabel : placeholder
+                    }
+                    value={open ? query : (selectedLabel ?? query)}
+                    className={cn(
+                        selectedLabel && 'pr-9',
+                        selectedLabel && !open && 'font-medium text-foreground',
+                    )}
                     onChange={(e) => {
                         setQuery(e.target.value);
                         setOpen(true);
@@ -207,11 +221,28 @@ export function AsyncSelect({
                     onBlur={() => setOpen(false)}
                     onKeyDown={onKeyDown}
                 />
-                {loading && (
+                {loading ? (
                     <Loader2
                         className="absolute top-1/2 right-2.5 size-4 -translate-y-1/2 animate-spin text-muted-foreground"
                         aria-hidden="true"
                     />
+                ) : (
+                    selectedLabel &&
+                    !disabled && (
+                        <button
+                            type="button"
+                            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1 text-muted-foreground hover:bg-muted hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                            aria-label={`Hapus pilihan ${selectedLabel}`}
+                            // mousedown: jangan sampai input kehilangan fokus lalu membuka daftar.
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => {
+                                onChange([]);
+                                setQuery('');
+                            }}
+                        >
+                            <X className="size-4" aria-hidden="true" />
+                        </button>
+                    )
                 )}
             </div>
 
@@ -245,9 +276,12 @@ export function AsyncSelect({
                                     isSelected(option) && 'font-medium',
                                 )}
                             >
-                                <span className="truncate">{option.label}</span>
+                                {/* Nama lebih penting daripada keterangan: keterangan yang dipotong bila sempit. */}
+                                <span className="max-w-[70%] shrink-0 truncate">
+                                    {option.label}
+                                </span>
                                 {option.hint && (
-                                    <span className="truncate text-xs text-muted-foreground">
+                                    <span className="min-w-0 truncate text-right text-xs text-muted-foreground">
                                         {option.hint}
                                     </span>
                                 )}

@@ -13,6 +13,14 @@ interface OrgStructure
     public function primaryLocationOf(int $employeeId): ?int;
 
     /**
+     * Lokasi semua penugasan aktif pegawai: utama + tambahan (BR-051, keputusan Mas 15 Nov 2026:
+     * pegawai yang merangkap ikut memegang scope `location` lokasi rangkapnya).
+     *
+     * @return list<int>
+     */
+    public function assignedLocationsOf(int $employeeId): array;
+
+    /**
      * Lokasi yang dikepalai pegawai (`locations.head_employee_id`).
      *
      * @return list<int>
@@ -20,7 +28,7 @@ interface OrgStructure
     public function locationsHeadedBy(int $employeeId): array;
 
     /**
-     * Pegawai yang penugasan utama aktifnya di salah satu lokasi ini.
+     * Pegawai yang punya penugasan aktif (utama ATAU tambahan) di salah satu lokasi ini.
      *
      * @param  list<int>  $locationIds
      * @return list<int>

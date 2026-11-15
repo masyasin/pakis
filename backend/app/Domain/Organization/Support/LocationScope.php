@@ -76,12 +76,7 @@ final class LocationScope
             return [];
         }
 
-        $ids = $this->org->locationsHeadedBy($self);
-        $own = $this->org->primaryLocationOf($self);
-        if ($own !== null) {
-            $ids[] = $own;
-        }
-
-        return array_values(array_unique($ids));
+        // Lokasi tugas utama + tambahan (rangkap, BR-051) + lokasi yang dikepalai.
+        return array_values(array_unique([...$this->org->locationsHeadedBy($self), ...$this->org->assignedLocationsOf($self)]));
     }
 }

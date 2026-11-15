@@ -3,7 +3,9 @@
 namespace App\Providers;
 
 use App\Domain\Employee\Lookup\EmployeeLookup;
+use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Employee\Policies\AssignmentPolicy;
 use App\Domain\Employee\Policies\EmployeePolicy;
 use App\Domain\Employee\Support\NikCipher;
 use App\Support\Lookup\LookupRegistry;
@@ -30,5 +32,6 @@ class EmployeeServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Gate::policy(Employee::class, EmployeePolicy::class);
+        Gate::policy(Assignment::class, AssignmentPolicy::class);
     }
 }

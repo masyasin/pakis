@@ -57,12 +57,13 @@ const REPRESENTATIVE = [
     'employees.delete' => ['DELETE', '/pegawai/{employee}'],
     'employees.view_sensitive' => ['POST', '/pegawai/{employee}/nik'],
     'employees.export' => ['GET', '/pegawai/ekspor'],
+    'assignments.view' => ['GET', '/penugasan'],
+    'assignments.manage' => ['POST', '/pegawai/{employee}/penugasan'],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
     'employees.offboard' => 'T-026', 'employees.import' => 'T-027',
-    'assignments.view' => 'T-025', 'assignments.manage' => 'T-025',
     'devices.view' => 'T-031', 'devices.manage' => 'T-031',
     'schedules.view' => 'T-035', 'schedules.manage' => 'T-035',
     'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038', 'attendance.self' => 'T-036',

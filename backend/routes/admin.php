@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Settings\SettingRegistry;
+use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -198,6 +199,17 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         ->middleware(['can:employees.view_sensitive', 'throttle:30,1'])->whereNumber('employee')->name('employees.reveal-nik');
     Route::post('pegawai/{employee}/akun', [EmployeeController::class, 'account'])
         ->middleware(['can:users.create', 'throttle:30,1'])->whereNumber('employee')->name('employees.account');
+
+    // Penugasan & mutasi (05 §4.6, FR-026, BR-051, BR-052). Penugasan/pegawai di luar scope → 404.
+    Route::middleware('can:assignments.view')->group(function () {
+        Route::get('penugasan', [AssignmentController::class, 'index'])->name('assignments.index');
+        Route::get('penugasan/ekspor', [AssignmentController::class, 'export'])->name('assignments.export');
+    });
+    Route::middleware('can:assignments.manage')->group(function () {
+        Route::post('pegawai/{employee}/penugasan', [AssignmentController::class, 'store'])->whereNumber('employee')->name('assignments.store');
+        Route::put('penugasan/{assignment}', [AssignmentController::class, 'update'])->whereNumber('assignment')->name('assignments.update');
+        Route::post('penugasan/{assignment}/akhiri', [AssignmentController::class, 'end'])->whereNumber('assignment')->name('assignments.end');
+    });
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.
     Route::get('referensi', [ReferenceController::class, 'index'])

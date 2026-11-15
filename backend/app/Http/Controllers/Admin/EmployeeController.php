@@ -9,6 +9,7 @@ use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Employee\Actions\CreateAccountForEmployee;
 use App\Domain\Employee\Actions\CreateEmployee;
 use App\Domain\Employee\Actions\DeleteEmployee;
+use App\Domain\Employee\Actions\MutateEmployee;
 use App\Domain\Employee\Actions\RevealNik;
 use App\Domain\Employee\Actions\UpdateEmployee;
 use App\Domain\Employee\Enums\Gender;
@@ -161,11 +162,16 @@ class EmployeeController extends Controller
                 'delete' => $canDelete && $usage->canDelete($employee),
                 'revealNik' => Gate::forUser($actor)->allows('revealNik', $employee),
                 'createAccount' => $noAccount && $employee->isActive() && Gate::forUser($actor)->allows('createAccount', $employee),
+                // Mutasi / penugasan tambahan / ubah / akhiri (T-025); pegawai nonaktif tidak dimutasi.
+                'manageAssignments' => $employee->isActive() && Gate::forUser($actor)->allows('manageAssignments', $employee),
             ],
             // Alasan tombol Hapus disembunyikan (BR-055), hanya untuk yang berhak menghapus.
             'deleteBlockers' => $canDelete ? $usage->blockers($employee) : [],
             'history' => $tab === 'riwayat' ? self::history($request, $employee) : null,
             'historyEvents' => collect(self::HISTORY_EVENTS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
+            // Pilihan dialog Mutasi/Ubah penugasan (T-025).
+            'modes' => AttendanceMode::options(),
+            'mutationBackdateDays' => MutateEmployee::MAX_BACKDATE_DAYS,
         ]);
     }
 
@@ -315,9 +321,13 @@ class EmployeeController extends Controller
             'attendance_mode' => $a->attendance_mode?->value,
             'effective_mode_label' => $a->effectiveAttendanceMode()?->label(),
             'mode_from_position' => $a->attendance_mode === null,
+            'note' => $a->note,
+            'position_id' => $a->position_id,
+            'location_id' => $a->location_id,
             'is_primary' => $a->is_primary,
             'start_date' => $a->start_date->toDateString(),
             'end_date' => $a->end_date?->toDateString(),
+            'running' => $a->isRunning(DisplayTime::toLocal(now())->toDateString()),
         ];
     }
 

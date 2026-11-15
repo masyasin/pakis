@@ -3,16 +3,20 @@
 namespace App\Domain\Employee\Actions;
 
 use App\Domain\Audit\AuditLogger;
+use App\Domain\Employee\Events\AssignmentChanged;
 use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Employee\Support\SupervisorCycleGuard;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
+use App\Support\Time\DisplayTime;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Penugasan baru (BR-051). Versi minimal T-024 untuk penugasan pertama pegawai baru; mutasi
- * (tutup lama + buat baru, BR-052) dan cek siklus atasan lengkap dilengkapi di T-025.
+ * Penugasan baru (BR-051): penugasan pertama pegawai baru (T-024), penugasan utama baru saat
+ * mutasi (dipanggil MutateEmployee setelah menutup yang lama), atau penugasan TAMBAHAN (rangkap).
  *
  * Status aktif jabatan/lokasi/atasan dicek ulang di sini (bukan hanya di Form Request): data bisa
  * dinonaktifkan orang lain di antara validasi dan simpan.
@@ -22,13 +26,16 @@ final class CreateAssignment
     public function __construct(private readonly AuditLogger $audit) {}
 
     /**
-     * @param  array{position_id: int, location_id: int, supervisor_employee_id?: int|null, attendance_mode?: string|null, start_date?: string|null, note?: string|null}  $data
+     * @param  array{position_id: int, location_id: int, supervisor_employee_id?: int|null, attendance_mode?: string|null, start_date?: string|null, note?: string|null, is_primary?: bool}  $data
      * @param  string  $field  awalan nama field untuk pesan galat (form gabungan memakai `assignment.`)
+     * @param  'created'|'mutated'  $reason  alasan pada event AssignmentChanged (mutasi = satu event saja)
      */
-    public function handle(Employee $employee, array $data, ?int $userId, string $field = 'assignment.'): Assignment
+    public function handle(Employee $employee, array $data, ?int $userId, string $field = 'assignment.', string $reason = 'created'): Assignment
     {
-        return DB::transaction(function () use ($employee, $data, $userId, $field) {
+        return DB::transaction(function () use ($employee, $data, $userId, $field, $reason) {
             $fail = fn (string $key, string $message) => throw ValidationException::withMessages([$field.$key => $message]);
+            $primary = $data['is_primary'] ?? true;
+            $start = $data['start_date'] ?? $employee->join_date->toDateString();
 
             if (! Position::query()->whereKey($data['position_id'])->where('is_active', true)->exists()) {
                 $fail('position_id', 'Jabatan tidak ditemukan atau sudah nonaktif.');
@@ -38,14 +45,29 @@ final class CreateAssignment
                 $fail('location_id', 'Lokasi tidak ditemukan atau sudah nonaktif.');
             }
 
+            SupervisorCycleGuard::lock();
+
             $supervisorId = $data['supervisor_employee_id'] ?? null;
             if ($supervisorId !== null) {
-                if ($supervisorId === $employee->id) {
-                    $fail('supervisor_employee_id', 'Pegawai tidak bisa menjadi atasan dirinya sendiri.');
-                }
                 if (! Employee::query()->whereKey($supervisorId)->where('status', 'active')->exists()) {
                     $fail('supervisor_employee_id', 'Atasan harus pegawai yang masih aktif.');
                 }
+                $violation = SupervisorCycleGuard::violation($employee->id, $supervisorId);
+                if ($violation !== null) {
+                    $fail('supervisor_employee_id', $violation);
+                }
+            }
+
+            $open = Assignment::query()->where('employee_id', $employee->id)->whereNull('end_date');
+
+            // Satu penugasan utama aktif per pegawai (BR-051; juga dijaga index unik DB).
+            if ($primary && (clone $open)->where('is_primary', true)->exists()) {
+                $fail('position_id', 'Pegawai ini sudah punya penugasan utama aktif. Gunakan Mutasi untuk memindahkannya.');
+            }
+
+            // Rangkap di lokasi yang sama tidak bermakna (scope & absen sudah tercakup).
+            if (! $primary && self::stillRunning($employee->id)->where('location_id', $data['location_id'])->exists()) {
+                $fail('location_id', 'Pegawai ini sudah punya penugasan aktif di lokasi tersebut.');
             }
 
             $assignment = new Assignment;
@@ -55,8 +77,8 @@ final class CreateAssignment
                 'location_id' => $data['location_id'],
                 'supervisor_employee_id' => $supervisorId,
                 'attendance_mode' => $data['attendance_mode'] ?? null,
-                'is_primary' => true,
-                'start_date' => $data['start_date'] ?? $employee->join_date->toDateString(),
+                'is_primary' => $primary,
+                'start_date' => $start,
                 'note' => $data['note'] ?? null,
                 'created_by' => $userId,
                 'updated_by' => $userId,
@@ -64,8 +86,23 @@ final class CreateAssignment
 
             $this->audit->record('assignment.created', $assignment, null, self::audited($assignment));
 
+            AssignmentChanged::dispatch($employee->id, $start, $reason);
+
             return $assignment;
         });
+    }
+
+    /**
+     * Penugasan pegawai yang masih berlaku atau terjadwal (`end_date` kosong / ≥ hari ini).
+     *
+     * @return Builder<Assignment>
+     */
+    public static function stillRunning(int $employeeId): Builder
+    {
+        $today = DisplayTime::toLocal(now())->toDateString();
+
+        return Assignment::query()->where('employee_id', $employeeId)
+            ->where(fn (Builder $q) => $q->whereNull('end_date')->orWhere('end_date', '>=', $today));
     }
 
     /** @return array<string, mixed> */

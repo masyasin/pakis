@@ -367,10 +367,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `app/Domain/Employee/Actions/{CreateAssignment,MutateEmployee,UpdateAssignment,EndAssignment}.php`, `Support/SupervisorCycleGuard.php`, `Listings/AssignmentListing`, controller + `pages/Assignments/Index.tsx`, dialog Mutasi di detail pegawai
 - Deskripsi: Lengkapi logika penugasan. Mutasi atomik. Cek siklus atasan. Event `AssignmentChanged` (dipakai resolver absensi di T-037). Integrasikan test scope T-019 dengan data nyata.
 - Kriteria penerimaan:
-  - [ ] Dua penugasan utama aktif → ditolak di DB & aplikasi
-  - [ ] Mutasi menutup lama (`end_date` = mulai baru − 1) dalam satu transaksi
-  - [ ] A atasan B, B atasan A → ditolak
-  - [ ] Listing `assignments` + ekspor lolos test kontrak
+  - [x] Dua penugasan utama aktif → ditolak di DB & aplikasi
+  - [x] Mutasi menutup lama (`end_date` = mulai baru − 1) dalam satu transaksi
+  - [x] A atasan B, B atasan A → ditolak
+  - [x] Listing `assignments` + ekspor lolos test kontrak
 - Verifikasi: `php artisan test --filter=Assignment`
 - Di luar lingkup: —
 

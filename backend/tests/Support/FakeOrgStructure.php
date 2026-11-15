@@ -14,6 +14,7 @@ use App\Models\User;
  *     $org->employee(1)->at(10);              // pegawai 1 bertugas di lokasi 10
  *     $org->employee(2)->at(10)->reportsTo(1); // atasan pegawai 2 = pegawai 1
  *     $org->employee(1)->heads(20);           // pegawai 1 mengepalai lokasi 20
+ *     $org->employee(3)->at(10)->alsoAt(20);  // pegawai 3 merangkap di lokasi 20 (penugasan tambahan)
  */
 final class FakeOrgStructure implements OrgStructure
 {
@@ -25,6 +26,9 @@ final class FakeOrgStructure implements OrgStructure
 
     /** @var array<int, list<int>> pegawai → lokasi yang dikepalai */
     private array $heads = [];
+
+    /** @var array<int, list<int>> pegawai → lokasi penugasan tambahan */
+    private array $extra = [];
 
     private ?int $current = null;
 
@@ -67,6 +71,13 @@ final class FakeOrgStructure implements OrgStructure
         return $this;
     }
 
+    public function alsoAt(int $locationId): self
+    {
+        $this->extra[(int) $this->current][] = $locationId;
+
+        return $this;
+    }
+
     public function heads(int $locationId): self
     {
         $this->heads[(int) $this->current][] = $locationId;
@@ -79,6 +90,13 @@ final class FakeOrgStructure implements OrgStructure
         return $this->locations[$employeeId] ?? null;
     }
 
+    public function assignedLocationsOf(int $employeeId): array
+    {
+        $own = isset($this->locations[$employeeId]) ? [$this->locations[$employeeId]] : [];
+
+        return array_values(array_unique([...$own, ...($this->extra[$employeeId] ?? [])]));
+    }
+
     public function locationsHeadedBy(int $employeeId): array
     {
         return $this->heads[$employeeId] ?? [];
@@ -86,7 +104,14 @@ final class FakeOrgStructure implements OrgStructure
 
     public function employeesAtLocations(array $locationIds): array
     {
-        return array_values(array_keys(array_filter($this->locations, fn (int $loc) => in_array($loc, $locationIds, true))));
+        $ids = array_keys(array_filter($this->locations, fn (int $loc) => in_array($loc, $locationIds, true)));
+        foreach ($this->extra as $employee => $locations) {
+            if (array_intersect($locations, $locationIds) !== []) {
+                $ids[] = $employee;
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 
     public function directReportsOf(array $employeeIds): array

@@ -5,6 +5,7 @@ namespace App\Domain\Employee\Models;
 use App\Domain\Organization\Enums\AttendanceMode;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
+use App\Support\Authorization\ScopedRouteBinding;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -12,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * Penugasan pegawai (04 §2.9, BR-051). Maksimal satu penugasan UTAMA aktif per pegawai
  * (index `assignments_one_active_primary`). Mode absen efektif = `attendance_mode` ?? jabatan
- * (BR-042). Mutasi & pengakhiran di T-025.
+ * (BR-042). Route `{assignment}` ber-scope data lewat pegawainya: di luar scope → 404 (SEC-033).
  *
  * @property int $id
  * @property int $employee_id
@@ -35,6 +36,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class Assignment extends Model
 {
+    use ScopedRouteBinding;
+
     public const AUDITED = ['employee_id', 'position_id', 'location_id', 'supervisor_employee_id', 'attendance_mode', 'is_primary', 'start_date', 'end_date', 'note'];
 
     protected $fillable = self::AUDITED;
@@ -51,6 +54,17 @@ class Assignment extends Model
             'location_id' => 'integer',
             'supervisor_employee_id' => 'integer',
         ];
+    }
+
+    public static function scopedEmployeeColumn(): string
+    {
+        return 'employee_id';
+    }
+
+    /** Masih berlaku hari ini atau terjadwal (belum berakhir). */
+    public function isRunning(string $today): bool
+    {
+        return $this->end_date === null || $this->end_date->toDateString() >= $today;
     }
 
     /** @return BelongsTo<Employee, $this> */

@@ -484,9 +484,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/04-DATABASE.md` §2.13 (`shifts`), `docs/07-UI-SPEC.md` §3.4 (`shifts`)
 - File: migration, `app/Domain/Attendance/{Models/Shift,Actions/*,Policies/ShiftPolicy}`, `Listings/ShiftListing`, `pages/Shifts/{Index,Form}.tsx`, lookup `shifts`
 - Kriteria penerimaan:
-  - [ ] Shift non-lintas-hari dengan jam pulang ≤ jam masuk ditolak
-  - [ ] Hapus shift yang dipakai → ditolak
-  - [ ] Listing lolos test kontrak
+  - [x] Shift non-lintas-hari dengan jam pulang ≤ jam masuk ditolak
+  - [x] Hapus shift yang dipakai → ditolak
+  - [x] Listing lolos test kontrak
 - Verifikasi: `php artisan test --filter=Shift`
 
 ### T-034 — Hari libur

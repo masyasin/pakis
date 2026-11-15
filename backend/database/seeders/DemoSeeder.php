@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Domain\Attendance\Models\Shift;
 use App\Domain\Organization\Models\Department;
 use Illuminate\Database\Seeder;
 use RuntimeException;
@@ -26,6 +27,13 @@ class DemoSeeder extends Seeder
         'SDM' => 'SDM',
     ];
 
+    /** Shift demo 04 §4.2: [nama, masuk, pulang, toleransi telat (menit)]. */
+    public const SHIFTS = [
+        'PAGI' => ['Shift Pagi', '08:00:00', '16:00:00', 10],
+        'GDG' => ['Shift Gudang', '07:00:00', '15:00:00', 5],
+        'SLS' => ['Shift Sales', '07:30:00', '16:30:00', 15],
+    ];
+
     public function run(): void
     {
         if (app()->isProduction()) {
@@ -35,6 +43,12 @@ class DemoSeeder extends Seeder
         foreach (self::DEPARTMENTS as $code => $name) {
             // withTrashed: kode unik juga untuk departemen yang terhapus; jangan membuat duplikat.
             Department::withTrashed()->firstOrCreate(['code' => $code], ['name' => $name, 'is_active' => true]);
+        }
+
+        foreach (self::SHIFTS as $code => [$name, $start, $end, $tolerance]) {
+            Shift::withTrashed()->firstOrCreate(['code' => $code], [
+                'name' => $name, 'start_time' => $start, 'end_time' => $end, 'late_tolerance_min' => $tolerance,
+            ]);
         }
     }
 }

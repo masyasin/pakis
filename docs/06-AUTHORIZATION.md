@@ -113,6 +113,8 @@ Catatan: `administrator` sengaja **tidak** bisa membuka NIK, mengubah data pegaw
 
 Implementasi: `App\Domain\Access\DataScope::apply(Builder $q, User $u, string $employeeColumn)` dipanggil oleh setiap `*Listing` dan setiap Policy `view/update`; `DataScope::allows($u, $employeeId)` untuk Policy. Pengguna tanpa pegawai (mis. Super Admin) dengan scope selain `all` tidak melihat data apa pun. Struktur organisasi dibaca lewat `OrgStructure` (`DatabaseOrgStructure`: penugasan aktif = `start_date ≤ hari ini` dan `end_date` kosong/≥ hari ini, tanggal lokal). `team` dihitung per tingkat (≤ 5 query, pengaman struktur melingkar) — hasil sama dengan CTE rekursif 5 tingkat (T-019).
 
+Shift (T-033, `App\Domain\Attendance\Support\ShiftScope`): scope `all` melihat semua shift; scope lain hanya shift yang dipakai pola jadwal pegawai dalam DataScope-nya. Sebelum tabel pola jadwal ada (T-035) tidak ada shift yang "dipakai", jadi scope sempit tidak melihat shift apa pun (fail-closed). `{shift}` di luar scope → 404.
+
 ## 6. Aturan Persetujuan Koreksi (BR-069)
 
 Pengguna **U** boleh memutuskan koreksi **K** bila semua syarat terpenuhi:

@@ -15,6 +15,7 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -82,6 +83,16 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         ->middleware(['can:users.reset_password', 'throttle:6,1'])->whereNumber('user')->name('users.reset-password');
     Route::post('pengguna/{user}/reset-mfa', [UserController::class, 'resetMfa'])
         ->middleware(['can:users.reset_mfa', 'throttle:10,1'])->whereNumber('user')->name('users.reset-mfa');
+
+    // Shift (05 §4.9, FR-031, BR-060). `{shift}` ber-scope (06 §5). Hapus ditolak bila dipakai.
+    Route::get('shift', [ShiftController::class, 'index'])->middleware('can:shifts.view')->name('shifts.index');
+    Route::middleware('can:shifts.manage')->group(function () {
+        Route::get('shift/baru', [ShiftController::class, 'create'])->name('shifts.create');
+        Route::post('shift', [ShiftController::class, 'store'])->name('shifts.store');
+        Route::get('shift/{shift}/ubah', [ShiftController::class, 'edit'])->whereNumber('shift')->name('shifts.edit');
+        Route::put('shift/{shift}', [ShiftController::class, 'update'])->whereNumber('shift')->name('shifts.update');
+        Route::delete('shift/{shift}', [ShiftController::class, 'destroy'])->whereNumber('shift')->name('shifts.destroy');
+    });
 
     // Wajib aktivasi MFA (05 §4.1, BR-015). Dibiarkan oleh middleware EnforceMfa.
     Route::get('aktivasi-mfa', MfaSetupController::class)->middleware(RequirePassword::class)->name('mfa.setup');

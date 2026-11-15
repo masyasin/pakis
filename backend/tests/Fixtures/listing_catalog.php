@@ -19,6 +19,7 @@ return [
     'regions', // T-012
     'roles', // T-018
     'users', // T-020
+    'shifts', // T-033
     'notifications', // T-029
     'locations', // T-021
     'departments', // T-022

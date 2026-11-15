@@ -35,6 +35,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
+        'Absensi' => ['Shift'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Wilayah'],
         'Akses' => ['Pengguna', 'Role & Hak Akses'],
         'Sistem' => ['Pengaturan', 'Penomoran', 'Referensi', 'Audit Log', 'Log Keamanan'],
@@ -44,14 +45,15 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
 test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function () {
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
+        'Absensi' => ['Shift'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Wilayah'],
         'Akses' => ['Pengguna'],
         'Sistem' => ['Referensi'],
     ]);
 });
 
-test('06 §8 kepala lokasi: Dasbor + Lokasi (T-021) sampai modul absensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Organisasi' => ['Lokasi']]);
+test('06 §8 kepala lokasi: Dasbor + Shift (T-033) + Lokasi (T-021) sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Shift'], 'Organisasi' => ['Lokasi']]);
 });
 
 test('06 §8 supervisor: hanya Dasbor sampai modul absensi/pegawai dibangun', function () {

@@ -114,11 +114,11 @@ Status per 16 Nov 2026 berdasarkan `TASKS.md` repo: ✅ selesai · 🟡 sebagian
 | **B** | Penjualan & Uang Aman | SAL-01..03/05, DLV-01 (web), FIN-01/04, FLD-03 (web), AUD-01, POS-01, GAR-01 (jual), WEB-01, BI-01 | T-088–T-113 | ±211 jam | ✅ Dirinci: `16` + `TASKS_PAKET_B.md` |
 | **C** | Lapangan & Mitra | MOB-01 (mode lapangan), MOB-02, FLD-01..04, DLV-01 (driver), SAL-04, MKT-01, GAR-02, AUD-02, CORE-04 (WA & push) | T-114–T-140 | ±251 jam | ✅ Dirinci: `17` + `TASKS_PAKET_C.md` |
 | **D** | Armada & BBM | FLT-01..05 | T-141–T-153 | ±107 jam | ✅ Dirinci: `18` + `TASKS_PAKET_D.md` |
-| **E** | SDM Lanjut & Payroll | HR-04..06, HR-08 (lanjut) + Fase HR yang ditunda | T-049–T-066 + T-154–T-158 | ±132 + ±35 jam | Outline (sebagian sudah detail di `13`) |
-| **F** | Keuangan & Prinsipal | FIN-02/03/05, PRC-02/03, SAL-06, INV-06, POS-02 | T-159–T-178 | ±172 jam | Outline |
-| **G** | Cerdas & Kinerja | AI-01..03, HR-07, WEB-02/03, FLT-06, BI-01 lanjut | T-179–T-192 | ±142 jam | Outline. Butuh data operasional ±6 bulan |
+| **E** | SDM Lanjut & Payroll | HR-04..06, HR-08 (lanjut) + Fase HR yang ditunda | T-049–T-066 + T-154–T-158 (+ T-063A, T-064A bersyarat) | ±132 + ±55 jam | ✅ Dirinci: `19` + `TASKS_PAKET_E.md` (HR inti tetap `13`) |
+| **F** | Keuangan & Prinsipal | FIN-02/03/05, PRC-02/03, SAL-06, INV-06, POS-02 | T-159–T-178 | ±182 jam | ✅ Dirinci: `20` + `TASKS_PAKET_F.md` |
+| **G** | Cerdas & Kinerja | AI-01..03, HR-07, WEB-02/03, FLT-06, BI-01 lanjut | T-179–T-192 | ±146 jam | ✅ Dirinci: `21` + `TASKS_PAKET_G.md`. Butuh data operasional ±6 bulan |
 
-*Estimasi kasar jam efektif developer + Claude Code, sebelum dirinci. Total sisa ±1.050 jam untuk task baru (A–G) + ±132 jam Fase HR yang ditunda. Angka pasti keluar di Lapis 2 tiap paket.
+*Jam efektif developer + Claude Code. Setelah semua paket dirinci: task baru A–G = 160 + 211 + 251 + 107 + 55 + 182 + 146 = **±1.112 jam**, ditambah ±132 jam Fase HR (`13`) yang ditunda. Rentang per paket ada di header tiap `TASKS_PAKET_*.md`.
 
 ### 3.2 Urutan yang disarankan
 
@@ -182,6 +182,13 @@ Nomor ADR 101+ dipakai agar tidak bentrok dengan ADR di `03` repo.
 | ADR-120 | Trip sebagai pusat biaya armada | Setiap liter & km terhubung ke trip | Detail `18` §0.1 |
 | ADR-121 | Satu tabel `gps_positions` berpartisi bulanan untuk tracker & ponsel | Retensi cepat, satu jalur jarak/geofence | Detail `18` §0.1 |
 | ADR-122 | Alert armada terpisah dari red flag | Operasi harian vs pengendalian kecurangan | Detail `18` §0.1 |
+| ADR-123 | Buku besar double-entry imutabel; koreksi = pembalik | BR-113, audit | Detail `20` §0.1 |
+| ADR-124 | Posting berbasis peran akun + `account_mappings` berlaku sejak tanggal | CoA dapat diubah tanpa ubah kode; backfill | Detail `20` §0.1 |
+| ADR-125 | Dimensi analitik di baris jurnal (lokasi, area, kios, supplier, prinsipal, kendaraan, aset, rekening) | Laporan per lokasi tanpa ledakan akun | Detail `20` §0.1 |
+| ADR-126 | Klinik Tani = retrieval terstruktur + FULLTEXT, tanpa vector database di G | Data label terstruktur; korpus kecil | Detail `21` §0.1 |
+| ADR-127 | `LlmProvider` (`none`/`self_hosted`/`api`) lewat `AiGateway` (pembersih data pribadi, allowlist, anggaran) | Kedaulatan data, ganti penyedia | Detail `21` §0.1 |
+| ADR-128 | Prediksi & anomali statistik deterministik di PHP; LLM hanya narasi | Dapat dijelaskan & diuji | Detail `21` §0.1 |
+| ADR-129 | Portal prinsipal = guard `principal`, hanya membaca mart agregat | Pihak luar; cegah akses transaksi mentah | Detail `21` §0.1 |
 
 ## 5. Peta Domain (folder `app/Domain/`)
 
@@ -201,21 +208,26 @@ Nomor ADR 101+ dipakai agar tidak bentrok dengan ADR di `03` repo.
 | `Delivery` | Surat jalan, rute, bukti terima | B / C | `deliveries`, `delivery_lines`, `delivery_routes`, `proofs_of_delivery` |
 | `Receivable` | Faktur, nota kredit, pembayaran, alokasi, giro, VA, kwitansi, konfirmasi saldo, titipan | B | `invoices` (+ lines), `credit_notes`, `payments`, `payment_allocations`, `giros`, `virtual_accounts`, `unidentified_payments`, `receipts`, `receipt_number_blocks`, `customer_deposits` (titipan), `balance_confirmations` |
 | `Cash` | Setoran, plafon tunai, kas kecil, piutang karyawan | B | `cash_deposits` (+ lines), `cash_on_hand_limits`, `petty_cash_funds`, `petty_cash_expenses`, `petty_cash_counts`, `employee_receivables` |
-| `Pos` | Shift kasir, penjualan eceran, struk, member | B / F | `pos_registers`, `pos_shifts`, `pos_sales` (+ lines, payments), `farmer_members`, `loyalty_points` |
+| `Pos` | Shift kasir, penjualan eceran, struk, member | B / F | `pos_registers`, `pos_shifts`, `pos_sales` (+ lines, payments), `farmer_members`, `loyalty_points` (`20` §4.11) |
 | `Field` | Kunjungan, rute, canvas, harga pesaing, rotasi | C | `visit_plans` (+ items), `visits`, `customer_location_proposals`, `canvas_sessions` (+ lines), `competitor_prices`, `collection_rotations` |
 | `Marketing` | Demplot & kegiatan promosi | C | `promo_activities`, `promo_activity_products`, `promo_activity_attendees`, `promo_activity_photos` |
 | `Mitra` | Akun kios & portal | C | `customer_users`, `customer_devices`, `mitra_activation_codes`, `customer_point_entries` (keluhan memakai `customer_inquiries` B) |
 | `Fraud` | Red flag & investigasi | C | `red_flag_rules`, `red_flags`, `investigation_cases`, `case_evidence`, `transaction_freezes` |
 | `Sync` | Sinkron offline & blok nomor | C | `sync_changes`, `sync_device_states`, `client_outbox_receipts`, `number_blocks`, `number_block_usages` |
 | `Fleet` | Kendaraan, dokumen, trip, BBM, GPS, servis | A (minimal) / D | `vehicles`, `vehicle_assignments`, `vehicle_documents`, `vehicle_daily_checks` (P2H), `trips`, `vehicle_handovers`, `trip_allowance_rules`, `trip_allowances`, `trip_expenses`, `fuel_prices`, `fuel_logs`, `gps_devices`, `gps_positions`, `trip_gps_summaries`, `gps_daily_summaries`, `geofences`, `geofence_events`, `fleet_alerts`, `maintenance_schedules`, `maintenance_orders` (+ items), `vehicle_tires` |
-| `Payroll` | Komponen, periode, slip | E | mengikuti `13-FASE-HR.md` |
-| `Accounting` | CoA, periode, jurnal, rekonsiliasi, laporan | B (outbox) / F | `accounting_events`, `chart_of_accounts`, `account_mappings`, `fiscal_periods`, `journal_entries`, `journal_lines`, `bank_accounts`, `bank_statements`, `bank_statement_lines` |
-| `Tax` | PPN & ekspor faktur pajak | F | `tax_invoices`, `tax_exports` |
-| `Asset` | Aset tetap & penyusutan | F | `fixed_assets`, `asset_depreciations`, `asset_transfers` |
-| `Principal` | Program, rebate, klaim, hutang dagang | F | `principal_programs`, `principal_claims`, `purchase_invoices`, `supplier_payments` |
-| `Consignment` | Titip jual | F | `consignments` (+ lines), `consignment_reports` |
-| `Reporting` | Dasbor, laporan terjadwal, ringkasan | B → G | `report_schedules`, `daily_summaries` |
-| `Intelligence` | AI, prediksi, anomali | G | `forecast_runs`, `forecast_items`, `anomaly_findings`, `knowledge_documents`, `knowledge_chunks` |
+| `Payroll` | Komponen, periode, slip + input lintas modul, borongan, aturan berversi | E | tabel inti mengikuti `13-FASE-HR.md`; tambahan `19` §4: `payroll_external_inputs`, `employee_receivable_deduction_agreements`, `piece_work_*`, `attendance_allowance_rules`, `payroll_rule_versions`; SDM: `onboarding_*`, `employee_activation_requests`, `employee_bank_account_changes`, `employee_held_items`, `offboarding_clearances` |
+| `Accounting` | CoA, periode, jurnal, rekonsiliasi, laporan, ekspor jurnal | B (outbox) / F | `accounting_events`, `chart_of_accounts`, `account_mappings`, `fiscal_periods`, `fiscal_period_checks`, `journal_entries`, `journal_lines`, `journal_entry_attachments`, `account_period_balances`, `bank_accounts`, `bank_statements`, `bank_statement_lines`, `bank_reconciliation_matches`, `external_account_mappings`, `accounting_exports`, `accounting_export_entries` |
+| `Tax` | PPN & ekspor faktur pajak | F | `customer_tax_profiles`, `tax_invoices`, `tax_exports`, `tax_export_items` (tarif: `tax_rates` B) |
+| `Asset` | Aset tetap & penyusutan | F | `asset_categories`, `fixed_assets`, `asset_depreciations`, `asset_transfers`, `asset_disposals` |
+| `Principal` | Program, rebate, klaim | F | `principal_programs`, `principal_program_scopes`, `principal_program_tiers`, `principal_program_progress`, `principal_claims`, `principal_claim_lines`, `principal_claim_settlements` |
+| `Purchasing` (F) | Hutang dagang & saran pembelian (sub-folder `Payables`, `Suggestions`) | F | `purchase_invoices` (+ lines), `supplier_debit_notes`, `supplier_payments`, `supplier_payment_allocations`, `supplier_bank_account_changes`, `seasonal_factors`, `purchase_suggestion_runs`, `purchase_suggestion_items` |
+| `Consignment` | Titip jual | F | `consignments`, `consignment_lines`, `consignment_reports`, `consignment_report_lines` (stok di `stock_locations` tipe `consignment`) |
+| `Reporting` | Dasbor, mart, laporan terjadwal, ringkasan owner, peta & analitik area | B → G | `sales_daily_summaries` (B), `daily_summaries`, `stock_daily_snapshots`, `mart_refresh_runs`, `mart_dirty_dates`, `report_schedules`, `report_schedule_recipients`, `report_runs`, `owner_digests` |
+| `Intelligence` | Basis pengetahuan, asisten, gateway & evaluasi AI, prediksi, anomali | G | `knowledge_documents`, `knowledge_chunks`, `knowledge_synonyms`, `ai_requests`, `assistant_conversations`, `assistant_messages`, `ai_eval_cases`, `ai_eval_runs`, `ai_eval_results`, `forecast_runs`, `forecast_items`, `anomaly_findings` |
+| `Performance` | KPI & penilaian atasan | G | `kpi_definitions`, `kpi_periods`, `kpi_targets`, `kpi_results`, `kpi_reviews`, `kpi_disputes` (skor driver `driver_scores` di `Fleet`) |
+| `PrincipalPortal` | Akun & portal prinsipal | G | `principal_users`, `principal_data_sharing`, `principal_portal_logs` |
+| `Marketplace` | Kanal, listing, pesanan | G | `marketplace_channels`, `marketplace_listings`, `marketplace_orders`, `marketplace_order_lines` |
+| `Mitra` (G) | Sell-out kios | G | `kiosk_sellout_consents`, `kiosk_sellout_reports`, `kiosk_sellout_lines` |
 | `Integration` | Adapter & log | B | `integration_logs`, `webhook_receipts` |
 
 ## 6. Model Data Global
@@ -311,12 +323,24 @@ erDiagram
   fiscal_periods ||--o{ journal_entries : periode
   bank_accounts ||--o{ bank_statements : mutasi
   bank_statements ||--|{ bank_statement_lines : baris
+  bank_statement_lines ||--o{ bank_reconciliation_matches : cocok
+  goods_receipt_lines ||--o{ purchase_invoice_lines : difakturkan
   suppliers ||--o{ purchase_invoices : tagihan
-  purchase_invoices ||--o{ supplier_payments : dibayar
+  purchase_invoices ||--o{ supplier_payment_allocations : dilunasi
+  supplier_payments ||--o{ supplier_payment_allocations : alokasi
+  supplier_debit_notes ||--o{ supplier_payment_allocations : kompensasi
   principals ||--o{ principal_programs : program
   principal_programs ||--o{ principal_claims : klaim
+  principal_claims ||--|{ principal_claim_lines : dasar
+  principal_claims ||--o{ principal_claim_settlements : penyelesaian
+  invoices ||--o| tax_invoices : faktur_pajak
+  customers ||--o| consignments : titipan
+  consignments ||--o{ consignment_reports : laporan
+  consignment_reports ||--o| invoices : tagihan
+  asset_categories ||--o{ fixed_assets : kategori
   fixed_assets ||--o{ asset_depreciations : penyusutan
-  customers ||--o{ consignments : titipan
+  farmer_members ||--o{ loyalty_points : poin
+  farmer_members ||--o{ pos_sales : belanja
 ```
 
 Keempat ERD ini menetapkan **nama tabel dan relasi**. Kolom lengkap, tipe, constraint, dan index ditulis di DDL dokumen paket (Lapis 2) dan harus memakai nama yang sama.
@@ -377,11 +401,20 @@ Rincian payload Paket B: `16` §11.2.
 | `fleet.trip_allowance_settled` | Uang jalan dipertanggungjawabkan | D | D `travel_expense` (+ D `cash_head_office` sisa) · K `trip_advance` |
 | `fleet.maintenance_approved` | Servis disetujui | D | D `vehicle_maintenance_expense` · K `payable`/`bank` |
 | `fleet.trip_allowance_shortage` | Kurang setor uang jalan → piutang karyawan | D | D `employee_receivable` · K `trip_advance` |
-| `payroll.period_approved` | Payroll disetujui | E | D `salary_expense` · K `salary_payable`, `bpjs_payable`, `pph21_payable`, `employee_receivable` (cicilan kasbon) |
-| `purchase.invoice_posted` | Faktur pembelian dicatat | F | D `goods_received_not_invoiced` (+ D `vat_input`) · K `payable` |
-| `purchase.payment_made` | Bayar ke supplier | F | D `payable` · K `bank` |
-| `principal.claim_approved` | Klaim rebate/program disetujui prinsipal | F | D `principal_receivable` · K `purchase_discount`/`rebate_income` |
-| `asset.depreciated` | Penyusutan bulanan | F | D `depreciation_expense` · K `accumulated_depreciation` |
+| `payroll.period_approved` | Payroll disetujui | E | D `salary_expense`, `incentive_expense`, `piece_work_expense`, `bpjs_employer_expense` · K `salary_payable`, `bpjs_payable`, `pph21_payable`, `employee_receivable`, `employee_loan_receivable` (`19` BR-312) |
+| `payroll.paid` | Gaji dibayar | E | D `salary_payable` · K `bank` |
+| `purchase.invoice_posted` / `purchase.invoice_voided` | Faktur pembelian posted / void | F | D `goods_received_not_invoiced` · D/K `purchase_price_variance` · D `vat_input` · K `payable` |
+| `purchase.debit_note_issued` | Nota debit (retur setelah faktur, koreksi) | F | D `payable` · K `goods_received_not_invoiced` (+ K `vat_input`) |
+| `purchase.payment_made` / `purchase.giro_cleared` / `purchase.payment_voided` | Bayar ke supplier / giro keluar cair / batal | F | D `payable` · K `bank` atau `outgoing_giro`; D `outgoing_giro` · K `bank` |
+| `payable.opening_balance` | Saldo awal hutang | F | D `opening_balance_equity` · K `payable` |
+| `principal.rebate_accrued` | Akrual rebate bulanan | F | D `principal_receivable` · K `rebate_income` |
+| `principal.claim_approved` / `principal.claim_settled` / `principal.claim_written_off` | Keputusan, penyelesaian, hapus klaim | F | D `principal_receivable` · K `rebate_income`/`promotion_expense`/`warranty_expense`; D `bank`/`payable`/GRNI · K `principal_receivable`; D `other_expense` · K `principal_receivable` |
+| `asset.acquired` / `asset.depreciated` / `asset.disposed` | Aset: perolehan, penyusutan, pelepasan | F | `20` §11.2 |
+| `bank.fee_recorded` | Biaya/bunga bank dari rekonsiliasi | F | D `bank_fee_expense` · K `bank` / D `bank` · K `interest_income` |
+| `loyalty.points_earned` / `loyalty.points_expired` / `loyalty.points_reversed` | Poin member | F | D `promotion_expense` · K `loyalty_liability` (dan kebalikannya) |
+| `marketplace.fee_recorded` | Impor pencairan marketplace | G | D `marketplace_fee_expense` · K `receivable` |
+
+Rincian payload Paket F & perubahan payload lama (`pos.shift_closed`, `fleet.maintenance_approved`, `payroll.period_approved`): `20` §11.2. Katalog peran akun final: `20` §4.2.1.
 
 ## 8. Penomoran Dokumen (kode `document_sequences`)
 
@@ -424,7 +457,7 @@ Pola default mengikuti prototipe (`XX-{YY}{MM}-{SEQ:4}`, reset bulanan). Semua b
 
 ## 9. Grup Setting Baru (registri)
 
-Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B di `16` §9, Paket C di `17` §9, Paket D di `18` §9** (nama kunci di sana yang berlaku bila berbeda dengan tabel ini). Daftar final (tipe, validasi, publik) ditulis di `08` §2 oleh task yang membuatnya, dan test registri ikut diperbarui. Nilai default diambil dari konsep v1.4. Angka rupiah adalah **contoh** yang wajib ditetapkan Pakis.
+Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B di `16` §9, Paket C di `17` §9, Paket D di `18` §9, Paket E di `19` §9, Paket F di `20` §9, Paket G di `21` §9** (nama kunci di sana yang berlaku bila berbeda dengan tabel ini). Daftar final (tipe, validasi, publik) ditulis di `08` §2 oleh task yang membuatnya, dan test registri ikut diperbarui. Nilai default diambil dari konsep v1.4. Angka rupiah adalah **contoh** yang wajib ditetapkan Pakis.
 
 | Grup | Kunci utama (default) | Paket |
 |---|---|---|
@@ -444,8 +477,8 @@ Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B di `16` §9, P
 | `mitra` | `self_order_enabled` (true), `show_restricted_products` (false, terkunci) | C |
 | `fleet` | `kpl_deviation_pct` (20), `odo_gps_deviation_pct` (10), `operating_hours` (06:00–21:00), `trip_settlement_days` (1), `gps_detail_retention_days` (90), `fuel_amount_tolerance_pct` (2) | D |
 | `accounting` | `lock_date`, `fiscal_year_start_month` (1), `cost_method` (`moving_average`, terkunci) | B (lock) / F |
-| `tax` | `is_pkp` (OQ-101), `vat_rate_versioned` (tabel berversi, bukan kunci tunggal) | F |
-| `ai` | `provider` (`none`/`self_hosted`/`api`), `send_personal_data` (false, terkunci) | G |
+| `tax` | `is_pkp` (B, OQ-101), `pkp_effective_date`, `pos_output_mode`; tarif berversi di tabel `tax_rates` (B) — kunci `vat_rate_versioned` **tidak dibuat** | B / F |
+| `ai` | `provider` (`none`/`self_hosted`/`api`), `send_personal_data` (false, terkunci), `features.*`, `monthly_budget`; grup lain G: `owner_digest`, `forecast`, `anomaly`, `kpi`, `principal_portal`, `sellout`, `marketplace` (`21` §9) | G |
 
 ## 10. Role & Permission
 
@@ -485,9 +518,9 @@ Nama final, matriks per role, dan jumlah total ditulis di `06` §3–§4 oleh ta
 | B | **Final: `16` §6.3 (74 permission).** Ringkas: `sales_orders.*`, `credit.*`, `lost_sales.*`, `deliveries.*`, `invoices.*`, `sales_returns.*`, `payments.*`, `giros.*`, `virtual_accounts.manage`, `unidentified_payments.*`, `receivables.*`, `receipts.*`, `deposits.*`, `cash_limits.manage`, `employee_receivables.*`, `balance_confirmations.*`, `customer_inquiries.*`, `petty_cash.*`, `pos.*`, `warranty.*`, `sales_reports.view`, `margin_reports.view`, `cash_control_reports.view`, `exports.mass`, `bank_accounts.manage`, `tax.manage`, `message_templates.manage`, `catalog_public.manage`, `accounting.lock` | `so.create`, `so.approve_exception`, `pengiriman.pod`, `pos.sell`, `pembayaran.terima`, `setoran.verify`, `retur.approve`, `piutang.view`, `laporan.margin.view`, `export.massal`, `kwitansi.terbit`, `kwitansi.batal.approve`, `pembayaran.alokasi.ubah`, `kas_kecil.*` |
 | C | **Final: `17` §6.3 (27 permission).** `visits.*`, `competitor_prices.*`, `canvas.*`, `red_flags.*`, `investigations.manage`, `incentives.*`, `promo_activities.*`, `service_tickets.*`, `rotations.manage`, `mitra_users.manage`, `customer_points.manage`. Pengguna Mitra memakai guard `mitra` (bukan Spatie) | `investigasi.manage`, `garansi.klaim.manage`, `promosi.manage` |
 | D | **Final: `18` §6.3 (25 permission) + role `koordinator_armada`.** `vehicle_documents.*`, `vehicle_checks.*`, `trips.*`, `trip_allowances.*`, `fuel_logs.*`, `fuel_prices.manage`, `gps.*`, `geofences.manage`, `fleet_alerts.handle`, `maintenance.*`, `fleet_reports.view` (+ `vehicles.view/manage` dari A) | `kendaraan.manage`, `trip.manage`, `trip.execute`, `bbm.input`, `bbm.verify`, `tracking.view`, `servis.approve`, `uang_jalan.settle` |
-| E | mengikuti `13-FASE-HR.md` + `employees.bank_account.approve` | `pegawai.manage`, `pegawai.rekening.approve` |
-| F | `accounts.manage`, `journals.view/create_manual/reverse`, `periods.close`, `bank_reconciliation.manage`, `reports.financial.view`, `tax.manage`, `purchase_invoices.manage`, `supplier_payments.manage/approve`, `principal_programs.manage`, `consignments.manage`, `assets.manage`, `members.manage` | `jurnal.manual.create` |
-| G | `ai.assistant.use`, `forecasts.view`, `anomalies.view`, `principal_portal.access`, `marketplace.manage`, `kpi.view/configure` | — |
+| E | `13-FASE-HR.md` + **`19` §6.2 (15 permission)**: `payroll_inputs.view`, `payroll_rules.manage`, `deduction_agreements.*`, `piece_work.*`, `onboarding.manage`, `employees.activate_approve`, `employees.bank_account.request/approve`, `held_items.manage`, `offboarding.*`, `labor_reports.view` | `pegawai.manage`, `pegawai.rekening.approve`, `payroll.calculate`, `payroll.approve`, `gaji.view` |
+| F | **Final: `20` §6.3 (49 permission) + role `akuntan`.** `accounts.*`, `accounting_events.manage`, `journals.*`, `periods.*`, `accounting_exports.generate`, `bank_statements.import`, `bank_reconciliation.*`, `reports.financial.view`, `purchase_invoices.*`, `payables.import_opening`, `supplier_payments.*`, `principal_programs.*`, `principal_claims.*`, `tax_invoices.*`, `tax_exports.generate`, `customer_tax_profiles.*`, `consignments.*`, `consignment_reports.*`, `assets.*`, `asset_depreciation.run`, `purchase_suggestions.*`, `seasonal_factors.manage`, `members.*`, `loyalty.*` (pakai ulang `tax.manage`, `margin_reports.view`, `exports.mass` dari B) | `jurnal.manual.create` |
+| G | **Final: `21` §6.3 (30 permission), tanpa role baru.** `dashboards.*`, `report_schedules.manage`, `owner_digest.view`, `customer_map.view`, `mart.manage`, `ai.assistant.use`, `knowledge_base.manage`, `assistant_reviews.manage`, `ai_evaluations.manage`, `ai_settings.manage`, `ai_usage.view`, `forecasts.*`, `anomalies.*`, `anomaly_detectors.configure`, `kpi.*`, `driver_scores.*`, `principal_users.manage`, `principal_sharing.manage`, `principal_portal_logs.view`, `sellout.view`, `marketplace.manage`, `marketplace_orders.process`. Akses prinsipal = guard `principal` (bukan permission `principal_portal.access`) | — |
 
 ## 11. State Machine Inti
 
@@ -519,8 +552,8 @@ Kode bahasa Inggris (P-4). Siapa boleh melakukan aksi ditetapkan di matriks tran
 | `trips` | `planned` → `checked` → `in_progress` → `completed` → `settled` | `blocked` → override → `checked`; `cancelled` | D |
 | `fuel_logs` | `accepted` (cek lulus) | `needs_review` → `approved`/`rejected` | D |
 | `maintenance_orders` | `planned` → `pending_approval` → `approved` → `in_service` → `done` | `rejected`, `cancelled` | D |
-| `journal_entries` | `posted` | `reversed` (oleh jurnal pembalik) | F |
-| `fiscal_periods` | `open` → `closed` | `reopened` (Owner + alasan) | F |
+| `journal_entries` | `posted` (manual: `draft` → `pending_approval` → `posted`) | tetap `posted` + `reversed_by_entry_id` (status `reversed` tidak dipakai; `20` §6.6) | F |
+| `fiscal_periods` | `open` → `closing` → `closed` | `closed` → `open` (Owner + alasan; `reopened_count`) | F |
 
 ## 12. Integrasi & Adapter (ADR-113)
 
@@ -536,7 +569,7 @@ Kode bahasa Inggris (P-4). Siapa boleh melakukan aksi ditetapkan di matriks tran
 | `TaxExport` | Data faktur pajak untuk sistem DJP | file | F | OQ-101. Format diverifikasi saat F |
 | `AccountingExport` | Ekspor jurnal ke software akuntansi luar | file | F | OQ-106 |
 | `MarketplaceConnector` | Sinkron stok & pesanan alat | — | G | OQ-107 |
-| `LlmProvider` | Klinik Tani, ringkasan | `none` | G | Data pribadi tidak dikirim (konsep §11) |
+| `LlmProvider` | Klinik Tani, ringkasan owner, penjelasan anomali (lewat `AiGateway`) | `none` | G | OQ-161, OQ-170; data pribadi tidak dikirim (konsep §11, `21` BR-368) |
 
 ## 13. Pemetaan Aturan Bisnis Konsep → Pengembangan
 
@@ -558,7 +591,7 @@ BR-1NN = BR-NN di konsep v1.4. Teks aturan ada di konsep. Dokumen paket menyalin
 | BR-112 | Pestisida terbatas hanya ke pembeli memenuhi syarat; tidak dijual bebas online | A (penanda) / B / C |
 | BR-113 | Jurnal seimbang, tidak diedit, koreksi pembalik | B (outbox) / F |
 | BR-114 | HPP moving average per produk | A |
-| BR-115–BR-124 | Aturan HRIS & payroll | E (selaraskan dengan `13`) |
+| BR-115–BR-124 | Aturan HRIS & payroll | Fase 0,5 / `13` / E — pemetaan `19` §8.1 |
 | BR-125 | Kios baru: limit aktif setelah verifikasi (foto, lokasi, OTP) | A |
 | BR-126 | Ubah nomor HP kios hanya Admin Penjualan + verifikasi | A |
 | BR-127 | Kwitansi digital bernomor server; blok offline; void perlu Finance | B / C |
@@ -643,6 +676,32 @@ Threat model lengkap ditulis per paket. Fokus yang wajib muncul:
 | OQ-142 | Estimasi jarak rute jalan | Uang jalan | D |
 | OQ-143 | Kendaraan dibawa pulang & jam operasional | Alert | D |
 | OQ-144 | Data SIM driver | Kelayakan | D |
+| OQ-145 | Konsultan pajak & validasi fixture payroll | Payroll | E |
+| OQ-146 | Pembayaran buruh harian/borongan | Payroll | E |
+| OQ-147 | Skema insentif driver | Insentif | E |
+| OQ-148 | Basis prorata & cutoff | Payroll | E |
+| OQ-149 | Komponen potongan upah & batas | Payroll | E |
+| OQ-150 | Barang dipegang pegawai | Offboarding | E |
+| OQ-151 | CoA & kebijakan akuntansi final | Backfill | F |
+| OQ-152 | Masa paralel dengan pembukuan lama | Go-live F | F |
+| OQ-153 | PPN penjualan eceran POS | Pajak | F |
+| OQ-154 | Skema konsinyasi (selisih harga/komisi, tanggungan hilang) | Konsinyasi | F |
+| OQ-155 | Contoh surat program prinsipal | Program | F |
+| OQ-156 | Kebijakan poin member | Member | F |
+| OQ-157 | Cut-off saldo awal GL, aset lama, hutang lama | Backfill | F |
+| OQ-158 | Penyusutan fiskal terpisah | Aset | F |
+| OQ-159 | Ambang approval pembayaran supplier & jurnal manual | Approval | F |
+| OQ-160 | Bank Pakis & file mutasi/transfer | Bank | F |
+| OQ-161 | Penyedia LLM (self-host vs API) | AI | G |
+| OQ-162 | Klinik Tani untuk kios di Mitra? | AI | G |
+| OQ-163 | Dokumen pelengkap basis pengetahuan | AI | G |
+| OQ-164 | KPI per role | KPI | G |
+| OQ-165 | Prinsipal & dataset portal | Portal | G |
+| OQ-166 | Bobot skor driver | Armada | G |
+| OQ-167 | Imbalan sell-out kios | Sell-out | G |
+| OQ-168 | Kanal ringkasan owner | Laporan | G |
+| OQ-169 | Pola anomali prioritas | Anomali | G |
+| OQ-170 | Pemrosesan data AI di luar negeri | AI | G |
 
 ## 16. Pemeriksaan & Penggabungan ke Repo
 

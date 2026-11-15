@@ -156,6 +156,8 @@ Exit gate: trip tidak bisa dimulai tanpa kelayakan, cek BBM wajar teruji, km/lit
 
 ## Paket E — SDM Lanjut & Payroll (T-049–T-066 + T-154–T-158)
 
+> ✅ **Sudah dirinci:** `TASKS_PAKET_E.md` + `docs/19-PAKET-E-SDM-PAYROLL.md` (T-154–T-158 + T-063A/T-064A bersyarat, 55 jam). Baris di bawah hanya ringkasan.
+
 Task T-049–T-066 sudah ditulis detail di `TASKS.md` (sumber `13-FASE-HR.md`) dan **ditunda**. T-049 + T-060 boleh dimajukan (`14` §3.2). Aturan konsep BR-115–BR-124 diselaraskan dengan `13-FASE-HR.md` saat paket ini dirinci: BR-115–BR-116 (absensi & koreksi) sudah dipenuhi Fase 0,5 (BR-064–BR-069, lihat `14` §1 P-9), BR-117 → T-061, BR-119 → T-062/T-064, BR-120–BR-121 → T-064. Tambahan:
 
 | ID | Task | Modul | Aturan / ADR | Est | Dependensi |
@@ -167,6 +169,8 @@ Task T-049–T-066 sudah ditulis detail di `TASKS.md` (sumber `13-FASE-HR.md`) d
 | T-158 | Hardening & UAT Paket E (uji perhitungan payroll dengan konsultan pajak Pakis) | — | BR-120 | 8 | T-049–T-066, T-154–T-157 |
 
 ## Paket F — Keuangan & Prinsipal (T-159–T-178)
+
+> ✅ **Sudah dirinci:** `TASKS_PAKET_F.md` + `docs/20-PAKET-F-KEUANGAN-PRINSIPAL.md` (182 jam). Baris di bawah hanya ringkasan.
 
 Tujuan: jurnal otomatis dari seluruh transaksi, laporan keuangan, pajak, hutang, program prinsipal.
 Exit gate: semua event `pending` sejak Paket B terposting seimbang (backfill), neraca seimbang, tutup buku teruji.
@@ -195,6 +199,8 @@ Exit gate: semua event `pending` sejak Paket B terposting seimbang (backfill), n
 | T-178 | Hardening & UAT Paket F + uji tutup buku bulanan | — | `09` §7.2 | 10 | Semua T-159–T-177 |
 
 ## Paket G — Cerdas & Kinerja (T-179–T-192)
+
+> ✅ **Sudah dirinci:** `TASKS_PAKET_G.md` + `docs/21-PAKET-G-CERDAS-KINERJA.md` (146 jam). Baris di bawah hanya ringkasan.
 
 Tujuan: analitik, AI dengan pengaman, portal & kanal tambahan. Prasyarat: data operasional ±6 bulan.
 Exit gate: setiap fitur AI punya alternatif non-AI, golden set lulus, tidak ada data pribadi ke layanan AI luar.

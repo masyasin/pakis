@@ -24,6 +24,9 @@ PAKIS ONE adalah sistem internal **CV Pakis Jaya Abadi** (distributor pestisida 
 | Paket B — Penjualan & Uang Aman | `docs/16-PAKET-B-PENJUALAN-UANG.md` + `TASKS_PAKET_B.md` |
 | Paket C — Lapangan & Mitra | `docs/17-PAKET-C-LAPANGAN-MITRA.md` + `TASKS_PAKET_C.md` |
 | Paket D — Armada & BBM | `docs/18-PAKET-D-ARMADA-BBM.md` + `TASKS_PAKET_D.md` |
+| Paket E — SDM Lanjut & Payroll (pelengkap; HR inti tetap `13`) | `docs/19-PAKET-E-SDM-PAYROLL.md` + `TASKS_PAKET_E.md` |
+| Paket F — Keuangan & Prinsipal | `docs/20-PAKET-F-KEUANGAN-PRINSIPAL.md` + `TASKS_PAKET_F.md` |
+| Paket G — Cerdas & Kinerja | `docs/21-PAKET-G-CERDAS-KINERJA.md` + `TASKS_PAKET_G.md` |
 
 `docs/reference/` (konsep v1.4) hanya bacaan latar. **Jangan membangun fitur dari sana tanpa task.**
 
@@ -95,7 +98,7 @@ Berhenti dan tanyakan ke manusia, **jangan menebak**, bila:
 - Task terblokir OQ (kolom "Task terblokir" di `12`).
 - Test keamanan/otorisasi/kontrak listing gagal dan perbaikannya menuntut melonggarkan kontrol.
 - Diminta mengerjakan task dari `TASKS_ROADMAP.md`. Itu outline, **bukan** task siap eksekusi; hanya task di `TASKS.md` / `TASKS_PAKET_*.md` yang boleh dikerjakan.
-- Akan memulai sebuah paket sebelum gerbangnya terbuka: Paket A setelah exit gate Fase 0 + 0,5 dan checklist `15` §0; Paket B setelah exit gate A dan `16` §0; Paket C setelah exit gate B (termasuk pilot) dan `17` §0; Paket D setelah exit gate C dan `18` §0. Temuan penyelarasan yang masih terbuka ada di `12` bagian "Penyelarasan Paket A–B" (PA-n) dan "Penyelarasan Paket C–D" (PC-n, PD-n).
+- Akan memulai sebuah paket sebelum gerbangnya terbuka: Paket A setelah exit gate Fase 0 + 0,5 dan checklist `15` §0; Paket B setelah exit gate A dan `16` §0; Paket C setelah exit gate B (termasuk pilot) dan `17` §0; Paket D setelah exit gate C dan `18` §0; Paket E bagian E1 bersama Fase HR setelah A, bagian E2 setelah D (`12` PE-1); Paket F dan G sesuai kepala `TASKS_PAKET_F.md`/`TASKS_PAKET_G.md` dan §0 dokumennya. Temuan penyelarasan yang masih terbuka ada di `12` bagian "Penyelarasan Paket A–B" (PA-n), "C–D" (PC-n, PD-n), "E" (PE-n), "F" (PF-n), dan "G" (PG-n).
 
 Catat pertanyaan di `Implementasi_Plan.md` §6.3.
 

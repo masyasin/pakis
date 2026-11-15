@@ -3,6 +3,7 @@
 > Siap eksekusi setelah exit gate Paket C dan checklist `docs/18-PAKET-D-ARMADA-BBM.md` §0. Spesifikasi: **18**, **17**, **16**, **15**, **14**. Path backend relatif ke `backend/`; mobile `mobile-pro/`.
 >
 > **Aturan khusus:** tidak ada dependency baru (backend & Flutter). Domain `app/Domain/Fleet` (sudah ada sejak A, berisi `Vehicle`) diperluas. Permission & role `koordinator_armada` dibuat di T-141. Item sinkron baru didaftarkan di registri handler **17** T-114. Aturan red flag baru ditambahkan ke registri **17** T-129.
+> - **Nama berkas halaman & komponen frontend mengikuti konvensi repo** (kebab-case huruf kecil, mis. `pages/sales/orders/form.tsx`); path PascalCase di task ini indikatif (**15** §0 S-3).
 
 | Ringkasan | Nilai |
 |---|---|

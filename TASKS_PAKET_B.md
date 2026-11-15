@@ -3,6 +3,7 @@
 > Siap eksekusi **setelah** exit gate Paket A lulus dan checklist `docs/16-PAKET-B-PENJUALAN-UANG.md` §0 dicentang. Format sama dengan `TASKS.md`. Spesifikasi: `docs/16-PAKET-B-PENJUALAN-UANG.md` (**16**), `docs/15-PAKET-A-MASTER-GUDANG.md` (**15**), `docs/14-ROADMAP-LENGKAP.md` (**14**). Path relatif ke `backend/`.
 >
 > **Aturan khusus paket ini**
+> - **Nama berkas halaman & komponen frontend mengikuti konvensi repo** (kebab-case huruf kecil, mis. `pages/sales/orders/form.tsx`); path PascalCase di task ini indikatif (**15** §0 S-3).
 > - Domain baru: `app/Domain/{Sales,Delivery,Receivable,Cash,Pos,Warranty,Integration,Reporting}` + `app/Domain/Accounting/{Outbox,Period}` (struktur Fase 0).
 > - Semua perubahan piutang lewat `App\Domain\Receivable\ReceivableLedger`; semua Action keuangan memanggil `App\Domain\Accounting\Period\PeriodGuard` (SEC-115, SEC-123).
 > - Halaman publik: `app/Http/Controllers/Public/*` + `resources/views/public/*.blade.php` (Blade, bukan Inertia). POS PWA: `resources/pos/` (entry Vite terpisah).

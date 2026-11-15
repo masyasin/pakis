@@ -3,6 +3,7 @@
 > Siap eksekusi **setelah** exit gate Paket B (termasuk pilot) lulus dan checklist `docs/17-PAKET-C-LAPANGAN-MITRA.md` §0 dicentang. Spesifikasi: **17** (`docs/17-…`), **16**, **15**, **14**. Path backend relatif ke `backend/`; mobile di `mobile-pro/`, `mobile-mitra/`, `mobile-shared/`.
 >
 > **Aturan khusus paket ini**
+> - **Nama berkas halaman & komponen frontend mengikuti konvensi repo** (kebab-case huruf kecil, mis. `pages/sales/orders/form.tsx`); path PascalCase di task ini indikatif (**15** §0 S-3).
 > - Aturan bisnis A/B **tidak** diduplikasi di mobile: endpoint mobile memanggil Action yang sama dengan web. Logika lokal di perangkat (harga, plafon, alokasi perkiraan) hanya untuk tampilan/offline dan selalu diverifikasi server.
 > - Setiap Action yang mengubah entitas tersinkron memanggil `SyncChangeRecorder` (ADR-117; arch test dari T-114).
 > - Dependency Flutter baru hanya dari **17** §0.1; dicatat di `03` §5.

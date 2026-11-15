@@ -531,6 +531,23 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Verifikasi: `php artisan test --filter=Attendance`
 - Di luar lingkup: status harian lengkap (T-037)
 
+### T-036A — Tugas luar kota (dinas luar)
+- Fase: 0,5 | Prioritas: P1 | Estimasi: 9 jam
+- Memenuhi: keputusan Mas 15 Nov 2026 (`12` Log Keputusan), BR-071 (baru)
+- Dependensi: T-036, T-040 (pola ajukan–setujui & penyetuju 06 §6)
+- Konteks wajib: `docs/12-OPEN-QUESTIONS.md` Log 15 Nov 2026 "Tugas luar kota", `docs/08-BUSINESS-RULES.md` BR-064, BR-069, BR-070, `docs/06-AUTHORIZATION.md` §5–§6
+- Latar: sales, driver, dan kenek bisa ke luar kota dan menginap 1–2 malam. Hari biasa mereka absen di kantor/gudang (muat barang lalu berangkat); saat menginap, absen harus bisa dilakukan di lokasi tujuan.
+- Rancangan (dicatat lebih dulu di 04/05/06/07/08 saat task dimulai, lalu test registri/katalog diperbarui):
+  - Tabel `field_trips`: nomor (`NumberGenerator`), `start_date`–`end_date` (inklusif), tujuan (teks), keperluan, **aturan lokasi absen per tugas** `attendance_rule` = `anywhere` (di mana saja, lokasi & jarak tetap dicatat) | `destination` (radius sekitar titik tujuan; titik dari tempel tautan Google Maps seperti form Lokasi) | `any_location` (lokasi Pakis aktif mana pun), status `pending`/`approved`/`rejected`/`cancelled`, pengaju, penyetuju, catatan keputusan, [audit]. Tabel `field_trip_employees` (satu tugas banyak pegawai: sales + driver + kenek).
+  - BR-071: pada `work_date` di dalam tugas `approved` milik pegawai, lokasi absen yang sah = aturan biasa BR-064 **∪** aturan tugas (absen di kantor sebelum berangkat tetap sah). Log diberi `flags.field_trip_id`; mode `anywhere` dari tugas tidak dihitung anomali. Tugas tidak mengubah jadwal/shift. Tugas `approved` yang tumpang tindih untuk pegawai yang sama ditolak. Panjang maksimal = setting baru (mis. `attendance.field_trip_max_days`).
+  - Pembuat: HRD/Kepala Lokasi/Supervisor membuat langsung dalam scope-nya (langsung `approved`); pegawai mengajukan dari Pakis Pro → penyetuju & notifikasi mengikuti pola koreksi (06 §6, BR-070). Permission baru (mis. `field_trips.view`/`manage`/`request`/`approve`) → 06 §3–§4 + `PermissionCatalog`.
+  - Web: daftar `field_trips` (cari nomor/tujuan/nama pegawai; filter status, tanggal DR default bulan ini, lokasi R, aturan; sort **-start_date**) + form + tab di detail pegawai (Kehadiran). Mobile (lanjutan di T-043): kartu "Tugas luar kota aktif" di beranda, ajukan tugas.
+- Kriteria penerimaan:
+  - [ ] Test BR-071: absen di luar radius kantor pada tanggal tugas diterima sesuai aturan tugas (3 aturan), di luar tanggal tugas ditolak; absen di kantor pada tanggal tugas tetap sah
+  - [ ] Tugas tumpang tindih ditolak; tugas `pending`/`rejected` tidak membuka lokasi tambahan
+  - [ ] Listing lolos test kontrak; IDOR test untuk route ber-ID
+- Verifikasi: `php artisan test --filter=FieldTrip`
+
 ### T-037 — Resolver status harian & job
 - Fase: 0,5 | Prioritas: P0 | Estimasi: 6 jam
 - Memenuhi: FR-037, BR-052 (hitung ulang), BR-066, BR-068

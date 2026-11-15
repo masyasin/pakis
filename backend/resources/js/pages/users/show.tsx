@@ -18,6 +18,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { NativeSelect } from '@/components/pakis/native-select';
+import { DeviceSummaryList } from '@/components/pakis/device-summary-list';
+import type { DeviceSummary } from '@/components/pakis/device-summary-list';
 import { OneTimeSecretDialog } from '@/components/pakis/one-time-secret-dialog';
 import { PageTabs } from '@/components/pakis/page-tabs';
 import type { PageTab } from '@/components/pakis/page-tabs';
@@ -120,7 +122,8 @@ type Props = {
     };
     protectedReason: 'self' | 'owner' | 'beyond' | null;
     sessions: WebSession[];
-    devices: unknown[];
+    devices: DeviceSummary[];
+    devicesUrl: string | null;
     history: HistoryPage | null;
     historyEvents: { value: string; label: string }[];
 };
@@ -314,7 +317,17 @@ export default function UserShow(props: Props) {
                     {tab === 'sesi' && (
                         <SessionsTab sessions={props.sessions} />
                     )}
-                    {tab === 'perangkat' && <DevicesTab />}
+                    {tab === 'perangkat' && (
+                        <DeviceSummaryList
+                            devices={props.devices}
+                            manageHref={props.devicesUrl}
+                            emptyText={
+                                props.devicesUrl
+                                    ? 'Akun ini belum pernah masuk di aplikasi Pakis Pro.'
+                                    : 'Anda tidak punya akses melihat perangkat.'
+                            }
+                        />
+                    )}
                     {tab === 'riwayat' && props.history && (
                         <HistoryTab
                             userId={user.id}
@@ -656,13 +669,6 @@ function SessionsTab({ sessions }: { sessions: WebSession[] }) {
                 </li>
             ))}
         </ul>
-    );
-}
-
-function DevicesTab() {
-    // TODO(T-031): perangkat Pakis Pro milik akun ini dari tabel `devices`.
-    return (
-        <Empty text="Perangkat Pakis Pro akan tampil di sini setelah modul Perangkat aktif." />
     );
 }
 

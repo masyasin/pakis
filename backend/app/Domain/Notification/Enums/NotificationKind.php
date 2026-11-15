@@ -13,6 +13,7 @@ enum NotificationKind: string
     case PasswordChanged = 'password_changed';
     case NewDeviceLogin = 'new_device_login';
     case AccountLocked = 'account_locked';
+    case DevicePending = 'device_pending';
 
     public function label(): string
     {
@@ -22,6 +23,7 @@ enum NotificationKind: string
             self::PasswordChanged => 'Password diganti',
             self::NewDeviceLogin => 'Login perangkat baru',
             self::AccountLocked => 'Akun dikunci',
+            self::DevicePending => 'Perangkat menunggu persetujuan',
         };
     }
 

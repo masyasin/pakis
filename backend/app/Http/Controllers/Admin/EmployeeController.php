@@ -350,6 +350,8 @@ class EmployeeController extends Controller
             'last_login_at' => self::iso($user->last_login_at),
             'roles' => $user->roles->map(fn ($r) => $r->getAttribute('label'))->values(),
             'show_url' => $actor->can('users.view') ? route('admin.users.show', $user, absolute: false) : null,
+            // Perangkat Pakis Pro (T-031) hanya untuk pemegang `devices.view` (06 §4).
+            'devices' => $actor->can('devices.view') ? DeviceController::summaries($user) : null,
         ];
     }
 

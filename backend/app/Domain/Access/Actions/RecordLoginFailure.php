@@ -49,7 +49,13 @@ final class RecordLoginFailure
     /** Menit tersisa sampai percobaan boleh lagi (dibulatkan ke atas, minimal 1). */
     public static function minutesLeft(string $subject, ?string $ip): int
     {
-        return max(1, (int) ceil(RateLimiter::availableIn(self::key($subject, $ip)) / 60));
+        return max(1, (int) ceil(self::secondsLeft($subject, $ip) / 60));
+    }
+
+    /** Detik tersisa sampai percobaan boleh lagi (minimal 1); `retry_after_s` di API (05 §2.3). */
+    public static function secondsLeft(string $subject, ?string $ip): int
+    {
+        return max(1, RateLimiter::availableIn(self::key($subject, $ip)));
     }
 
     /** Login berhasil: kosongkan penghitung jaringan ini dan penghitung akun. */
@@ -61,9 +67,9 @@ final class RecordLoginFailure
         }
     }
 
-    public function handle(string $identifier, string $ip, ?User $user, string $reason): void
+    public function handle(string $identifier, string $ip, ?User $user, string $reason, SecurityChannel $channel = SecurityChannel::Web): void
     {
-        $this->security->record(SecurityEventType::LoginFailed, SecurityChannel::Web, $user, $identifier, ['reason' => $reason]);
+        $this->security->record(SecurityEventType::LoginFailed, $channel, $user, $identifier, ['reason' => $reason]);
 
         $decay = self::lockoutMinutes() * 60;
         $attempts = RateLimiter::hit(self::key(self::subject($user, $identifier), $ip), $decay);
@@ -81,7 +87,7 @@ final class RecordLoginFailure
             $user->forceFill(['locked_until' => $lockedUntil])->saveQuietly();
         }
 
-        $this->security->record(SecurityEventType::Lockout, SecurityChannel::Web, $user, $identifier, [
+        $this->security->record(SecurityEventType::Lockout, $channel, $user, $identifier, [
             'scope' => $reachedNetwork ? 'identifier_ip' : 'account',
             'attempts' => $reachedNetwork ? $attempts : $accountAttempts,
             'locked_until' => $lockedUntil->toIso8601String(),

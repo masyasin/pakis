@@ -98,6 +98,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `notification.on_password_changed` | multi enum | `["email"]` | subset `email`, `telegram`, `whatsapp` | ❌ |
 | `notification.on_new_device_login` | multi enum | `["email"]` | subset `email`, `telegram`, `whatsapp` | ❌ |
 | `notification.on_account_locked` | multi enum | `["email"]` | subset `email`, `telegram`, `whatsapp` | ❌ |
+| `notification.on_device_pending` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` | ❌ |
 | `notification.whatsapp_daily_limit` | int | 300 | 0–10000 | ❌ |
 | `notification.whatsapp_hourly_per_user` | int | 5 | 1–50 | ❌ |
 | `notification.circuit_failures` | int | 5 | 3–20 | ❌ |

@@ -454,11 +454,11 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migration `devices`, `app/Domain/Device/{Models/Device,Actions/{RegisterDeviceOnLogin,ApproveDevice,RejectDevice,RevokeDevice}}`, `Http/Middleware/{EnsureDeviceBound,EnsureAppVersion,EnsurePasswordChangedApi}.php`, `Api/V1/{AuthController,MeController}.php`, `Listings/DeviceListing`, `pages/Devices/Index.tsx`, `docs/openapi.yaml` (bagian auth)
 - Deskripsi: Login API dengan MFA & registrasi perangkat (auto-approve pertama / pending). Token terikat perangkat (nama token = `device:{id}`, ability = permission mobile, kedaluwarsa `mobile.token_days`). Middleware perangkat, versi, wajib ganti password, rate limit. Endpoint me, ubah password, lupa password, reset OTP, cabut sesi web. Halaman web Perangkat dengan setujui/tolak/cabut. Notifikasi perangkat pending ke pemegang `devices.manage`.
 - Kriteria penerimaan:
-  - [ ] Token dipakai dengan `X-Device-Id` lain → 401 `DEVICE_MISMATCH` + token dicabut
-  - [ ] HP kedua → 403 `DEVICE_PENDING`. Setujui → HP lama `replaced` & tokennya mati
-  - [ ] Satu HP untuk dua akun aktif → ditolak (unique index)
-  - [ ] `X-App-Version` < min → 426 di semua endpoint kecuali `/config`
-  - [ ] Listing `devices` lolos test kontrak + scope `kepala_lokasi`
+  - [x] Token dipakai dengan `X-Device-Id` lain → 401 `DEVICE_MISMATCH` + token dicabut
+  - [x] HP kedua → 403 `DEVICE_PENDING`. Setujui → HP lama `replaced` & tokennya mati
+  - [x] Satu HP untuk dua akun aktif → ditolak (unique index)
+  - [x] `X-App-Version` < min → 426 di semua endpoint kecuali `/config`
+  - [x] Listing `devices` lolos test kontrak + scope `kepala_lokasi`
 - Verifikasi: `php artisan test --filter=Api\\V1\\Auth`
 - Di luar lingkup: layar mobile (T-032)
 

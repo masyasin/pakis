@@ -121,8 +121,9 @@ class UserController extends Controller
             'protectedReason' => self::protectedReason($actor, $user),
             // Sesi milik akun ini; tidak ada yang "sesi saat ini" bagi admin yang melihat.
             'sessions' => $tab === 'sesi' ? $sessions->handle($user, '') : [],
-            // TODO(T-031): perangkat Pakis Pro milik akun (tabel `devices`).
-            'devices' => [],
+            // Perangkat hanya untuk pemegang `devices.view` (06 §4); akun ini sudah dalam scope pelaku.
+            'devices' => $tab === 'perangkat' && $actor->can('devices.view') ? DeviceController::summaries($user) : [],
+            'devicesUrl' => $actor->can('devices.view') ? route('admin.devices.index', ['q' => $user->username, 'filter' => ['status' => ['pending', 'active', 'revoked', 'replaced', 'rejected']]], absolute: false) : null,
             'history' => $tab === 'riwayat' ? self::history($request, $user) : null,
             'historyEvents' => collect(self::HISTORY_EVENTS)->map(fn ($label, $value) => ['value' => $value, 'label' => $label])->values(),
         ]);

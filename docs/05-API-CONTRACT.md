@@ -357,13 +357,16 @@ Request:
 ```
 Respons 200:
 ```json
-{ "data": { "token": "12|Qw3...", "token_type": "Bearer",
-  "user": { "id": 31, "name": "Agus Santoso", "username": "agus.s", "must_change_password": false,
+{ "data": { "token": "12|Qw3...", "token_type": "Bearer", "expires_at": "2027-02-13T03:00:00+00:00",
+  "user": { "id": 31, "name": "Agus Santoso", "username": "agus.s", "email": null, "phone": "6281234567890",
+            "has_avatar": false, "must_change_password": false,
             "employee": { "id": 24, "employee_number": "PJA-260024", "position": "Sales", "location": "Kantor Pusat Kalirejo" },
             "permissions": ["attendance.self", "attendance_corrections.create"] },
   "device": { "status": "active" } } }
 ```
 Aturan: perangkat baru ketika pengguna belum punya perangkat aktif dan `mobile.auto_approve_first_device = true` → langsung `active`. Selain itu → buat `pending`, respons `403 DEVICE_PENDING` tanpa token (BR-040). Kalau role butuh MFA dan `otp` kosong → `401 MFA_REQUIRED`.
+
+Catatan implementasi (T-031): `user` yang sama dikembalikan `GET /me`. `permissions` = permission mobile yang dipegang (`attendance.self`, `attendance_corrections.create`, `attendance_corrections.approve`) dan menjadi ability token. Akun tanpa satu pun → `403 FORBIDDEN`. MFA juga diminta bila pengguna mengaktifkannya sukarela; `otp` boleh berisi kode pemulihan. HP yang masih aktif di akun lain tidak pernah auto-approve. Login ulang dari HP `pending` yang sama tidak membuat permintaan baru. Rincian skema: `docs/openapi.yaml`.
 
 ### 5.4 `POST /api/v1/attendance` (multipart)
 

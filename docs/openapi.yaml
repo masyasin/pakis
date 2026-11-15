@@ -1,0 +1,278 @@
+openapi: 3.1.0
+info:
+  title: PAKIS ONE API v1 (Pakis Pro)
+  version: 1.0.0
+  description: |
+    API untuk aplikasi Flutter Pakis Pro. Sumber kebenaran tetap `docs/05-API-CONTRACT.md`;
+    berkas ini melengkapi bagian autentikasi & akun (T-031). Endpoint absensi/koreksi ditambah di
+    task-nya (T-036, T-040).
+
+    Header wajib di semua endpoint kecuali `GET /config`:
+    - `X-App-Version` (semver) — di bawah `mobile.min_version` → 426 `APP_UPDATE_REQUIRED` (BR-027).
+    - `X-Device-Id` (hash SHA-256 dari ANDROID_ID + install id) — endpoint ber-token wajib sama dengan
+      perangkat pemilik token, selain itu token dicabut + 401 `DEVICE_MISMATCH` (BR-040, SEC-020).
+    - `Accept: application/json`.
+    Batas laju: 120 request/menit per token (SEC-068); login & lupa password punya batas sendiri.
+servers:
+  - url: /api/v1
+tags:
+  - name: Publik
+  - name: Autentikasi
+  - name: Akun
+paths:
+  /config:
+    get:
+      tags: [Publik]
+      summary: Konfigurasi publik (05 §5.2)
+      security: []
+      responses:
+        '200':
+          description: Branding, versi minimum, aturan absen yang perlu diketahui klien.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { type: object }
+                  meta: { $ref: '#/components/schemas/Meta' }
+  /auth/login:
+    post:
+      tags: [Autentikasi]
+      summary: Login + registrasi perangkat (05 §5.3)
+      security: []
+      parameters:
+        - $ref: '#/components/parameters/AppVersion'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, password, device]
+              properties:
+                login: { type: string, maxLength: 150, description: Username atau email }
+                password: { type: string, maxLength: 200 }
+                otp: { type: [string, 'null'], description: Kode authenticator 6 digit atau kode pemulihan bila MFA aktif }
+                device:
+                  type: object
+                  required: [uid]
+                  properties:
+                    uid: { type: string, minLength: 16, maxLength: 100, pattern: '^[A-Za-z0-9._:-]+$' }
+                    model: { type: [string, 'null'], maxLength: 100 }
+                    os_version: { type: [string, 'null'], maxLength: 40 }
+      responses:
+        '200':
+          description: Perangkat aktif → token Sanctum terikat perangkat.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      token: { type: string }
+                      token_type: { type: string, enum: [Bearer] }
+                      expires_at: { type: string, format: date-time, description: Sesuai `mobile.token_days` }
+                      user: { $ref: '#/components/schemas/MobileUser' }
+                      device:
+                        type: object
+                        properties:
+                          status: { type: string, enum: [active] }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Error', description: 'INVALID_CREDENTIALS (seragam, SEC-001), MFA_REQUIRED (details.mfa=true), MFA_INVALID' }
+        '403': { $ref: '#/components/responses/Error', description: 'DEVICE_PENDING (tanpa token, menunggu persetujuan admin), MFA_SETUP_REQUIRED (aktivasi di web), FORBIDDEN (akun tanpa permission mobile)' }
+        '422': { $ref: '#/components/responses/Error' }
+        '423': { $ref: '#/components/responses/Error', description: 'ACCOUNT_LOCKED, details.retry_after_s (BR-016)' }
+        '426': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/logout:
+    post:
+      tags: [Autentikasi]
+      summary: Keluar (cabut token HP ini)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      responses:
+        '200': { $ref: '#/components/responses/Message' }
+        '401': { $ref: '#/components/responses/Error' }
+  /auth/password/forgot:
+    post:
+      tags: [Autentikasi]
+      summary: Lupa password (FR-005) — respons selalu sama
+      security: []
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, channel]
+              properties:
+                login: { type: string, maxLength: 150 }
+                channel: { type: string, enum: [email, whatsapp, telegram], description: 'Harus salah satu `auth.forgot_channels` dari /config' }
+      responses:
+        '200': { $ref: '#/components/responses/Message' }
+        '422': { $ref: '#/components/responses/Error' }
+        '429': { $ref: '#/components/responses/Error' }
+  /auth/password/reset-otp:
+    post:
+      tags: [Autentikasi]
+      summary: Reset password dengan kode OTP (FR-006)
+      security: []
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [login, code, password, password_confirmation]
+              properties:
+                login: { type: string }
+                code: { type: string, pattern: '^\d{6,8}$' }
+                password: { type: string }
+                password_confirmation: { type: string }
+      responses:
+        '200': { $ref: '#/components/responses/Message' }
+        '422': { $ref: '#/components/responses/Error', description: 'Kode salah (pesan seragam) atau password tidak memenuhi kebijakan. Semua token API akun dicabut saat berhasil.' }
+        '429': { $ref: '#/components/responses/Error' }
+  /me:
+    get:
+      tags: [Akun]
+      summary: Data akun saya
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data: { $ref: '#/components/schemas/MobileUser' }
+                  meta: { $ref: '#/components/schemas/Meta' }
+        '401': { $ref: '#/components/responses/Error' }
+    put:
+      tags: [Akun]
+      summary: Ubah nomor HP & foto (mengubah HP wajib password saat ini)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                phone: { type: [string, 'null'], pattern: '^\+?[0-9]{8,20}$' }
+                avatar: { type: string, format: binary, description: 'PNG/JPG/WebP ≤ 2 MB' }
+                current_password: { type: string }
+      responses:
+        '200': { description: Data akun terbaru }
+        '403': { $ref: '#/components/responses/Error', description: PASSWORD_CHANGE_REQUIRED }
+        '422': { $ref: '#/components/responses/Error' }
+  /me/password:
+    put:
+      tags: [Akun]
+      summary: Ganti password (token HP ini tetap aktif, token lain & sesi web dicabut)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [current_password, password, password_confirmation]
+              properties:
+                current_password: { type: string }
+                password: { type: string }
+                password_confirmation: { type: string }
+      responses:
+        '200': { description: Data akun terbaru (`must_change_password` = false) }
+        '422': { $ref: '#/components/responses/Error' }
+  /me/sessions/revoke-others:
+    post:
+      tags: [Akun]
+      summary: Cabut semua sesi web milik sendiri
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      responses:
+        '200':
+          description: Jumlah sesi web yang dicabut
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    properties:
+                      revoked: { type: integer }
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+  parameters:
+    AppVersion:
+      name: X-App-Version
+      in: header
+      required: true
+      schema: { type: string, example: 1.0.3 }
+    DeviceId:
+      name: X-Device-Id
+      in: header
+      required: true
+      schema: { type: string }
+  schemas:
+    Meta:
+      type: object
+      properties:
+        request_id: { type: string }
+    MobileUser:
+      type: object
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        username: { type: string }
+        email: { type: [string, 'null'] }
+        phone: { type: [string, 'null'] }
+        has_avatar: { type: boolean }
+        must_change_password: { type: boolean }
+        employee:
+          type: [object, 'null']
+          properties:
+            id: { type: integer }
+            employee_number: { type: string }
+            position: { type: [string, 'null'] }
+            location: { type: [string, 'null'] }
+        permissions:
+          type: array
+          description: Permission mobile yang dipegang (= ability token)
+          items: { type: string, enum: [attendance.self, attendance_corrections.create, attendance_corrections.approve] }
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code: { type: string, description: 'Kode 05 §2.3' }
+            message: { type: string }
+            details: { type: object }
+            request_id: { type: string }
+  responses:
+    Error:
+      description: Galat (05 §2.2)
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    Message:
+      description: Pesan sukses
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data:
+                type: object
+                properties:
+                  message: { type: string }
+security:
+  - bearer: []

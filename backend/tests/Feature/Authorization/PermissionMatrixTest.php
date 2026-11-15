@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Access\Support\PermissionCatalog;
+use App\Domain\Device\Models\Device;
 use App\Domain\Numbering\Models\DocumentSequence;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -19,7 +20,7 @@ use Tests\Support\FakeOrgStructure;
 /**
  * permission → [method, uri, data?]. `{sequence}` diganti ID penomoran yang ada; `{target}` diganti
  * akun ber-role `pegawai` yang berada DALAM scope pelaku (agar yang diuji permission, bukan scope 404,
- * dan batas "hak target ⊆ pelaku" UserPolicy terpenuhi).
+ * dan batas "hak target ⊆ pelaku" UserPolicy terpenuhi). `{device}` = perangkat pending milik target.
  */
 const REPRESENTATIVE = [
     'dashboard.view' => ['GET', '/dasbor'],
@@ -59,12 +60,13 @@ const REPRESENTATIVE = [
     'employees.export' => ['GET', '/pegawai/ekspor'],
     'assignments.view' => ['GET', '/penugasan'],
     'assignments.manage' => ['POST', '/pegawai/{employee}/penugasan'],
+    'devices.view' => ['GET', '/perangkat'],
+    'devices.manage' => ['POST', '/perangkat/{device}/tolak', ['reason' => 'Bukan HP kantor']],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
 const PENDING = [
     'employees.offboard' => 'T-026', 'employees.import' => 'T-027',
-    'devices.view' => 'T-031', 'devices.manage' => 'T-031',
     'schedules.view' => 'T-035', 'schedules.manage' => 'T-035',
     'attendance.view' => 'T-038', 'attendance.view_photo' => 'T-038', 'attendance.export' => 'T-038', 'attendance.self' => 'T-036',
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.create' => 'T-040', 'attendance_corrections.approve' => 'T-041',
@@ -101,14 +103,16 @@ test('10 §4 matriks role × permission sesuai 06 §4', function (string $role, 
     $data = REPRESENTATIVE[$permission][2] ?? [];
     $uri = str_replace('{sequence}', (string) DocumentSequence::query()->value('id'), $uri);
 
-    if (str_contains($uri, '{target}') || str_contains($uri, '{employee}')) {
+    if (str_contains($uri, '{target}') || str_contains($uri, '{employee}') || str_contains($uri, '{device}')) {
         // Pelaku pegawai #1, target pegawai #2 di lokasi yang sama & bawahannya → dalam scope apa pun.
         $org = FakeOrgStructure::bind();
         $org->employee(1)->at(10);
         $org->employee(2)->at(10)->reportsTo(1);
         $user->forceFill(['employee_id' => employeeRow(1)])->save();
         $target = User::factory()->create(['employee_id' => employeeRow(2)])->assignRole('pegawai');
-        $uri = str_replace(['{target}', '{employee}'], [(string) $target->id, '2'], $uri);
+        // `{device}` = HP target yang menunggu persetujuan (T-031).
+        $device = Device::query()->create(['user_id' => $target->id, 'device_uid' => str_repeat('a', 64), 'status' => 'pending']);
+        $uri = str_replace(['{target}', '{employee}', '{device}'], [(string) $target->id, '2', (string) $device->id], $uri);
     }
 
     $response = $this->actingAs($user)

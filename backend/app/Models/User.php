@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Domain\Device\Models\Device;
 use App\Domain\Employee\Models\Employee;
 use App\Support\Authorization\ScopedRouteBinding;
 use Database\Factories\UserFactory;
@@ -11,11 +12,13 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Carbon;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 
 /**
@@ -54,7 +57,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<UserFactory> */
-    use HasFactory, HasRoles, Notifiable, ScopedRouteBinding, SoftDeletes, TwoFactorAuthenticatable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, ScopedRouteBinding, SoftDeletes, TwoFactorAuthenticatable;
 
     /**
      * Kosong = "ingat saya" mati (SEC-005). SessionGuard melewati set/cycle remember token
@@ -131,5 +134,15 @@ class User extends Authenticatable implements MustVerifyEmail
     public function employee(): BelongsTo
     {
         return $this->belongsTo(Employee::class)->withTrashed();
+    }
+
+    /**
+     * Perangkat Pakis Pro milik akun (04 §2.12, BR-040).
+     *
+     * @return HasMany<Device, $this>
+     */
+    public function devices(): HasMany
+    {
+        return $this->hasMany(Device::class);
     }
 }

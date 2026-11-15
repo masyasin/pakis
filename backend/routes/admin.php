@@ -4,6 +4,7 @@ use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DepartmentController;
+use App\Http\Controllers\Admin\DeviceController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
@@ -109,6 +110,17 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('hari-libur/{holiday}/ubah', [HolidayController::class, 'edit'])->whereNumber('holiday')->name('holidays.edit');
         Route::put('hari-libur/{holiday}', [HolidayController::class, 'update'])->whereNumber('holiday')->name('holidays.update');
         Route::delete('hari-libur/{holiday}', [HolidayController::class, 'destroy'])->whereNumber('holiday')->name('holidays.destroy');
+    });
+
+    // Perangkat Pakis Pro (05 §4.8, BR-040, 06 §7.2). `{device}` ber-scope lewat pegawai pemilik akun.
+    Route::middleware('can:devices.view')->group(function () {
+        Route::get('perangkat', [DeviceController::class, 'index'])->name('devices.index');
+        Route::get('perangkat/ekspor', [DeviceController::class, 'export'])->name('devices.export');
+    });
+    Route::middleware('can:devices.manage')->group(function () {
+        Route::post('perangkat/{device}/setujui', [DeviceController::class, 'approve'])->whereNumber('device')->name('devices.approve');
+        Route::post('perangkat/{device}/tolak', [DeviceController::class, 'reject'])->whereNumber('device')->name('devices.reject');
+        Route::post('perangkat/{device}/cabut', [DeviceController::class, 'revoke'])->whereNumber('device')->name('devices.revoke');
     });
 
     // Wajib aktivasi MFA (05 §4.1, BR-015). Dibiarkan oleh middleware EnforceMfa.

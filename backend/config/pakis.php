@@ -4,6 +4,7 @@ use App\Domain\Access\Listings\UserListing;
 use App\Domain\Attendance\Listings\HolidayListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
+use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Employee\Listings\AssignmentListing;
 use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Organization\Listings\DepartmentListing;
@@ -50,6 +51,7 @@ return [
         'holidays' => HolidayListing::class,
         'employees' => EmployeeListing::class,
         'assignments' => AssignmentListing::class,
+        'devices' => DeviceListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

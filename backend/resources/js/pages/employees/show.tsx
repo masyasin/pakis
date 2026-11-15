@@ -31,6 +31,8 @@ import { EmployeeTabs, tabLabel } from '@/components/employee/employee-tabs';
 import type { EmployeeTab } from '@/components/employee/employee-tabs';
 import InputError from '@/components/input-error';
 import { MaskedValue } from '@/components/pakis/masked-value';
+import { DeviceSummaryList } from '@/components/pakis/device-summary-list';
+import type { DeviceSummary } from '@/components/pakis/device-summary-list';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { OneTimeSecretDialog } from '@/components/pakis/one-time-secret-dialog';
 import { StatusBadge } from '@/components/pakis/status-badge';
@@ -90,6 +92,8 @@ type AccountInfo = {
     last_login_at: string | null;
     roles: string[];
     show_url: string | null;
+    /** null = pelaku tidak punya `devices.view`. */
+    devices: DeviceSummary[] | null;
 };
 
 type RoleOption = {
@@ -522,11 +526,15 @@ function AccountTab({
                 />
             )}
 
-            <EmptyPanel
-                icon={Smartphone}
-                title="Perangkat Pakis Pro"
-                text="HP yang terdaftar untuk absen akan tampil di sini setelah modul Perangkat aktif."
-            />
+            {account?.devices && (
+                <DetailCard title="Perangkat Pakis Pro" icon={Smartphone}>
+                    <DeviceSummaryList
+                        devices={account.devices}
+                        manageHref={`/perangkat?q=${encodeURIComponent(account.username)}`}
+                        emptyText="Akun ini belum pernah masuk di aplikasi Pakis Pro."
+                    />
+                </DetailCard>
+            )}
 
             {canCreate && (
                 <CreateAccountDialog

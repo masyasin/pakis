@@ -6,6 +6,7 @@ use App\Domain\Access\Notifications\PasswordChanged;
 use App\Domain\Audit\Enums\SecurityChannel;
 use App\Domain\Audit\Enums\SecurityEventType;
 use App\Domain\Audit\SecurityLogger;
+use App\Domain\Device\Support\DeviceTokens;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
@@ -13,12 +14,15 @@ use Illuminate\Support\Facades\DB;
  * Selesaikan reset password (BR-012/BR-013), dipakai alur email & OTP. Password SUDAH divalidasi
  * PasswordPolicy dan token/OTP SUDAH diperiksa oleh pemanggil.
  *
- * Semua sesi web lama keluar otomatis (AuthenticateSession: hash password berubah).
- * TODO(T-031): cabut semua token API milik pengguna.
+ * Semua sesi web lama keluar otomatis (AuthenticateSession: hash password berubah), dan semua
+ * token API milik pengguna dicabut (T-031): HP yang mungkin dipakai orang lain ikut keluar.
  */
 final class CompletePasswordReset
 {
-    public function __construct(private readonly SecurityLogger $security) {}
+    public function __construct(
+        private readonly SecurityLogger $security,
+        private readonly DeviceTokens $tokens,
+    ) {}
 
     public function handle(User $user, string $password, string $via): void
     {
@@ -39,6 +43,7 @@ final class CompletePasswordReset
             $user->save();
 
             $this->security->record(SecurityEventType::PasswordResetCompleted, SecurityChannel::Web, $user, $user->username, ['via' => $via]);
+            $this->tokens->revokeForUser($user, 'password_reset');
         });
 
         if ($user->email) {

@@ -1,18 +1,13 @@
 import { Head, router, useForm } from '@inertiajs/react';
-import {
-    ExternalLink,
-    LogOut,
-    Monitor,
-    Send,
-    Smartphone,
-    Unlink,
-} from 'lucide-react';
+import { ExternalLink, LogOut, Monitor, Send, Unlink } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import ProfileController from '@/actions/App/Http/Controllers/Admin/ProfileController';
 import InputError from '@/components/input-error';
 import type { Props as ManageTwoFactorProps } from '@/components/manage-two-factor';
 import ManageTwoFactor from '@/components/manage-two-factor';
 import { ConfirmPasswordDialog } from '@/components/pakis/confirm-password-dialog';
+import { DeviceSummaryList } from '@/components/pakis/device-summary-list';
+import type { DeviceSummary } from '@/components/pakis/device-summary-list';
 import { PasswordRuleList } from '@/components/pakis/password-rules';
 import PasswordInput from '@/components/password-input';
 import { SettingsSection } from '@/components/settings-section';
@@ -38,7 +33,7 @@ type Props = {
     maxLength: number;
     username: string;
     sessions: WebSession[];
-    devices: unknown[];
+    devices: DeviceSummary[];
     telegram: { available: boolean; linked_at: string | null };
 } & ManageTwoFactorProps;
 
@@ -65,20 +60,10 @@ export default function ProfileSecurity(props: Props) {
                 title="Perangkat Pakis Pro"
                 description="HP yang terdaftar untuk absen lewat aplikasi Pakis Pro."
             >
-                {/* TODO(T-031): daftar perangkat dari tabel `devices`. */}
-                <div className="flex items-start gap-3 rounded-lg border border-dashed p-4 text-sm">
-                    <Smartphone
-                        className="mt-px size-5 shrink-0 text-muted-foreground"
-                        aria-hidden="true"
-                    />
-                    <div>
-                        <p className="font-medium">Belum ada perangkat</p>
-                        <p className="text-muted-foreground">
-                            Perangkat muncul di sini setelah Anda masuk di
-                            aplikasi Pakis Pro dan disetujui.
-                        </p>
-                    </div>
-                </div>
+                <DeviceSummaryList
+                    devices={props.devices}
+                    emptyText="Belum ada perangkat. Perangkat muncul di sini setelah Anda masuk di aplikasi Pakis Pro. HP pertama langsung aktif; HP berikutnya perlu disetujui admin."
+                />
             </SettingsSection>
 
             <TelegramSection telegram={props.telegram} />

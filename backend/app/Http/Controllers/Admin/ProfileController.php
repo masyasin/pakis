@@ -90,8 +90,7 @@ class ProfileController extends Controller
             'maxLength' => PasswordPolicy::MAX_LENGTH,
             'username' => $user->username,
             'sessions' => $sessions->handle($user, $request->session()->getId()),
-            // TODO(T-031): perangkat mobile milik sendiri (tabel `devices` dibuat di T-031).
-            'devices' => [],
+            'devices' => DeviceController::summaries($user),
             'telegram' => [
                 'available' => TelegramLink::available(),
                 'linked_at' => $user->telegram_linked_at === null ? null : DisplayTime::toLocal($user->telegram_linked_at)->toIso8601String(),

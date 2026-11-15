@@ -6,6 +6,7 @@ use App\Domain\Audit\AuditLogger;
 use App\Domain\Audit\Enums\SecurityChannel;
 use App\Domain\Audit\Enums\SecurityEventType;
 use App\Domain\Audit\SecurityLogger;
+use App\Domain\Device\Support\DeviceTokens;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -16,14 +17,14 @@ use Illuminate\Support\Facades\Gate;
  * `admin.users.reset-mfa` (T-020). Aturan wewenang mengikuti pola reset password BR-014:
  * tidak untuk diri sendiri, Super Admin tidak bisa mereset Owner, hanya Owner yang bisa mereset
  * Owner lain (SEC-009). Semua sesi web target dicabut agar perangkat lama ikut keluar; saat login
- * berikutnya, role wajib MFA memaksa aktivasi ulang.
- * TODO(T-031): cabut juga token API milik target.
+ * berikutnya, role wajib MFA memaksa aktivasi ulang. Token API target juga dicabut (T-031).
  */
 final class ResetMfa
 {
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly SecurityLogger $security,
+        private readonly DeviceTokens $tokens,
     ) {}
 
     public function handle(User $actor, User $target): void
@@ -40,6 +41,7 @@ final class ResetMfa
             ])->save();
 
             ListSessions::query($target)->delete();
+            $this->tokens->revokeForUser($target, 'mfa_reset');
 
             $this->audit->record('user.mfa_reset', $target, ['mfa' => $hadMfa ? 'aktif' : 'tidak aktif'], ['mfa' => 'direset']);
             $this->security->record(SecurityEventType::MfaResetByAdmin, SecurityChannel::Web, $target, $target->username);

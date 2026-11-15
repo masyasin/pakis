@@ -38,7 +38,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
         'Absensi' => ['Shift', 'Hari Libur'],
         'Kepegawaian' => ['Pegawai', 'Penugasan'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
-        'Akses' => ['Pengguna', 'Role & Hak Akses'],
+        'Akses' => ['Pengguna', 'Role & Hak Akses', 'Perangkat'],
         'Sistem' => ['Pengaturan', 'Penomoran', 'Referensi', 'Audit Log', 'Log Keamanan'],
     ]);
 });
@@ -49,13 +49,13 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function (
         'Absensi' => ['Shift', 'Hari Libur'],
         'Kepegawaian' => ['Pegawai', 'Penugasan'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
-        'Akses' => ['Pengguna'],
+        'Akses' => ['Pengguna', 'Perangkat'],
         'Sistem' => ['Referensi'],
     ]);
 });
 
-test('06 §8 kepala lokasi: Dasbor + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) sampai modul absensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Shift', 'Hari Libur'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Organisasi' => ['Lokasi']]);
+test('06 §8 kepala lokasi: Dasbor + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul absensi/pegawai dibangun', function () {
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Absensi' => ['Shift', 'Hari Libur'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Organisasi' => ['Lokasi'], 'Akses' => ['Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Hari Libur (T-034) sampai modul absensi/pegawai dibangun', function () {

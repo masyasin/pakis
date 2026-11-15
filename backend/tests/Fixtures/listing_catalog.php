@@ -27,4 +27,5 @@ return [
     'positions', // T-023
     'employees', // T-024
     'assignments', // T-025
+    'devices', // T-031
 ];

@@ -4,6 +4,7 @@ namespace App\Domain\Access\Actions;
 
 use App\Domain\Access\Support\EmployeeStatus;
 use App\Domain\Access\Support\WebAccess;
+use App\Domain\Audit\Enums\SecurityChannel;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -11,11 +12,12 @@ use Illuminate\Validation\ValidationException;
 use Laravel\Fortify\Fortify;
 
 /**
- * Verifikasi kredensial login web (BR-010, BR-016, BR-017, SEC-001). Dipanggil
- * `Fortify::authenticateUsing`; sesi, regenerasi ID, dan 2FA tetap diurus Fortify.
+ * Verifikasi kredensial login (BR-010, BR-016, BR-017, SEC-001). Web memanggil `handle()` lewat
+ * `Fortify::authenticateUsing` (sesi, regenerasi ID, dan 2FA tetap diurus Fortify); API Pakis Pro
+ * (T-031) memanggil `verify()` agar aturan kredensial web & API tidak bercabang.
  *
  * Semua kegagalan (akun tidak ada, password salah, akun nonaktif/terhapus/terkunci, pegawai
- * nonaktif) memberi PESAN YANG SAMA, dan password selalu di-hash-cek (dummy bila akun tidak ada)
+ * nonaktif) memberi HASIL YANG SAMA, dan password selalu di-hash-cek (dummy bila akun tidak ada)
  * agar waktu respons tidak membedakan akun yang ada.
  */
 final class AttemptLogin
@@ -34,9 +36,33 @@ final class AttemptLogin
 
     public function handle(Request $request): User
     {
-        $identifier = self::normalize($request->input(Fortify::username()));
-        $password = (string) $request->input('password');
-        $ip = (string) $request->ip();
+        $result = $this->verify($request->input(Fortify::username()), (string) $request->input('password'), (string) $request->ip(), SecurityChannel::Web);
+
+        if ($result->lockedSeconds !== null) {
+            throw ValidationException::withMessages([
+                Fortify::username() => 'Terlalu banyak percobaan. Coba lagi dalam '.max(1, (int) ceil($result->lockedSeconds / 60)).' menit.',
+            ]);
+        }
+
+        if ($result->user === null) {
+            throw ValidationException::withMessages([Fortify::username() => __('auth.failed')]);
+        }
+
+        // Kredensial benar tetapi akun hanya untuk Pakis Pro: bukan percobaan menebak, jadi tidak dihitung.
+        if (! $this->webAccess->allows($result->user)) {
+            throw ValidationException::withMessages([Fortify::username() => WebAccess::MESSAGE]);
+        }
+
+        return $result->user;
+    }
+
+    /**
+     * Pemeriksaan kredensial bersama web & API: lockout dulu, hash selalu dicek, satu hasil gagal
+     * untuk semua alasan. Gagal dicatat (+ lockout); berhasil mengosongkan penghitung.
+     */
+    public function verify(mixed $rawIdentifier, string $password, string $ip, SecurityChannel $channel): LoginAttempt
+    {
+        $identifier = self::normalize($rawIdentifier);
 
         // Dikelompokkan agar `OR` tidak lolos dari syarat soft delete (`deleted_at IS NULL`).
         $user = $identifier === '' ? null : User::query()
@@ -47,9 +73,7 @@ final class AttemptLogin
         // yang menemukan akun sama tidak mendapat jatah percobaan baru (lihat RecordLoginFailure).
         $subject = RecordLoginFailure::subject($user, $identifier);
         if (RecordLoginFailure::tooManyAttempts($subject, $ip)) {
-            throw ValidationException::withMessages([
-                Fortify::username() => 'Terlalu banyak percobaan. Coba lagi dalam '.RecordLoginFailure::minutesLeft($subject, $ip).' menit.',
-            ]);
+            return new LoginAttempt(null, RecordLoginFailure::secondsLeft($subject, $ip));
         }
 
         $passwordOk = Hash::check($password, $user->password ?? self::DUMMY_HASH);
@@ -63,19 +87,14 @@ final class AttemptLogin
         };
 
         if ($reason !== null) {
-            $this->failures->handle($identifier, $ip, $user, $reason);
+            $this->failures->handle($identifier, $ip, $user, $reason, $channel);
 
-            throw ValidationException::withMessages([Fortify::username() => __('auth.failed')]);
-        }
-
-        // Kredensial benar tetapi akun hanya untuk Pakis Pro: bukan percobaan menebak, jadi tidak dihitung.
-        if (! $this->webAccess->allows($user)) {
-            throw ValidationException::withMessages([Fortify::username() => WebAccess::MESSAGE]);
+            return new LoginAttempt(null, null);
         }
 
         RecordLoginFailure::clear($subject, $ip, $user);
 
-        return $user;
+        return new LoginAttempt($user, null);
     }
 
     public static function normalize(mixed $raw): string

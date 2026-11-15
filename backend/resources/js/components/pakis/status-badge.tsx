@@ -53,6 +53,20 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'notification.unread': { label: 'Belum dibaca', tone: 'info' },
     'notification.read': { label: 'Sudah dibaca', tone: 'muted' },
     // Pegawai
+    'import.uploaded': { label: 'Diunggah', tone: 'muted' },
+    'import.mapped': { label: 'Divalidasi…', tone: 'info' },
+    'import.validated': { label: 'Siap diproses', tone: 'success' },
+    'import.processing': { label: 'Diproses', tone: 'info' },
+    'import.completed': { label: 'Selesai', tone: 'success' },
+    'import.failed': { label: 'Gagal', tone: 'danger' },
+    'import.cancelled': { label: 'Dibatalkan', tone: 'muted' },
+
+    'import_row.valid': { label: 'Valid', tone: 'success' },
+    'import_row.invalid': { label: 'Galat', tone: 'danger' },
+    'import_row.created': { label: 'Dibuat', tone: 'success' },
+    'import_row.updated': { label: 'Diperbarui', tone: 'info' },
+    'import_row.skipped': { label: 'Dilewati', tone: 'muted' },
+
     'employee.active': { label: 'Aktif', tone: 'success' },
     'employee.inactive': { label: 'Nonaktif', tone: 'muted' },
 };

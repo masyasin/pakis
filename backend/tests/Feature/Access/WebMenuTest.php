@@ -36,7 +36,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor'],
         'Absensi' => ['Shift', 'Hari Libur'],
-        'Kepegawaian' => ['Pegawai', 'Penugasan'],
+        'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna', 'Role & Hak Akses', 'Perangkat'],
         'Sistem' => ['Pengaturan', 'Penomoran', 'Referensi', 'Audit Log', 'Log Keamanan'],
@@ -47,7 +47,7 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan, Penomoran, Audit', function (
     expect(menuOf('hrd'))->toBe([
         '' => ['Dasbor'],
         'Absensi' => ['Shift', 'Hari Libur'],
-        'Kepegawaian' => ['Pegawai', 'Penugasan'],
+        'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Organisasi' => ['Lokasi', 'Departemen', 'Jabatan', 'Wilayah'],
         'Akses' => ['Pengguna', 'Perangkat'],
         'Sistem' => ['Referensi'],

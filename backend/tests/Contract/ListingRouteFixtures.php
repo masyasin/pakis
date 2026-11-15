@@ -3,6 +3,8 @@
 namespace Tests\Contract;
 
 use App\Domain\Access\Support\RoleCatalog;
+use App\Domain\Employee\Enums\ImportStatus;
+use App\Domain\Employee\Models\ImportBatch;
 use App\Domain\Region\Models\Province;
 use App\Models\User;
 use Database\Seeders\PermissionSeeder;
@@ -22,6 +24,20 @@ final class ListingRouteFixtures
     public static function parameters(string $routeName): array
     {
         return match ($routeName) {
+            // Batch tervalidasi tanpa berkas: cukup untuk menguji bentuk daftar baris.
+            'admin.imports.rows.index' => ['batch' => (function () {
+                $batch = (new ImportBatch)->forceFill([
+                    'type' => ImportBatch::TYPE_EMPLOYEES,
+                    'original_name' => 'kontrak.xlsx',
+                    'stored_path' => 'imports/kontrak.xlsx',
+                    'file_hash' => str_repeat('0', 64),
+                    'status' => ImportStatus::Validated,
+                    'mapping' => ['header_row' => 1, 'headers' => ['Nama'], 'columns' => ['0' => 'full_name']],
+                ]);
+                $batch->save();
+
+                return $batch->id;
+            })()],
             default => [],
         };
     }

@@ -396,10 +396,10 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: migrations import, `app/Domain/Employee/Import/{EmployeeImportReader,HeaderDetector,MappingSuggester,RowNormalizer,RowValidator,RowKey}.php`, `Listings/{ImportBatchListing,ImportRowListing,ImportProfileListing}`, controller + `pages/Imports/{Index,Create,Mapping,Show}.tsx`, berkas `resources/templates/templat_pegawai.xlsx`
 - Deskripsi: Langkah 1–3 wizard (unggah, pemetaan + profil, validasi per baris dengan galat per sel). Validasi di antrean `imports` bila > 200 baris. NIK di `import_rows.data` termasking. Sinonim header sesuai BR-054.
 - Kriteria penerimaan:
-  - [ ] Fixture "berantakan" (header di baris 3, tanggal campur format, HP `0812-xxx`, kolom ekstra) terbaca benar
-  - [ ] Berkas `.php` berganti nama `.xlsx` → ditolak
-  - [ ] Profil pemetaan otomatis terpilih untuk header yang sama
-  - [ ] 3 listing import lolos test kontrak
+  - [x] Fixture "berantakan" (header di baris 3, tanggal campur format, HP `0812-xxx`, kolom ekstra) terbaca benar
+  - [x] Berkas `.php` berganti nama `.xlsx` → ditolak
+  - [x] Profil pemetaan otomatis terpilih untuk header yang sama
+  - [x] 3 listing import lolos test kontrak
 - Verifikasi: `php artisan test --filter=Import`
 - Di luar lingkup: proses tulis ke DB (T-028)
 

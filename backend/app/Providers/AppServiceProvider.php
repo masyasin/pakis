@@ -32,6 +32,7 @@ use Illuminate\Auth\Events\Logout;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Contracts\Routing\UrlGenerator;
+use Illuminate\Foundation\DevCommands;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -84,6 +85,13 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
         $this->configureAuthorization();
+
+        // `php artisan dev`: worker bawaan hanya mendengar antrean `default`, padahal validasi impor
+        // besar memakai antrean `imports` (T-027). Produksi: worker terpisah per antrean (03 §8).
+        if ($this->app->runningInConsole()) {
+            DevCommands::except('queue');
+            DevCommands::artisan('queue:listen --queue=default,imports --tries=1 --timeout=0', 'queues');
+        }
 
         // Branding di dokumen HTML awal (judul, favicon, override warna ber-nonce) — T-008.
         View::composer('app', fn ($view) => $view->with('brand', app(BrandTheme::class)->forView()));

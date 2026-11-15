@@ -9,6 +9,8 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
 use App\Http\Controllers\Admin\HolidayController;
+use App\Http\Controllers\Admin\ImportController;
+use App\Http\Controllers\Admin\ImportProfileController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MfaSetupController;
@@ -226,6 +228,22 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('pegawai/{employee}/penugasan', [AssignmentController::class, 'store'])->whereNumber('employee')->name('assignments.store');
         Route::put('penugasan/{assignment}', [AssignmentController::class, 'update'])->whereNumber('assignment')->name('assignments.update');
         Route::post('penugasan/{assignment}/akhiri', [AssignmentController::class, 'end'])->whereNumber('assignment')->name('assignments.end');
+    });
+
+    // Impor pegawai langkah 1–3 (05 §4.7, FR-028, BR-054, T-027). Batch di luar visibilitas → 404.
+    // Rute statis (`pegawai/*`, `profil`) didaftarkan sebelum `{batch}`.
+    Route::middleware('can:employees.import')->group(function () {
+        Route::get('impor', [ImportController::class, 'index'])->name('imports.index');
+        Route::get('impor/pegawai/baru', [ImportController::class, 'create'])->name('imports.create');
+        Route::get('impor/pegawai/templat', [ImportController::class, 'template'])->name('imports.template');
+        Route::post('impor/pegawai', [ImportController::class, 'store'])->middleware('throttle:20,1')->name('imports.store');
+        Route::get('impor/profil', [ImportProfileController::class, 'index'])->name('import-profiles.index');
+        Route::delete('impor/profil/{profile}', [ImportProfileController::class, 'destroy'])->whereNumber('profile')->name('import-profiles.destroy');
+        Route::get('impor/{batch}', [ImportController::class, 'show'])->whereNumber('batch')->name('imports.show');
+        Route::get('impor/{batch}/pemetaan', [ImportController::class, 'mapping'])->whereNumber('batch')->name('imports.mapping');
+        Route::put('impor/{batch}/pemetaan', [ImportController::class, 'updateMapping'])->whereNumber('batch')->middleware('throttle:30,1')->name('imports.mapping.update');
+        Route::get('impor/{batch}/baris', [ImportController::class, 'rows'])->whereNumber('batch')->name('imports.rows.index');
+        Route::post('impor/{batch}/batal', [ImportController::class, 'cancel'])->whereNumber('batch')->name('imports.cancel');
     });
 
     // Referensi (05 §4.3, BR-026). `urutan` didaftarkan sebelum `{item}`.

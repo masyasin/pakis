@@ -244,6 +244,7 @@ Kolom **Daftar** = harus mematuhi §3. Rincian kolom/cari/filter/sort tiap dafta
 |---|---|---|---|---|
 | `admin.imports.index` | GET | `/impor` | `employees.import` | ✅ |
 | `admin.imports.template` | GET | `/impor/pegawai/templat` | `employees.import` | Templat .xlsx standar |
+| `admin.imports.create` | GET | `/impor/pegawai/baru` | `employees.import` | Halaman unggah, langkah 1 wizard (keputusan Mas 15 Nov 2026) |
 | `admin.imports.store` | POST | `/impor/pegawai` | `employees.import` | Unggah (FR-028) |
 | `admin.imports.mapping` / `admin.imports.mapping.update` | GET/PUT | `/impor/{batch}/pemetaan` | `employees.import` | Simpan sebagai profil opsional |
 | `admin.imports.show` | GET | `/impor/{batch}` | `employees.import` | Ringkasan + tabel baris |

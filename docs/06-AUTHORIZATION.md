@@ -111,6 +111,8 @@ Catatan: `administrator` sengaja **tidak** bisa membuka NIK, mengubah data pegaw
 | `team` | Diri sendiri + bawahan langsung & tidak langsung lewat `assignments.supervisor_employee_id` (penugasan aktif, CTE rekursif maks 5 tingkat) | sama dengan baris atas |
 | `self` | Diri sendiri | API mobile milik sendiri |
 
+**Batch impor (`import_batches`/`import_rows`, T-027):** berisi data pegawai (nama, nomor, NIK termasking), jadi scope `all` melihat semua batch, scope lain hanya batch yang diunggahnya sendiri; batch lain → 404. Lokasi & atasan di berkas harus dalam scope pengunggah (baris galat "tidak ditemukan"). Profil pemetaan tidak memuat data pegawai sehingga dipakai bersama pemegang `employees.import`.
+
 Implementasi: `App\Domain\Access\DataScope::apply(Builder $q, User $u, string $employeeColumn)` dipanggil oleh setiap `*Listing` dan setiap Policy `view/update`; `DataScope::allows($u, $employeeId)` untuk Policy. Pengguna tanpa pegawai (mis. Super Admin) dengan scope selain `all` tidak melihat data apa pun. Struktur organisasi dibaca lewat `OrgStructure` (`DatabaseOrgStructure`: penugasan aktif = `start_date ≤ hari ini` dan `end_date` kosong/≥ hari ini, tanggal lokal). `team` dihitung per tingkat (≤ 5 query, pengaman struktur melingkar) — hasil sama dengan CTE rekursif 5 tingkat (T-019).
 
 Shift (T-033, `App\Domain\Attendance\Support\ShiftScope`): scope `all` melihat semua shift; scope lain hanya shift yang dipakai pola jadwal pegawai dalam DataScope-nya. Sebelum tabel pola jadwal ada (T-035) tidak ada shift yang "dipakai", jadi scope sempit tidak melihat shift apa pun (fail-closed). `{shift}` di luar scope → 404.

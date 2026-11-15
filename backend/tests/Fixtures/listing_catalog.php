@@ -28,4 +28,7 @@ return [
     'employees', // T-024
     'assignments', // T-025
     'devices', // T-031
+    'import_batches', // T-027
+    'import_rows', // T-027
+    'import_profiles', // T-027
 ];

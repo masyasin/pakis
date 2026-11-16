@@ -200,9 +200,10 @@ class DemoSeeder extends Seeder
             'RODENTISIDA' => ['Rodentisida', CategoryKind::Rodenticide, $pesticide],
         ];
 
+        // Urutan mulai 1 (keputusan Mas 17 Nov 2026): lebih mudah dibaca admin daripada kelipatan 10.
         $order = 0;
         foreach ($categories as $code => [$name, $kind, $flags]) {
-            $order += 10;
+            $order++;
             ProductCategory::withTrashed()->firstOrCreate(['code' => $code], [
                 'name' => $name, 'kind' => $kind, 'sort_order' => $order, 'is_active' => true, ...$flags,
             ]);

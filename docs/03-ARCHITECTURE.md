@@ -135,7 +135,7 @@ Versi di bawah sudah diverifikasi per 3 November 2026. Versi patch dikunci di `c
 | laravel/sanctum | 4.4.0 | | vite-plus (`vp`, pengganti Vite di starter kit) | 1.4.0 |
 | spatie/laravel-permission | 8.5.0 | | @laravel/vite-plugin-wayfinder | 0.1.11 |
 | openspout/openspout | 5.13.0 | | | |
-| pestphp/pest (+ plugin laravel 5.0.1) | 5.3.5 | | | |
+| pestphp/pest (+ plugin laravel 5.0.1) | 5.3.6 | | | |
 | larastan/larastan (phpstan 2.3.5) | 3.15.0 | | | |
 | laravel/pint | 1.32.3 | | | |
 | pragmarx/google2fa | 9.1.0 | | | |

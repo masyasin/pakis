@@ -117,10 +117,10 @@ jobs:
           cp .env.example .env
           php artisan key:generate --ansi
 
-      # Serial: --parallel di Pest 5.3.5 + paratest 7.28 + PHPUnit 13.4.5 gagal dengan TypeError di
-      # WrapperRunner::getTestFiles() (juga terjadi di lokal). Aktifkan lagi setelah Pest memperbaikinya.
+      # Paralel (Pest 5.3.6 + paratest 7.29 memperbaiki TypeError WrapperRunner 5.3.5). Tiap proses
+      # memakai DB sendiri `pakis_one_test_test_N` yang dibuat otomatis (DB_USERNAME root).
       - name: Pest
-        run: php artisan test
+        run: php artisan test --parallel
 
   frontend:
     name: Lint, tsc & build

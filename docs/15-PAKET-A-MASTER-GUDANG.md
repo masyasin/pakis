@@ -274,7 +274,7 @@ CREATE TABLE product_categories (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   code VARCHAR(30) NOT NULL, name VARCHAR(100) NOT NULL,
   parent_id BIGINT UNSIGNED NULL,
-  kind ENUM('insecticide','fungicide','herbicide','pgr','seed','fertilizer','adjuvant','tool','other') NOT NULL,
+  kind ENUM('insecticide','fungicide','herbicide','molluscicide','rodenticide','pgr','seed','fertilizer','adjuvant','tool','other') NOT NULL,  -- moluksida & rodentisida: PA-45
   requires_batch BOOLEAN NOT NULL DEFAULT TRUE,
   requires_expiry BOOLEAN NOT NULL DEFAULT TRUE,
   requires_serial BOOLEAN NOT NULL DEFAULT FALSE,

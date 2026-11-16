@@ -207,7 +207,7 @@ Tugas terlihat bila **salah satu** pegawainya dalam scope pelaku (selain itu 404
 
 ## 8. Matriks Menu (web)
 
-Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokkan dalam **seksi** berjudul (teks kecil, tidak bisa diklik; keputusan Mas 16 Nov 2026): **HRIS** = Unit Kerja, Kepegawaian, Presensi (Fase HR menambah grupnya di seksi ini); **Sistem** = Pengguna & Akses, Pengaturan, Audit. Modul bisnis berikutnya menambah seksi baru. Urutan tabel = urutan sidebar.
+Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokkan dalam **seksi** berjudul (teks kecil, tidak bisa diklik; keputusan Mas 16 Nov 2026): **HRIS** = Unit Kerja, Kepegawaian, Presensi (Fase HR menambah grupnya di seksi ini); **Sistem** = Pengguna & Akses, Pengaturan, Audit. Modul bisnis berikutnya menambah seksi baru. **Distribusi** (Paket A, keputusan Mas 16 Nov 2026) = Penjualan, Persediaan, Pembelian, Master (`15` §6.5), **paling atas** sebelum HRIS. Urutan tabel = urutan sidebar.
 
 | Seksi | Grup | Menu | Syarat | owner | admin | hrd | kepala_lokasi | supervisor |
 |---|---|---|---|---|---|---|---|---|

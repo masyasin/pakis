@@ -86,6 +86,7 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 | `APPROVAL_RULE_MISSING` | 422 | Tidak ada aturan approval yang cocok untuk dokumen (BR-153). Ditambah 16 Nov 2026 (T-067) |
 | `APPROVAL_SELF_DECISION` | 403 | Pengaju/pembuat dokumen mencoba memutuskan persetujuannya sendiri (SEC-101). Ditambah 16 Nov 2026 (T-067) |
 | `APPROVAL_ALREADY_PENDING` | 409 | Dokumen sudah punya permintaan persetujuan aktif. Ditambah 16 Nov 2026 (T-067) |
+| `QTY_NOT_INTEGER` | 422 | Qty pecahan untuk satuan yang hanya menerima bilangan bulat (meta `integer_only`, BR-150). Ditambah 16 Nov 2026 (T-069); pindah ke §2.3 bila dipakai API mobile (B/C) |
 
 ## 3. Standar Daftar (Listing) — Web & API
 

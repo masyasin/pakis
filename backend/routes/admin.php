@@ -23,6 +23,7 @@ use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MasterImportController;
 use App\Http\Controllers\Admin\MfaSetupController;
 use App\Http\Controllers\Admin\PositionController;
+use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
@@ -371,6 +372,15 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
             Route::put('pengaturan/aturan-persetujuan/{rule}', [ApprovalRuleController::class, 'update'])->whereNumber('rule')->name('approval-rules.update');
             Route::delete('pengaturan/aturan-persetujuan/{rule}', [ApprovalRuleController::class, 'destroy'])->whereNumber('rule')->name('approval-rules.destroy');
         });
+    });
+
+    // Kategori produk (15 §5 `admin.product-categories.*`, FR-A06, BR-151, T-069). Form di dialog
+    // halaman daftar; hapus hanya kategori tanpa sub-kategori & produk (selain itu nonaktifkan).
+    Route::get('kategori-produk', [ProductCategoryController::class, 'index'])->middleware('can:products.view')->name('product-categories.index');
+    Route::middleware('can:products.manage')->group(function () {
+        Route::post('kategori-produk', [ProductCategoryController::class, 'store'])->name('product-categories.store');
+        Route::put('kategori-produk/{category}', [ProductCategoryController::class, 'update'])->whereNumber('category')->name('product-categories.update');
+        Route::delete('kategori-produk/{category}', [ProductCategoryController::class, 'destroy'])->whereNumber('category')->name('product-categories.destroy');
     });
 
     // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).

@@ -18,10 +18,13 @@ final class MenuBuilder
      * Seksi sidebar (judul kecil tanpa klik) per grup; keputusan Mas 16 Nov 2026 (06 §8). HRIS =
      * Unit Kerja, Kepegawaian, Presensi (lalu Cuti, Payroll, dst. di Fase HR); Sistem = akses,
      * pengaturan, audit. Modul bisnis nanti cukup menambah seksi baru tanpa merombak yang ada.
+     * Distribusi = grup Paket A (15 §6.5: Penjualan, Persediaan, Pembelian, Master), paling atas
+     * (keputusan Mas 16 Nov 2026).
      *
      * @var array<string, string>
      */
     public const SECTIONS = [
+        'Master' => 'Distribusi',
         'Unit Kerja' => 'HRIS',
         'Kepegawaian' => 'HRIS',
         'Presensi' => 'HRIS',
@@ -41,6 +44,9 @@ final class MenuBuilder
         // Persetujuan lintas modul (15 §6.5, PA-27): menu untuk pemegang `approvals.view`. Calon
         // penyetuju tanpa izin itu tetap bisa membuka /persetujuan (tautan notifikasi).
         [null, 'Persetujuan', 'approval', 'approvals.view', 'admin.approvals.index'],
+        // Seksi Distribusi (Paket A). Grup Penjualan/Persediaan/Pembelian disisipkan SEBELUM Master
+        // oleh task pemiliknya (urutan 15 §6.5); item Master lain menyusul (Produk T-070, Lokasi Stok T-068, …).
+        ['Master', 'Kategori', 'category', 'products.view', 'admin.product-categories.index'],
         ['Unit Kerja', 'Lokasi', 'location', 'locations.view', 'admin.locations.index'],
         ['Unit Kerja', 'Departemen', 'department', 'departments.view', 'admin.departments.index'],
         ['Unit Kerja', 'Jabatan', 'position', 'positions.view', 'admin.positions.index'],

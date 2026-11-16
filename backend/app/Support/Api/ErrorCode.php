@@ -48,6 +48,8 @@ enum ErrorCode: string
     case APPROVAL_RULE_MISSING = 'APPROVAL_RULE_MISSING';
     case APPROVAL_SELF_DECISION = 'APPROVAL_SELF_DECISION';
     case APPROVAL_ALREADY_PENDING = 'APPROVAL_ALREADY_PENDING';
+    // Khusus web (05 §2.4a), satuan & konversi (BR-150, T-069).
+    case QTY_NOT_INTEGER = 'QTY_NOT_INTEGER';
 
     public function status(): int
     {
@@ -80,7 +82,8 @@ enum ErrorCode: string
             self::ATTENDANCE_LOW_ACCURACY,
             self::ATTENDANCE_OFFLINE_TOO_OLD,
             self::CORRECTION_NOT_ALLOWED,
-            self::APPROVAL_RULE_MISSING => 422,
+            self::APPROVAL_RULE_MISSING,
+            self::QTY_NOT_INTEGER => 422,
             self::ACCOUNT_LOCKED => 423,
             self::APP_UPDATE_REQUIRED => 426,
             self::RATE_LIMITED => 429,
@@ -130,6 +133,7 @@ enum ErrorCode: string
             // SEC-101: maker-checker; pengaju/pembuat dokumen tidak boleh memutuskan sendiri.
             self::APPROVAL_SELF_DECISION => 'Anda tidak boleh memutuskan persetujuan atas dokumen yang Anda ajukan atau buat sendiri.',
             self::APPROVAL_ALREADY_PENDING => 'Dokumen ini sudah punya permintaan persetujuan yang masih berjalan.',
+            self::QTY_NOT_INTEGER => 'Jumlah untuk satuan ini harus bilangan bulat.',
         };
     }
 }

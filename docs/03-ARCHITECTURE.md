@@ -140,6 +140,8 @@ Versi di bawah sudah diverifikasi per 3 November 2026. Versi patch dikunci di `c
 | laravel/pint | 1.32.3 | | | |
 | pragmarx/google2fa | 9.1.0 | | | |
 
+**Angka uang & kuantitas (T-069, ADR-101):** `brick/math` ^1.0 (terkunci 1.0.0) dijadikan dependency **langsung** (sebelumnya hanya terpasang lewat Laravel/`ramsey/uuid`). Dipakai `App\Support\Money\{Money,Qty,UnitCost}`; float dilarang di domain Catalog/Inventory/Pricing/Purchasing (`tests/Unit/Arch/NoFloatInDomainTest.php`).
+
 **Grafik dasbor (disetujui Mas 16 Nov 2026):** `recharts` 3.10.1 (versi dikunci, tanpa `^`). Hanya dimuat di chunk halaman dasbor (±117 KB gzip), tidak menambah bundel halaman lain.
 
 **Test frontend (T-005, disetujui 14 Nov 2026):** Vitest 5.0.5 (sudah dibawa `vite-plus`, dijalankan `vp test`), devDependency `happy-dom` 21.0.4 dan `@testing-library/react` 16.3.3. Tanpa `jest-dom`/`user-event` langsung (memakai assertion Vitest & `fireEvent`).

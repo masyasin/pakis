@@ -6,6 +6,8 @@ use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Attendance\Models\Shift;
 use App\Domain\Attendance\Models\ShiftPattern;
+use App\Domain\Catalog\Enums\CategoryKind;
+use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Models\Assignment;
@@ -149,6 +151,7 @@ class DemoSeeder extends Seeder
 
         $this->seedEmployees();
         $this->seedPatterns();
+        $this->seedProductCategories();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -161,6 +164,35 @@ class DemoSeeder extends Seeder
             if ($holiday->wasRecentlyCreated && $locations !== []) {
                 $holiday->locations()->sync(Location::query()->whereIn('code', $locations)->pluck('id')->all());
             }
+        }
+    }
+
+    /**
+     * Kategori produk demo = kategori katalog Pakis (keputusan Mas 16 Nov 2026, T-069): satu tingkat.
+     * Pestisida & pupuk wajib batch, ED, dan izin edar; alat tanpa batch/ED. Kategori yang sudah ada
+     * (kode sama) dilewati agar ubahan dari layar tidak ditimpa.
+     */
+    private function seedProductCategories(): void
+    {
+        $pesticide = ['requires_batch' => true, 'requires_expiry' => true, 'requires_serial' => false, 'requires_registration' => true, 'default_bin_zone' => 'pesticide'];
+        $categories = [
+            'ALAT' => ['Alat-alat', CategoryKind::Tool, ['requires_batch' => false, 'requires_expiry' => false, 'requires_serial' => false, 'requires_registration' => false, 'default_bin_zone' => 'general']],
+            'BIBIT' => ['Bibit', CategoryKind::Seed, [...$pesticide, 'default_bin_zone' => 'general']],
+            'FUNGISIDA' => ['Fungisida', CategoryKind::Fungicide, $pesticide],
+            'HERBISIDA' => ['Herbisida', CategoryKind::Herbicide, $pesticide],
+            'INSEKTISIDA' => ['Insektisida', CategoryKind::Insecticide, $pesticide],
+            'MOLUKSIDA' => ['Moluksida', CategoryKind::Molluscicide, $pesticide],
+            'PEREKAT' => ['Perekat', CategoryKind::Adjuvant, $pesticide],
+            'PUPUK' => ['Pupuk', CategoryKind::Fertilizer, [...$pesticide, 'default_bin_zone' => 'general']],
+            'RODENTISIDA' => ['Rodentisida', CategoryKind::Rodenticide, $pesticide],
+        ];
+
+        $order = 0;
+        foreach ($categories as $code => [$name, $kind, $flags]) {
+            $order += 10;
+            ProductCategory::withTrashed()->firstOrCreate(['code' => $code], [
+                'name' => $name, 'kind' => $kind, 'sort_order' => $order, 'is_active' => true, ...$flags,
+            ]);
         }
     }
 

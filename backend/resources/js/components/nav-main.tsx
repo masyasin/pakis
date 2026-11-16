@@ -27,6 +27,7 @@ import {
     BriefcaseBusiness,
     CircleDot,
     Stamp,
+    Tags,
     Workflow,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -85,6 +86,7 @@ const ICONS: Record<string, LucideIcon> = {
     security: ShieldAlert,
     approval: Stamp,
     approval_rule: Workflow,
+    category: Tags,
 };
 
 /**

@@ -681,7 +681,9 @@ Pencarian teks memakai `LIKE 'kata%'` di kolom ber-index untuk nama/kode. `LIKE 
   - `employment_status`: `permanent` Tetap, `contract` Kontrak, `probation` Percobaan, `daily` Harian Lepas.
   - `correction_reason`: `forgot` Lupa absen, `gps_error` GPS/HP bermasalah, `field_duty` Tugas luar, `system_error` Gangguan sistem, `phone_broken` HP rusak, `phone_lost` HP hilang, `phone_left` HP ketinggalan, `other` Lainnya.
   - `offboarding_reason`: `resign` Mengundurkan diri, `contract_end` Kontrak berakhir, `terminated` Diberhentikan, `retired` Pensiun, `deceased` Meninggal dunia, `other` Lainnya.
-  - Semua item seed `is_system = true`.
+  - `unit` (Paket A, `15` §4.1, T-069): `bottle` Botol, `box` Dus, `sachet` Sachet, `pcs` Pcs, `pack` Pak, `kg` Kg, `gram` Gram, `liter` Liter, `ml` mL, `sack` Karung, `jerrycan` Jeriken, `unit` Unit; meta `{"integer_only": true}` untuk satuan hitungan (semua kecuali kg, gram, liter, mL).
+  - `formulation` (Paket A, T-069): `ec`, `wp`, `sl`, `sc`, `wg`, `gr`, `od`, `cs`, `other` Lainnya.
+  - Semua item seed `is_system = true`. DB yang sudah berisi diisi migrasi data `2026_11_17_000200_seed_unit_and_formulation_references`.
 - `SequenceSeeder`: `employee` → `PJA-{YY}{SEQ:4}`, reset `never`. `attendance_correction` → `KOR-{YYYY}{MM}-{SEQ:4}`, reset `monthly`. `field_trip` → `DL/{YYYY}/{MM}/{SEQ:4}`, reset `monthly` (T-036A, keputusan Mas 15 Nov 2026).
 - `SuperAdminSeeder`: membaca `SUPERADMIN_USERNAME`, `SUPERADMIN_EMAIL`, `SUPERADMIN_PASSWORD` dari env. **Gagal** bila env kosong atau password < 16 karakter (SEC-008). `must_change_password = true`.
 - Wilayah: tidak lewat seeder. Pakai `php artisan regions:import {path.sql}` (T-012).

@@ -12,6 +12,9 @@ enum ReferenceGroup: string
     case EmploymentStatus = 'employment_status';
     case CorrectionReason = 'correction_reason';
     case OffboardingReason = 'offboarding_reason';
+    // Paket A (15 §4.1, T-069): satuan (meta `integer_only`) & formulasi pestisida.
+    case Unit = 'unit';
+    case Formulation = 'formulation';
 
     public function label(): string
     {
@@ -20,6 +23,8 @@ enum ReferenceGroup: string
             self::EmploymentStatus => 'Status kerja',
             self::CorrectionReason => 'Alasan koreksi presensi',
             self::OffboardingReason => 'Alasan keluar',
+            self::Unit => 'Satuan',
+            self::Formulation => 'Formulasi',
         };
     }
 
@@ -35,6 +40,8 @@ enum ReferenceGroup: string
             self::EmploymentStatus => [['employees', 'employment_status_id']],
             self::CorrectionReason => [['attendance_corrections', 'reason_id']],
             self::OffboardingReason => [['employees', 'exit_reason_id']],
+            // Pemakai (product_units, products) dibuat T-070, yang menambah daftar ini.
+            self::Unit, self::Formulation => [],
         };
     }
 }

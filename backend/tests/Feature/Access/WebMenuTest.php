@@ -38,6 +38,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
+        'Master' => ['Kategori'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat'],
@@ -59,15 +60,15 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan Umum, Penomoran, Audit', funct
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Master' => ['Kategori'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Master' => ['Kategori'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
 });
 
-test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) sampai modul Paket A punya route', function (string $role, array $top) {
-    expect(menuOf($role))->toBe(['' => $top]);
+test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Master › Kategori (products.view, T-069)', function (string $role, array $top) {
+    expect(menuOf($role))->toBe(['' => $top, 'Master' => ['Kategori']]);
 })->with([
     'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan']],
     'kepala_gudang' => ['kepala_gudang', ['Dasbor', 'Persetujuan']],
@@ -93,7 +94,7 @@ test('15 §6.5 PA-27 menu Persetujuan membawa angka menunggu = tab "Menunggu say
     expect(app(ApprovalVisibility::class)->pendingCountFor($approver))->toBe(2);
 });
 
-test('06 §8 setiap grup menu punya seksi sidebar (HRIS / Sistem), Dasbor tanpa seksi', function () {
+test('06 §8 setiap grup menu punya seksi sidebar (Distribusi / HRIS / Sistem), Dasbor tanpa seksi', function () {
     $groups = array_values(array_unique(array_filter(array_column(MenuBuilder::ITEMS, 0))));
     expect(array_keys(MenuBuilder::SECTIONS))->toEqualCanonicalizing($groups);
 
@@ -101,7 +102,7 @@ test('06 §8 setiap grup menu punya seksi sidebar (HRIS / Sistem), Dasbor tanpa 
         ->assertInertia(function (Assert $page) {
             $sections = array_column($page->toArray()['props']['auth']['menu'], 'section', 'title');
             expect($sections)->toMatchArray([
-                '' => null, 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
+                '' => null, 'Master' => 'Distribusi', 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
                 'Pengguna & Akses' => 'Sistem', 'Pengaturan' => 'Sistem', 'Audit' => 'Sistem',
             ]);
         });

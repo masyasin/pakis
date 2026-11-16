@@ -45,6 +45,51 @@ class ReferenceSeeder extends Seeder
             'deceased' => 'Meninggal dunia',
             'other' => 'Lainnya',
         ],
+        // Paket A (15 §4.1, T-069).
+        'unit' => [
+            'bottle' => 'Botol',
+            'box' => 'Dus',
+            'sachet' => 'Sachet',
+            'pcs' => 'Pcs',
+            'pack' => 'Pak',
+            'kg' => 'Kg',
+            'gram' => 'Gram',
+            'liter' => 'Liter',
+            'ml' => 'mL',
+            'sack' => 'Karung',
+            'jerrycan' => 'Jeriken',
+            'unit' => 'Unit',
+        ],
+        'formulation' => [
+            'ec' => 'EC',
+            'wp' => 'WP',
+            'sl' => 'SL',
+            'sc' => 'SC',
+            'wg' => 'WG',
+            'gr' => 'GR',
+            'od' => 'OD',
+            'cs' => 'CS',
+            'other' => 'Lainnya',
+        ],
+    ];
+
+    /**
+     * Meta item sistem: satuan yang hanya menerima bilangan bulat (BR-150, `QTY_NOT_INTEGER`).
+     * Kg, gram, liter, dan mL boleh pecahan.
+     *
+     * @var array<string, array<string, array<string, mixed>>>
+     */
+    private const META = [
+        'unit' => [
+            'bottle' => ['integer_only' => true],
+            'box' => ['integer_only' => true],
+            'sachet' => ['integer_only' => true],
+            'pcs' => ['integer_only' => true],
+            'pack' => ['integer_only' => true],
+            'sack' => ['integer_only' => true],
+            'jerrycan' => ['integer_only' => true],
+            'unit' => ['integer_only' => true],
+        ],
     ];
 
     public function run(): void
@@ -55,7 +100,7 @@ class ReferenceSeeder extends Seeder
                 $order += 10;
                 ReferenceItem::query()->firstOrCreate(
                     ['group_code' => $group->value, 'code' => $code],
-                    ['name' => $name, 'sort_order' => $order, 'is_active' => true, 'is_system' => true],
+                    ['name' => $name, 'sort_order' => $order, 'is_active' => true, 'is_system' => true, 'meta' => self::META[$group->value][$code] ?? null],
                 );
             }
         }

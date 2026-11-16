@@ -46,6 +46,7 @@ return [
     'approvals', // T-067
     'approval_rules', // T-067
     'approval_delegations', // T-067
+    'product_categories', // T-069
     'stock_locations', // T-068
     'stock_bins', // T-068
     'vehicles', // T-068

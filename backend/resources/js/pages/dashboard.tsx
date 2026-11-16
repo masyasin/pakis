@@ -1,15 +1,37 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
-import { CalendarX2, ClipboardPen, Smartphone, UserX } from 'lucide-react';
-import { formatLongDate } from '@/lib/local-date';
+import {
+    CalendarX2,
+    ClipboardPen,
+    RefreshCw,
+    Smartphone,
+    UserX,
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+import type { ReactNode } from 'react';
+import {
+    Bar,
+    BarChart,
+    CartesianGrid,
+    Cell,
+    Pie,
+    PieChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts';
+import { Input } from '@/components/ui/input';
+import { formatCivilRange, formatLongDate } from '@/lib/local-date';
+import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/admin';
 import { index as attendanceIndex } from '@/routes/admin/attendance';
 
 /*
- * Dasbor (07 §4, FR-040, T-044) dengan tata letak prototipe (konsep/PAKIS_ONE_Prototipe_v1.0.html,
- * Dashboard Owner): baris kartu angka, lalu kartu grafik + kartu daftar "perlu tindakan". Semua
- * angka dari server dalam scope pengguna; kartu "perlu tindakan" menaut ke daftar dengan filter
- * yang sama (URL state), jadi angkanya = jumlah baris di daftar itu.
+ * Dasbor (07 §4, FR-040, T-044; grafik keputusan Mas 16 Nov 2026). Semua angka dari server dalam
+ * scope pengguna (TodaySummary + AttendanceInsights). Kartu "perlu tindakan" menaut ke daftar dengan
+ * filter yang sama, jadi angkanya = jumlah baris di daftar itu. Data dimuat ulang otomatis tiap
+ * `ui.dashboard_refresh_seconds` lewat partial reload (hanya prop data, halaman tidak berkedip).
  */
 type Summary = {
     date: string;
@@ -20,6 +42,16 @@ type Summary = {
     week: { date: string; present: number; late: number }[];
 };
 
+type Charts = {
+    from: string;
+    to: string;
+    max_days: number;
+    trend: { date: string; on_time: number; late: number; absent: number }[];
+    locations: { name: string; present: number; late: number }[];
+    check_ins: { time: string; count: number }[];
+    check_ins_outside: number;
+};
+
 type PendingItem = {
     key: 'corrections' | 'devices' | 'unscheduled' | 'no_account';
     count: number;
@@ -28,7 +60,9 @@ type PendingItem = {
 
 type Props = {
     attendance: Summary | null;
+    charts: Charts | null;
     pending: PendingItem[];
+    refresh_seconds: number;
 };
 
 const PENDING: Record<
@@ -57,13 +91,53 @@ const PENDING: Record<
     },
 };
 
+/** Warna seri (token `--viz-*` di app.css, divalidasi untuk buta warna di tema terang & gelap). */
+const SERIES = {
+    on_time: { label: 'Tepat waktu', color: 'var(--viz-on-time)' },
+    late: { label: 'Telat', color: 'var(--viz-late)' },
+    absent: { label: 'Tidak hadir', color: 'var(--viz-absent)' },
+} as const;
+
+const NEUTRAL = 'var(--border)';
+const DATA_KEYS = ['attendance', 'charts', 'pending'];
 const WEEKDAY = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
-/** Nama hari dari tanggal kalender `YYYY-MM-DD` (tanpa zona: tanggal sudah lokal). */
-function weekday(date: string): string {
+/** Nama hari & tanggal dari tanggal kalender `YYYY-MM-DD` (tanpa zona: tanggal sudah lokal). */
+function civil(date: string): { weekday: string; day: number; month: number } {
     const [y, m, d] = date.split('-').map(Number);
 
-    return WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    return {
+        weekday: WEEKDAY[new Date(Date.UTC(y, m - 1, d)).getUTCDay()],
+        day: d,
+        month: m,
+    };
+}
+
+function clock(date: Date, timeZone: string): string {
+    return new Intl.DateTimeFormat('id-ID', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone,
+    }).format(date);
+}
+
+/** Animasi grafik hanya bila pengguna tidak meminta gerak dikurangi. */
+function useReducedMotion(): boolean {
+    const [reduced, setReduced] = useState(
+        () =>
+            typeof window !== 'undefined' &&
+            window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    );
+
+    useEffect(() => {
+        const query = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const update = () => setReduced(query.matches);
+        query.addEventListener('change', update);
+
+        return () => query.removeEventListener('change', update);
+    }, []);
+
+    return reduced;
 }
 
 function Empty() {
@@ -75,66 +149,669 @@ function Empty() {
     );
 }
 
-/** Batang hadir + garis telat (SVG, skala 0–100). Teks label di HTML agar tidak mengecil di HP. */
-function WeekChart({ week }: { week: Summary['week'] }) {
-    const max = Math.max(1, ...week.map((d) => d.present));
-    const step = 100 / week.length;
-    const y = (v: number) => 98 - (v / max) * 90;
-    const line = week
-        .map((d, i) => `${(i + 0.5) * step},${y(d.late)}`)
-        .join(' ');
-
+function Card({
+    title,
+    action,
+    note,
+    className,
+    children,
+}: {
+    title: string;
+    action?: ReactNode;
+    note?: ReactNode;
+    className?: string;
+    children: ReactNode;
+}) {
     return (
-        <svg
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            className="absolute inset-0 size-full"
-            role="img"
-            aria-label={week
-                .map(
-                    (d) =>
-                        `${weekday(d.date)} ${d.date}: hadir ${d.present}, telat ${d.late}`,
-                )
-                .join('; ')}
+        <section
+            className={cn(
+                'flex min-w-0 flex-col rounded-xl border bg-card p-4 shadow-md',
+                className,
+            )}
         >
-            {[2, 34, 66, 98].map((gy) => (
-                <line
-                    key={gy}
-                    x1="0"
-                    y1={gy}
-                    x2="100"
-                    y2={gy}
-                    className="stroke-border"
-                    vectorEffect="non-scaling-stroke"
-                    strokeDasharray={gy === 98 ? undefined : '4 4'}
-                />
-            ))}
-            {week.map((d, i) => (
-                <rect
-                    key={d.date}
-                    x={i * step + step * 0.22}
-                    width={step * 0.56}
-                    y={y(d.present)}
-                    height={98 - y(d.present)}
-                    rx="1"
-                    className="fill-primary/70"
-                />
-            ))}
-            <polyline
-                points={line}
-                fill="none"
-                className="stroke-status-warning"
-                strokeWidth="2"
-                vectorEffect="non-scaling-stroke"
-            />
-        </svg>
+            <div className="mb-3 flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-bold">{title}</h2>
+                {action && <div className="ml-auto">{action}</div>}
+            </div>
+            {children}
+            {note && (
+                <p className="mt-2 text-[0.8rem] text-muted-foreground">
+                    {note}
+                </p>
+            )}
+        </section>
     );
 }
 
-export default function Dashboard({ attendance, pending }: Props) {
+/** Legenda: identitas seri tidak hanya lewat warna (nama tertulis di samping tanda warna). */
+function Legend({ items }: { items: { label: string; color: string }[] }) {
+    return (
+        <ul className="flex flex-wrap gap-x-4 gap-y-1 text-[0.8rem] text-muted-foreground">
+            {items.map((item) => (
+                <li key={item.label} className="flex items-center gap-1.5">
+                    <span
+                        aria-hidden="true"
+                        className="size-2.5 rounded-[3px]"
+                        style={{ background: item.color }}
+                    />
+                    {item.label}
+                </li>
+            ))}
+        </ul>
+    );
+}
+
+type TipRow = { name: string; value: number; color: string };
+
+/** Isi tooltip: teks memakai warna tinta biasa, warna seri hanya pada tanda di sampingnya. */
+function TipBox({ title, rows }: { title: string; rows: TipRow[] }) {
+    return (
+        <div className="min-w-36 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg">
+            <p className="mb-1 font-semibold">{title}</p>
+            {rows.map((row) => (
+                <p key={row.name} className="flex items-center gap-2">
+                    <span
+                        aria-hidden="true"
+                        className="size-2 rounded-[2px]"
+                        style={{ background: row.color }}
+                    />
+                    <span className="text-muted-foreground">{row.name}</span>
+                    <span className="ml-auto pl-3 font-semibold tabular-nums">
+                        {row.value}
+                    </span>
+                </p>
+            ))}
+        </div>
+    );
+}
+
+type TipArgs = {
+    active?: boolean;
+    payload?: readonly { payload?: unknown }[];
+};
+
+/** Konten tooltip recharts: ambil baris data yang sedang ditunjuk, lalu tampilkan lewat `render`. */
+function tip<T>(render: (row: T) => ReactNode) {
+    function Content({ active, payload }: TipArgs) {
+        const row = payload?.[0]?.payload as T | undefined;
+
+        return active && row ? render(row) : null;
+    }
+
+    return Content;
+}
+
+const axisTick = { fontSize: 11, fill: 'var(--muted-foreground)' };
+
+/** Label sumbu dua baris dari nilai `Hari|tanggal`. */
+function StackedTick({
+    x,
+    y,
+    payload,
+}: {
+    x?: number | string;
+    y?: number | string;
+    payload?: { value?: string | number };
+}) {
+    const [top, bottom] = String(payload?.value ?? '').split('|');
+
+    return (
+        <text
+            x={x}
+            y={y}
+            textAnchor="middle"
+            fontSize={11}
+            fill="var(--muted-foreground)"
+        >
+            <tspan x={x} dy="0.9em">
+                {top}
+            </tspan>
+            <tspan x={x} dy="1.2em" fill="var(--foreground)">
+                {bottom}
+            </tspan>
+        </text>
+    );
+}
+
+function TrendChart({
+    trend,
+    animate,
+}: {
+    trend: Charts['trend'];
+    animate: boolean;
+}) {
+    const long = trend.length > 7;
+    const data = trend.map((d) => {
+        const c = civil(d.date);
+
+        return {
+            ...d,
+            label: long ? `${c.day}/${c.month}` : `${c.weekday}|${c.day}`,
+            full: `${c.weekday}, ${c.day}/${c.month}`,
+        };
+    });
+    const keys = ['on_time', 'late', 'absent'] as const;
+
+    return (
+        <>
+            <div className="h-56 md:h-64" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        margin={{ top: 4, right: 4, bottom: 0, left: -18 }}
+                        barCategoryGap={long ? '18%' : '28%'}
+                    >
+                        <CartesianGrid
+                            vertical={false}
+                            stroke="var(--border)"
+                            strokeDasharray="4 4"
+                        />
+                        <XAxis
+                            dataKey="label"
+                            // 7 hari: dua baris (hari / tanggal) agar tidak berdempetan di HP.
+                            tick={long ? axisTick : StackedTick}
+                            height={long ? 30 : 36}
+                            tickLine={false}
+                            axisLine={{ stroke: 'var(--border)' }}
+                            interval={long ? 'preserveStartEnd' : 0}
+                            minTickGap={8}
+                        />
+                        <YAxis
+                            allowDecimals={false}
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <Tooltip
+                            cursor={{ fill: 'var(--muted)', opacity: 0.6 }}
+                            content={tip<(typeof data)[number]>((row) => (
+                                <TipBox
+                                    title={row.full}
+                                    rows={keys.map((k) => ({
+                                        name: SERIES[k].label,
+                                        value: row[k],
+                                        color: SERIES[k].color,
+                                    }))}
+                                />
+                            ))}
+                        />
+                        {keys.map((k, i) => (
+                            <Bar
+                                key={k}
+                                dataKey={k}
+                                stackId="hari"
+                                fill={SERIES[k].color}
+                                // Celah 2px warna kartu antarsegmen; ujung atas membulat.
+                                stroke="var(--card)"
+                                strokeWidth={1}
+                                radius={
+                                    i === keys.length - 1
+                                        ? [4, 4, 0, 0]
+                                        : undefined
+                                }
+                                isAnimationActive={animate}
+                                animationDuration={500}
+                            />
+                        ))}
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+            <table className="sr-only">
+                <caption>Kehadiran per hari</caption>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Tepat waktu</th>
+                        <th>Telat</th>
+                        <th>Tidak hadir</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {trend.map((d) => (
+                        <tr key={d.date}>
+                            <td>{d.date}</td>
+                            <td>{d.on_time}</td>
+                            <td>{d.late}</td>
+                            <td>{d.absent}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
+    );
+}
+
+/** Komposisi hari ini dari angka kartu (TodaySummary), tanpa query tambahan. */
+function TodayDonut({
+    summary,
+    animate,
+}: {
+    summary: Summary;
+    animate: boolean;
+}) {
+    const onTime = summary.present - summary.late;
+    const expected = summary.present + summary.not_yet;
+    const rate =
+        expected > 0 ? Math.round((summary.present / expected) * 100) : null;
+    const slices = [
+        {
+            name: SERIES.on_time.label,
+            value: onTime,
+            color: SERIES.on_time.color,
+        },
+        {
+            name: SERIES.late.label,
+            value: summary.late,
+            color: SERIES.late.color,
+        },
+        { name: 'Belum presensi', value: summary.not_yet, color: NEUTRAL },
+    ];
+    const hasData = slices.some((s) => s.value > 0);
+
+    return (
+        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+            <div className="relative size-44" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                        <Pie
+                            data={
+                                hasData
+                                    ? slices
+                                    : [
+                                          {
+                                              name: 'kosong',
+                                              value: 1,
+                                              color: NEUTRAL,
+                                          },
+                                      ]
+                            }
+                            dataKey="value"
+                            nameKey="name"
+                            innerRadius="72%"
+                            outerRadius="100%"
+                            paddingAngle={hasData ? 2 : 0}
+                            stroke="var(--card)"
+                            strokeWidth={2}
+                            startAngle={90}
+                            endAngle={-270}
+                            isAnimationActive={animate}
+                            animationDuration={600}
+                        >
+                            {(hasData ? slices : [{ color: NEUTRAL }]).map(
+                                (s, i) => (
+                                    <Cell key={i} fill={s.color} />
+                                ),
+                            )}
+                        </Pie>
+                        {hasData && (
+                            <Tooltip
+                                content={tip<(typeof slices)[number]>((row) => (
+                                    <TipBox title="Hari ini" rows={[row]} />
+                                ))}
+                            />
+                        )}
+                    </PieChart>
+                </ResponsiveContainer>
+                <div className="pointer-events-none absolute inset-0 grid place-content-center text-center">
+                    <span className="text-[1.6rem] leading-none font-extrabold tabular-nums">
+                        {rate === null ? '—' : `${rate}%`}
+                    </span>
+                    <span className="mt-1 text-[0.72rem] text-muted-foreground">
+                        kehadiran
+                    </span>
+                </div>
+            </div>
+            <p className="sr-only">
+                Kehadiran hari ini {rate === null ? 'belum ada' : `${rate}%`}:
+                tepat waktu {onTime}, telat {summary.late}, belum presensi{' '}
+                {summary.not_yet}.
+            </p>
+            <Legend
+                items={slices.map((s) => ({
+                    label: `${s.name} ${s.value}`,
+                    color: s.color,
+                }))}
+            />
+        </div>
+    );
+}
+
+function LocationChart({
+    locations,
+    animate,
+}: {
+    locations: Charts['locations'];
+    animate: boolean;
+}) {
+    const data = locations.map((l) => ({
+        ...l,
+        on_time: l.present - l.late,
+    }));
+    const keys = ['on_time', 'late'] as const;
+
+    return (
+        <>
+            <div
+                style={{ height: Math.max(120, data.length * 40 + 24) }}
+                aria-hidden="true"
+            >
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        layout="vertical"
+                        margin={{ top: 0, right: 8, bottom: 0, left: 0 }}
+                        barCategoryGap="30%"
+                    >
+                        <CartesianGrid
+                            horizontal={false}
+                            stroke="var(--border)"
+                            strokeDasharray="4 4"
+                        />
+                        <XAxis
+                            type="number"
+                            allowDecimals={false}
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <YAxis
+                            type="category"
+                            dataKey="name"
+                            width={104}
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <Tooltip
+                            cursor={{ fill: 'var(--muted)', opacity: 0.6 }}
+                            content={tip<(typeof data)[number]>((row) => (
+                                <TipBox
+                                    title={row.name}
+                                    rows={keys.map((k) => ({
+                                        name: SERIES[k].label,
+                                        value: row[k],
+                                        color: SERIES[k].color,
+                                    }))}
+                                />
+                            ))}
+                        />
+                        {keys.map((k, i) => (
+                            <Bar
+                                key={k}
+                                dataKey={k}
+                                stackId="lokasi"
+                                fill={SERIES[k].color}
+                                stroke="var(--card)"
+                                strokeWidth={1}
+                                radius={i === 1 ? [0, 4, 4, 0] : undefined}
+                                isAnimationActive={animate}
+                                animationDuration={500}
+                            />
+                        ))}
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+            <table className="sr-only">
+                <caption>Hadir hari ini per lokasi</caption>
+                <thead>
+                    <tr>
+                        <th>Lokasi</th>
+                        <th>Hadir</th>
+                        <th>Telat</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {locations.map((l) => (
+                        <tr key={l.name}>
+                            <td>{l.name}</td>
+                            <td>{l.present}</td>
+                            <td>{l.late}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
+    );
+}
+
+function CheckInChart({
+    checkIns,
+    animate,
+}: {
+    checkIns: Charts['check_ins'];
+    animate: boolean;
+}) {
+    return (
+        <>
+            <div className="h-48" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={checkIns}
+                        margin={{ top: 4, right: 4, bottom: 0, left: -18 }}
+                        barCategoryGap="12%"
+                    >
+                        <CartesianGrid
+                            vertical={false}
+                            stroke="var(--border)"
+                            strokeDasharray="4 4"
+                        />
+                        <XAxis
+                            dataKey="time"
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={{ stroke: 'var(--border)' }}
+                            interval="preserveStartEnd"
+                            minTickGap={12}
+                        />
+                        <YAxis
+                            allowDecimals={false}
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <Tooltip
+                            cursor={{ fill: 'var(--muted)', opacity: 0.6 }}
+                            content={tip<Charts['check_ins'][number]>((row) => (
+                                <TipBox
+                                    title={`Pukul ${row.time}`}
+                                    rows={[
+                                        {
+                                            name: 'Presensi masuk',
+                                            value: row.count,
+                                            color: 'var(--primary)',
+                                        },
+                                    ]}
+                                />
+                            ))}
+                        />
+                        <Bar
+                            dataKey="count"
+                            fill="var(--primary)"
+                            radius={[4, 4, 0, 0]}
+                            isAnimationActive={animate}
+                            animationDuration={500}
+                        />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+            <table className="sr-only">
+                <caption>Presensi masuk hari ini per 15 menit</caption>
+                <thead>
+                    <tr>
+                        <th>Mulai pukul</th>
+                        <th>Jumlah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {checkIns.map((b) => (
+                        <tr key={b.time}>
+                            <td>{b.time}</td>
+                            <td>{b.count}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
+    );
+}
+
+/** Geser tanggal sipil `YYYY-MM-DD` sebanyak `days` hari (dibaca sebagai UTC, tanpa zona). */
+function shiftDate(iso: string, days: number): string {
+    const [y, m, d] = iso.split('-').map(Number);
+
+    return new Date(Date.UTC(y, m - 1, d + days)).toISOString().slice(0, 10);
+}
+
+/**
+ * Filter rentang grafik (satu baris di atas grafik): pilihan cepat + tanggal dari–sampai. Nilai
+ * dikirim apa adanya; server merapikan rentang yang terbalik/terlalu panjang dan mengembalikan
+ * rentang yang benar-benar dipakai.
+ */
+function RangeFilter({
+    from,
+    to,
+    today,
+    maxDays,
+    onChange,
+}: {
+    from: string;
+    to: string;
+    today: string;
+    maxDays: number;
+    onChange: (range: { dari: string; sampai: string }) => void;
+}) {
+    const [draft, setDraft] = useState({ from, to });
+    // Ikuti rentang dari server (mis. setelah dirapikan) tanpa efek: bandingkan saat render.
+    const [synced, setSynced] = useState({ from, to });
+    if (synced.from !== from || synced.to !== to) {
+        setSynced({ from, to });
+        setDraft({ from, to });
+    }
+
+    const presets = [
+        { label: '7 hari', from: shiftDate(today, -6), to: today },
+        { label: '30 hari', from: shiftDate(today, -29), to: today },
+        { label: 'Bulan ini', from: `${today.slice(0, 8)}01`, to: today },
+    ];
+    const apply = (next: { from: string; to: string }) => {
+        setDraft(next);
+        if (next.from && next.to) {
+            onChange({ dari: next.from, sampai: next.to });
+        }
+    };
+
+    return (
+        <section
+            aria-label="Rentang grafik"
+            className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-xl border bg-card px-4 py-3 shadow-md"
+        >
+            <div className="flex flex-wrap gap-1.5">
+                {presets.map((p) => {
+                    const active = p.from === from && p.to === to;
+
+                    return (
+                        <button
+                            key={p.label}
+                            type="button"
+                            aria-pressed={active}
+                            onClick={() => apply({ from: p.from, to: p.to })}
+                            className={cn(
+                                'rounded-md border px-3 py-1.5 text-[0.82rem] font-medium transition-colors',
+                                active
+                                    ? 'border-primary bg-sidebar-accent text-primary'
+                                    : 'bg-card hover:bg-muted',
+                            )}
+                        >
+                            {p.label}
+                        </button>
+                    );
+                })}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 text-[0.82rem] text-muted-foreground">
+                <label className="flex items-center gap-1.5">
+                    Dari
+                    <Input
+                        type="date"
+                        value={draft.from}
+                        max={today}
+                        onChange={(e) =>
+                            apply({ ...draft, from: e.target.value })
+                        }
+                        className="h-8 w-[9.5rem]"
+                    />
+                </label>
+                <label className="flex items-center gap-1.5">
+                    Sampai
+                    <Input
+                        type="date"
+                        value={draft.to}
+                        max={today}
+                        onChange={(e) =>
+                            apply({ ...draft, to: e.target.value })
+                        }
+                        className="h-8 w-[9.5rem]"
+                    />
+                </label>
+            </div>
+            <p className="text-[0.8rem] text-muted-foreground lg:ml-auto">
+                Rentang paling panjang {maxDays} hari
+            </p>
+        </section>
+    );
+}
+
+function NoData({ children }: { children: ReactNode }) {
+    return (
+        <p className="grid flex-1 place-items-center rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
+            {children}
+        </p>
+    );
+}
+
+export default function Dashboard({
+    attendance,
+    charts,
+    pending,
+    refresh_seconds: refreshSeconds,
+}: Props) {
     const { auth, timezone } = usePage().props;
     const firstName = auth.user?.name.split(' ')[0] ?? '';
     const today = formatLongDate(new Date(), timezone);
+    const reduced = useReducedMotion();
+    const [updatedAt, setUpdatedAt] = useState(() => new Date());
+    const [loading, setLoading] = useState(false);
+    // Animasi hanya saat pertama tampil; muat ulang berkala tidak menggerakkan ulang grafik.
+    const [animate, setAnimate] = useState(!reduced);
+
+    const reload = useCallback(
+        (data?: Record<string, string>) => {
+            setAnimate(data !== undefined && !reduced);
+            router.reload({
+                only: DATA_KEYS,
+                data,
+                onStart: () => setLoading(true),
+                onSuccess: () => setUpdatedAt(new Date()),
+                onFinish: () => setLoading(false),
+            });
+        },
+        [reduced],
+    );
+
+    useEffect(() => {
+        if (refreshSeconds <= 0) {
+            return;
+        }
+
+        // Tab tersembunyi tidak memuat ulang: dasbor yang ditinggal terbuka tidak membebani server.
+        const id = window.setInterval(() => {
+            if (document.visibilityState === 'visible') {
+                reload();
+            }
+        }, refreshSeconds * 1000);
+
+        return () => window.clearInterval(id);
+    }, [refreshSeconds, reload]);
+
     const tiles: {
         label: string;
         dot: string;
@@ -173,19 +850,48 @@ export default function Dashboard({ attendance, pending }: Props) {
     ];
     const pendingTotal = pending.reduce((sum, p) => sum + p.count, 0);
     const box = 'block min-w-0 rounded-xl border bg-card p-4 shadow-md';
+    const hasCheckIns = (charts?.check_ins.length ?? 0) > 0;
+    // Baris bawah dua kolom: bila kartunya ganjil, "Perlu tindakan" selebar penuh (daftar 2 kolom)
+    // agar tidak ada sel kosong di sebelahnya.
+    const lowerCards =
+        (charts ? 1 : 0) +
+        (charts && charts.locations.length > 0 ? 1 : 0) +
+        (pending.length > 0 ? 1 : 0);
+    const pendingWide = lowerCards % 2 === 1;
+    const rangeText = charts ? formatCivilRange(charts.from, charts.to) : '';
 
     return (
         <>
             <Head title="Dasbor" />
 
             <div className="mx-auto w-full max-w-[1440px] space-y-3.5 p-4 md:px-7 md:py-6">
-                <header className="mb-4.5">
-                    <h1 className="text-[1.4rem] leading-tight font-bold">
-                        Selamat datang, {firstName}
-                    </h1>
-                    <p className="mt-0.5 text-sm text-muted-foreground">
-                        Ringkasan kehadiran tim hari ini, {today}.
-                    </p>
+                <header className="mb-4.5 flex flex-wrap items-end gap-x-4 gap-y-2">
+                    <div className="min-w-0">
+                        <h1 className="text-[1.4rem] leading-tight font-bold">
+                            Selamat datang, {firstName}
+                        </h1>
+                        <p className="mt-0.5 text-sm text-muted-foreground">
+                            Ringkasan kehadiran tim hari ini, {today}.
+                        </p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => reload()}
+                        disabled={loading}
+                        className="ml-auto inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[0.8rem] text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-70"
+                    >
+                        <RefreshCw
+                            className={cn(
+                                'size-3.5',
+                                loading && 'motion-safe:animate-spin',
+                            )}
+                            aria-hidden="true"
+                        />
+                        <span aria-live="polite">
+                            Diperbarui pukul {clock(updatedAt, timezone)}
+                        </span>
+                        <span className="sr-only">, muat ulang sekarang</span>
+                    </button>
                 </header>
 
                 {attendance && (
@@ -228,51 +934,93 @@ export default function Dashboard({ attendance, pending }: Props) {
                     </section>
                 )}
 
-                <div
-                    className={
-                        attendance && pending.length > 0
-                            ? 'grid gap-3.5 min-[1100px]:grid-cols-[1.6fr_1fr]'
-                            : 'grid gap-3.5'
-                    }
-                >
-                    {attendance && (
-                        <section className="flex min-w-0 flex-col rounded-xl border bg-card p-4 shadow-md">
-                            <h2 className="mb-2.5 text-base font-bold">
-                                Kehadiran 7 hari
-                            </h2>
-                            <div className="relative min-h-40 flex-1 md:min-h-48">
-                                <WeekChart week={attendance.week} />
+                {attendance && charts && (
+                    <RangeFilter
+                        from={charts.from}
+                        to={charts.to}
+                        today={attendance.date}
+                        maxDays={charts.max_days}
+                        onChange={reload}
+                    />
+                )}
+
+                {attendance && charts && (
+                    <div className="grid gap-3.5 min-[1100px]:grid-cols-[1.75fr_1fr]">
+                        <Card
+                            title="Kehadiran per hari"
+                            note={`${rangeText}. Tidak hadir terisi setelah hari ditutup, jadi hari ini baru muncul besok.`}
+                        >
+                            <div className="mb-2">
+                                <Legend items={Object.values(SERIES)} />
                             </div>
-                            <div
-                                className="mt-1.5 grid grid-cols-7 text-center text-[11px] text-muted-foreground"
-                                aria-hidden="true"
-                            >
-                                {attendance.week.map((d) => (
-                                    <span key={d.date}>
-                                        {weekday(d.date)}
-                                        <span className="block font-semibold text-foreground tabular-nums">
-                                            {d.present}
-                                        </span>
-                                    </span>
-                                ))}
+                            <TrendChart
+                                trend={charts.trend}
+                                animate={animate}
+                            />
+                        </Card>
+
+                        <Card title="Komposisi hari ini">
+                            <TodayDonut
+                                summary={attendance}
+                                animate={animate}
+                            />
+                        </Card>
+                    </div>
+                )}
+
+                <div className="grid gap-3.5 lg:grid-cols-2">
+                    {charts && (
+                        <Card
+                            title="Sebaran jam masuk"
+                            note={`Jumlah presensi masuk per 15 menit, ${rangeText}.${charts.check_ins_outside > 0 ? ` ${charts.check_ins_outside} presensi di jam yang jauh dari kebiasaan tidak ditampilkan.` : ''}`}
+                        >
+                            {hasCheckIns ? (
+                                <CheckInChart
+                                    checkIns={charts.check_ins}
+                                    animate={animate}
+                                />
+                            ) : (
+                                <NoData>
+                                    Belum ada presensi masuk di rentang ini.
+                                </NoData>
+                            )}
+                        </Card>
+                    )}
+
+                    {charts && charts.locations.length > 0 && (
+                        <Card
+                            title="Hadir per lokasi"
+                            note={`Jumlah hari hadir per lokasi, ${rangeText}.`}
+                        >
+                            <div className="mb-2">
+                                <Legend items={[SERIES.on_time, SERIES.late]} />
                             </div>
-                            <p className="mt-2 text-[0.8rem] text-muted-foreground">
-                                Batang: jumlah hadir per hari. Garis: jumlah
-                                telat.
-                            </p>
-                        </section>
+                            <LocationChart
+                                locations={charts.locations}
+                                animate={animate}
+                            />
+                        </Card>
                     )}
 
                     {pending.length > 0 && (
-                        <section className="min-w-0 rounded-xl border bg-card p-4 shadow-md">
+                        <section
+                            className={cn(
+                                'min-w-0 rounded-xl border bg-card p-4 shadow-md',
+                                pendingWide && 'lg:col-span-2',
+                            )}
+                        >
                             <h2 className="mb-2.5 flex items-center gap-2 text-base font-bold">
                                 Perlu tindakan
                                 <span className="ml-auto inline-flex items-center rounded-full bg-status-warning-bg px-2 py-0.5 text-xs font-bold text-status-warning tabular-nums">
                                     {pendingTotal}
                                 </span>
                             </h2>
-                            {/* Daftar .item prototipe: ikon berlatar amber muda, judul, keterangan. */}
-                            <ul className="flex flex-col gap-2.5">
+                            <ul
+                                className={cn(
+                                    'grid gap-2.5',
+                                    pendingWide && 'lg:grid-cols-2',
+                                )}
+                            >
                                 {pending.map((item) => {
                                     const {
                                         title,

@@ -52,6 +52,8 @@ test('BR-020 nilai di luar batas ditolak dengan pesan per field', function (stri
     'website http' => ['general', 'general__website', 'http://pakis.test'],
     'telepon ngawur' => ['general', 'general__phone', '12ab'],
     'per halaman bukan opsi' => ['ui', 'ui__default_per_page', 30],
+    'muat ulang dasbor terlalu sering' => ['ui', 'ui__dashboard_refresh_seconds', 10],
+    'muat ulang dasbor di atas batas' => ['ui', 'ui__dashboard_refresh_seconds', 601],
     'jam salah' => ['attendance', 'attendance__daily_close_time', '25:00'],
     'semver salah' => ['mobile', 'mobile__min_version', '1.0'],
     'email monitoring > 5' => ['monitoring', 'monitoring__alert_emails', "a@x.test\nb@x.test\nc@x.test\nd@x.test\ne@x.test\nf@x.test"],

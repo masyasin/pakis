@@ -147,6 +147,11 @@
     --chart-3: #24609b;
     --chart-4: #6fa77d;
     --chart-5: #b3261e;
+    /* Grafik kehadiran dasbor: tepat waktu / telat / tidak hadir. Dipilih & divalidasi (CVD, kontras)
+       untuk dibaca berdampingan dalam batang bertumpuk; makna tetap dibawa legenda + tooltip. */
+    --viz-on-time: #2e7d46;
+    --viz-late: #e0a030;
+    --viz-absent: #c22a5c;
     --radius: 0.75rem;
     --sidebar: #ffffff;
     --sidebar-foreground: #16241b;
@@ -209,6 +214,9 @@
     --chart-3: #85b7e8;
     --chart-4: #4f8a5f;
     --chart-5: #f08a80;
+    --viz-on-time: #1e8048;
+    --viz-late: #bf8a1a;
+    --viz-absent: #e5507e;
     --sidebar: #0e1410;
     --sidebar-foreground: #e5ede7;
     --sidebar-primary: #79b98b;

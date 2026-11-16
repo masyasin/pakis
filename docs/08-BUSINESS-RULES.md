@@ -88,6 +88,8 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 |---|---|---|---|---|
 | `ui.default_per_page` | enum | 25 | 10, 25, 50, 100 | ❌ |
 | `ui.max_per_page` | int | 100 | 25–100 | ❌ |
+| `ui.dashboard_refresh_seconds` | int | 60 | 0–600; 0 = muat ulang otomatis dasbor mati, selain 0 minimal 15 | ❌ |
+| `ui.dashboard_max_range_days` | int | 92 | 7–366; rentang grafik dasbor yang lebih panjang dipotong (tanggal "sampai" dipertahankan) | ❌ |
 | `export.sync_max_rows` | int | 2000 | 100–10000 | ❌ |
 | `export.max_rows` | int | 100000 | 1000–500000 | ❌ |
 | `export.mass_export_alert_rows` | int | 1000 | 100–100000 | ❌ |

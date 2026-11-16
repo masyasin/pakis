@@ -142,6 +142,10 @@ final class SettingRegistry
             // 2.5 Tampilan, Ekspor, Impor, Notifikasi, Monitoring, Retensi
             $t('ui.default_per_page', SettingType::Enum, 25, 'Baris per halaman bawaan', options: [10, 25, 50, 100]),
             $t('ui.max_per_page', SettingType::Int, 100, 'Batas baris per halaman', min: 25, max: 100),
+            // 0 mematikan; di bawah 15 detik ditolak agar layar dasbor yang dibiarkan terbuka tidak membebani server.
+            $t('ui.dashboard_refresh_seconds', SettingType::Int, 60, 'Muat ulang dasbor otomatis (detik)', '0 = mati. Selain 0, minimal 15 detik.', min: 0, max: 600,
+                check: fn ($v) => (int) $v === 0 || (int) $v >= 15 ? null : 'Isi 0 (mati) atau minimal 15 detik.'),
+            $t('ui.dashboard_max_range_days', SettingType::Int, 92, 'Rentang grafik dasbor terpanjang (hari)', 'Rentang tanggal yang lebih panjang dipotong ke jumlah hari ini.', min: 7, max: 366),
             $t('export.sync_max_rows', SettingType::Int, 2000, 'Ekspor langsung sampai (baris)', 'Lebih dari ini diproses di antrean.', min: 100, max: 10000),
             $t('export.max_rows', SettingType::Int, 100000, 'Batas ekspor (baris)', min: 1000, max: 500000),
             $t('export.mass_export_alert_rows', SettingType::Int, 1000, 'Peringatan ekspor massal (baris)', 'Ekspor lebih besar dicatat di log keamanan.', min: 100, max: 100000),

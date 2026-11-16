@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Access\DataScope;
 use App\Domain\Attendance\Listings\AttendanceCorrectionListing;
 use App\Domain\Attendance\Listings\ScheduleListing;
+use App\Domain\Attendance\Queries\AttendanceInsights;
 use App\Domain\Attendance\Queries\TodaySummary;
 use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Device\Models\Device;
@@ -28,13 +29,25 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, TodaySummary $summary, DataScope $scope): Response
+    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope): Response
     {
         $user = $request->user();
         abort_unless($user instanceof User, 403);
 
+        // Rentang grafik dari URL (?dari=YYYY-MM-DD&sampai=YYYY-MM-DD) agar bertahan saat dimuat
+        // ulang. AttendanceInsights::range() merapikan nilai rusak/terlalu panjang; tidak pernah
+        // diteruskan mentah ke query.
+        $from = $request->query('dari');
+        $to = $request->query('sampai');
+        $canAttendance = $user->can('attendance.view');
+
         return Inertia::render('dashboard', [
-            'attendance' => $user->can('attendance.view') ? $summary->for($user) : null,
+            'attendance' => $canAttendance ? $summary->for($user) : null,
+            'charts' => $canAttendance
+                ? $insights->for($user, is_string($from) ? $from : null, is_string($to) ? $to : null)
+                : null,
+            // Jeda muat ulang otomatis (detik, 0 = mati) dibaca dari pengaturan, bukan konstanta.
+            'refresh_seconds' => (int) setting('ui.dashboard_refresh_seconds'),
             'pending' => array_values(array_filter([
                 $user->can('attendance_corrections.view') ? self::item(
                     'corrections',

@@ -182,16 +182,43 @@ test('SEC-041 Scheduled alert: tanpa email penerima, alert tetap tercatat di log
     Notification::assertNothingSent();
 });
 
+/** View Blade terkompilasi ASLI (persis hasil BladeCompiler) untuk sumber di `$base/resources/views`. */
+function sjCompiledView(string $base, string $view, string $source = 'Halo {{ $nama }}'): string
+{
+    $src = $base.'/resources/views/'.$view.'.blade.php';
+    file_put_contents($src, $source);
+    $compiler = clone app('blade.compiler');
+    $compiler->setPath($src);
+    $target = $base.'/storage/framework/views/'.basename($compiler->getCompiledPath($src));
+    file_put_contents($target, $compiler->compileString($source)."<?php /**PATH {$src} ENDPATH**/ ?>");
+
+    return $target;
+}
+
+/** Baris temuan alert integritas (gabungan). */
+function sjIntegrityText(): string
+{
+    $text = '';
+    Notification::assertSentOnDemand(SecurityAlert::class, function (SecurityAlert $n) use (&$text) {
+        $text = implode("\n", $n->lines);
+
+        return $n->title === 'Integritas berkas';
+    });
+
+    return $text;
+}
+
 describe('SEC-070 Scheduled integritas berkas', function () {
     beforeEach(function () {
         $this->base = storage_path('framework/testing/integrity-'.Str::random(8));
-        foreach (['app/Domain', 'public/build', 'storage/framework/views', 'storage/app'] as $dir) {
+        foreach (['app/Domain', 'public/build', 'resources/views', 'storage/framework/views', 'storage/app'] as $dir) {
             mkdir($this->base.'/'.$dir, 0777, true);
         }
         file_put_contents($this->base.'/app/Domain/Kode.php', '<?php // kode rilis');
         file_put_contents($this->base.'/public/index.php', '<?php // pintu masuk');
+        file_put_contents($this->base.'/public/.htaccess', 'RewriteEngine On');
         file_put_contents($this->base.'/public/build/app.js', 'console.log(1)');
-        file_put_contents($this->base.'/storage/framework/views/'.str_repeat('a', 32).'.php', '<?php // view terkompilasi');
+        $this->genuineView = sjCompiledView($this->base, 'sapa');
         config(['integrity.base' => $this->base, 'integrity.manifest' => $this->base.'/.integrity-manifest.json']);
 
         $this->artisan('integrity:check --write-manifest')->assertSuccessful();
@@ -199,7 +226,7 @@ describe('SEC-070 Scheduled integritas berkas', function () {
 
     afterEach(fn () => app('files')->deleteDirectory($this->base));
 
-    test('tanpa perubahan: bersih, tanpa alert', function () {
+    test('tanpa perubahan: bersih (view terkompilasi asli tidak dilaporkan), tanpa alert', function () {
         $this->artisan('integrity:check')->expectsOutputToContain('tidak ada temuan')->assertSuccessful();
         Notification::assertNothingSent();
     });
@@ -209,9 +236,7 @@ describe('SEC-070 Scheduled integritas berkas', function () {
 
         $this->artisan('integrity:check')->assertFailed();
 
-        Notification::assertSentOnDemand(SecurityAlert::class, fn (SecurityAlert $n) => $n->title === 'Integritas berkas'
-            && str_contains(implode("\n", $n->lines), 'storage/app/shell.php')
-            && ! str_contains(implode("\n", $n->lines), 'framework/views'));
+        expect(sjIntegrityText())->toContain('storage/app/shell.php')->not->toContain('framework/views');
     });
 
     test('.php baru di public/ dan berkas app/ yang berubah terdeteksi', function () {
@@ -220,12 +245,80 @@ describe('SEC-070 Scheduled integritas berkas', function () {
 
         $this->artisan('integrity:check')->assertFailed();
 
-        Notification::assertSentOnDemand(SecurityAlert::class, function (SecurityAlert $n) {
-            $text = implode("\n", $n->lines);
+        expect(sjIntegrityText())
+            ->toContain('Berkas PHP/eksekusi asing (public/ atau storage/) — 1: public/slot.php')
+            ->toContain('Berkas berubah dari rilis — 1: app/Domain/Kode.php');
+    });
 
-            return str_contains($text, 'Berkas PHP asing (public/ atau storage/) — 1: public/slot.php')
-                && str_contains($text, 'Berkas berubah dari rilis — 1: app/Domain/Kode.php');
-        });
+    test('SEC-070 webshell yang meniru nama & komentar view terkompilasi tetap terdeteksi', function () {
+        $views = $this->base.'/storage/framework/views/';
+        // 1) nama hex saja, tanpa komentar PATH.
+        file_put_contents($views.str_repeat('b', 32).'.php', '<?php // dummy uji tanpa PATH');
+        // 2) nama + komentar PATH sah untuk sumber nyata, tetapi isinya disisipi.
+        $forged = sjCompiledView($this->base, 'palsu');
+        file_put_contents($forged, '<?php /* dummy uji sisipan */ ?>'.file_get_contents($forged));
+        // 3) komentar PATH menunjuk sumber di luar resources/views & vendor.
+        $outside = $this->base.'/storage/app/luar.blade.php';
+        file_put_contents($outside, 'x');
+        file_put_contents($views.str_repeat('c', 32).'.php', "x<?php /**PATH {$outside} ENDPATH**/ ?>");
+        // 4) "komponen inline" yang namanya bukan hash isinya dan memuat tag PHP.
+        file_put_contents($views.str_repeat('d', 32).'.blade.php', '<?php // dummy uji');
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        expect(sjIntegrityText())->toContain(str_repeat('b', 32).'.php')
+            ->toContain(basename($forged))
+            ->toContain(str_repeat('c', 32).'.php')
+            ->toContain(str_repeat('d', 32).'.blade.php')
+            ->not->toContain(basename($this->genuineView));
+    });
+
+    test('SEC-070 ekstensi PHP-like, ekstensi ganda, .htaccess, .user.ini terdeteksi', function () {
+        $names = ['a.phtml', 'b.php.jpg', 'c.PHAR', 'd.inc', 'e.php5', 'f.pht', 'g.phps', 'h.phpt', '.htaccess', '.user.ini'];
+        foreach ($names as $name) {
+            file_put_contents($this->base.'/storage/app/'.$name, 'dummy uji');
+        }
+        file_put_contents($this->base.'/storage/app/foto.jpg', 'jpeg');
+        file_put_contents($this->base.'/public/build/.user.ini', 'dummy uji');
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        $text = sjIntegrityText();
+        foreach ($names as $name) {
+            expect($text)->toContain('storage/app/'.$name);
+        }
+        expect($text)->toContain('public/build/.user.ini')->not->toContain('foto.jpg');
+    });
+
+    test('SEC-070 symlink di storage/ dilaporkan', function () {
+        $link = $this->base.'/storage/app/tautan.jpg';
+        if (! @symlink($this->base.'/app/Domain/Kode.php', $link)) {
+            $this->markTestSkipped('OS ini tidak mengizinkan membuat symlink (Windows tanpa Developer Mode).');
+        }
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        expect(sjIntegrityText())->toContain('storage/app/tautan.jpg (symlink)');
+    });
+
+    test('SEC-070 manifest rusak selalu temuan; manifest hilang = temuan di luar local/testing', function () {
+        file_put_contents($this->base.'/.integrity-manifest.json', '{rusak');
+        $this->artisan('integrity:check')->assertFailed();
+        expect(sjIntegrityText())->toContain('Manifest rilis rusak');
+
+        unlink($this->base.'/.integrity-manifest.json');
+        Notification::fake();
+        $this->artisan('integrity:check')->expectsOutputToContain('Manifest rilis tidak ditemukan')->assertSuccessful();
+        Notification::assertNothingSent();
+
+        $env = $this->app['env'];
+        $this->app['env'] = 'production';
+        try {
+            $this->artisan('integrity:check')->assertFailed();
+        } finally {
+            $this->app['env'] = $env;
+        }
+        expect(sjIntegrityText())->toContain('Manifest rilis tidak ditemukan');
     });
 });
 

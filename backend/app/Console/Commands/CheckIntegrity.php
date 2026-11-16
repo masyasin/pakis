@@ -31,7 +31,7 @@ class CheckIntegrity extends Command
         $result = $integrity->check();
         $lines = [];
         foreach ([
-            'php' => 'Berkas PHP asing (public/ atau storage/)',
+            'php' => 'Berkas PHP/eksekusi asing (public/ atau storage/)',
             'changed' => 'Berkas berubah dari rilis',
             'added' => 'Berkas baru (tidak ada di rilis)',
             'missing' => 'Berkas rilis hilang',
@@ -45,10 +45,13 @@ class CheckIntegrity extends Command
             $lines[] = $label.' — '.count($paths).': '.implode(', ', $shown).$more;
         }
 
-        if (! $result['manifest']) {
-            // Tanpa manifest hanya cek .php asing yang bisa dilakukan; tetap diberi tahu agar
-            // langkah deploy yang terlewat tidak diam-diam mematikan kontrol ini.
-            $this->warn('Manifest rilis tidak ditemukan: jalankan `integrity:check --write-manifest` saat deploy.');
+        // Fail-closed: tanpa manifest cek hash mati diam-diam. Manifest RUSAK selalu temuan (bisa
+        // sengaja dirusak); manifest TIDAK ADA temuan di luar local/testing (dev tidak punya rilis).
+        if ($result['manifest'] === 'invalid') {
+            array_unshift($lines, 'Manifest rilis rusak/tidak terbaca: cek hash tidak bisa dijalankan. Tulis ulang dari kode rilis yang bersih.');
+        } elseif ($result['manifest'] === 'missing') {
+            $message = 'Manifest rilis tidak ditemukan: jalankan `integrity:check --write-manifest` saat deploy.';
+            app()->environment('local', 'testing') ? $this->warn($message) : array_unshift($lines, $message);
         }
 
         if ($lines === []) {

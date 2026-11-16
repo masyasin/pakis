@@ -203,7 +203,7 @@ CREATE TABLE approval_delegations (
 | `stock_disposal` | Ajukan berita acara pemusnahan | nilai (HPP) | `stock_disposals.approve` |
 | `stock_quarantine_release` | Lepas karantina manual | — | `stock_quarantine.release` |
 | `purchase_return` | Ajukan retur ke prinsipal | nilai (HPP) | `purchase_returns.approve` |
-| `customer_activation` | Kirim verifikasi kios | limit kredit yang diminta | `customers.verify` |
+| `customer_activation` | Kirim verifikasi kios | limit kredit yang diminta (0 bila tanpa limit) | < Rp 20 jt: `customers.verify` · ≥ Rp 20 jt: `customers.verify` lalu `credit_limits.set_high` (keputusan Mas 16 Nov 2026, PA-51: satu permintaan, satu aturan bertingkat; dokumen = baris `customer_verifications` ber-`type = activation`, PA-49) |
 | `customer_credit_limit` | Ubah limit kredit | limit baru | < Rp 20 jt: `credit_limits.set` · ≥ Rp 20 jt: + `credit_limits.set_high` |
 | `customer_phone_change` | Ubah nomor HP kios | — | `customers.change_phone_approve` |
 | `customer_merge` | Gabung kios duplikat | — | `customers.merge` |
@@ -213,7 +213,7 @@ CREATE TABLE approval_delegations (
 
 Angka rupiah di tabel adalah **contoh seed**. Wajib ditetapkan Pakis saat UAT (OQ-113).
 
-Registri jenis dokumen (T-067): `config/pakis.php` `approvables` (`label`, `model` = kelas Approvable yang diisi task pemilik dokumen, `conditions` = kunci kondisi yang diizinkan). Seed = `ApprovalRuleSeeder` (17 aturan untuk 14 jenis; jenis yang sudah punya aturan apa pun tidak disentuh). Kontrak `App\Domain\Approval\Contracts\Approvable`: `approvalDocumentType`, `approvalAmount`, `approvalSummary`, `approvalContext`, `approvalConditions`, `approvalScopeLocationId`, `approvalScopeEmployeeId`, `creatorUserId`, `approvalUrl`, `onApproved(?request)`, `onRejected`, `onCancelled`.
+Registri jenis dokumen (T-067): `config/pakis.php` `approvables` (`label`, `model` = kelas Approvable yang diisi task pemilik dokumen, `conditions` = kunci kondisi yang diizinkan). Seed = `ApprovalRuleSeeder` (18 aturan untuk 14 jenis sejak T-074; jenis yang sudah punya aturan apa pun tidak disentuh — aturan aktivasi kios bawaan T-067 yang belum diubah/dipakai dijadikan bertingkat oleh migrasi data T-074, PA-51). Kontrak `App\Domain\Approval\Contracts\Approvable`: `approvalDocumentType`, `approvalAmount`, `approvalSummary`, `approvalContext`, `approvalConditions`, `approvalScopeLocationId`, `approvalScopeEmployeeId`, `creatorUserId`, `approvalUrl`, `onApproved(?request)`, `onRejected`, `onCancelled`.
 
 ### 4.3 Lokasi stok, rak, kendaraan (T-068)
 
@@ -1095,7 +1095,8 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.sales-areas.index`/`store`/`update` | | `/area-penjualan/...` | `sales_areas.view` / `.manage` | |
 | `admin.customers.index`/`create`/`store`/`show`/`edit`/`update` | | `/pelanggan/...` | `customers.view` / `.manage` | Scope `customer`. Detail bertab: profil, kontak, verifikasi, riwayat area/sales, limit, riwayat |
 | `admin.customers.duplicates` | POST | `/pelanggan/cek-duplikat` | `customers.manage` | JSON kandidat duplikat (BR-166). Galat memakai format JSON `05` §2.2 (§11.3) |
-| `admin.customers.verify` | POST | `/pelanggan/{customer}/verifikasi` | `customers.manage` | Kirim verifikasi (foto, titik, OTP/telepon kantor) → approval `customer_activation` |
+| `admin.customers.verify` | POST | `/pelanggan/{customer}/verifikasi` | `customers.manage` | Kirim verifikasi (foto, titik, OTP/telepon kantor) → approval `customer_activation`. Metode telepon kantor = draf menunggu telepon (PA-49) |
+| `admin.customers.office-call` | POST | `/pelanggan/{customer}/verifikasi/telepon-kantor` | `customers.manage` | Catat telepon kantor (BR-165b) oleh pengguna ≠ pengaju draf → baris verifikasi + approval `customer_activation` atas nama pengaju (PA-49, T-074) |
 | `admin.customers.otp.send` / `admin.customers.otp.check` | POST | `/pelanggan/{customer}/otp` · `/otp/cek` | `customers.manage` | Lewat `CustomerOtpService`: **pengiriman** memakai kanal OTP Fase 0 (`App\Domain\Notification\Otp\{OtpManager,OtpChannel}`, `config/otp.php`), **kanal `whatsapp` saja** ke `owner_phone` (BR-165); **penyimpanan kode (hash), masa berlaku, dan batas percobaan** di tabel `customer_otp_codes` + setting `customer.otp_*`. `OtpService` Fase 0 tidak dipakai karena menyimpan kode di cache per `User` dan khusus lupa password, sedangkan kios bukan `User`. 503 `CHANNEL_UNAVAILABLE` bila `customer.otp_enabled=false` atau kanal WhatsApp tidak tersedia (`OtpManager::available('whatsapp')` = false: driver `none`, atau `log` di produksi) → jalur telepon kantor |
 | `admin.customers.change-phone` | POST | `/pelanggan/{customer}/ganti-hp` | `customers.change_phone` | → approval `customer_phone_change` |
 | `admin.customers.credit-limit` | POST | `/pelanggan/{customer}/limit` | `customers.manage` | → approval `customer_credit_limit` |

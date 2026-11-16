@@ -47,8 +47,9 @@ export type SettingFieldDef = {
     default: SettingValue;
     customized: boolean;
     options: Array<string | number>;
-    min: number | null;
-    max: number | null;
+    /** String desimal (mis. "0.5") hanya untuk tipe decimal/money (T-074). */
+    min: number | string | null;
+    max: number | string | null;
     nullable: boolean;
     public: boolean;
     /** PA-19: hanya super_admin yang boleh mengubah (server menolak selainnya). */

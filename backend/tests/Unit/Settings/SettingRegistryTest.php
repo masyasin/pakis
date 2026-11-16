@@ -69,8 +69,17 @@ test('batas validasi (rentang, ≤, maks) sama dengan 08 §2', function () {
         $definition = SettingRegistry::get($key);
         $validation = $doc['validation'];
 
-        if (preg_match('/^(\d+)–(\d+)$/u', $validation, $range) === 1) {
-            expect([$definition->min, $definition->max])->toBe([(int) $range[1], (int) $range[2]], "Rentang {$key}");
+        // Batas desimal (mis. `0.5–1`, T-074) disimpan sebagai string agar tidak lewat float.
+        $bound = fn (string $raw): int|string => str_contains($raw, '.') ? $raw : (int) $raw;
+
+        if (preg_match('/^(\d+(?:\.\d+)?)–(\d+(?:\.\d+)?)$/u', $validation, $range) === 1) {
+            $expected = [$bound($range[1]), $bound($range[2])];
+            if ($definition->type->isDecimalString()) {
+                // decimal/money: batas boleh int atau string desimal, dibandingkan sebagai teks.
+                expect([(string) $definition->min, (string) $definition->max])->toBe(array_map('strval', $expected), "Rentang {$key}");
+            } else {
+                expect([$definition->min, $definition->max])->toBe($expected, "Rentang {$key}");
+            }
         } elseif (preg_match('/^≤ (\d+)$/u', $validation, $max) === 1) {
             expect($definition->max)->toBe((int) $max[1], "Maks {$key}");
         } elseif (preg_match('/^≥ (\d+)$/u', $validation, $min) === 1) {

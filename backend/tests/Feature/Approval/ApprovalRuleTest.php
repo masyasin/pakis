@@ -142,10 +142,10 @@ test('FR-A02 pratinjau rantai memakai pemilihan aturan yang sama (batas inklusif
     $preview(null)->assertOk()->assertJsonPath('data.rule', null)->assertJsonPath('data.missing', true);
 });
 
-test('15 §4.2.1 PA-26 ApprovalRuleSeeder: 17 aturan bawaan untuk 14 jenis, PO ≥ 25 jt = atasan langsung lalu approve_high; idempoten & hormati ubahan', function () {
+test('15 §4.2.1 PA-26 PA-51 ApprovalRuleSeeder: 18 aturan bawaan untuk 14 jenis, PO ≥ 25 jt = atasan langsung lalu approve_high; idempoten & hormati ubahan', function () {
     $this->seed(ApprovalRuleSeeder::class);
 
-    expect(ApprovalRule::query()->count())->toBe(17)
+    expect(ApprovalRule::query()->count())->toBe(18)
         ->and(ApprovalRule::query()->distinct()->count('document_type'))->toBe(14);
     $big = ApprovalRule::query()->with('steps')->where('document_type', 'purchase_order')->whereNotNull('min_amount')->sole();
     expect($big->min_amount)->toBe('25000000.00')
@@ -158,6 +158,6 @@ test('15 §4.2.1 PA-26 ApprovalRuleSeeder: 17 aturan bawaan untuk 14 jenis, PO �
     ApprovalRule::query()->where('document_type', 'serial_swap')->delete();
     ApprovalRule::query()->where('document_type', 'stock_disposal')->update(['name' => 'Diubah Owner']);
     $this->seed(ApprovalRuleSeeder::class);
-    expect(ApprovalRule::query()->count())->toBe(17)
+    expect(ApprovalRule::query()->count())->toBe(18)
         ->and(ApprovalRule::query()->where('document_type', 'stock_disposal')->value('name'))->toBe('Diubah Owner');
 });

@@ -9,6 +9,7 @@ use App\Domain\Attendance\Listings\ScheduleOverrideListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Catalog\Listings\ProductListing;
+use App\Domain\Customer\Approvables\CustomerActivation;
 use App\Domain\Customer\Listings\CustomerListing;
 use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Employee\Import\EmployeeImportType;
@@ -88,7 +89,8 @@ return [
         'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => null, 'conditions' => []],
         'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => null, 'conditions' => []],
         'purchase_return' => ['label' => 'Retur ke prinsipal', 'model' => null, 'conditions' => []],
-        'customer_activation' => ['label' => 'Aktivasi kios', 'model' => null, 'conditions' => []],
+        // T-074: dokumen = baris customer_verifications (PA-49).
+        'customer_activation' => ['label' => 'Aktivasi kios', 'model' => CustomerActivation::class, 'conditions' => []],
         'customer_credit_limit' => ['label' => 'Limit kredit kios', 'model' => null, 'conditions' => []],
         'customer_phone_change' => ['label' => 'Ganti nomor HP kios', 'model' => null, 'conditions' => []],
         'customer_merge' => ['label' => 'Gabung kios duplikat', 'model' => null, 'conditions' => []],

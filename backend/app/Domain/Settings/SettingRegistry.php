@@ -229,9 +229,18 @@ final class SettingRegistry
             $t('upload.max_image_kb', SettingType::Int, 5120, 'Ukuran foto maksimal (KB)', 'Berlaku untuk foto JPG/PNG/WebP di semua unggahan Paket A.', min: 512, max: 10240),
             $t('upload.max_pdf_kb', SettingType::Int, 10240, 'Ukuran PDF maksimal (KB)', 'Berlaku untuk dokumen PDF (izin edar, berita acara, dll.).', min: 512, max: 20480),
 
-            // 2.9 Pelanggan (T-073, 15 §9). Kunci verifikasi/OTP/duplikat `customer.*` ditambah T-074.
+            // 2.9 Pelanggan (T-073 data inti; T-074 verifikasi, OTP, duplikat — 15 §9, BR-165/166, SEC-105).
             $t('customer.default_term_days', SettingType::Int, 30, 'Termin bawaan kios baru (hari)', 'Diisi otomatis di form kios baru; bisa diubah per kios.', min: 0, max: 365),
             $t('customer.code_mode', SettingType::Enum, 'auto', 'Cara mengisi kode kios', 'Otomatis = nomor dari Penomoran (pola `customer`, mis. KIO-00001). Manual = diketik admin (huruf besar, angka, strip).', options: ['auto', 'manual']),
+            $t('customer.otp_enabled', SettingType::Bool, false, 'Verifikasi kios lewat OTP WhatsApp', 'Mati = verifikasi kios memakai telepon kantor. Hanya bisa dinyalakan bila penyedia OTP WhatsApp sudah dikonfigurasi.',
+                check: self::checkCustomerOtp(...)),
+            $t('customer.otp_minutes', SettingType::Int, 5, 'Masa berlaku OTP kios (menit)', 'Terpisah dari masa berlaku OTP lupa password.', min: 3, max: 30),
+            $t('customer.otp_max_attempts', SettingType::Int, 5, 'Batas percobaan OTP kios', 'Lewat batas ini kode hangus dan harus dikirim ulang.', min: 3, max: 10),
+            $t('customer.otp_send_per_phone_hour', SettingType::Int, 3, 'Kirim OTP per nomor per jam', 'Mencegah nomor pemilik kios dibanjiri kode.', min: 1, max: 10),
+            $t('customer.otp_send_per_user_hour', SettingType::Int, 20, 'Kirim OTP per pengguna per jam', min: 5, max: 100),
+            $t('customer.verify_max_accuracy_m', SettingType::Int, 50, 'Akurasi titik verifikasi maksimal (meter)', 'Titik dengan akurasi GPS lebih buruk dari ini ditolak saat kirim verifikasi.', min: 5, max: 500),
+            $t('customer.duplicate_radius_m', SettingType::Int, 300, 'Radius cek duplikat kios (meter)', 'Kios bernama mirip dalam radius ini (atau di desa yang sama) ditandai kemungkinan duplikat. 0 = hanya desa yang sama.', min: 0, max: 5000),
+            $t('customer.duplicate_name_similarity', SettingType::Decimal, '0.8', 'Ambang kemiripan nama kios', '0,5–1. Makin tinggi makin ketat (1 = nama harus sama setelah kata umum "toko", "tani", "ud", "cv" dibuang).', min: '0.5', max: '1'),
 
             // 2.10 Gudang & stok (15 §9). T-071: pengingat izin edar; kunci inventory.* lain ditambah T-077+.
             $t('inventory.registration_reminder_days', SettingType::Int, 60, 'Ambang "izin edar akan habis" (hari)', 'Izin yang habis dalam jumlah hari ini ditandai akan habis dan memicu pengingat pertama. Pengingat berikutnya H-30, H-7, dan H-0.', min: 7, max: 365),
@@ -256,6 +265,19 @@ final class SettingRegistry
         }
 
         return null;
+    }
+
+    /**
+     * OTP kios hanya lewat WhatsApp (BR-165, PA-6): menyalakan tanpa driver WhatsApp yang tersedia =
+     * sales menunggu kode yang tak pernah datang, jadi ditolak sejak di Pengaturan.
+     *
+     * @param  array<string, mixed>  $group
+     */
+    private static function checkCustomerOtp(mixed $value, array $group): ?string
+    {
+        return (bool) $value && ! OtpManager::available('whatsapp')
+            ? 'OTP WhatsApp belum bisa dipakai: penyedia WhatsApp belum dikonfigurasi. Verifikasi kios memakai telepon kantor.'
+            : null;
     }
 
     /**

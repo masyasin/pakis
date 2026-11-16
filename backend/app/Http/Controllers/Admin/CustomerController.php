@@ -9,6 +9,7 @@ use App\Domain\Customer\Listings\CustomerListing;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerAssignment;
 use App\Domain\Customer\Support\AssignmentApplier;
+use App\Domain\Customer\Support\VerificationState;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Domain\Region\Models\Village;
@@ -95,7 +96,7 @@ class CustomerController extends Controller
         return to_route('admin.customers.show', $customer);
     }
 
-    public function show(Request $request, Customer $customer): Response
+    public function show(Request $request, Customer $customer, VerificationState $verification): Response
     {
         Gate::authorize('view', $customer);
         $user = self::user($request);
@@ -137,6 +138,8 @@ class CustomerController extends Controller
                     : 'ended',
             ])->all(),
             'phoneMasked' => ! $fullPhone,
+            // Tab verifikasi (T-074): keadaan OTP/telepon kantor/antrean kios ini.
+            'verification' => $verification->for($customer, $user),
             'can' => [
                 'update' => $user->can('update', $customer),
                 'reassign' => $user->can('reassign', Customer::class),

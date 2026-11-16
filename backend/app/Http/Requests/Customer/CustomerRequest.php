@@ -17,8 +17,9 @@ use Illuminate\Validation\Validator;
  * Tambah / ubah kios (15 §5 `admin.customers.store/update`, FR-A13 data inti, T-073). Izin
  * `customers.manage` dicek middleware route; kios di luar scope sudah 404 lewat route binding.
  *
- * - HP pemilik dinormalisasi `62…` oleh normalizer bersama (BR-166(1)). Cek HP ganda & HP pegawai
- *   (BR-166(2)/(3)) dikerjakan T-074.
+ * - HP pemilik dinormalisasi `62…` oleh normalizer bersama (BR-166(1)). Cek HP ganda, HP pegawai/akun,
+ *   dan kandidat duplikat (BR-166(2)/(3), T-074) di Action (DuplicateGuard, di dalam transaksi);
+ *   request hanya memvalidasi bentuk konfirmasi `not_duplicate` + `duplicate_reason`.
  * - Area & sales hanya saat tambah (penugasan pertama); setelahnya lewat pengalihan (BR-167).
  * - Kode hanya diketik bila `customer.code_mode = manual`.
  * - Titik kios dari tautan Google Maps / Geolocation browser (LocationPointInput, PA-20): lintang &
@@ -54,6 +55,7 @@ class CustomerRequest extends FormRequest
             'sales_area_id' => $int('sales_area_id'),
             'assigned_sales_employee_id' => $int('assigned_sales_employee_id'),
             'term_days' => is_numeric($this->input('term_days')) ? (int) $this->input('term_days') : $this->input('term_days'),
+            'duplicate_reason' => $trim('duplicate_reason'),
         ]);
     }
 
@@ -90,6 +92,8 @@ class CustomerRequest extends FormRequest
                         ->when($current?->home_stock_location_id !== null, fn (Builder $o) => $o->orWhere('id', $current?->home_stock_location_id)))),
             ],
             'term_days' => ['required', 'integer', 'min:0', 'max:365'],
+            'not_duplicate' => ['sometimes', 'boolean'],
+            'duplicate_reason' => ['nullable', 'string', 'min:5', 'max:255'],
             ...$creating ? [
                 'sales_area_id' => ['required', 'integer', Rule::exists('sales_areas', 'id')->where('is_active', true)->whereNull('deleted_at')],
                 'assigned_sales_employee_id' => ['nullable', 'integer', Rule::exists('employees', 'id')->where('status', 'active')->whereNull('deleted_at')],
@@ -168,6 +172,7 @@ class CustomerRequest extends FormRequest
             'latitude.required_with' => 'Titik lokasi tidak lengkap. Tempel ulang tautan Google Maps atau ambil lokasi HP.',
             'longitude.required_with' => 'Titik lokasi tidak lengkap. Tempel ulang tautan Google Maps atau ambil lokasi HP.',
             'home_stock_location_id.exists' => 'Gudang asal harus gudang atau toko yang aktif.',
+            'duplicate_reason.min' => 'Alasan "bukan duplikat" minimal 5 karakter.',
             'sales_area_id.exists' => 'Area penjualan tidak ditemukan atau sudah nonaktif.',
             'assigned_sales_employee_id.exists' => 'Pegawai tidak ditemukan atau sudah nonaktif.',
         ];
@@ -192,6 +197,8 @@ class CustomerRequest extends FormRequest
             'term_days' => 'termin',
             'sales_area_id' => 'area penjualan',
             'assigned_sales_employee_id' => 'sales',
+            'not_duplicate' => 'bukan duplikat',
+            'duplicate_reason' => 'alasan bukan duplikat',
         ];
     }
 }

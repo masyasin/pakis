@@ -44,6 +44,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $term_days
  * @property CustomerStatus $status
  * @property Carbon|null $verified_at
+ * @property int|null $verified_by
  * @property int|null $created_by
  * @property int|null $updated_by
  * @property Carbon|null $created_at

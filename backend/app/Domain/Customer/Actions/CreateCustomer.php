@@ -7,6 +7,7 @@ use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerAssignment;
 use App\Domain\Customer\Support\AssignmentApplier;
+use App\Domain\Customer\Support\DuplicateGuard;
 use App\Domain\Numbering\NumberGenerator;
 use Illuminate\Support\Facades\DB;
 
@@ -15,19 +16,23 @@ use Illuminate\Support\Facades\DB;
  * - kode dari `NumberGenerator('customer')` bila `customer.code_mode = auto` (di dalam transaksi),
  *   selain itu kode ketikan (sudah divalidasi unik & format oleh request);
  * - status awal `prospect`, limit nonaktif (verifikasi & limit di T-074);
- * - penugasan pertama mulai hari ini (tanggal lokal) + cache area/sales di `customers`.
+ * - penugasan pertama mulai hari ini (tanggal lokal) + cache area/sales di `customers`;
+ * - HP & duplikat (BR-166(2)(3), T-074) diperiksa DI DALAM transaksi lewat DuplicateGuard.
  */
 final class CreateCustomer
 {
     public function __construct(
         private readonly AuditLogger $audit,
         private readonly NumberGenerator $numbers,
+        private readonly DuplicateGuard $duplicates,
     ) {}
 
     /** @param  array<string, mixed>  $data  sudah divalidasi CustomerRequest */
     public function handle(array $data, ?int $userId): Customer
     {
         return DB::transaction(function () use ($data, $userId) {
+            $override = $this->duplicates->check($data, null);
+
             $code = setting('customer.code_mode') === 'auto'
                 ? $this->numbers->next('customer', isTaken: fn (string $n) => Customer::withTrashed()->where('code', $n)->exists())
                 : (string) $data['code'];
@@ -64,6 +69,7 @@ final class CreateCustomer
                 'assigned_sales_employee_id' => $salesId,
                 'status' => CustomerStatus::Prospect->value,
             ]);
+            $this->duplicates->recordOverride($customer, $override, $data);
 
             return $customer;
         });

@@ -166,12 +166,20 @@ Grup `upload` (tab "Unggahan berkas"), dipakai komponen unggahan bersama `app/Su
 
 ### 2.9 Pelanggan
 
-Grup `customer` (tab "Pelanggan"), dipakai data kios (T-073, `15` §9). Kunci verifikasi, OTP, dan duplikat `customer.*` lainnya ditambah T-074.
+Grup `customer` (tab "Pelanggan"), dipakai data kios (T-073) serta verifikasi, OTP, dan cek duplikat kios (T-074, `15` §9, BR-165/166, SEC-105).
 
 | Kunci | Tipe | Default | Validasi | Publik |
 |---|---|---|---|---|
 | `customer.default_term_days` | int | 30 | 0–365 | ❌ |
 | `customer.code_mode` | enum | `auto` | `auto`, `manual` | ❌ |
+| `customer.otp_enabled` | bool | false | `true` hanya bila kanal OTP WhatsApp tersedia (`OtpManager::available('whatsapp')`); tetap `false` sampai driver WhatsApp nyata ada (OQ-004) | ❌ |
+| `customer.otp_minutes` | int | 5 | 3–30 | ❌ |
+| `customer.otp_max_attempts` | int | 5 | 3–10 | ❌ |
+| `customer.otp_send_per_phone_hour` | int | 3 | 1–10 | ❌ |
+| `customer.otp_send_per_user_hour` | int | 20 | 5–100 | ❌ |
+| `customer.verify_max_accuracy_m` | int | 50 | 5–500 | ❌ |
+| `customer.duplicate_radius_m` | int | 300 | 0–5000 | ❌ |
+| `customer.duplicate_name_similarity` | decimal | `0.8` | 0.5–1 | ❌ |
 
 Catatan: mode otomatis memakai `NumberGenerator` pola `customer` (`KIO-{SEQ:5}`); mode manual menerima huruf besar, angka, dan strip (3–20 karakter, unik termasuk kios terhapus).
 

@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Domain\Attendance\Support;
+namespace App\Support\Geo;
 
 /**
- * Jarak permukaan bumi dua titik (BR-064). Jari-jari ekuator WGS-84 (6 378 137 m): 1° lintang ≈
+ * Jarak permukaan bumi dua titik (BR-064 presensi, BR-166 duplikat kios). Dipindah dari
+ * `Domain\Attendance\Support` di T-074 karena kini dipakai lintas domain. Jari-jari ekuator WGS-84 (6 378 137 m): 1° lintang ≈
  * 111 320 m, sama dengan konversi yang dipakai form lokasi & test. Selisih dengan jari-jari
  * rata-rata (< 0,2 %) tidak berarti untuk radius absen puluhan–ratusan meter.
  */

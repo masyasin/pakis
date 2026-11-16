@@ -56,4 +56,5 @@ return [
     'vehicles', // T-068
     'sales_areas', // T-073
     'customers', // T-073
+    'customer_verifications', // T-074
 ];

@@ -2,8 +2,8 @@
 
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Models\AttendanceLog;
-use App\Domain\Attendance\Support\Haversine;
 use App\Domain\Organization\Models\Position;
+use App\Support\Geo\Haversine;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;

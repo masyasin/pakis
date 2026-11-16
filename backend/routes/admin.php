@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\AttendanceCorrectionController;
 use App\Http\Controllers\Admin\AttendanceSummaryController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\CustomerVerificationController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DeviceController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -457,7 +458,17 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('pelanggan/alihkan', [CustomerController::class, 'reassign'])->middleware('throttle:30,1')->name('customers.reassign');
         Route::get('pelanggan/{customer}/ubah', [CustomerController::class, 'edit'])->whereNumber('customer')->name('customers.edit');
         Route::put('pelanggan/{customer}', [CustomerController::class, 'update'])->whereNumber('customer')->name('customers.update');
+        // Verifikasi kios, cek duplikat, OTP (15 §5, BR-165/166, T-074). `cek-duplikat` & OTP = JSON.
+        Route::post('pelanggan/cek-duplikat', [CustomerVerificationController::class, 'duplicates'])->name('customers.duplicates');
+        Route::post('pelanggan/{customer}/verifikasi', [CustomerVerificationController::class, 'submit'])->whereNumber('customer')
+            ->middleware('throttle:30,1')->name('customers.verify');
+        Route::post('pelanggan/{customer}/verifikasi/telepon-kantor', [CustomerVerificationController::class, 'officeCall'])->whereNumber('customer')
+            ->middleware('throttle:30,1')->name('customers.office-call');
+        // Batas kirim/percobaan OTP dari setting `customer.otp_*` di CustomerOtpService (SEC-105).
+        Route::post('pelanggan/{customer}/otp', [CustomerVerificationController::class, 'sendOtp'])->whereNumber('customer')->name('customers.otp.send');
+        Route::post('pelanggan/{customer}/otp/cek', [CustomerVerificationController::class, 'checkOtp'])->whereNumber('customer')->name('customers.otp.check');
     });
+    Route::get('pelanggan/verifikasi', [CustomerVerificationController::class, 'index'])->middleware('can:customers.verify')->name('customer-verifications.index');
     Route::get('pelanggan/{customer}', [CustomerController::class, 'show'])->whereNumber('customer')->middleware('can:customers.view')->name('customers.show');
 
     // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).

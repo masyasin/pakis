@@ -51,6 +51,12 @@ enum ErrorCode: string
     // Khusus web (05 §2.4a), satuan & konversi (BR-150, T-069).
     case QTY_NOT_INTEGER = 'QTY_NOT_INTEGER';
     case UNIT_FACTOR_LOCKED = 'UNIT_FACTOR_LOCKED';
+    // Khusus web (05 §2.4a), verifikasi & HP kios (BR-165/166, T-074).
+    case CUSTOMER_PHONE_DUPLICATE = 'CUSTOMER_PHONE_DUPLICATE';
+    case PHONE_BELONGS_TO_EMPLOYEE = 'PHONE_BELONGS_TO_EMPLOYEE';
+    case CUSTOMER_NOT_VERIFIED = 'CUSTOMER_NOT_VERIFIED';
+    case OTP_INVALID = 'OTP_INVALID';
+    case OTP_EXPIRED = 'OTP_EXPIRED';
 
     public function status(): int
     {
@@ -85,7 +91,12 @@ enum ErrorCode: string
             self::ATTENDANCE_OFFLINE_TOO_OLD,
             self::CORRECTION_NOT_ALLOWED,
             self::APPROVAL_RULE_MISSING,
-            self::QTY_NOT_INTEGER => 422,
+            self::QTY_NOT_INTEGER,
+            self::CUSTOMER_PHONE_DUPLICATE,
+            self::PHONE_BELONGS_TO_EMPLOYEE,
+            self::CUSTOMER_NOT_VERIFIED,
+            self::OTP_INVALID,
+            self::OTP_EXPIRED => 422,
             self::ACCOUNT_LOCKED => 423,
             self::APP_UPDATE_REQUIRED => 426,
             self::RATE_LIMITED => 429,
@@ -137,6 +148,12 @@ enum ErrorCode: string
             self::APPROVAL_ALREADY_PENDING => 'Dokumen ini sudah punya permintaan persetujuan yang masih berjalan.',
             self::QTY_NOT_INTEGER => 'Jumlah untuk satuan ini harus bilangan bulat.',
             self::UNIT_FACTOR_LOCKED => 'Faktor satuan ini sudah dipakai dokumen sehingga tidak bisa diubah.',
+            self::CUSTOMER_PHONE_DUPLICATE => 'Nomor HP ini sudah dipakai kios lain. Satu nomor hanya untuk satu kios.',
+            // BR-166(3): pesan sengaja tidak menyebut nama pegawai/akun pemilik nomor.
+            self::PHONE_BELONGS_TO_EMPLOYEE => 'Nomor HP ini terdaftar sebagai nomor pegawai atau akun pengguna. Pakai nomor pemilik kios.',
+            self::CUSTOMER_NOT_VERIFIED => 'Kios ini belum terverifikasi. Limit kredit baru bisa diatur setelah verifikasi disetujui.',
+            self::OTP_INVALID => 'Kode OTP salah.',
+            self::OTP_EXPIRED => 'Kode OTP sudah tidak berlaku. Kirim ulang kode.',
         };
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Aturan approval bawaan 15 §4.2.1 (T-067), termasuk PA-26: PO ≥ Rp 25 jt = atasan langsung pengaju
+ * Aturan approval bawaan 15 §4.2.1 (T-067; aktivasi kios bertingkat T-074, PA-51), termasuk PA-26: PO ≥ Rp 25 jt = atasan langsung pengaju
  * lalu `purchase_orders.approve_high` (BR-153(11): satu orang satu langkah, jadi dua langkah yang
  * sama-sama hanya dipegang Owner tidak bisa dipakai). Angka rupiah adalah CONTOH (OQ-113), ditetapkan
  * Pakis saat UAT lewat layar Aturan Persetujuan.
@@ -50,8 +50,12 @@ class ApprovalRuleSeeder extends Seeder
             'purchase_return' => [
                 ['name' => 'Retur ke prinsipal', 'min' => null, 'max' => null, 'steps' => [$perm('purchase_returns.approve')]],
             ],
+            // Keputusan Mas 16 Nov 2026 (T-074): satu permintaan, rantai bertingkat menurut limit yang
+            // diminta. Langkah ≥ 20 jt dipegang `credit_limits.set_high`, BUKAN izin yang sama dua kali,
+            // agar BR-153(11) (satu orang satu langkah) tidak membuat langkah 2 buntu.
             'customer_activation' => [
-                ['name' => 'Aktivasi kios', 'min' => null, 'max' => null, 'steps' => [$perm('customers.verify')]],
+                ['name' => 'Aktivasi kios, limit di bawah Rp 20 juta', 'min' => null, 'max' => '20000000', 'steps' => [$perm('customers.verify')]],
+                ['name' => 'Aktivasi kios, limit Rp 20 juta ke atas', 'min' => '20000000', 'max' => null, 'steps' => [$perm('customers.verify'), $perm('credit_limits.set_high')]],
             ],
             'customer_credit_limit' => [
                 ['name' => 'Limit kredit di bawah Rp 20 juta', 'min' => null, 'max' => '20000000', 'steps' => [$perm('credit_limits.set')]],
@@ -78,31 +82,36 @@ class ApprovalRuleSeeder extends Seeder
     public function run(): void
     {
         DB::transaction(function () {
-            foreach (self::defaults() as $type => $rules) {
-                if (ApprovalRule::query()->where('document_type', $type)->exists()) {
-                    continue;
-                }
-                foreach ($rules as $definition) {
-                    $rule = ApprovalRule::query()->create([
-                        'document_type' => $type,
-                        'name' => $definition['name'],
-                        'min_amount' => $definition['min'],
-                        'max_amount' => $definition['max'],
-                        'conditions' => null,
-                        'priority' => 100,
-                        'is_active' => true,
-                    ]);
-                    foreach ($definition['steps'] as $i => $step) {
-                        $rule->steps()->create([
-                            'step_order' => $i + 1,
-                            'approver_type' => $step[0],
-                            'permission_name' => $step[0] === 'permission' ? ($step[1] ?? null) : null,
-                            'escalate_after_hours' => null,
-                            'escalation_permission' => $step[2] ?? null,
-                        ]);
-                    }
+            foreach (array_keys(self::defaults()) as $type) {
+                if (! ApprovalRule::query()->where('document_type', $type)->exists()) {
+                    self::seedType($type);
                 }
             }
         });
+    }
+
+    /** Buat aturan bawaan satu jenis dokumen (juga dipakai migrasi data aturan bertingkat T-074). */
+    public static function seedType(string $type): void
+    {
+        foreach (self::defaults()[$type] ?? [] as $definition) {
+            $rule = ApprovalRule::query()->create([
+                'document_type' => $type,
+                'name' => $definition['name'],
+                'min_amount' => $definition['min'],
+                'max_amount' => $definition['max'],
+                'conditions' => null,
+                'priority' => 100,
+                'is_active' => true,
+            ]);
+            foreach ($definition['steps'] as $i => $step) {
+                $rule->steps()->create([
+                    'step_order' => $i + 1,
+                    'approver_type' => $step[0],
+                    'permission_name' => $step[0] === 'permission' ? ($step[1] ?? null) : null,
+                    'escalate_after_hours' => null,
+                    'escalation_permission' => $step[2] ?? null,
+                ]);
+            }
+        }
     }
 }

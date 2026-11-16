@@ -40,6 +40,18 @@ class CustomerPolicy
         return $this->create($user);
     }
 
+    /** Kirim verifikasi / OTP / catat telepon kantor (15 §5, T-074): pengelola kios dalam scope. */
+    public function submitVerification(User $user, Customer $customer): bool
+    {
+        return $this->update($user, $customer);
+    }
+
+    /** Antrean verifikasi (15 §5 `admin.customer-verifications.index`). */
+    public function viewVerifications(User $user): bool
+    {
+        return $user->can('customers.verify');
+    }
+
     /** HP penuh di daftar & detail hanya untuk pengelola (SEC-108); ekspor selalu termasking. */
     public function viewFullPhone(User $user): bool
     {

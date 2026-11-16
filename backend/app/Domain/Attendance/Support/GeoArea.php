@@ -3,6 +3,7 @@
 namespace App\Domain\Attendance\Support;
 
 use App\Domain\Organization\Models\Location;
+use App\Support\Geo\Haversine;
 
 /**
  * Area absen yang sah: titik + radius. Biasanya lokasi Pakis; T-036A (tugas luar kota) kelak

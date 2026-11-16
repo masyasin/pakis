@@ -20,7 +20,10 @@ final readonly class SettingDefinition
      * @param  list<string|int>  $options  untuk enum / multi_enum
      * @param  (Closure(mixed, array<string, mixed>): ?string)|null  $check  validasi kustom:
      *                                                                       terima nilai & semua nilai grup, kembalikan pesan galat atau null
-     * @param  int|null  $min  batas bawah: angka (int/decimal/money), panjang (string), atau jumlah butir (daftar)
+     * @param  int|string|null  $min  batas bawah: angka (int/decimal/money), panjang (string), atau jumlah butir (daftar).
+     *                                String desimal (mis. `'0.5'`) hanya untuk tipe decimal/money (T-074): dibandingkan
+     *                                lewat DecimalString, tidak pernah float.
+     * @param  int|string|null  $max  batas atas, aturan sama dengan `$min`
      */
     public function __construct(
         public string $key,
@@ -31,8 +34,8 @@ final readonly class SettingDefinition
         public bool $isPublic = false,
         public array $rules = [],
         public array $options = [],
-        public ?int $min = null,
-        public ?int $max = null,
+        public int|string|null $min = null,
+        public int|string|null $max = null,
         public bool $nullable = false,
         public ?Closure $check = null,
         public bool $locked = false,
@@ -40,6 +43,9 @@ final readonly class SettingDefinition
     ) {
         if ($oneWay && $type !== SettingType::Bool) {
             throw new InvalidArgumentException("Penanda one_way hanya untuk setting bool [{$key}].");
+        }
+        if ((is_string($min) || is_string($max)) && ! $type->isDecimalString()) {
+            throw new InvalidArgumentException("Batas desimal hanya untuk setting decimal/money [{$key}].");
         }
     }
 

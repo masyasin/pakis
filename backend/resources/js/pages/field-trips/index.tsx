@@ -1,8 +1,10 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Ban, Pencil, Plus } from 'lucide-react';
+import { Ban, Check, Pencil, Plus, X } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { DataTable } from '@/components/pakis/data-table';
+import { FieldTripDecisionDialog } from '@/components/pakis/field-trip-decision-dialog';
+import type { FieldTripDecision } from '@/components/pakis/field-trip-decision-dialog';
 import type { DataTableColumn } from '@/components/pakis/data-table';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
@@ -30,10 +32,14 @@ export type FieldTripRow = {
     rule: { value: string; label: string };
     status: { value: string; label: string };
     employees: { id: number; name: string; number: string }[];
-    can?: { update: boolean; cancel: boolean };
+    can?: { update: boolean; cancel: boolean; decide?: boolean };
+    /** Diajukan pegawai dari Pakis Pro (T-036A bagian 2). */
+    is_request?: boolean;
 };
 
-type Props = ListingProps<FieldTripRow> & { can: { manage: boolean } };
+type Props = ListingProps<FieldTripRow> & {
+    can: { manage: boolean; approve?: boolean };
+};
 
 /** Banyak pegawai diringkas agar baris tetap pendek di HP. */
 const NAMES_SHOWN = 2;
@@ -85,6 +91,11 @@ const columns: DataTableColumn<FieldTripRow>[] = [
                 <span className="font-mono text-xs font-normal text-muted-foreground">
                     {r.number}
                 </span>
+                {r.is_request && (
+                    <span className="text-xs text-muted-foreground">
+                        Diajukan dari Pakis Pro
+                    </span>
+                )}
             </span>
         ),
     },
@@ -113,6 +124,17 @@ const columns: DataTableColumn<FieldTripRow>[] = [
 /** Tugas luar kota (05 §4.9, 07 §3.4 `field_trips`, BR-071). */
 export default function FieldTripsIndex({ rows, listing, can }: Props) {
     const [cancelling, setCancelling] = useState<FieldTripRow | null>(null);
+    const [deciding, setDeciding] = useState<FieldTripDecision | null>(null);
+    const decide = (kind: FieldTripDecision['kind'], r: FieldTripRow) =>
+        setDeciding({
+            kind,
+            trip: {
+                id: r.id,
+                number: r.number,
+                destination: r.destination,
+                who: r.employees.map((e) => e.name).join(', '),
+            },
+        });
     const [processing, setProcessing] = useState(false);
 
     const addButton = can.manage ? (
@@ -146,9 +168,34 @@ export default function FieldTripsIndex({ rows, listing, can }: Props) {
                     toolbarActions={addButton}
                     emptyAction={addButton}
                     rowActions={
-                        can.manage
+                        can.manage || can.approve
                             ? (r) => (
                                   <div className="flex justify-end gap-1">
+                                      {r.can?.decide && (
+                                          <>
+                                              <Button
+                                                  size="sm"
+                                                  aria-label={`Setujui tugas ${r.number}`}
+                                                  onClick={() =>
+                                                      decide('approve', r)
+                                                  }
+                                              >
+                                                  <Check aria-hidden="true" />
+                                                  Setujui
+                                              </Button>
+                                              <Button
+                                                  size="sm"
+                                                  variant="ghost"
+                                                  aria-label={`Tolak pengajuan ${r.number}`}
+                                                  onClick={() =>
+                                                      decide('reject', r)
+                                                  }
+                                              >
+                                                  <X aria-hidden="true" />
+                                                  Tolak
+                                              </Button>
+                                          </>
+                                      )}
                                       {r.can?.update && (
                                           <Button
                                               variant="ghost"
@@ -180,6 +227,11 @@ export default function FieldTripsIndex({ rows, listing, can }: Props) {
                     }
                 />
             </div>
+
+            <FieldTripDecisionDialog
+                pending={deciding}
+                onClose={() => setDeciding(null)}
+            />
 
             <Dialog
                 open={cancelling !== null}

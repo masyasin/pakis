@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             SequenceSeeder::class,
             ReferenceSeeder::class,
+            ApprovalRuleSeeder::class,
         ]);
 
         // Data demo (04 §4.2) hanya di luar produksi; DemoSeeder juga menolak sendiri bila produksi.

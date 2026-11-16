@@ -43,4 +43,7 @@ return [
     'approval_corrections', // T-040 (API)
     'my_attendance_days', // T-043 (API)
     'my_notifications', // T-043 (API)
+    'approvals', // T-067
+    'approval_rules', // T-067
+    'approval_delegations', // T-067
 ];

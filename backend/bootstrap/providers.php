@@ -1,5 +1,6 @@
 <?php
 
+use App\Providers\ApprovalServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AttendanceServiceProvider;
 use App\Providers\DeviceServiceProvider;
@@ -16,4 +17,5 @@ return [
     AttendanceServiceProvider::class,
     EmployeeServiceProvider::class,
     DeviceServiceProvider::class,
+    ApprovalServiceProvider::class,
 ];

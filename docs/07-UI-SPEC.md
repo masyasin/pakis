@@ -112,6 +112,9 @@ Notasi filter: **S** select, **MS** multi select, **B** boolean, **DR** rentang 
 | `my_field_trips` | `api.v1.field-trips.index` | (mobile) nomor, tanggal, tujuan, aturan, status | nomor, tujuan | status (MS), bulan (S; beririsan) | **-start_date** | — |
 | `approval_field_trips` | `api.v1.approvals.field-trips.index` | (mobile) pegawai, tanggal, tujuan, aturan | nama/no. pegawai, nomor | status (MS, default pending) | **start_date** (terdekat dulu), created_at | — |
 | `my_notifications` | `api.v1.notifications.index` | (mobile) waktu, judul, isi | judul, isi | status baca (S) | **-created_at** | — |
+| `approvals` | `admin.approvals.index` | Jenis dokumen, ringkasan (nomor · pihak · nominal), alasan aturan, pengaju, langkah (n/total), umur menunggu, status, penanda eskalasi | ringkasan (nomor dokumen), nama pengaju | tab (S, wajib, default `mine`: Menunggu saya · Saya ajukan · Semua; dua terakhir butuh `approvals.view`, PA-27), jenis dokumen (S), status (MS), diajukan (DR `created_at`, PA-30) | **-created_at**, amount | ❌ |
+| `approval_rules` | `admin.approval-rules.index` | Jenis dokumen, nama, rentang nominal, kondisi, prioritas, rantai langkah, aktif, pernah dipakai | nama | jenis dokumen (S), aktif (B) | **document_type** (lalu prioritas), priority, name | ❌ |
+| `approval_delegations` | `admin.approval-delegations.index` | Pemberi, penerima, mulai–selesai, jenis dokumen (semua/daftar), alasan, status (berlaku/terjadwal/lewat/dicabut) | nama pemberi/penerima | berlaku pada (DR; beririsan dengan `start_date`–`end_date`, PA-30), belum dicabut (B) | **-start_date**, end_date | ❌ |
 
 Halaman non-daftar yang tetap butuh paging/cari/filter: **Kalender Jadwal** (`admin.schedules.calendar`: paging per 25 pegawai, cari nama, filter lokasi/departemen/jabatan, pilih bulan) dan **tab Riwayat** di halaman detail (paging 10, filter event).
 

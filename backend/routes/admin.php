@@ -1,6 +1,9 @@
 <?php
 
 use App\Domain\Settings\SettingRegistry;
+use App\Http\Controllers\Admin\ApprovalController;
+use App\Http\Controllers\Admin\ApprovalDelegationController;
+use App\Http\Controllers\Admin\ApprovalRuleController;
 use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\AttendanceCorrectionController;
@@ -335,6 +338,36 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('referensi/urutan', [ReferenceController::class, 'reorder'])->name('references.reorder');
         Route::put('referensi/{item}', [ReferenceController::class, 'update'])->whereNumber('item')->name('references.update');
         Route::delete('referensi/{item}', [ReferenceController::class, 'destroy'])->whereNumber('item')->name('references.destroy');
+    });
+
+    // Persetujuan (15 §5, T-067, BR-153, PA-27, PA-31). Tanpa `can:approvals.view`: calon penyetuju
+    // langkah aktif selalu boleh membuka "Menunggu saya", detail, dan memutuskan (aturan di
+    // ApprovalEngine/ApprovalVisibility; di luar itu `{approval}` → 404). `delegasi` didaftarkan
+    // sebelum `{approval}`. Keputusan menerima `current_password` (konfirmasi bersyarat nominal), jadi
+    // dibatasi agar tidak bisa dipakai menebak password.
+    Route::get('persetujuan', [ApprovalController::class, 'index'])->name('approvals.index');
+    Route::get('persetujuan/delegasi', [ApprovalDelegationController::class, 'index'])->name('approval-delegations.index');
+    Route::post('persetujuan/delegasi', [ApprovalDelegationController::class, 'store'])->middleware('throttle:30,1')->name('approval-delegations.store');
+    Route::delete('persetujuan/delegasi/{delegation}', [ApprovalDelegationController::class, 'destroy'])->whereNumber('delegation')->name('approval-delegations.destroy');
+    Route::get('persetujuan/{approval}', [ApprovalController::class, 'show'])->whereNumber('approval')->name('approvals.show');
+    Route::middleware('throttle:20,1')->group(function () {
+        Route::post('persetujuan/{approval}/setujui', [ApprovalController::class, 'approve'])->whereNumber('approval')->name('approvals.approve');
+        Route::post('persetujuan/{approval}/tolak', [ApprovalController::class, 'reject'])->whereNumber('approval')->name('approvals.reject');
+        Route::post('persetujuan/{approval}/batalkan', [ApprovalController::class, 'cancel'])->whereNumber('approval')->name('approvals.cancel');
+    });
+
+    // Aturan Persetujuan (15 §5, FR-A02). Ubah aturan = aksi sensitif → konfirmasi password (rute
+    // statis: RequirePassword, seperti Role). Pratinjau hanya membaca → tanpa konfirmasi.
+    Route::middleware('can:approvals.configure')->group(function () {
+        Route::get('pengaturan/aturan-persetujuan', [ApprovalRuleController::class, 'index'])->name('approval-rules.index');
+        Route::post('pengaturan/aturan-persetujuan/pratinjau', [ApprovalRuleController::class, 'preview'])->middleware('throttle:60,1')->name('approval-rules.preview');
+        Route::middleware(RequirePassword::class)->group(function () {
+            Route::get('pengaturan/aturan-persetujuan/baru', [ApprovalRuleController::class, 'create'])->name('approval-rules.create');
+            Route::post('pengaturan/aturan-persetujuan', [ApprovalRuleController::class, 'store'])->name('approval-rules.store');
+            Route::get('pengaturan/aturan-persetujuan/{rule}/ubah', [ApprovalRuleController::class, 'edit'])->whereNumber('rule')->name('approval-rules.edit');
+            Route::put('pengaturan/aturan-persetujuan/{rule}', [ApprovalRuleController::class, 'update'])->whereNumber('rule')->name('approval-rules.update');
+            Route::delete('pengaturan/aturan-persetujuan/{rule}', [ApprovalRuleController::class, 'destroy'])->whereNumber('rule')->name('approval-rules.destroy');
+        });
     });
 
     // Pengaturan (05 §4.3). Grup sensitif minta konfirmasi password di controller.

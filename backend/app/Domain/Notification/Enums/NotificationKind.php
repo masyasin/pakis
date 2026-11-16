@@ -19,6 +19,10 @@ enum NotificationKind: string
     case CorrectionDecided = 'correction_decided';
     case FieldTripSubmitted = 'field_trip_submitted';
     case FieldTripDecided = 'field_trip_decided';
+    // Paket A (15 §9.1, T-067).
+    case ApprovalRequested = 'approval_requested';
+    case ApprovalDecided = 'approval_decided';
+    case ApprovalEscalated = 'approval_escalated';
 
     public function label(): string
     {
@@ -34,6 +38,9 @@ enum NotificationKind: string
             self::CorrectionDecided => 'Koreksi presensi diputuskan',
             self::FieldTripSubmitted => 'Tugas luar kota diajukan',
             self::FieldTripDecided => 'Tugas luar kota diputuskan',
+            self::ApprovalRequested => 'Menunggu persetujuan',
+            self::ApprovalDecided => 'Persetujuan diputuskan',
+            self::ApprovalEscalated => 'Persetujuan tereskalasi',
         };
     }
 

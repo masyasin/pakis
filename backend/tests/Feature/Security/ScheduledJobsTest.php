@@ -555,7 +555,12 @@ test('T-045 Scheduled: semua job terdaftar di scheduler dengan jadwalnya', funct
         ->and($events->get('retention:purge')?->expression)->toBe('0 3 * * *')
         ->and($events->get('exports:expire')?->expression)->toBe('0 * * * *')
         ->and($events->get('security:scan-alerts')?->expression)->toBe('*/5 * * * *')
-        ->and($events->get('integrity:check')?->expression)->toBe('15 3 * * *');
+        ->and($events->get('integrity:check')?->expression)->toBe('15 3 * * *')
+        // T-067 (15 §11.1): eskalasi approval tiap 15 menit, zona general.timezone.
+        ->and($events->get('approvals:escalate')?->expression)->toBe('*/15 * * * *')
+        ->and($events->get('approvals:escalate')?->timezone)->toBe('Asia/Jakarta')
+        ->and($events->get('approvals:escalate')?->withoutOverlapping)->toBeTrue()
+        ->and($events->get('approvals:escalate')?->onOneServer)->toBeTrue();
 });
 
 dataset('sj_inline_blade', [

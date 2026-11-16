@@ -51,3 +51,11 @@ Schedule::command('integrity:check')
     ->timezone(DisplayTime::timezone())
     ->onOneServer()
     ->withoutOverlapping();
+
+// Eskalasi langkah persetujuan (BR-153(6), 15 §11.1): jam KALENDER sejak langkah aktif, jadi tiap
+// 15 menit cukup. Idempoten; tidak pernah menyetujui otomatis.
+Schedule::command('approvals:escalate')
+    ->everyFifteenMinutes()
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();

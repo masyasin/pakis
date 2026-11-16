@@ -319,8 +319,26 @@ Semua route `*.export`: bila baris ≤ `export.sync_max_rows` → unduh langsung
 | `admin.attendance-corrections.attachment` | GET | `/koreksi-absen/{correction}/lampiran` | `attendance_corrections.view` | Unduh lampiran (`Content-Disposition: attachment`, `no-store`), scope sama dengan detail (T-041) |
 | `admin.attendance-corrections.manual` | POST | `/koreksi-absen/manual` | `attendance_corrections.approve` | Presensi manual (keputusan Mas 16 Nov 2026, BR-069): `employee_id`, `work_date`, `type`, `proposed_check_in/out`, `reason_code`, `note`; langsung `approved`, wewenang 06 §6, bukan untuk diri sendiri (403) |
 
+### 4.10a Persetujuan (Paket A, T-067)
+
+Mesin approval generik (`15` §4.2, §5, BR-153). Galat domain lewat jalur Inertia PA-16 (`ApiError` → galat form + toast; JSON bila `expectsJson`).
+
+| Nama | Metode | Path | Permission | Daftar |
+|---|---|---|---|---|
+| `admin.approvals.index` | GET | `/persetujuan` | login web; tab `submitted`/`all` butuh `approvals.view` (403) | ✅ `approvals` (tab `mine` default, PA-27) |
+| `admin.approval-delegations.index` | GET | `/persetujuan/delegasi` | login web (milik sendiri), `approvals.configure` (semua) | ✅ `approval_delegations` |
+| `admin.approval-delegations.store` | POST | `/persetujuan/delegasi` | login web; `delegator_user_id` lain hanya `approvals.configure` | `delegate_user_id`, `start_date` ≥ hari ini, `end_date`, `document_types[]` (kosong = semua), `reason` 5–255; ke diri sendiri 422 |
+| `admin.approval-delegations.destroy` | DELETE | `/persetujuan/delegasi/{delegation}` | pemberi atau `approvals.configure` (penerima 403, lainnya 404) | Cabut (`is_active=false`) |
+| `admin.approvals.show` | GET | `/persetujuan/{approval}` | calon penyetuju langkah aktif / pengaju / pemutus sebelumnya / `approvals.view` dalam scope; selain itu 404 | |
+| `admin.approvals.approve`/`reject` | POST | `/persetujuan/{approval}/setujui`, `/tolak` | calon penyetuju langkah aktif (BR-153) | `step` wajib (langkah lain → 409 `STATE_CONFLICT`), `note` (tolak wajib 5–500), `current_password` bila nominal ≥ `approval.reauth_amount` dan belum konfirmasi (galat field `current_password`). Pengaju/pembuat/delegasi mereka → 403 `APPROVAL_SELF_DECISION`; bukan giliran → 409. `throttle:20,1` |
+| `admin.approvals.cancel` | POST | `/persetujuan/{approval}/batalkan` | pengaju (lainnya 403) | Hanya selama belum ada langkah diputuskan (409) |
+| `admin.approval-rules.index` | GET | `/pengaturan/aturan-persetujuan` | `approvals.configure` | ✅ `approval_rules` |
+| `admin.approval-rules.preview` | POST | `/pengaturan/aturan-persetujuan/pratinjau` | `approvals.configure` | JSON `{data: {rule, auto_approve, missing, steps[]}}` |
+| `admin.approval-rules.create`/`store` | GET/POST | `/pengaturan/aturan-persetujuan/baru`, `/pengaturan/aturan-persetujuan` | `approvals.configure` + konfirmasi password | |
+| `admin.approval-rules.edit`/`update`/`destroy` | GET/PUT/DELETE | `/pengaturan/aturan-persetujuan/{rule}/ubah`, `/pengaturan/aturan-persetujuan/{rule}` | `approvals.configure` + konfirmasi password | Hapus: belum dipakai = dihapus, sudah dipakai = dinonaktifkan |
+
 ### 4.11 Lookup (untuk select/autocomplete)
-Satu route `admin.lookup.show`, GET `/lookup/<sumber>?q=&parent=&limit=&ids[]=` (sumber terdaftar di `LookupRegistry`; tak dikenal → 404, tanpa izin sumber → 403, parameter salah → 422, `throttle:120,1`). Mengembalikan `[{value,label,hint?}]`, maksimum 20 hasil (`limit` 1–20, `LIMIT` di SQL), hanya entri aktif dan **dalam scope data** pemanggil. `ids[]` (≤ 20) mengembalikan label nilai yang sudah terpilih (chip filter), tetap aktif & ber-scope. Sumber: `regions` (dengan `level` & `parent`), `locations`, `departments`, `positions`, `employees`, `shifts`, `roles`, `references` (dengan `group`, semua pengguna login), `users` (pemegang `audit.view` atau `users.view`; akun nonaktif ikut tampil untuk menyaring pelaku audit lama — keputusan 15 Nov 2026). Lookup **bukan** daftar `*.index`, jadi dikecualikan dari test kontrak listing. Lookup tetap wajib pencarian + limit (BR-006).
+Satu route `admin.lookup.show`, GET `/lookup/<sumber>?q=&parent=&limit=&ids[]=` (sumber terdaftar di `LookupRegistry`; tak dikenal → 404, tanpa izin sumber → 403, parameter salah → 422, `throttle:120,1`). Mengembalikan `[{value,label,hint?}]`, maksimum 20 hasil (`limit` 1–20, `LIMIT` di SQL), hanya entri aktif dan **dalam scope data** pemanggil. `ids[]` (≤ 20) mengembalikan label nilai yang sudah terpilih (chip filter), tetap aktif & ber-scope. Sumber: `regions` (dengan `level` & `parent`), `locations`, `departments`, `positions`, `employees`, `shifts`, `roles`, `references` (dengan `group`, semua pengguna login), `users` (pemegang `audit.view` atau `users.view`; akun nonaktif ikut tampil untuk menyaring pelaku audit lama — keputusan 15 Nov 2026), `approval_delegates` (semua login web; akun aktif saja, label nama + username; untuk form delegasi persetujuan, T-067). Lookup **bukan** daftar `*.index`, jadi dikecualikan dari test kontrak listing. Lookup tetap wajib pencarian + limit (BR-006).
 
 ## 5. API v1 (Pakis Pro)
 

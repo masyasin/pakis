@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Access\Support\PermissionCatalog;
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Device\Models\Device;
 use App\Domain\Numbering\Models\DocumentSequence;
 use App\Models\User;
@@ -71,6 +72,9 @@ const REPRESENTATIVE = [
     'devices.manage' => ['POST', '/perangkat/{device}/tolak', ['reason' => 'Bukan HP kantor']],
     'attendance.view' => ['GET', '/absensi'],
     'attendance.export' => ['GET', '/absensi/ekspor'],
+    // T-067: tab "Menunggu saya" terbuka untuk calon penyetuju (PA-27); tab "Semua" butuh approvals.view.
+    'approvals.view' => ['GET', '/persetujuan?filter[tab]=all'],
+    'approvals.configure' => ['GET', '/pengaturan/aturan-persetujuan'],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
@@ -79,7 +83,6 @@ const PENDING = [
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.approve' => 'T-041',
     'field_trips.request' => 'T-036A bagian 2', 'field_trips.approve' => 'T-036A bagian 2',
     // Paket A: izin dibuat T-067 (15 §6.3), route-nya dibangun task modulnya (TASKS_PAKET_A.md).
-    'approvals.view' => 'T-067 bagian 2', 'approvals.configure' => 'T-067 bagian 2',
     'stock_locations.view' => 'T-068', 'stock_locations.manage' => 'T-068',
     'vehicles.view' => 'T-068', 'vehicles.manage' => 'T-068',
     'products.view' => 'T-070', 'products.manage' => 'T-070', 'product_registrations.manage' => 'T-071',
@@ -127,6 +130,9 @@ dataset('role_permission', function () {
     $matrix['super_admin'] = PermissionCatalog::names();
 
     foreach ($matrix as $role => $granted) {
+        // Fixture = sel Fase 0 (06 §4); sel Paket A (15 §6.4) dari RoleCatalog, yang dijaga
+        // PaketAMatrixTest identik dengan dokumen. Role Paket A tanpa baris fixture ikut di bawah.
+        $granted = [...$granted, ...RoleCatalog::paketAPermissionsFor($role)];
         foreach (array_keys(REPRESENTATIVE) as $permission) {
             yield "{$role} · {$permission}" => [$role, $permission, in_array($permission, $granted, true)];
         }

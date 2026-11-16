@@ -70,6 +70,29 @@ return [
         ...(is_string(env('IMPORT_TEST_TYPE')) && env('IMPORT_TEST_TYPE') !== '' ? ['uji_produk' => env('IMPORT_TEST_TYPE')] : []),
     ],
 
+    /*
+     * Jenis dokumen mesin approval (15 §4.2.1, ADR-105, T-067): kunci = `approval_requests.document_type`.
+     * `model` = kelas Eloquent yang mengimplementasikan App\Domain\Approval\Contracts\Approvable, diisi
+     * task pemilik dokumen (null = dokumennya belum dibangun; aturannya sudah bisa disiapkan).
+     * `conditions` = kunci `approval_rules.conditions` yang diizinkan untuk jenis itu.
+     */
+    'approvables' => [
+        'purchase_order' => ['label' => 'Purchase order', 'model' => null, 'conditions' => []],
+        'goods_receipt_short_shelf_life' => ['label' => 'Penerimaan sisa umur pendek', 'model' => null, 'conditions' => []],
+        'stock_transfer_variance' => ['label' => 'Selisih mutasi stok', 'model' => null, 'conditions' => []],
+        'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => null, 'conditions' => []],
+        'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => null, 'conditions' => []],
+        'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => null, 'conditions' => []],
+        'purchase_return' => ['label' => 'Retur ke prinsipal', 'model' => null, 'conditions' => []],
+        'customer_activation' => ['label' => 'Aktivasi kios', 'model' => null, 'conditions' => []],
+        'customer_credit_limit' => ['label' => 'Limit kredit kios', 'model' => null, 'conditions' => []],
+        'customer_phone_change' => ['label' => 'Ganti nomor HP kios', 'model' => null, 'conditions' => []],
+        'customer_merge' => ['label' => 'Gabung kios duplikat', 'model' => null, 'conditions' => []],
+        'price_list_publish' => ['label' => 'Terbit daftar harga', 'model' => null, 'conditions' => []],
+        'promotion_activate' => ['label' => 'Aktivasi promo', 'model' => null, 'conditions' => []],
+        'serial_swap' => ['label' => 'Tukar nomor seri', 'model' => null, 'conditions' => []],
+    ],
+
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.
     // enforce = blokir pelanggaran (produksi) | report-only = hanya laporkan di konsol (staging, lokal) | off
     'csp' => [

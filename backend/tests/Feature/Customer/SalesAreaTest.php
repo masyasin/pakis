@@ -20,8 +20,6 @@ beforeEach(function () {
     $this->seed([PermissionSeeder::class, RoleSeeder::class, ReferenceSeeder::class, SequenceSeeder::class]);
     $this->useRealPermissions();
     CustomerWorld::regions();
-    // Halaman .tsx dibuat di T-073 bagian 2 (UI); test backend memeriksa props saja.
-    config(['inertia.testing.ensure_pages_exist' => false]);
 
     $this->apj = User::factory()->withTwoFactor()->create()->assignRole('admin_penjualan');
 });

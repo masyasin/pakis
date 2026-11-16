@@ -96,3 +96,47 @@ export const MAPS_PARSE_MESSAGES: Record<
         'Koordinat tidak ditemukan di tautan ini. Di Google Maps, klik kanan titik lokasi lalu salin angka koordinatnya.',
     'outside-indonesia': 'Koordinat di tautan ini berada di luar Indonesia.',
 };
+
+/**
+ * Titik dari Geolocation API browser (tombol "Ambil lokasi HP", LocationPointInput T-073): dibulatkan
+ * ke 7 desimal dan dibatasi wilayah Indonesia, sama dengan tautan yang ditempel. Akurasi (meter)
+ * ikut dikembalikan karena verifikasi kios (BR-165, T-074) menolak titik yang terlalu kabur.
+ */
+export function pointFromCoordinates(
+    latitude: number,
+    longitude: number,
+): MapsParseResult {
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return { ok: false, reason: 'not-found' };
+    }
+    if (!inIndonesia(latitude, longitude)) {
+        return { ok: false, reason: 'outside-indonesia' };
+    }
+
+    return {
+        ok: true,
+        latitude: round7(String(latitude)),
+        longitude: round7(String(longitude)),
+    };
+}
+
+/** Kode galat `GeolocationPositionError` (1 izin ditolak, 2 tidak tersedia, 3 waktu habis). */
+export function geolocationErrorMessage(code: number): string {
+    switch (code) {
+        case 1:
+            return 'Izin lokasi ditolak. Izinkan akses lokasi untuk situs ini di pengaturan browser, lalu coba lagi.';
+        case 2:
+            return 'Lokasi HP tidak tersedia. Nyalakan GPS/lokasi lalu coba lagi.';
+        case 3:
+            return 'Lokasi HP belum didapat. Coba lagi di tempat terbuka.';
+        default:
+            return 'Lokasi HP tidak bisa diambil. Coba lagi atau tempel tautan Google Maps.';
+    }
+}
+
+/** Akurasi GPS untuk tampilan: "± 12 m" / "± 1,2 km". */
+export function formatAccuracy(meters: number): string {
+    return meters >= 1000
+        ? `± ${(meters / 1000).toLocaleString('id-ID', { maximumFractionDigits: 1 })} km`
+        : `± ${Math.round(meters).toLocaleString('id-ID')} m`;
+}

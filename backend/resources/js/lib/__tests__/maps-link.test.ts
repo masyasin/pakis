@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { googleMapsUrl, parseMapsLink } from '@/lib/maps-link';
+import {
+    formatAccuracy,
+    geolocationErrorMessage,
+    googleMapsUrl,
+    parseMapsLink,
+    pointFromCoordinates,
+} from '@/lib/maps-link';
 
 describe('parseMapsLink (T-021)', () => {
     it('membaca titik tempat (!3d…!4d…) lebih dulu daripada pusat peta (@…)', () => {
@@ -54,5 +60,38 @@ describe('parseMapsLink (T-021)', () => {
         expect(googleMapsUrl('-6.85', '110.84')).toBe(
             'https://www.google.com/maps?q=-6.85%2C110.84',
         );
+    });
+});
+
+describe('pointFromCoordinates & pesan Geolocation (T-073)', () => {
+    it('membulatkan titik HP ke 7 desimal', () => {
+        expect(pointFromCoordinates(-6.812345678, 110.845678912)).toEqual({
+            ok: true,
+            latitude: '-6.8123457',
+            longitude: '110.8456789',
+        });
+    });
+
+    it('menolak titik di luar Indonesia atau bukan angka', () => {
+        expect(pointFromCoordinates(48.85, 2.35)).toEqual({
+            ok: false,
+            reason: 'outside-indonesia',
+        });
+        expect(pointFromCoordinates(Number.NaN, 110)).toEqual({
+            ok: false,
+            reason: 'not-found',
+        });
+    });
+
+    it('memetakan kode galat Geolocation ke pesan Indonesia', () => {
+        expect(geolocationErrorMessage(1)).toContain('Izin lokasi ditolak');
+        expect(geolocationErrorMessage(2)).toContain('tidak tersedia');
+        expect(geolocationErrorMessage(3)).toContain('belum didapat');
+        expect(geolocationErrorMessage(99)).toContain('tautan Google Maps');
+    });
+
+    it('memformat akurasi dalam meter atau kilometer', () => {
+        expect(formatAccuracy(12.4)).toBe('± 12 m');
+        expect(formatAccuracy(1250)).toBe('± 1,3 km');
     });
 });

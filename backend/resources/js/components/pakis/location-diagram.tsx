@@ -10,6 +10,13 @@ type Props = {
     /** Jarak dari server (meter); bila ada dipakai untuk label agar sama dengan data. */
     distanceM?: number | null;
     withinRadius?: boolean;
+    /** Nama titik di keterangan & legenda (default presensi; kios memakai "Titik kios"). */
+    label?: string;
+    /** Keterangan saat tanpa lokasi pembanding (default: kalimat presensi). */
+    noAreaText?: string;
+    /** Tautan "Buka di peta" pengganti OpenStreetMap (mis. Google Maps di form kios). */
+    mapHref?: string;
+    mapLabel?: string;
 };
 
 const formatMeters = (m: number) =>
@@ -27,6 +34,10 @@ export function LocationDiagram({
     area,
     distanceM,
     withinRadius,
+    label = 'Titik presensi',
+    noAreaText,
+    mapHref,
+    mapLabel = 'Buka di peta',
 }: Props) {
     const g = diagramGeometry(point, area);
     const titleId = useId();
@@ -35,8 +46,8 @@ export function LocationDiagram({
     const pointColor = outside ? 'var(--status-danger)' : 'var(--primary)';
 
     const description = area
-        ? `Titik presensi ${formatMeters(distance)}${g.bearing ? ` ke arah ${g.bearing}` : ''} dari ${area.name}, radius ${formatMeters(area.radius_m)}: ${outside ? 'di luar' : 'di dalam'} radius.`
-        : 'Titik presensi (tanpa lokasi Pakis yang cocok).';
+        ? `${label} ${formatMeters(distance)}${g.bearing ? ` ke arah ${g.bearing}` : ''} dari ${area.name}, radius ${formatMeters(area.radius_m)}: ${outside ? 'di luar' : 'di dalam'} radius.`
+        : (noAreaText ?? `${label} (tanpa lokasi Pakis yang cocok).`);
 
     return (
         <figure className="space-y-2">
@@ -135,17 +146,17 @@ export function LocationDiagram({
                             style={{ background: pointColor }}
                             aria-hidden="true"
                         />
-                        Titik presensi
+                        {label}
                     </span>
                 </span>
                 <Button variant="outline" size="sm" asChild>
                     <a
-                        href={osmLink(point)}
+                        href={mapHref ?? osmLink(point)}
                         target="_blank"
                         rel="noopener noreferrer"
                     >
                         <ExternalLink aria-hidden="true" />
-                        Buka di peta
+                        {mapLabel}
                     </a>
                 </Button>
             </figcaption>

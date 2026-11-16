@@ -32,10 +32,9 @@ final class SaveRegistration
     /** @param  array<string, mixed>  $data  sudah divalidasi ProductRegistrationRequest */
     public function handle(Product $product, ?ProductRegistration $registration, array $data, ?UploadedFile $document, ?int $userId): ProductRegistration
     {
+        // Cek awal (sebelum unggah berkas) agar penolakan tidak meninggalkan berkas; dicek ulang di bawah kunci.
         if ($registration !== null && $registration->status !== RegistrationStatus::Active) {
-            throw ValidationException::withMessages([
-                'registration' => 'Izin yang sudah habis atau dicabut tidak bisa diubah. Untuk perpanjangan, tambahkan izin baru.',
-            ]);
+            throw self::notEditable();
         }
 
         $stored = $document !== null
@@ -91,6 +90,11 @@ final class SaveRegistration
         }
 
         $locked = ProductRegistration::query()->lockForUpdate()->findOrFail($registration->id);
+        // Periksa ulang SETELAH dikunci: pencabutan/job expire yang berjalan bersamaan sesudah cek awal
+        // tidak boleh "dihidupkan" lagi oleh status yang dihitung ulang dari tanggal di bawah.
+        if ($locked->status !== RegistrationStatus::Active) {
+            throw self::notEditable();
+        }
         $before = $locked->audited();
         $oldDocument = $stored !== null ? $locked->document_path : null;
         $locked->forceFill([...$values, 'updated_by' => $userId]);
@@ -104,6 +108,13 @@ final class SaveRegistration
         $this->audit->record('product_registration.updated', $locked, $before, [...$locked->audited(), 'document' => $stored !== null ? 'diganti' : null]);
 
         return [$locked, $oldDocument];
+    }
+
+    private static function notEditable(): ValidationException
+    {
+        return ValidationException::withMessages([
+            'registration' => 'Izin yang sudah habis atau dicabut tidak bisa diubah. Untuk perpanjangan, tambahkan izin baru.',
+        ]);
     }
 
     private static function nullable(mixed $value): ?string

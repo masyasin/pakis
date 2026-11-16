@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Audit\Models\AuditLog;
+use App\Domain\Catalog\Actions\SaveRegistration;
 use App\Domain\Catalog\Enums\RegistrationStatus;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\ValidationException;
 use Inertia\Testing\AssertableInertia as Assert;
 
 /*
@@ -260,4 +262,14 @@ test('15 §7.4 dasbor: jumlah produk izin akan habis untuk pemegang products.vie
         $item = collect($page->toArray()['props']['pending'])->firstWhere('key', 'registrations_expiring');
         expect($item['count'])->toBe(1)->and($item['href'])->toContain('registration_status');
     });
+});
+
+test('BR-152 ubah izin yang baru saja dicabut (model basi) ditolak di bawah kunci, status tidak dihidupkan lagi', function () {
+    $stale = registration($this->product, '2030-01-01', 'RI-BALAPAN');
+    // Pencabutan oleh pengguna lain terjadi setelah model dimuat.
+    ProductRegistration::query()->whereKey($stale->id)->update(['status' => RegistrationStatus::Revoked->value, 'note' => 'Dicabut bersamaan']);
+
+    expect(fn () => app(SaveRegistration::class)->handle($this->product, $stale, registrationPayload(['registration_no' => 'RI-BALAPAN']), null, $this->user->id))
+        ->toThrow(ValidationException::class);
+    expect($stale->fresh()->status)->toBe(RegistrationStatus::Revoked);
 });

@@ -168,6 +168,11 @@ class QueueDb {
   List<PendingAttendance> all() =>
       _rows(_db.select('SELECT * FROM pending_attendance ORDER BY created_at, client_uuid'));
 
+  PendingAttendance? find(String clientUuid) {
+    final rows = _rows(_db.select('SELECT * FROM pending_attendance WHERE client_uuid = ?', [clientUuid]));
+    return rows.isEmpty ? null : rows.first;
+  }
+
   int count({QueueStatus status = QueueStatus.pending}) =>
       _db.select('SELECT count(*) AS n FROM pending_attendance WHERE status = ?', [status.name]).first['n'] as int;
 

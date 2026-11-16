@@ -3,11 +3,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
 import '../../core/theme/pakis_tokens.dart';
-import '../../shared/widgets/empty_state.dart';
+import '../attendance/home/attendance_home.dart';
 import '../auth/session.dart';
 
-/// Beranda setelah masuk. Sementara (T-032): header nama · jabatan · lokasi dan tombol Keluar.
-/// Kartu shift, tombol absen, dan tab bawah dibangun di T-042/T-043 (07 §5).
+/// Beranda setelah masuk: header nama · jabatan · lokasi + isi tab Presensi (T-042, 07 §5).
+/// Tab bawah (Riwayat, Koreksi, Persetujuan, Notifikasi, Profil) dan lonceng notifikasi
+/// menyusul di T-043; tombol Keluar pindah ke Profil saat itu.
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
 
@@ -77,14 +78,7 @@ class HomeScreen extends ConsumerWidget {
                   ),
                 ),
               ),
-              const Expanded(
-                child: EmptyState(
-                  icon: Icons.fingerprint,
-                  title: 'Presensi segera hadir',
-                  message:
-                      'Anda sudah masuk ke akun. Tombol Masuk dan Pulang tampil di sini setelah modul presensi aktif.',
-                ),
-              ),
+              const Expanded(child: AttendanceHome()),
             ],
           ),
         ),

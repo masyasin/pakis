@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart' show Override;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pakis_pro/app/app.dart';
@@ -17,6 +18,7 @@ Future<ProviderContainer> pumpPakisPro(
   FakeNativeDevice? native,
   FakeSessionHooks? hooks,
   String version = '1.0.0',
+  List<Override> overrides = const [],
 }) async {
   await Fmt.init();
   tester.view
@@ -31,6 +33,7 @@ Future<ProviderContainer> pumpPakisPro(
       httpAdapterProvider.overrideWithValue(adapter),
       apiBaseUrlProvider.overrideWithValue('https://pakis.test'),
       sessionHooksProvider.overrideWithValue(hooks ?? FakeSessionHooks()),
+      ...overrides,
     ],
   );
   addTearDown(container.dispose);

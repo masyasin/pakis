@@ -6,8 +6,8 @@ import '../providers.dart';
 import 'queue_db.dart';
 import 'sync_service.dart';
 
-/// Provider bagian lokal T-042. Belum dinyalakan dari `app.dart`: sinkron butuh token, jadi
-/// `SyncService.start()` dipanggil setelah login (T-032) dan dihentikan saat keluar.
+/// Provider antrean & sinkron (T-042). Sinkron butuh token, jadi `SyncService.start()`
+/// dipanggil `SyncSessionHooks` setelah masuk ke akun dan `stop()` saat keluar (T-032).
 
 final queueDbProvider = FutureProvider<QueueDb>((ref) async {
   final dir = await ref.watch(nativeDeviceProvider).privateDir();

@@ -91,7 +91,13 @@ class SyncService {
   StreamSubscription<bool>? _connectivity;
   Timer? _timer;
 
-  /// Galat yang tidak akan berubah bila dikirim ulang.
+  /// Galat sementara: kiriman langsung yang gagal karena ini masuk antrean (07 §5 offline).
+  static bool isTransient(ApiErrorCode code) => _transient.contains(code);
+
+  /// Baris antrean untuk [clientUuid], atau null bila sudah diterima server (dihapus).
+  PendingAttendance? find(String clientUuid) => _queue.find(clientUuid);
+
+  /// Galat sementara: kirim ulang nanti dengan backoff.
   static const _transient = {
     ApiErrorCode.networkOffline,
     ApiErrorCode.timeout,

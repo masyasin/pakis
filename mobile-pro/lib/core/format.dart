@@ -33,6 +33,26 @@ abstract final class Fmt {
     return DateTime(int.parse(match[1]!), int.parse(match[2]!), int.parse(match[3]!));
   }
 
+  /// Jam dinding `HH.mm` dari string server tanpa mengubah zona: `07:30` (jam shift) atau
+  /// `2026-11-03T07:37:02+07:00` (sudah dalam `general.timezone`, 05 §5.4). Null bila bentuk lain.
+  static String? wallClock(String? value) {
+    if (value == null) {
+      return null;
+    }
+    final match = RegExp(r'(?:T|^)(\d{2}):(\d{2})').firstMatch(value);
+    return match == null ? null : '${match[1]}.${match[2]}';
+  }
+
+  /// ISO-8601 dengan offset zona HP, mis. `2026-11-03T07:41:12+07:00` (05 §5.4 `client_time`).
+  static String isoWithOffset(DateTime value) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    final offset = value.timeZoneOffset;
+    final sign = offset.isNegative ? '-' : '+';
+    final minutes = offset.inMinutes.abs();
+    return '${toIsoDate(value)}T${two(value.hour)}:${two(value.minute)}:${two(value.second)}'
+        '$sign${two(minutes ~/ 60)}:${two(minutes % 60)}';
+  }
+
   static String toIsoDate(DateTime value) =>
       '${value.year.toString().padLeft(4, '0')}-${value.month.toString().padLeft(2, '0')}-${value.day.toString().padLeft(2, '0')}';
 }

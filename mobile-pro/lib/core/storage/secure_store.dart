@@ -23,6 +23,10 @@ abstract final class StoreKeys {
 
   /// Selisih detik jam server − jam HP terakhir, dari header `Date` (05 §5.4, BR-067).
   static const clockOffset = 'clock.offset_s';
+
+  /// JSON `GET /attendance/today` terakhir + pegawai + waktu ambil, agar beranda tetap
+  /// menampilkan shift saat HP dibuka tanpa sinyal (T-042). Bukan sumber kebenaran.
+  static const attendanceToday = 'attendance.today';
 }
 
 /// Penyimpanan kunci-nilai terenkripsi.

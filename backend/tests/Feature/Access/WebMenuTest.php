@@ -38,8 +38,8 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
         '' => ['Dasbor'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
-        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
-        'Pengguna & Akses' => ['Pengguna', 'Role & Hak Akses', 'Perangkat'],
+        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat'],
+        'Pengguna & Akses' => ['Pengguna', 'Role & Hak Akses'],
         'Pengaturan' => ['Pengaturan Umum', 'Penomoran', 'Referensi', 'Wilayah'],
         'Audit' => ['Audit Log', 'Log Keamanan'],
     ]);
@@ -50,14 +50,14 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan Umum, Penomoran, Audit', funct
         '' => ['Dasbor'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
-        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'],
-        'Pengguna & Akses' => ['Pengguna', 'Perangkat'],
+        'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat'],
+        'Pengguna & Akses' => ['Pengguna'],
         'Pengaturan' => ['Referensi', 'Wilayah'],
     ]);
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota'], 'Pengguna & Akses' => ['Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {

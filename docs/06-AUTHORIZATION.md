@@ -208,9 +208,9 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | HRIS | Presensi | Shift | `shifts.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | HRIS | Presensi | Hari Libur | `holidays.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | HRIS | Presensi | Tugas Luar Kota | `field_trips.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| HRIS | Presensi | Perangkat | `devices.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Sistem | Pengguna & Akses | Pengguna | `users.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Sistem | Pengguna & Akses | Role & Hak Akses | `roles.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
-| Sistem | Pengguna & Akses | Perangkat | `devices.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | Sistem | Pengaturan | Pengaturan Umum | `settings.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Sistem | Pengaturan | Penomoran | `sequences.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Sistem | Pengaturan | Referensi | `references.view` | ✅ | ✅ | ✅ | ❌ | ❌ |

@@ -50,9 +50,10 @@ final class MenuBuilder
         ['Presensi', 'Shift', 'shift', 'shifts.view', 'admin.shifts.index'],
         ['Presensi', 'Hari Libur', 'holiday', 'holidays.view', 'admin.holidays.index'],
         ['Presensi', 'Tugas Luar Kota', 'trip', 'field_trips.view', 'admin.field-trips.index'],
+        // Perangkat = HP Pakis Pro yang dipakai presensi; dikelola bersama alur presensi (keputusan Mas 16 Nov 2026).
+        ['Presensi', 'Perangkat', 'device', 'devices.view', 'admin.devices.index'],
         ['Pengguna & Akses', 'Pengguna', 'user', 'users.view', 'admin.users.index'],
         ['Pengguna & Akses', 'Role & Hak Akses', 'role', 'roles.view', 'admin.roles.index'],
-        ['Pengguna & Akses', 'Perangkat', 'device', 'devices.view', 'admin.devices.index'],
         ['Pengaturan', 'Pengaturan Umum', 'settings', 'settings.view', 'admin.settings.edit'],
         ['Pengaturan', 'Penomoran', 'sequence', 'sequences.view', 'admin.sequences.index'],
         ['Pengaturan', 'Referensi', 'reference', 'references.view', 'admin.references.index'],

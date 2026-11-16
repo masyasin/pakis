@@ -187,12 +187,28 @@ function sjCompiledView(string $base, string $view, string $source = 'Halo {{ $n
 {
     $src = $base.'/resources/views/'.$view.'.blade.php';
     file_put_contents($src, $source);
+
+    return sjCompile($base, $src);
+}
+
+/** Kompilasi sumber apa pun ke folder view terkompilasi `$base` (meniru BladeCompiler::compile). */
+function sjCompile(string $base, string $src): string
+{
     $compiler = clone app('blade.compiler');
     $compiler->setPath($src);
     $target = $base.'/storage/framework/views/'.basename($compiler->getCompiledPath($src));
-    file_put_contents($target, $compiler->compileString($source)."<?php /**PATH {$src} ENDPATH**/ ?>");
+    file_put_contents($target, $compiler->compileString((string) file_get_contents($src))."<?php /**PATH {$src} ENDPATH**/ ?>");
 
     return $target;
+}
+
+/** Komponen inline seperti Component::createBladeViewFromString + hasil kompilasinya. */
+function sjInline(string $base, string $blade): array
+{
+    $src = $base.'/storage/framework/views/'.hash('xxh128', $blade).'.blade.php';
+    file_put_contents($src, $blade);
+
+    return [$src, sjCompile($base, $src)];
 }
 
 /** Baris temuan alert integritas (gabungan). */
@@ -211,13 +227,15 @@ function sjIntegrityText(): string
 describe('SEC-070 Scheduled integritas berkas', function () {
     beforeEach(function () {
         $this->base = storage_path('framework/testing/integrity-'.Str::random(8));
-        foreach (['app/Domain', 'public/build', 'resources/views', 'storage/framework/views', 'storage/app'] as $dir) {
+        foreach (['app/Domain', 'public/build', 'resources/views', 'storage/framework/views', 'storage/app', 'vendor/paket/views'] as $dir) {
             mkdir($this->base.'/'.$dir, 0777, true);
         }
         file_put_contents($this->base.'/app/Domain/Kode.php', '<?php // kode rilis');
         file_put_contents($this->base.'/public/index.php', '<?php // pintu masuk');
         file_put_contents($this->base.'/public/.htaccess', 'RewriteEngine On');
         file_put_contents($this->base.'/public/build/app.js', 'console.log(1)');
+        file_put_contents($this->base.'/vendor/paket/views/kartu.blade.php', '<p>{{ $judul }}</p>');
+        file_put_contents($this->base.'/vendor/paket/Kelas.php', '<?php // bukan view, tidak di-hash');
         $this->genuineView = sjCompiledView($this->base, 'sapa');
         config(['integrity.base' => $this->base, 'integrity.manifest' => $this->base.'/.integrity-manifest.json']);
 
@@ -299,6 +317,67 @@ describe('SEC-070 Scheduled integritas berkas', function () {
         $this->artisan('integrity:check')->assertFailed();
 
         expect(sjIntegrityText())->toContain('storage/app/tautan.jpg (symlink)');
+    });
+
+    test('SEC-070 sumber view harus tercatat di manifest dengan sha256 yang sama', function () {
+        // Sumber + hasil kompilasi diganti bersamaan (penyerang menulis keduanya): sumber berbeda dari rilis.
+        file_put_contents($this->base.'/resources/views/sapa.blade.php', 'Halo {{ system(\'id\') }}');
+        $tampered = sjCompile($this->base, $this->base.'/resources/views/sapa.blade.php');
+        // Sumber baru yang tidak ada di manifest.
+        $new = sjCompiledView($this->base, 'baru');
+        // Sumber view di vendor/ yang tercatat di manifest tetap sah.
+        $vendor = sjCompile($this->base, $this->base.'/vendor/paket/views/kartu.blade.php');
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        expect(sjIntegrityText())->toContain(basename($tampered))
+            ->toContain(basename($new))
+            ->toContain('Berkas berubah dari rilis — 1: resources/views/sapa.blade.php')
+            ->toContain('resources/views/baru.blade.php')
+            ->not->toContain(basename($vendor));
+    });
+
+    test('SEC-070 komponen inline: bentuk sederhana sah, ekspresi kode dilaporkan', function () {
+        [$okSource, $okCompiled] = sjInline($this->base, "@if(\$response)\n{!! \$response->head !!}\n@else\n<div id=\"{{ \$id }}\">{!! \$slot !!}</div>\n@endif");
+        [$badSource, $badCompiled] = sjInline($this->base, '<b>{{ system($cmd) }}</b>');
+        [$badDirective] = sjInline($this->base, "@if(file_put_contents(\$a, \$b))\nx\n@endif");
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        expect(sjIntegrityText())->toContain(basename($badSource))
+            ->toContain(basename($badCompiled))
+            ->toContain(basename($badDirective))
+            ->not->toContain(basename($okSource))
+            ->not->toContain(basename($okCompiled));
+    });
+
+    test('SEC-070 tanpa manifest (local): view hanya dicek isinya → peringatan, bukan lolos diam-diam', function () {
+        unlink($this->base.'/.integrity-manifest.json');
+
+        $this->artisan('integrity:check')
+            ->expectsOutputToContain('view terkompilasi hanya dicek isinya')
+            ->assertSuccessful();
+    });
+
+    test('SEC-070 folder pemeriksaan yang hilang menjadi temuan', function () {
+        app('files')->deleteDirectory($this->base.'/vendor');
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        expect(sjIntegrityText())->toContain('Folder pemeriksaan tidak ada/berupa symlink — 1: vendor (tidak ada)');
+    });
+
+    test('SEC-070 symlink di app/ (dicatat link:target) dan folder akar berupa symlink menjadi temuan', function () {
+        if (! @symlink($this->base.'/storage/app', $this->base.'/app/Domain/Tautan.php')) {
+            $this->markTestSkipped('OS ini tidak mengizinkan membuat symlink (Windows tanpa Developer Mode).');
+        }
+        rename($this->base.'/resources/views', $this->base.'/views-asli');
+        symlink($this->base.'/views-asli', $this->base.'/resources/views');
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        expect(sjIntegrityText())->toContain('app/Domain/Tautan.php')
+            ->toContain('resources/views (symlink)');
     });
 
     test('SEC-070 manifest rusak selalu temuan; manifest hilang = temuan di luar local/testing', function () {

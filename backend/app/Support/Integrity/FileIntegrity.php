@@ -34,20 +34,42 @@ final class FileIntegrity
 
     public function __construct(private readonly CompiledViewVerifier $views) {}
 
-    /** @return array<string, string> jalur relatif (pemisah `/`) → sha256 */
+    /** Penanda nilai manifest untuk symlink: `link:<target>` (target berubah = berkas berubah). */
+    private const LINK_PREFIX = 'link:';
+
+    /**
+     * Isi `integrity.hashed` seluruhnya + view Blade di `integrity.views`. Symlink dicatat sebagai
+     * `link:<target>`, bukan dibuang: symlink baru/berubah di app/ atau public/ menjadi temuan.
+     *
+     * @return array<string, string> jalur relatif (pemisah `/`) → sha256 atau `link:<target>`
+     */
     public function snapshot(): array
     {
         $hashes = [];
         foreach ((array) config('integrity.hashed') as $dir) {
             foreach ($this->files((string) $dir) as $relative => $file) {
-                if (! $file->isLink()) {
-                    $hashes[$relative] = (string) hash_file('sha256', $file->getPathname());
+                $hashes[$relative] = self::fingerprint($file);
+            }
+        }
+        foreach ((array) config('integrity.views') as $dir) {
+            foreach ($this->files((string) $dir) as $relative => $file) {
+                if (preg_match('/\.blade\.[a-z]{1,10}$/i', $relative) === 1) {
+                    $hashes[$relative] = self::fingerprint($file);
                 }
             }
         }
         ksort($hashes);
 
         return $hashes;
+    }
+
+    private static function fingerprint(SplFileInfo $file): string
+    {
+        if ($file->isLink()) {
+            return self::LINK_PREFIX.self::slashes((string) readlink($file->getPathname()));
+        }
+
+        return (string) hash_file('sha256', $file->getPathname());
     }
 
     public function writeManifest(): int
@@ -59,7 +81,7 @@ final class FileIntegrity
     }
 
     /**
-     * @return array{manifest: 'ok'|'missing'|'invalid', changed: list<string>, missing: list<string>, added: list<string>, php: list<string>}
+     * @return array{manifest: 'ok'|'missing'|'invalid', roots: list<string>, changed: list<string>, missing: list<string>, added: list<string>, php: list<string>, unverified: list<string>}
      */
     public function check(): array
     {
@@ -78,23 +100,50 @@ final class FileIntegrity
             $added = array_values(array_diff(array_keys($current), array_keys($manifest)));
         }
 
+        [$php, $unverified] = $this->suspicious($manifest);
+
         return [
             'manifest' => $status,
+            'roots' => $this->badRoots(),
             'changed' => $changed,
             'missing' => $missing,
             'added' => $added,
-            'php' => $this->suspicious($manifest),
+            'php' => $php,
+            'unverified' => $unverified,
         ];
     }
 
     /**
-     * @param  array<string, string>|null  $manifest
+     * Folder yang dikonfigurasi tapi tidak ada atau berupa symlink: pemeriksaannya diam-diam
+     * kosong, jadi dilaporkan (fail-closed).
+     *
      * @return list<string>
+     */
+    private function badRoots(): array
+    {
+        $bad = [];
+        $dirs = array_unique(array_merge((array) config('integrity.hashed'), (array) config('integrity.views'), (array) config('integrity.no_php')));
+        foreach ($dirs as $dir) {
+            $root = $this->base().'/'.trim((string) $dir, '/');
+            if (is_link($root)) {
+                $bad[] = $dir.' (symlink)';
+            } elseif (! is_dir($root)) {
+                $bad[] = $dir.' (tidak ada)';
+            }
+        }
+        sort($bad);
+
+        return $bad;
+    }
+
+    /**
+     * @param  array<string, string>|null  $manifest
+     * @return array{0: list<string>, 1: list<string>} [temuan, view yang tidak bisa diverifikasi tanpa manifest]
      */
     private function suspicious(?array $manifest): array
     {
         $base = $this->base();
-        $found = [];
+        $found = $unverified = [];
         foreach ((array) config('integrity.no_php') as $dir) {
             foreach ($this->files((string) $dir) as $relative => $file) {
                 if ($file->isLink()) {
@@ -106,8 +155,16 @@ final class FileIntegrity
                 if (preg_match(self::PHP_LIKE, $name) !== 1 && ! in_array(strtolower($name), self::SERVER_CONFIG, true)) {
                     continue;
                 }
-                if (str_starts_with($relative, self::COMPILED_VIEWS) && $this->views->isGenuine($file->getPathname(), $base)) {
-                    continue;
+                if (str_starts_with($relative, self::COMPILED_VIEWS)) {
+                    $verdict = $this->views->verify($file->getPathname(), $base, $manifest);
+                    if ($verdict === CompiledViewVerifier::OK) {
+                        continue;
+                    }
+                    if ($verdict === CompiledViewVerifier::UNVERIFIED) {
+                        $unverified[] = $relative;
+
+                        continue;
+                    }
                 }
                 if (str_starts_with($relative, 'public/')) {
                     $known = $manifest !== null ? array_key_exists($relative, $manifest) : in_array($relative, self::PUBLIC_DEFAULTS, true);
@@ -119,8 +176,9 @@ final class FileIntegrity
             }
         }
         sort($found);
+        sort($unverified);
 
-        return $found;
+        return [$found, $unverified];
     }
 
     /**
@@ -141,7 +199,7 @@ final class FileIntegrity
         }
         $files = [];
         foreach ($data['files'] as $file => $hash) {
-            if (! is_string($file) || ! is_string($hash) || preg_match('/^[0-9a-f]{64}$/', $hash) !== 1) {
+            if (! is_string($file) || ! is_string($hash) || preg_match('/^([0-9a-f]{64}|link:.+)$/', $hash) !== 1) {
                 return ['invalid', null];
             }
             $files[$file] = $hash;

@@ -31,6 +31,7 @@ class CheckIntegrity extends Command
         $result = $integrity->check();
         $lines = [];
         foreach ([
+            'roots' => 'Folder pemeriksaan tidak ada/berupa symlink',
             'php' => 'Berkas PHP/eksekusi asing (public/ atau storage/)',
             'changed' => 'Berkas berubah dari rilis',
             'added' => 'Berkas baru (tidak ada di rilis)',
@@ -52,6 +53,11 @@ class CheckIntegrity extends Command
         } elseif ($result['manifest'] === 'missing') {
             $message = 'Manifest rilis tidak ditemukan: jalankan `integrity:check --write-manifest` saat deploy.';
             app()->environment('local', 'testing') ? $this->warn($message) : array_unshift($lines, $message);
+        }
+
+        if ($result['unverified'] !== []) {
+            // Hanya terjadi tanpa manifest: sumber view tidak bisa dicocokkan dengan rilis.
+            $this->warn(count($result['unverified']).' view terkompilasi hanya dicek isinya (tanpa manifest, sumber tidak bisa dicocokkan dengan rilis).');
         }
 
         if ($lines === []) {

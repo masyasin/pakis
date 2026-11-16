@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Settings\SettingDefinition;
 use App\Domain\Settings\SettingRegistry;
 use App\Domain\Settings\SettingType;
 
@@ -33,6 +34,9 @@ function documentedDefault(string $raw, string $type): mixed
     return match (true) {
         $raw === 'kosong', $type === 'image' => null,
         $raw === 'true', $raw === 'false' => $raw === 'true',
+        // PA-19: money dibaca sebagai string berskala 2, decimal sebagai string apa adanya.
+        $type === 'money' => preg_match('/^\d+$/', $raw) === 1 ? $raw.'.00' : $raw,
+        $type === 'decimal' => $raw,
         str_starts_with($raw, '[') => json_decode($raw, true),
         preg_match('/^\d+$/', $raw) === 1 && $type !== 'string' => (int) $raw,
         default => $raw,
@@ -48,7 +52,7 @@ test('setiap kunci di 08 §2 ada di registri dan sebaliknya', function () {
 });
 
 test('tipe, default, dan penanda publik sama dengan 08 §2', function () {
-    $typeMap = ['multi enum' => 'multi_enum'];
+    $typeMap = ['multi enum' => 'multi_enum', 'int list' => 'int_list'];
 
     foreach (documentedSettings() as $key => $doc) {
         $definition = SettingRegistry::get($key);
@@ -69,6 +73,8 @@ test('batas validasi (rentang, ≤, maks) sama dengan 08 §2', function () {
             expect([$definition->min, $definition->max])->toBe([(int) $range[1], (int) $range[2]], "Rentang {$key}");
         } elseif (preg_match('/^≤ (\d+)$/u', $validation, $max) === 1) {
             expect($definition->max)->toBe((int) $max[1], "Maks {$key}");
+        } elseif (preg_match('/^≥ (\d+)$/u', $validation, $min) === 1) {
+            expect($definition->min)->toBe((int) $min[1], "Min {$key}");
         } elseif (preg_match('/maks (\d+) email/u', $validation, $max) === 1) {
             expect($definition->max)->toBe((int) $max[1], "Maks {$key}");
         }
@@ -86,6 +92,27 @@ test('opsi enum sama dengan 08 §2', function () {
         expect(array_map('strval', $definition->options))->toBe($m[1], "Opsi {$key}");
     }
 });
+
+test('T-067 grup approval terdaftar dengan label Persetujuan dan tidak publik', function () {
+    expect(SettingRegistry::GROUPS['approval'] ?? null)->toBe('Persetujuan')
+        ->and(array_keys(SettingRegistry::group('approval')))->toBe([
+            'approval.auto_approve_when_no_rule', 'approval.default_escalation_hours', 'approval.reauth_amount',
+        ]);
+
+    foreach (SettingRegistry::group('approval') as $key => $definition) {
+        expect($definition->isPublic)->toBeFalse("Publik {$key}");
+    }
+});
+
+test('PA-19 setiap kunci berada di grup yang terdaftar di GROUPS', function () {
+    foreach (SettingRegistry::all() as $key => $definition) {
+        expect(array_key_exists($definition->group(), SettingRegistry::GROUPS))->toBeTrue("Grup {$key}");
+    }
+});
+
+test('PA-19 penanda one_way hanya untuk tipe bool', function () {
+    new SettingDefinition('approval.contoh', SettingType::Int, 1, 'Contoh', oneWay: true);
+})->throws(InvalidArgumentException::class);
 
 test('tidak ada kunci yang tampak seperti secret di registri (SEC-060)', function () {
     foreach (array_keys(SettingRegistry::all()) as $key) {

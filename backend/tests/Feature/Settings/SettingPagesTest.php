@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Settings\SettingRegistry;
 use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
@@ -28,7 +29,8 @@ test('halaman pengaturan menampilkan tab grup dan field otomatis dari registri',
         ->assertInertia(fn (Assert $page) => $page
             ->component('site-settings/edit')
             ->where('group', 'attendance')
-            ->has('groups', 12)
+            // Paket A menambah grup bertahap (15 §9); tab = seluruh GROUPS registri.
+            ->has('groups', count(SettingRegistry::GROUPS))
             ->where('fields.1.key', 'attendance.default_radius_m')
             ->where('fields.1.value', 100)
             ->where('fields.1.default', 100)

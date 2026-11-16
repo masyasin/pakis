@@ -2,12 +2,15 @@
 
 namespace App\Domain\Settings\Actions;
 
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Settings\Branding\ImageProcessor;
 use App\Domain\Settings\SettingDefinition;
 use App\Domain\Settings\SettingRegistry;
 use App\Domain\Settings\SettingStore;
 use App\Domain\Settings\SettingType;
+use App\Models\User;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
@@ -19,6 +22,10 @@ use Illuminate\Validation\ValidationException;
  * Payload memakai nama field (`general__app_name`, lihat SettingDefinition::field()). Kunci yang
  * tidak terdaftar atau bukan milik grup ini → 422. Semua nilai grup divalidasi bersama (aturan
  * lintas kunci, mis. versi terbaru ≥ minimum), lalu ditulis atomik dan diaudit per kunci.
+ *
+ * Penanda PA-19 ditegakkan di sini agar berlaku untuk semua pemanggil, bukan hanya form:
+ * kunci `locked` hanya boleh diubah super_admin dengan konfirmasi password baru; kunci `one_way`
+ * menolak false → true (termasuk lewat "kembalikan default").
  */
 final class UpdateSettingGroup
 {
@@ -32,8 +39,9 @@ final class UpdateSettingGroup
      * @param  array<string, mixed>  $input  nilai per field
      * @param  list<string>  $reset  field yang dikembalikan ke default
      * @param  array<string, UploadedFile>  $files  unggahan per field (tipe image)
+     * @param  bool  $passwordConfirmed  konfirmasi password masih berlaku (PasswordConfirmation::isRecent)
      */
-    public function handle(string $group, array $input, array $reset, array $files, ?int $userId): void
+    public function handle(string $group, array $input, array $reset, array $files, ?int $userId, bool $passwordConfirmed = false): void
     {
         $definitions = SettingRegistry::group($group);
         if ($definitions === []) {
@@ -82,6 +90,15 @@ final class UpdateSettingGroup
         $changed = array_filter($values, fn ($value, $key) => $current[$key] !== $definitions[$key]->cast($value), ARRAY_FILTER_USE_BOTH);
         $resetKeys = array_values(array_filter($resetKeys, fn ($key) => $this->store->isCustomized($key)));
 
+        $after = [];
+        foreach ($changed as $key => $value) {
+            $after[$key] = $definitions[$key]->cast($value);
+        }
+        foreach ($resetKeys as $key) {
+            $after[$key] = $definitions[$key]->cast($definitions[$key]->default);
+        }
+        $this->guardFlags($definitions, $current, $after, $userId, $passwordConfirmed);
+
         DB::transaction(function () use ($changed, $resetKeys, $current, $definitions, $userId) {
             $this->store->write($changed, $resetKeys, $userId);
 
@@ -92,6 +109,37 @@ final class UpdateSettingGroup
                 $this->audit->record('setting.updated', null, [$key => $current[$key]], [$key => $definitions[$key]->cast($definitions[$key]->default)]);
             }
         });
+    }
+
+    /**
+     * @param  array<string, SettingDefinition>  $definitions
+     * @param  array<string, mixed>  $current  nilai efektif sebelum disimpan
+     * @param  array<string, mixed>  $after  kunci yang benar-benar berubah => nilai barunya
+     */
+    private function guardFlags(array $definitions, array $current, array $after, ?int $userId, bool $passwordConfirmed): void
+    {
+        $locked = array_values(array_filter(array_keys($after), fn ($key) => $definitions[$key]->locked));
+        if ($locked !== []) {
+            $actor = $userId === null ? null : User::query()->find($userId);
+            if ($actor === null || ! $actor->hasRole(RoleCatalog::SUPER_ADMIN)) {
+                // Form menonaktifkan field ini untuk selain super_admin; permintaan yang tetap
+                // mengubahnya adalah permintaan rekayasa → 403, bukan galat isian.
+                throw new AuthorizationException('Hanya Super Admin yang bisa mengubah pengaturan terkunci.');
+            }
+            if (! $passwordConfirmed) {
+                throw ValidationException::withMessages(collect($locked)->mapWithKeys(fn ($key) => [
+                    $definitions[$key]->field() => 'Konfirmasi password dulu untuk mengubah pengaturan terkunci.',
+                ])->all());
+            }
+        }
+
+        $reopened = array_values(array_filter(array_keys($after), fn ($key) => $definitions[$key]->oneWay
+            && $current[$key] === false && $after[$key] === true));
+        if ($reopened !== []) {
+            throw ValidationException::withMessages(collect($reopened)->mapWithKeys(fn ($key) => [
+                $definitions[$key]->field() => 'Pengaturan ini sudah dimatikan dan tidak bisa diaktifkan lagi.',
+            ])->all());
+        }
     }
 
     /**
@@ -110,6 +158,9 @@ final class UpdateSettingGroup
             }
             $data[$field] = $values[$definition->key];
             $rules[$field] = $definition->validationRules();
+            if ($definition->type->itemRules() !== []) {
+                $rules[$field.'.*'] = $definition->type->itemRules();
+            }
             $attributes[$field] = $definition->label;
         }
 
@@ -149,6 +200,13 @@ final class UpdateSettingGroup
             SettingType::Int => is_numeric($value) && (string) (int) $value === (string) $value ? (int) $value : $value,
             SettingType::Enum => is_numeric($value) && is_int($definition->options[0] ?? null) ? (int) $value : $value,
             SettingType::Color => is_string($value) ? strtoupper($value) : $value,
+            // Form mengirim teks "90, 60, 30"; butir bukan bilangan bulat dibiarkan agar ditolak validasi.
+            SettingType::IntList => $value === null || $value === '' ? [] : array_values(array_map(
+                fn ($item) => is_string($item) && preg_match('/^-?\d+$/', trim($item)) === 1 ? (int) trim($item) : $item,
+                is_array($value) ? $value : (preg_split('/[\s,;]+/', (string) $value, -1, PREG_SPLIT_NO_EMPTY) ?: []),
+            )),
+            // Angka JSON → string kanonik; float tidak pernah disimpan.
+            SettingType::Decimal, SettingType::Money => is_int($value) || is_float($value) ? (string) $value : ($value === '' ? null : $value),
             default => $value === '' ? null : $value,
         };
     }

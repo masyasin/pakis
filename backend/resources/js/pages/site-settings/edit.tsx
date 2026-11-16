@@ -16,6 +16,7 @@ type Props = {
     sensitive: boolean;
     fields: SettingFieldDef[];
     canUpdate: boolean;
+    canChangeLocked: boolean;
 };
 
 /**
@@ -27,6 +28,7 @@ export default function SiteSettingsEdit({
     sensitive,
     fields,
     canUpdate,
+    canChangeLocked,
 }: Props) {
     const errors = usePage().props.errors as Record<string, string>;
     const initial = Object.fromEntries(fields.map((f) => [f.field, f.value]));
@@ -108,6 +110,7 @@ export default function SiteSettingsEdit({
                                 value={values[def.field]}
                                 error={errors[def.field]}
                                 disabled={!canUpdate || processing}
+                                canChangeLocked={canChangeLocked}
                                 onChange={(value) =>
                                     setValues((v) => ({
                                         ...v,

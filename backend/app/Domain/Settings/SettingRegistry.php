@@ -8,6 +8,7 @@ use App\Domain\Notification\Otp\OtpManager;
 use App\Domain\Settings\Validation\ContrastRatio;
 use App\Domain\Settings\Validation\Semver;
 use InvalidArgumentException;
+use LogicException;
 
 /**
  * Registri SEMUA kunci site setting (08 §2, ADR-006). Menambah kunci = tambah di sini + 08 §2;
@@ -29,6 +30,7 @@ final class SettingRegistry
         'notification' => 'Notifikasi',
         'monitoring' => 'Monitoring',
         'retention' => 'Retensi data',
+        'approval' => 'Persetujuan',
     ];
 
     /** Grup yang perubahannya butuh konfirmasi ulang password (06 §1.6, 07 §4). */
@@ -37,12 +39,32 @@ final class SettingRegistry
     /** @var array<string, SettingDefinition>|null */
     private static ?array $definitions = null;
 
+    /** @var list<SettingDefinition> definisi tambahan khusus test (lihat extendForTesting) */
+    private static array $testDefinitions = [];
+
+    /**
+     * KHUSUS TEST: sisipkan definisi sementara, mis. kunci `locked`/`one_way` contoh, karena belum
+     * ada kunci produksi yang memakai penanda itu dan 08 §2 tidak boleh berisi kunci palsu.
+     * Panggil `extendForTesting([])` di afterEach untuk memulihkan registri.
+     *
+     * @param  list<SettingDefinition>  $definitions
+     */
+    public static function extendForTesting(array $definitions): void
+    {
+        if (! app()->runningUnitTests()) {
+            throw new LogicException('SettingRegistry::extendForTesting hanya untuk test.');
+        }
+
+        self::$testDefinitions = $definitions;
+        self::$definitions = null;
+    }
+
     /**
      * @return array<string, SettingDefinition>
      */
     public static function all(): array
     {
-        return self::$definitions ??= collect(self::define())
+        return self::$definitions ??= collect([...self::define(), ...self::$testDefinitions])
             ->keyBy(fn (SettingDefinition $d) => $d->key)
             ->all();
     }
@@ -63,6 +85,12 @@ final class SettingRegistry
     public static function group(string $group): array
     {
         return array_filter(self::all(), fn (SettingDefinition $d) => $d->group() === $group);
+    }
+
+    /** Grup berisi kunci `locked`: super_admin wajib konfirmasi password sebelum membuka form. */
+    public static function hasLocked(string $group): bool
+    {
+        return array_filter(self::group($group), fn (SettingDefinition $d) => $d->locked) !== [];
     }
 
     /**
@@ -180,6 +208,11 @@ final class SettingRegistry
             $t('retention.security_days', SettingType::Int, 365, 'Masa simpan log keamanan (hari)', min: 90, max: 1825),
             $t('retention.import_days', SettingType::Int, 90, 'Masa simpan berkas impor (hari)', min: 7, max: 365),
             $t('retention.export_days', SettingType::Int, 7, 'Masa simpan berkas ekspor (hari)', min: 1, max: 30),
+
+            // 2.6 Persetujuan (T-067, 15 §9)
+            $t('approval.auto_approve_when_no_rule', SettingType::Bool, false, 'Setujui otomatis bila tidak ada aturan', 'Mati = dokumen tanpa aturan persetujuan yang cocok tidak bisa diajukan. Nyala = dokumen itu langsung disetujui tanpa penyetuju.'),
+            $t('approval.default_escalation_hours', SettingType::Int, 24, 'Eskalasi bawaan (jam)', 'Langkah yang belum diputuskan selama ini diteruskan ke penyetuju eskalasi. Jam kalender.', min: 1, max: 168),
+            $t('approval.reauth_amount', SettingType::Money, '50000000', 'Nominal wajib konfirmasi password', 'Menyetujui dokumen senilai ini atau lebih meminta password lagi.', min: 0),
         ];
     }
 

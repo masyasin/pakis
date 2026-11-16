@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Settings\Actions\UpdateSettingGroup;
 use App\Domain\Settings\Branding\ImageProcessor;
 use App\Domain\Settings\Mail\TestMail;
@@ -10,6 +11,7 @@ use App\Domain\Settings\SettingRegistry;
 use App\Domain\Settings\SettingStore;
 use App\Domain\Settings\SettingType;
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Support\Auth\PasswordConfirmation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -45,6 +47,8 @@ class SettingController extends Controller
                 ->map(fn (SettingDefinition $d) => $this->field($d, $store))
                 ->values(),
             'canUpdate' => $request->user()?->can('settings.update') ?? false,
+            // Kunci `locked` (PA-19): selain super_admin melihat field terkunci + penjelasan.
+            'canChangeLocked' => $this->isSuperAdmin($request),
         ]);
     }
 
@@ -65,6 +69,7 @@ class SettingController extends Controller
             array_values(array_filter((array) $request->input('reset', []), 'is_string')),
             $files,
             $request->user()?->getAuthIdentifier(),
+            PasswordConfirmation::isRecent($request),
         );
 
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Pengaturan disimpan.']);
@@ -99,13 +104,24 @@ class SettingController extends Controller
         return back();
     }
 
+    /**
+     * Grup sensitif: semua pengguna. Grup berisi kunci `locked`: hanya super_admin (satu-satunya
+     * yang bisa mengubahnya), agar konfirmasi terjadi sebelum form dibuka dan isian tidak hilang.
+     * UpdateSettingGroup tetap memeriksa ulang konfirmasi untuk setiap perubahan kunci `locked`.
+     */
     private function needsPasswordConfirmation(Request $request, string $group): bool
     {
-        if (! in_array($group, SettingRegistry::SENSITIVE_GROUPS, true)) {
-            return false;
-        }
+        $required = in_array($group, SettingRegistry::SENSITIVE_GROUPS, true)
+            || (SettingRegistry::hasLocked($group) && $this->isSuperAdmin($request));
 
-        return ! PasswordConfirmation::isRecent($request);
+        return $required && ! PasswordConfirmation::isRecent($request);
+    }
+
+    private function isSuperAdmin(Request $request): bool
+    {
+        $user = $request->user();
+
+        return $user instanceof User && $user->hasRole(RoleCatalog::SUPER_ADMIN);
     }
 
     /**
@@ -129,6 +145,8 @@ class SettingController extends Controller
             'max' => $d->max,
             'nullable' => $d->nullable,
             'public' => $d->isPublic,
+            'locked' => $d->locked,
+            'one_way' => $d->oneWay,
             'image_url' => $d->type === SettingType::Image && is_string($value)
                 ? ImageProcessor::publicUrl($value)
                 : null,

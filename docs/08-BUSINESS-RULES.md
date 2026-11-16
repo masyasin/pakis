@@ -17,6 +17,14 @@ Setiap aturan punya ID BR-xxx. Test yang membuktikan aturan memuat ID itu di nam
 
 Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settings.update`. Kolom **Publik** = ikut dikirim di `GET /api/v1/config`. Secret (SMTP, token WA, kunci) **tidak** ada di sini, karena tetap di `.env`.
 
+**Tipe & penanda Paket A (PA-19, T-067).**
+- `decimal`: angka desimal disimpan & dibaca sebagai **string** (mis. `"0.8"`), tanpa float; maks 15 digit bulat & 6 digit pecahan. Batas min–max dibandingkan sebagai string.
+- `money`: rupiah `DECIMAL(18,2)` sebagai string berskala 2 (default `50000000` dibaca `"50000000.00"`). Form menampilkan format id-ID (`Rp 50.000.000`).
+- `int_list`: daftar bilangan bulat unik (beda dari `multi enum` yang berisi string). Batas min–max = jumlah butir; aturan per butir (rentang, urutan) memakai validasi khusus kunci.
+- Penanda **`locked`**: hanya `super_admin` yang bisa mengubah (selain itu `403`; field tampil terkunci), wajib konfirmasi password, perubahan tercatat audit `setting.updated`. Berbeda dari grup `security`/`auth` yang hanya butuh konfirmasi password.
+- Penanda **`one_way`** (khusus `bool`): hanya boleh `true → false`; `false → true` (termasuk lewat "Kembalikan default") ditolak `422` pada field itu.
+- Penanda dicatat di kolom Validasi kunci yang memakainya (mis. `inventory.opening_balance_open`, T-086).
+
 ### 2.1 Umum & Branding
 
 | Kunci | Tipe | Default | Validasi | Publik |
@@ -122,6 +130,16 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `retention.security_days` | int | 365 | 90–1825 | ❌ |
 | `retention.import_days` | int | 90 | 7–365 | ❌ |
 | `retention.export_days` | int | 7 | 1–30 | ❌ |
+
+### 2.6 Persetujuan
+
+Grup `approval` (tab "Persetujuan"), dipakai mesin approval generik (BR-153, `15` §9).
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `approval.auto_approve_when_no_rule` | bool | false | — (`false` = dokumen tanpa aturan cocok ditolak `422 APPROVAL_RULE_MISSING`) | ❌ |
+| `approval.default_escalation_hours` | int | 24 | 1–168 | ❌ |
+| `approval.reauth_amount` | money | `50000000` | ≥ 0 | ❌ |
 
 ## 3. Grup Referensi
 

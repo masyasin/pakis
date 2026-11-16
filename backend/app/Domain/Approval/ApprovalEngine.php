@@ -241,10 +241,17 @@ final class ApprovalEngine
         return $request;
     }
 
-    /** Pengaju membatalkan selama belum ada langkah yang diputuskan (BR-153(9)). */
-    public function cancel(User $actor, int $requestId): ApprovalRequest
+    /**
+     * Batalkan permintaan `pending` (diperiksa ulang di bawah kunci):
+     * - pengaju, selama belum ada langkah yang diputuskan (BR-153(9)); alasan opsional;
+     * - pemegang `approvals.configure` (bukan Super Admin), kapan pun selama `pending`, alasan wajib
+     *   5–500 (PA-38: jalan keluar langkah buntu). Dicatat sebagai pembatalan admin.
+     */
+    public function cancel(User $actor, int $requestId, ?string $note = null): ApprovalRequest
     {
-        return DB::transaction(function () use ($actor, $requestId) {
+        $note = $note === null || trim($note) === '' ? null : trim($note);
+
+        return DB::transaction(function () use ($actor, $requestId, $note) {
             $request = ApprovalRequest::query()->lockForUpdate()->find($requestId);
             if ($request === null) {
                 throw new ApiError(ErrorCode::NOT_FOUND);
@@ -253,15 +260,25 @@ final class ApprovalEngine
             if (! $this->visibility->canView($actor, $request)) {
                 throw new ApiError(ErrorCode::NOT_FOUND);
             }
-            if ($request->requester_user_id !== $actor->id) {
-                throw new ApiError(ErrorCode::FORBIDDEN);
-            }
-            if ($request->status !== ApprovalStatus::Pending || $request->steps->contains(fn (ApprovalStep $s) => $s->status->isDecided())) {
+            if ($request->status !== ApprovalStatus::Pending) {
                 throw new ApiError(ErrorCode::STATE_CONFLICT, ['status' => $request->status->value],
-                    'Permintaan yang sudah diputuskan (sebagian) tidak bisa dibatalkan.');
+                    'Permintaan ini sudah tidak menunggu keputusan.');
             }
 
-            $this->close($request, ApprovalStatus::Cancelled);
+            $mode = $this->visibility->cancelMode($actor, $request);
+            if ($mode === null) {
+                if ($request->requester_user_id === $actor->id) {
+                    throw new ApiError(ErrorCode::STATE_CONFLICT, ['status' => $request->status->value],
+                        'Permintaan yang sudah diputuskan (sebagian) tidak bisa dibatalkan.');
+                }
+                throw new ApiError(ErrorCode::FORBIDDEN);
+            }
+            if ($mode === ApprovalVisibility::CANCEL_ADMIN && ($note === null || mb_strlen($note) < 5)) {
+                throw ValidationException::withMessages(['note' => 'Alasan pembatalan minimal 5 karakter.']);
+            }
+
+            $this->close($request, ApprovalStatus::Cancelled, $mode === ApprovalVisibility::CANCEL_ADMIN ? 'admin' : null,
+                $note === null ? null : mb_substr($note, 0, 500));
             $this->lockDocument($request)->onCancelled($request);
 
             return $request;
@@ -378,13 +395,14 @@ final class ApprovalEngine
         $events[] = new ApprovalStepActivated($request, $step);
     }
 
-    private function close(ApprovalRequest $request, ApprovalStatus $status, ?string $reason = null): void
+    private function close(ApprovalRequest $request, ApprovalStatus $status, ?string $reason = null, ?string $note = null): void
     {
         $request->forceFill(['status' => $status, 'decided_at' => now()])->save();
         $this->skipRemaining($request);
         $this->audit->record('approval_request.'.$status->value, $request, ['status' => ApprovalStatus::Pending->value], array_filter([
             'status' => $status->value,
             'reason' => $reason,
+            'note' => $note,
         ]));
     }
 

@@ -248,3 +248,46 @@ test('15 §9.1 notifikasi approval_* membawa tautan ke detail permintaan', funct
         fn ($n) => $n->url() === "/persetujuan/{$request->id}" && $n->toDatabase($approver)['title'] === 'Menunggu persetujuan: Dokumen uji');
     expect(ApprovalRequest::query()->count())->toBe(1);
 });
+
+test('15 §7.4 widget dasbor "Menunggu persetujuan saya": jumlah = tab mine, tautan membuka tab itu; tanpa approvals.view tidak dikirim', function () {
+    $this->a->rule([['permission', 'purchase_orders.approve']]);
+    $approver = $this->a->user(permissions: ['purchase_orders.approve']);
+    $this->a->submit($this->a->user());
+
+    $pending = collect($this->actingAs($approver)->get('/dasbor')->assertOk()->viewData('page')['props']['pending'])->keyBy('key');
+    expect($pending['approvals']['count'])->toBe(1)
+        ->and(urldecode($pending['approvals']['href']))->toEndWith('/persetujuan?filter[tab]=mine');
+
+    $path = parse_url($pending['approvals']['href'], PHP_URL_PATH).'?'.parse_url($pending['approvals']['href'], PHP_URL_QUERY);
+    $this->actingAs($approver)->get($path)->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('listing.pagination.total', 1));
+
+    // HRD calon penyetuju tanpa approvals.view: kotak masuk tetap terbuka, tetapi kartu dasbor tidak.
+    $hrd = $this->a->user('hrd', ['purchase_orders.approve']);
+    $keys = collect($this->actingAs($hrd)->get('/dasbor')->viewData('page')['props']['pending'])->pluck('key');
+    expect($keys)->not->toContain('approvals');
+});
+
+test('PA-38 props can.cancel & cancel_requires_note; pembatalan admin lewat HTTP wajib note', function () {
+    $this->a->rule([['permission', 'purchase_orders.approve'], ['permission', 'purchase_orders.approve_high']]);
+    $first = $this->a->user(permissions: ['purchase_orders.approve']);
+    $requester = $this->a->user();
+    $request = $this->a->submit($requester);
+    $owner = $this->a->user('owner');
+
+    $this->actingAs($requester)->get("/persetujuan/{$request->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('approval.can.cancel', true)->where('approval.cancel_requires_note', false));
+
+    $this->actingAs($first)->post("/persetujuan/{$request->id}/setujui", ['step' => 1]);
+
+    $this->actingAs($requester)->get("/persetujuan/{$request->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('approval.can.cancel', false)->where('approval.cancel_requires_note', false));
+    $this->actingAs($owner)->get("/persetujuan/{$request->id}")
+        ->assertInertia(fn (Assert $page) => $page->where('approval.can.cancel', true)->where('approval.cancel_requires_note', true));
+
+    $this->actingAs($owner)->from("/persetujuan/{$request->id}")->post("/persetujuan/{$request->id}/batalkan")
+        ->assertSessionHasErrors('note');
+    $this->actingAs($owner)->from("/persetujuan/{$request->id}")->post("/persetujuan/{$request->id}/batalkan", ['note' => 'Langkah buntu, ajukan ulang'])
+        ->assertSessionHasNoErrors();
+    expect($request->refresh()->status)->toBe(ApprovalStatus::Cancelled);
+});

@@ -113,7 +113,9 @@ class ApprovalController extends Controller
 
     public function cancel(Request $request, ApprovalRequest $approval, CancelApproval $action): RedirectResponse
     {
-        $action->handle(self::user($request), $approval->id);
+        // Alasan wajib bila dibatalkan pemegang approvals.configure (PA-38), diperiksa mesin.
+        $data = $request->validate(['note' => ['nullable', 'string', 'max:500']]);
+        $action->handle(self::user($request), $approval->id, is_string($data['note'] ?? null) ? $data['note'] : null);
         Inertia::flash('toast', ['type' => 'success', 'message' => 'Permintaan persetujuan dibatalkan.']);
 
         return back(fallback: route('admin.approvals.index'));

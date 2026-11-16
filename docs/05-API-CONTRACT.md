@@ -331,7 +331,7 @@ Mesin approval generik (`15` §4.2, §5, BR-153). Galat domain lewat jalur Inert
 | `admin.approval-delegations.destroy` | DELETE | `/persetujuan/delegasi/{delegation}` | pemberi atau `approvals.configure` (penerima 403, lainnya 404) | Cabut (`is_active=false`) |
 | `admin.approvals.show` | GET | `/persetujuan/{approval}` | calon penyetuju langkah aktif / pengaju / pemutus sebelumnya / `approvals.view` dalam scope; selain itu 404 | |
 | `admin.approvals.approve`/`reject` | POST | `/persetujuan/{approval}/setujui`, `/tolak` | calon penyetuju langkah aktif (BR-153) | `step` wajib (langkah lain → 409 `STATE_CONFLICT`), `note` (tolak wajib 5–500), `current_password` bila nominal ≥ `approval.reauth_amount` dan belum konfirmasi (galat field `current_password`). Pengaju/pembuat/delegasi mereka → 403 `APPROVAL_SELF_DECISION`; bukan giliran → 409. `throttle:20,1` |
-| `admin.approvals.cancel` | POST | `/persetujuan/{approval}/batalkan` | pengaju (lainnya 403) | Hanya selama belum ada langkah diputuskan (409) |
+| `admin.approvals.cancel` | POST | `/persetujuan/{approval}/batalkan` | pengaju, atau `approvals.configure` (bukan `super_admin`, PA-38); lainnya 403 | Pengaju: hanya selama belum ada langkah diputuskan (409). Admin: kapan pun selama `pending`, `note` wajib 5–500 |
 | `admin.approval-rules.index` | GET | `/pengaturan/aturan-persetujuan` | `approvals.configure` | ✅ `approval_rules` |
 | `admin.approval-rules.preview` | POST | `/pengaturan/aturan-persetujuan/pratinjau` | `approvals.configure` | JSON `{data: {rule, auto_approve, missing, steps[]}}` |
 | `admin.approval-rules.create`/`store` | GET/POST | `/pengaturan/aturan-persetujuan/baru`, `/pengaturan/aturan-persetujuan` | `approvals.configure` + konfirmasi password | |

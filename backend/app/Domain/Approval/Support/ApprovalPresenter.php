@@ -33,6 +33,7 @@ final class ApprovalPresenter
     {
         $step = $request->currentStep();
         $canDecide = $this->visibility->canDecideNow($user, $request);
+        $cancelMode = $this->visibility->cancelMode($user, $request);
 
         return [
             'id' => $request->id,
@@ -53,8 +54,9 @@ final class ApprovalPresenter
             'requires_password' => $canDecide && self::needsPassword($request, $passwordRecent),
             'can' => [
                 'decide' => $canDecide,
-                'cancel' => $this->canCancel($user, $request),
+                'cancel' => $cancelMode !== null,
             ],
+            'cancel_requires_note' => $cancelMode === ApprovalVisibility::CANCEL_ADMIN,
         ];
     }
 
@@ -107,12 +109,5 @@ final class ApprovalPresenter
             'note' => $step->note,
             'waiting_for' => $waitingFor,
         ];
-    }
-
-    public function canCancel(User $user, ApprovalRequest $request): bool
-    {
-        return $request->status === ApprovalStatus::Pending
-            && $request->requester_user_id === $user->id
-            && ! $request->steps->contains(fn (ApprovalStep $s) => $s->status->isDecided());
     }
 }

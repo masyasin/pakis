@@ -4,7 +4,9 @@ namespace App\Domain\Approval;
 
 use App\Domain\Access\DataScope;
 use App\Domain\Access\Enums\DataScope as Scope;
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Access\Support\ScopeResolver;
+use App\Domain\Access\Support\WebAccess;
 use App\Domain\Approval\Enums\ApproverType;
 use App\Domain\Approval\Models\ApprovalDelegation;
 use App\Domain\Approval\Models\ApprovalRequest;
@@ -34,6 +36,8 @@ use Spatie\Permission\Exceptions\PermissionDoesNotExist;
  * Delegasi: delegasi aktif hari ini (tanggal lokal) dari calon langsung, untuk jenis dokumen itu.
  * Tidak berantai: hak delegasi hanya dari calon LANGSUNG pemberi, bukan dari delegasi yang ia terima.
  *
+ * Calon juga wajib `isEligible` (aktif, bukan Super Admin — PA-37, punya akses web — PA-36).
+ *
  * Izin dibaca dari role Spatie (`hasPermissionTo`), bukan Gate: Gate::before meloloskan Super Admin
  * untuk semua ability, padahal maker-checker harus berlaku untuk siapa pun (SEC-101).
  */
@@ -46,6 +50,7 @@ final class ApproverResolver
         private readonly DataScope $scope,
         private readonly LocationScope $locations,
         private readonly CorrectionAuthority $authority,
+        private readonly WebAccess $webAccess,
     ) {}
 
     /**
@@ -94,9 +99,21 @@ final class ApproverResolver
         return array_values(array_unique($ids));
     }
 
+    /**
+     * Akun yang boleh menjadi penyetuju dokumen bisnis sama sekali: aktif, bukan Super Admin vendor
+     * (PA-37), dan bisa membuka web admin (PA-36, BR-017 `WebAccess`). Akun yang gagal syarat ini
+     * tidak dihitung calon, sehingga langkah yang hanya punya calon seperti itu langsung tereskalasi.
+     */
+    public function isEligible(User $user): bool
+    {
+        return $user->is_active
+            && ! $user->hasRole(RoleCatalog::SUPER_ADMIN)
+            && $this->webAccess->allows($user);
+    }
+
     public function isDirectCandidate(User $user, ApprovalRequest $request, ApprovalStep $step): bool
     {
-        if (! $user->is_active || $request->isMaker($user->id) || in_array($user->id, $this->decidersOtherThan($request, $step), true)) {
+        if (! $this->isEligible($user) || $request->isMaker($user->id) || in_array($user->id, $this->decidersOtherThan($request, $step), true)) {
             return false;
         }
 
@@ -127,7 +144,7 @@ final class ApproverResolver
         if ($this->isDirectCandidate($user, $request, $step)) {
             return DecisionRight::direct();
         }
-        if (! $user->is_active || in_array($user->id, $this->decidersOtherThan($request, $step), true)) {
+        if (! $this->isEligible($user) || in_array($user->id, $this->decidersOtherThan($request, $step), true)) {
             return DecisionRight::denied();
         }
 

@@ -4,10 +4,12 @@ namespace App\Domain\Approval\Support;
 
 use App\Domain\Access\DataScope;
 use App\Domain\Access\Enums\DataScope as Scope;
+use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Access\Support\ScopeResolver;
 use App\Domain\Approval\ApproverResolver;
 use App\Domain\Approval\Enums\ApprovalStatus;
 use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Approval\Models\ApprovalStep;
 use App\Domain\Organization\Support\LocationScope;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,6 +33,12 @@ final class ApprovalVisibility
     public const TAB_SUBMITTED = 'submitted';
 
     public const TAB_ALL = 'all';
+
+    /** Pembatalan oleh pengaju sebelum ada keputusan (BR-153(9)). */
+    public const CANCEL_REQUESTER = 'requester';
+
+    /** Pembatalan oleh pemegang `approvals.configure`, alasan wajib (PA-38). */
+    public const CANCEL_ADMIN = 'admin';
 
     public function __construct(
         private readonly ApproverResolver $resolver,
@@ -62,8 +70,37 @@ final class ApprovalVisibility
         if ($this->canDecideNow($user, $request)) {
             return true;
         }
+        if (self::isCancelAdmin($user)) {
+            // Pemegang approvals.configure perlu melihat permintaan agar bisa membatalkan (PA-38).
+            return true;
+        }
 
         return $user->can('approvals.view') && $this->resolver->inScope($user, $request);
+    }
+
+    /**
+     * Jalur pembatalan yang berlaku bagi pengguna saat ini, atau null bila tidak boleh. Pengaju
+     * sebelum ada keputusan memakai jalur pengaju walau ia juga pemegang configure (alasan opsional).
+     */
+    public function cancelMode(User $user, ApprovalRequest $request): ?string
+    {
+        if ($request->status !== ApprovalStatus::Pending) {
+            return null;
+        }
+        $decided = $request->steps->contains(fn (ApprovalStep $s) => $s->status->isDecided());
+        if ($request->requester_user_id === $user->id && ! $decided) {
+            return self::CANCEL_REQUESTER;
+        }
+
+        return self::isCancelAdmin($user) ? self::CANCEL_ADMIN : null;
+    }
+
+    /** Pemegang `approvals.configure` dari role (bukan Gate), aktif, bukan Super Admin (PA-37, PA-38). */
+    public static function isCancelAdmin(User $user): bool
+    {
+        return $user->is_active
+            && ! $user->hasRole(RoleCatalog::SUPER_ADMIN)
+            && ApproverResolver::holds($user, 'approvals.configure');
     }
 
     public function canDecideNow(User $user, ApprovalRequest $request): bool

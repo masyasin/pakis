@@ -443,3 +443,57 @@ test('ApprovalRule yang dipakai tidak bisa dihapus dari DB (FK) — sumber keben
 
     expect(fn () => ApprovalRule::query()->whereKey($rule->id)->delete())->toThrow(QueryException::class);
 });
+
+test('PA-36 akun tanpa akses web (role pegawai, BR-017) bukan calon penyetuju: langkah atasan langsung langsung tereskalasi', function () {
+    $this->useRealPermissions();
+    $org = $this->a->org;
+    $boss = $org->employee();
+    $staff = $org->employee(supervisor: $boss);
+    $bossAccount = $this->a->user('pegawai', employee: $boss);
+    $this->a->rule([['direct_supervisor']]);
+    $request = $this->a->submit($this->a->user(), attributes: ['scope_employee_id' => $staff->id]);
+
+    expect($request->steps[0]->resolved_employee_id)->toBe($boss->id)
+        ->and($request->steps[0]->escalated)->toBeTrue()
+        ->and(aprCode(fn () => aprDecide($bossAccount, $request)))->not->toBeNull();
+    Notification::assertNotSentTo($bossAccount, ApprovalRequestedNotification::class);
+
+    $owner = $this->a->user('owner');
+    expect(aprDecide($owner, $request)->status)->toBe(ApprovalStatus::Approved);
+});
+
+test('PA-37 Super Admin bukan calon penyetuju dokumen bisnis dan tidak menerima notifikasi approval_*', function () {
+    $vendor = $this->a->user('super_admin');
+    $this->a->rule([['permission', 'purchase_orders.approve']]);
+    $request = $this->a->submit($this->a->user());
+
+    // Hanya Super Admin yang memegang izin → tidak ada calon → tereskalasi; vendor tetap tidak boleh.
+    expect($request->steps[0]->escalated)->toBeTrue()
+        ->and(aprCode(fn () => aprDecide($vendor, $request)))->toBe(ErrorCode::STATE_CONFLICT);
+    Notification::assertNothingSentTo($vendor);
+
+    $owner = $this->a->user('owner');
+    expect(aprDecide($owner, $request)->status)->toBe(ApprovalStatus::Approved);
+    Notification::assertNothingSentTo($vendor);
+});
+
+test('PA-38 pemegang approvals.configure membatalkan permintaan yang sudah diputuskan sebagian dengan alasan wajib; tercatat pembatalan admin', function () {
+    $this->a->rule([['permission', 'purchase_orders.approve'], ['permission', 'purchase_orders.approve_high']]);
+    $first = $this->a->user(permissions: ['purchase_orders.approve']);
+    $requester = $this->a->user();
+    $request = aprDecide($first, $this->a->submit($requester));
+    $owner = $this->a->user('owner');
+    $vendor = $this->a->user('super_admin');
+    $cancel = app(CancelApproval::class);
+
+    expect(aprCode(fn () => $cancel->handle($requester, $request->id)))->toBe(ErrorCode::STATE_CONFLICT)
+        ->and(aprCode(fn () => $cancel->handle($vendor, $request->id, 'Dibatalkan vendor')))->toBe(ErrorCode::FORBIDDEN)
+        ->and(fn () => $cancel->handle($owner, $request->id))->toThrow(ValidationException::class)
+        ->and(fn () => $cancel->handle($owner, $request->id, 'abc'))->toThrow(ValidationException::class);
+
+    $done = $cancel->handle($owner, $request->id, 'Penyetuju langkah 2 tidak tersedia');
+    expect($done->status)->toBe(ApprovalStatus::Cancelled)
+        ->and(TestDocument::query()->find($request->document_id)->status)->toBe('draft');
+    $audit = AuditLog::query()->where('event', 'approval_request.cancelled')->sole();
+    expect($audit->new_values)->toMatchArray(['status' => 'cancelled', 'reason' => 'admin', 'note' => 'Penyetuju langkah 2 tidak tersedia']);
+});

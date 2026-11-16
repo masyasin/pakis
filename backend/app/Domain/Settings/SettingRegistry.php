@@ -33,6 +33,7 @@ final class SettingRegistry
         'approval' => 'Persetujuan',
         'product' => 'Produk',
         'upload' => 'Unggahan berkas',
+        'inventory' => 'Gudang & stok',
     ];
 
     /** Grup yang perubahannya butuh konfirmasi ulang password (06 §1.6, 07 §4). */
@@ -199,6 +200,7 @@ final class SettingRegistry
             $t('notification.on_approval_requested', SettingType::MultiEnum, [], 'Kanal: menunggu persetujuan', 'Penerima: calon penyetuju langkah aktif, termasuk delegasinya. Notifikasi lonceng selalu dikirim.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.on_approval_decided', SettingType::MultiEnum, [], 'Kanal: persetujuan diputuskan', 'Penerima: pengaju permintaan persetujuan.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.on_approval_escalated', SettingType::MultiEnum, [], 'Kanal: persetujuan tereskalasi', 'Penerima: penyetuju langkah dan pemegang izin eskalasi.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_registration_expiring', SettingType::MultiEnum, [], 'Kanal: izin edar akan habis', 'Penerima: pemegang izin kelola izin edar. Dikirim H-60/30/7/0 sebelum izin habis, sekali per ambang.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.whatsapp_daily_limit', SettingType::Int, 300, 'Batas WhatsApp per hari', 'Lebih dari ini notifikasi dialihkan ke Telegram/Email. 0 = WhatsApp tidak dipakai untuk notifikasi.', min: 0, max: 10000),
             $t('notification.whatsapp_hourly_per_user', SettingType::Int, 5, 'Batas WhatsApp per orang per jam', 'Mencegah nomor dianggap spam dan diblokir.', min: 1, max: 50),
             $t('notification.circuit_failures', SettingType::Int, 5, 'Jeda kanal setelah gagal berturut-turut', 'Kanal yang gagal sebanyak ini dijeda sementara dan notifikasi dialihkan ke cadangan.', min: 3, max: 20),
@@ -225,6 +227,9 @@ final class SettingRegistry
             // 2.8 Unggahan berkas (T-070, SEC-109)
             $t('upload.max_image_kb', SettingType::Int, 5120, 'Ukuran foto maksimal (KB)', 'Berlaku untuk foto JPG/PNG/WebP di semua unggahan Paket A.', min: 512, max: 10240),
             $t('upload.max_pdf_kb', SettingType::Int, 10240, 'Ukuran PDF maksimal (KB)', 'Berlaku untuk dokumen PDF (izin edar, berita acara, dll.).', min: 512, max: 20480),
+
+            // 2.10 Gudang & stok (15 §9). T-071: pengingat izin edar; kunci inventory.* lain ditambah T-077+.
+            $t('inventory.registration_reminder_days', SettingType::Int, 60, 'Ambang "izin edar akan habis" (hari)', 'Izin yang habis dalam jumlah hari ini ditandai akan habis dan memicu pengingat pertama. Pengingat berikutnya H-30, H-7, dan H-0.', min: 7, max: 365),
         ];
     }
 

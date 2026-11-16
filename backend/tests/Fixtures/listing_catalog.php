@@ -48,6 +48,7 @@ return [
     'approval_delegations', // T-067
     'product_categories', // T-069
     'products', // T-070
+    'product_registrations', // T-071
     'stock_locations', // T-068
     'stock_bins', // T-068
     'vehicles', // T-068

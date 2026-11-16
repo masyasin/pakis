@@ -7,10 +7,14 @@ use App\Domain\Catalog\Actions\CreateProduct;
 use App\Domain\Catalog\Actions\UpdateProduct;
 use App\Domain\Catalog\Enums\CategoryKind;
 use App\Domain\Catalog\Enums\ProductStatus;
+use App\Domain\Catalog\Enums\RegistrationStatus;
 use App\Domain\Catalog\Listings\ProductListing;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
+use App\Domain\Catalog\Models\ProductRegistration;
 use App\Domain\Catalog\Models\ProductUnit;
+use App\Domain\Catalog\Queries\ActiveRegistration;
+use App\Domain\Catalog\Support\RegistrationState;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Http\Controllers\Controller;
@@ -43,12 +47,21 @@ class ProductController extends Controller
         'product_unit.updated' => 'Satuan diubah',
         'product_barcode.added' => 'Barcode ditambah',
         'product_barcode.removed' => 'Barcode dihapus',
+        'product_registration.created' => 'Izin edar ditambah',
+        'product_registration.updated' => 'Izin edar diubah',
+        'product_registration.revoked' => 'Izin edar dicabut',
+        'product_registration.expired' => 'Izin edar habis',
     ];
 
     #[UsesListing(ProductListing::class)]
     public function index(Request $request): Response
     {
-        $result = ListingQuery::apply(Product::query()->with(['category:id,name,kind', 'baseUnit:id,name']), new ProductListing, $request)
+        $today = ActiveRegistration::localDate();
+        $query = Product::query()->with(['category:id,name,kind', 'baseUnit:id,name'])
+            ->withMax(['registrations as valid_registration_until' => fn (Builder $q) => $q
+                ->where('status', RegistrationStatus::Active)->where('valid_until', '>=', $today)], 'valid_until')
+            ->withExists('registrations as has_registration');
+        $result = ListingQuery::apply($query, new ProductListing, $request)
             ->through(fn (Product $p) => [
                 'id' => $p->id,
                 'sku' => $p->sku,
@@ -62,6 +75,8 @@ class ProductController extends Controller
                 'status' => $p->status->value,
                 'status_label' => $p->status->label(),
                 'photo_url' => $p->photoUrl(),
+                'requires_registration' => $p->requires_registration,
+                'registration_state' => RegistrationState::of(self::dateOrNull($p->getAttribute('valid_registration_until')), (bool) $p->getAttribute('has_registration')),
             ]);
 
         return Inertia::render('products/index', [
@@ -89,6 +104,10 @@ class ProductController extends Controller
         $units = ProductUnit::query()->with(['unit:id,name,meta', 'barcodes:id,product_unit_id,barcode'])
             ->where('product_id', $product->id)->orderByDesc('is_base')->orderBy('factor')->get();
         $user = self::user($request);
+        $today = ActiveRegistration::localDate();
+        // Berlaku dulu, lalu terbaru; riwayat perpanjangan ikut tampil.
+        $registrations = $product->registrations()->orderByRaw("status = 'active' desc")->orderByDesc('valid_until')->orderByDesc('id')->get();
+        $active = ActiveRegistration::for($product);
 
         return Inertia::render('products/show', [
             'product' => [
@@ -114,8 +133,10 @@ class ProductController extends Controller
                 'barcodes' => $u->barcodes->map(fn ($b) => ['id' => $b->id, 'barcode' => $b->barcode])->values(),
             ])->values(),
             'unitOptions' => self::unitOptions(),
-            'history' => fn () => self::history($product, $units->map(fn (ProductUnit $u) => $u->id)->all()),
-            'can' => ['manage' => $user->can('products.manage')],
+            'registrations' => $registrations->map(fn (ProductRegistration $r) => ProductRegistrationController::row($r, $today))->values(),
+            'registrationState' => RegistrationState::of($active?->valid_until->toDateString(), $registrations->isNotEmpty()),
+            'history' => fn () => self::history($product, $units->map(fn (ProductUnit $u) => $u->id)->all(), $registrations->map(fn (ProductRegistration $r) => $r->id)->all()),
+            'can' => ['manage' => $user->can('products.manage'), 'manage_registrations' => $user->can('product_registrations.manage')],
         ]);
     }
 
@@ -212,24 +233,37 @@ class ProductController extends Controller
      * Riwayat produk & satuannya (20 terakhir). Isi audit produk master bukan data pribadi.
      *
      * @param  array<int, int>  $unitIds
+     * @param  array<int, int>  $registrationIds
      * @return array<int, array<string, mixed>>
      */
-    private static function history(Product $product, array $unitIds): array
+    private static function history(Product $product, array $unitIds, array $registrationIds = []): array
     {
         return AuditLog::query()->with('user:id,name')
             ->whereIn('event', array_keys(self::HISTORY_EVENTS))
             ->where(fn (Builder $q) => $q
                 ->where(fn (Builder $p) => $p->where('auditable_type', $product->getMorphClass())->where('auditable_id', $product->id))
                 ->when($unitIds !== [], fn (Builder $o) => $o->orWhere(fn (Builder $u) => $u
-                    ->where('auditable_type', (new ProductUnit)->getMorphClass())->whereIn('auditable_id', $unitIds))))
+                    ->where('auditable_type', (new ProductUnit)->getMorphClass())->whereIn('auditable_id', $unitIds)))
+                ->when($registrationIds !== [], fn (Builder $o) => $o->orWhere(fn (Builder $r) => $r
+                    ->where('auditable_type', (new ProductRegistration)->getMorphClass())->whereIn('auditable_id', $registrationIds))))
             ->orderByDesc('occurred_at')->orderByDesc('id')->limit(20)->get()
             ->map(fn (AuditLog $log) => [
                 'id' => $log->id,
                 'occurred_at' => $log->occurred_at->toIso8601String(),
                 'actor' => $log->user->name ?? $log->actor_label ?? 'sistem',
                 'event_label' => self::HISTORY_EVENTS[$log->event] ?? $log->event,
-                'reason' => $log->event === 'product.flags_relaxed' ? ($log->new_values['reason'] ?? null) : null,
+                'reason' => match ($log->event) {
+                    'product.flags_relaxed' => $log->new_values['reason'] ?? null,
+                    'product_registration.revoked' => $log->new_values['note'] ?? null,
+                    default => null,
+                },
             ])->values()->all();
+    }
+
+    /** Nilai agregat MAX(DATE) dari driver bisa string atau Carbon; kembalikan Y-m-d atau null. */
+    private static function dateOrNull(mixed $value): ?string
+    {
+        return $value === null ? null : substr((string) $value, 0, 10);
     }
 
     private static function photo(Request $request): ?UploadedFile

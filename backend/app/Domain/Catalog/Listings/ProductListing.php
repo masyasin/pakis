@@ -6,6 +6,7 @@ use App\Domain\Catalog\Enums\CategoryKind;
 use App\Domain\Catalog\Enums\ProductStatus;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
+use App\Domain\Catalog\Support\RegistrationState;
 use App\Models\User;
 use App\Support\Export\ExportableListing;
 use App\Support\Export\ExportColumns;
@@ -21,7 +22,7 @@ use Illuminate\Database\Eloquent\Builder;
  * Daftar produk (`admin.products.index`, katalog 07 §3.4 / 15 §7.3: `products`). Master tanpa
  * scope data (06 §5); hak lihat & ekspor = `products.view` (PA-3, pola Fase 0 untuk master).
  * Pencarian: awal SKU, nama/bahan aktif di mana saja, dan barcode PERSIS (hasil scan pemindai).
- * Filter prinsipal & status izin edar ditambah T-072/T-071 saat datanya ada.
+ * Filter prinsipal ditambah T-072 saat datanya ada.
  */
 final class ProductListing implements ExportableListing
 {
@@ -51,6 +52,10 @@ final class ProductListing implements ExportableListing
                     )),
                 BooleanFilter::make('restricted', 'Pestisida terbatas')->column('is_restricted'),
                 SelectFilter::make('status', 'Status')->column('status')->options(ProductStatus::options()),
+                // BR-152 (T-071): dihitung dari tanggal izin, bukan kolom status saja.
+                SelectFilter::make('registration_status', 'Izin edar')
+                    ->options(RegistrationState::options())
+                    ->using(fn (Builder $query, mixed $value) => RegistrationState::apply($query, (string) $value)),
             ])
             ->sorts([
                 Sort::make('name', 'Nama'),

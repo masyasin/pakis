@@ -59,3 +59,11 @@ Schedule::command('approvals:escalate')
     ->timezone(DisplayTime::timezone())
     ->onOneServer()
     ->withoutOverlapping();
+
+// Izin edar (BR-152, T-071): ubah izin lewat masa berlaku jadi `expired` + pengingat H-60/30/7/0.
+// 00.30 waktu LOKAL agar "hari ini" sama dengan tanggal di izin. Idempoten (`reminder_logs`).
+Schedule::command('catalog:refresh-registrations')
+    ->dailyAt('00:30')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();

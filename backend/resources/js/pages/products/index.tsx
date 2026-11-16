@@ -20,9 +20,17 @@ type ProductRow = {
     status: 'active' | 'inactive' | 'discontinued';
     status_label: string;
     photo_url: string | null;
+    requires_registration: boolean;
+    registration_state: 'active' | 'expiring' | 'expired' | 'none';
 };
 
 type Props = ListingProps<ProductRow> & { canManage: boolean };
+
+const REGISTRATION_LABEL = {
+    expiring: 'Izin akan habis',
+    expired: 'Izin habis',
+    none: 'Belum ada izin',
+} as const;
 
 const STATUS_TONE = {
     active: 'success',
@@ -119,6 +127,19 @@ export default function ProductsIndex({ rows, listing, canManage }: Props) {
                             tone="danger"
                         />
                     )}
+                    {/* BR-152: hanya produk wajib izin yang perlu diberi tanda bila izinnya bermasalah. */}
+                    {r.requires_registration &&
+                        r.registration_state !== 'active' && (
+                            <StatusBadge
+                                status={`registration-${r.registration_state}`}
+                                label={REGISTRATION_LABEL[r.registration_state]}
+                                tone={
+                                    r.registration_state === 'expiring'
+                                        ? 'warning'
+                                        : 'danger'
+                                }
+                            />
+                        )}
                 </span>
             ),
         },

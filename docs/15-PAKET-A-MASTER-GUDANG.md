@@ -1087,6 +1087,8 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.products.export` | GET | `/produk/ekspor` | `products.view` | Listing `products` (master, izin `.view` seperti Fase 0) |
 | `admin.product-registrations.index` | GET | `/izin-edar` | `products.view` | Default filter "berakhir ≤ 60 hari" |
 | `admin.product-registrations.store`/`update` | | `/produk/{product}/izin-edar` | `product_registrations.manage` | Unggah berkas PDF/JPG |
+| `admin.product-registrations.revoke` | POST | `/produk/{product}/izin-edar/{registration}/cabut` | `product_registrations.manage` | Alasan wajib (BR-152), PA-48 |
+| `admin.product-registrations.document` | GET | `/izin-edar/{registration}/berkas` | `products.view` + `signed` | Berkas izin dari disk privat, signed URL 5 menit (SEC-109), PA-48 |
 | `admin.principals.index`/`store`/`update` | | `/prinsipal/...` | `suppliers.view` / `.manage` | |
 | `admin.suppliers.index`/`create`/`store`/`show`/`edit`/`update` | | `/supplier/...` | `suppliers.view` / `.manage` | Rekening termasking, `reveal` tercatat |
 | `admin.suppliers.reveal-account` | POST | `/supplier/{supplier}/rekening` | `suppliers.manage` | `sensitive_data_viewed` |

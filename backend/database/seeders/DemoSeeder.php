@@ -10,6 +10,7 @@ use App\Domain\Catalog\Enums\CategoryKind;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBarcode;
 use App\Domain\Catalog\Models\ProductCategory;
+use App\Domain\Catalog\Models\ProductRegistration;
 use App\Domain\Catalog\Models\ProductUnit;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
@@ -17,6 +18,12 @@ use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\NikCipher;
 use App\Domain\Employee\Support\UsernameSuggester;
+use App\Domain\Fleet\Actions\SaveVehicle;
+use App\Domain\Fleet\Models\Vehicle;
+use App\Domain\Inventory\Actions\SaveStockBin;
+use App\Domain\Inventory\Actions\SaveStockLocation;
+use App\Domain\Inventory\Models\StockBin;
+use App\Domain\Inventory\Models\StockLocation;
 use App\Domain\Numbering\NumberGenerator;
 use App\Domain\Organization\Models\Department;
 use App\Domain\Organization\Models\Location;
@@ -156,6 +163,8 @@ class DemoSeeder extends Seeder
         $this->seedPatterns();
         $this->seedProductCategories();
         $this->seedProducts();
+        $this->seedRegistrations();
+        $this->seedStock();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -276,6 +285,113 @@ class DemoSeeder extends Seeder
                     ])->save();
                 }
             });
+        }
+    }
+
+    /**
+     * Izin edar demo T-071 (nomor fiktif `RI-DEMO-…`, bukan izin Kementan sungguhan). Masa berlaku relatif
+     * terhadap hari ini agar layar selalu punya contoh: berlaku lama, akan habis (25 & 50 hari),
+     * sudah habis (perpanjangan belum ada), dan produk wajib izin tanpa izin sama sekali (DM-MOL-001).
+     * Produk yang sudah punya izin dilewati (idempoten, ubahan dari layar tidak ditimpa).
+     *
+     * @var array<string, array{0: int, 1: string}> SKU => [selisih hari dari hari ini, status]
+     */
+    private const REGISTRATIONS = [
+        'DM-INS-001' => [900, 'active'],
+        'DM-INS-002' => [25, 'active'],
+        'DM-FUN-001' => [700, 'active'],
+        'DM-FUN-002' => [50, 'active'],
+        'DM-HER-001' => [500, 'active'],
+        'DM-HER-002' => [-20, 'expired'],
+        'DM-ROD-001' => [400, 'active'],
+        'DM-PER-001' => [800, 'active'],
+        'DM-PUP-001' => [600, 'active'],
+        'DM-BIB-001' => [300, 'active'],
+        'DM-BIB-002' => [300, 'active'],
+    ];
+
+    private function seedRegistrations(): void
+    {
+        $today = CarbonImmutable::now(DisplayTime::timezone())->startOfDay();
+        $seq = 0;
+        foreach (self::REGISTRATIONS as $sku => $spec) {
+            [$offset, $status] = $spec;
+            $seq++;
+            $product = Product::query()->where('sku', $sku)->first();
+            if ($product === null || ProductRegistration::query()->where('product_id', $product->id)->exists()) {
+                continue;
+            }
+
+            $validUntil = $today->addDays($offset);
+            (new ProductRegistration)->forceFill([
+                'product_id' => $product->id,
+                'registration_no' => sprintf('RI-DEMO-%04d', $seq),
+                'holder_name' => 'PT Prinsipal Demo',
+                'issued_at' => $validUntil->subYears(5)->toDateString(),
+                'valid_until' => $validUntil->toDateString(),
+                'status' => $status,
+            ])->save();
+        }
+    }
+
+    /**
+     * Lokasi stok, rak, dan kendaraan demo (T-068, permintaan Mas 16 Nov 2026). Lewat Action resmi agar
+     * rak karantina `Q-01` dan lokasi stok kendaraan canvas (`KDR-…`) terbentuk sama seperti dari layar.
+     * Plat nomor fiktif berakhiran DM. Yang sudah ada (kode/plat sama) dilewati.
+     *
+     * @var array<string, array{0: string, 1: string, 2: string, 3: list<array{0: string, 1: string, 2: string}>}>
+     *                                                                                                             kode => [nama, tipe, kode lokasi, rak [kode, nama, zona]]
+     */
+    private const STOCK_LOCATIONS = [
+        'GD-UNDAAN' => ['Gudang Utama Undaan', 'warehouse', 'GDG-01', [
+            ['R1-01', 'Rak pestisida cair', 'pesticide'], ['R1-02', 'Rak pestisida tepung', 'pesticide'],
+            ['R2-01', 'Rak pupuk & benih', 'general'], ['R2-02', 'Rak alat semprot', 'general'],
+            ['R3-01', 'Lemari pestisida terbatas', 'restricted'],
+        ]],
+        'TK-KALIREJO' => ['Toko Kalirejo', 'store', 'TKO-01', [
+            ['ETALASE-1', 'Etalase depan', 'general'], ['R1-01', 'Rak pestisida toko', 'pesticide'],
+        ]],
+    ];
+
+    /** @var array<string, array{0: string, 1: string, 2: bool, 3: string, 4: bool}> plat => [nama, jenis, canvas?, kode lokasi asal, aktif?] */
+    private const VEHICLES = [
+        'K9101DM' => ['Truk Engkel Canvas 1', 'truck', true, 'GDG-01', true],
+        'K9102DM' => ['Pickup Canvas Kalirejo', 'pickup', true, 'TKO-01', true],
+        'K9103DM' => ['Pickup Antar Barang', 'pickup', false, 'GDG-01', true],
+        'K5104DM' => ['Motor Sales Lapangan', 'motorcycle', false, 'KTR-01', true],
+        'K9105DM' => ['Truk Lama (cadangan)', 'truck', false, 'GDG-01', false],
+    ];
+
+    private function seedStock(): void
+    {
+        $locations = Location::query()->pluck('id', 'code');
+
+        foreach (self::STOCK_LOCATIONS as $code => $spec) {
+            [$name, $type, $locationCode, $bins] = $spec;
+            $stock = StockLocation::withTrashed()->where('code', $code)->first()
+                ?? app(SaveStockLocation::class)->handle(null, [
+                    'code' => $code, 'name' => $name, 'type' => $type, 'location_id' => $locations[$locationCode] ?? null,
+                    'is_sellable' => true, 'is_active' => true,
+                ], null);
+            foreach ($bins as [$binCode, $binName, $zone]) {
+                if (StockBin::query()->where('stock_location_id', $stock->id)->where('code', $binCode)->exists()) {
+                    continue;
+                }
+                app(SaveStockBin::class)->handle(null, [
+                    'stock_location_id' => $stock->id, 'code' => $binCode, 'name' => $binName, 'zone' => $zone, 'is_active' => true,
+                ], null);
+            }
+        }
+
+        foreach (self::VEHICLES as $plate => $spec) {
+            [$name, $type, $canvas, $home, $active] = $spec;
+            if (Vehicle::withTrashed()->where('plate_no', $plate)->exists()) {
+                continue;
+            }
+            app(SaveVehicle::class)->handle(null, [
+                'plate_no' => $plate, 'name' => $name, 'vehicle_type' => $type, 'is_canvas' => $canvas,
+                'home_location_id' => $locations[$home] ?? null, 'is_active' => $active,
+            ], null);
         }
     }
 

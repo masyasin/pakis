@@ -26,6 +26,7 @@ use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\ProductBarcodeController;
 use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductRegistrationController;
 use App\Http\Controllers\Admin\ProductUnitController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
@@ -403,6 +404,17 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::delete('produk/{product}/barcode/{barcode}', [ProductBarcodeController::class, 'destroy'])->whereNumber(['product', 'barcode'])->name('products.barcodes.destroy');
     });
     Route::get('produk/{product}', [ProductController::class, 'show'])->whereNumber('product')->middleware('can:products.view')->name('products.show');
+
+    // Izin edar (15 §5 `admin.product-registrations.*`, FR-A10, BR-152, T-071). Cabut & unduh berkas
+    // tersirat di task (RevokeRegistration, signed URL 5 menit) — PA-48. Tanpa hapus: riwayat utuh.
+    Route::get('izin-edar', [ProductRegistrationController::class, 'index'])->middleware('can:products.view')->name('product-registrations.index');
+    Route::get('izin-edar/{registration}/berkas', [ProductRegistrationController::class, 'document'])->whereNumber('registration')
+        ->middleware(['can:products.view', 'signed:relative', 'throttle:120,1'])->name('product-registrations.document');
+    Route::middleware('can:product_registrations.manage')->group(function () {
+        Route::post('produk/{product}/izin-edar', [ProductRegistrationController::class, 'store'])->whereNumber('product')->name('product-registrations.store');
+        Route::put('produk/{product}/izin-edar/{registration}', [ProductRegistrationController::class, 'update'])->whereNumber(['product', 'registration'])->name('product-registrations.update');
+        Route::post('produk/{product}/izin-edar/{registration}/cabut', [ProductRegistrationController::class, 'revoke'])->whereNumber(['product', 'registration'])->name('product-registrations.revoke');
+    });
 
     // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).
     // `baru` & `rak` didaftarkan sebelum `{stockLocation}`; di luar dimensi Stok (15 §6.2) → 404 lewat

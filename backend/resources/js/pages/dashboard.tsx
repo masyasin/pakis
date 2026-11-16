@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react';
 import {
     CalendarX2,
     ClipboardPen,
+    FileBadge,
     RefreshCw,
     Smartphone,
     Stamp,
@@ -54,7 +55,13 @@ type Charts = {
 };
 
 type PendingItem = {
-    key: 'approvals' | 'corrections' | 'devices' | 'unscheduled' | 'no_account';
+    key:
+        | 'approvals'
+        | 'corrections'
+        | 'devices'
+        | 'unscheduled'
+        | 'registrations_expiring'
+        | 'no_account';
     count: number;
     href: string;
 };
@@ -90,6 +97,12 @@ const PENDING: Record<
         title: 'Pegawai tanpa jadwal',
         note: 'Belum punya pola shift',
         icon: CalendarX2,
+    },
+    // Izin edar akan habis (15 §7.4, T-071).
+    registrations_expiring: {
+        title: 'Izin edar akan habis',
+        note: 'Produk yang perlu perpanjangan izin',
+        icon: FileBadge,
     },
     no_account: {
         title: 'Pegawai tanpa akun',

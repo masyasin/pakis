@@ -119,6 +119,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `notification.on_approval_requested` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-067, `15` §9.1) | ❌ |
 | `notification.on_approval_decided` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-067) | ❌ |
 | `notification.on_approval_escalated` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-067) | ❌ |
+| `notification.on_registration_expiring` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-071, BR-152) | ❌ |
 | `notification.whatsapp_daily_limit` | int | 300 | 0–10000 | ❌ |
 | `notification.whatsapp_hourly_per_user` | int | 5 | 1–50 | ❌ |
 | `notification.circuit_failures` | int | 5 | 3–20 | ❌ |
@@ -162,6 +163,16 @@ Grup `upload` (tab "Unggahan berkas"), dipakai komponen unggahan bersama `app/Su
 |---|---|---|---|---|
 | `upload.max_image_kb` | int | 5120 | 512–10240 (foto JPG/PNG/WebP) | ❌ |
 | `upload.max_pdf_kb` | int | 10240 | 512–20480 (dokumen PDF) | ❌ |
+
+### 2.10 Gudang & stok
+
+Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok (`15` §9; kunci `inventory.*` lain ditambah T-077 dan seterusnya).
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `inventory.registration_reminder_days` | int | 60 | 7–365 | ❌ |
+
+Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`).
 
 ## 3. Grup Referensi
 

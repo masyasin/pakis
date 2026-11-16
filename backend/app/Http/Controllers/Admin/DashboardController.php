@@ -10,6 +10,8 @@ use App\Domain\Attendance\Listings\AttendanceCorrectionListing;
 use App\Domain\Attendance\Listings\ScheduleListing;
 use App\Domain\Attendance\Queries\AttendanceInsights;
 use App\Domain\Attendance\Queries\TodaySummary;
+use App\Domain\Catalog\Listings\ProductListing;
+use App\Domain\Catalog\Models\Product;
 use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Device\Models\Device;
 use App\Domain\Employee\Enums\EmployeeStatus;
@@ -84,6 +86,15 @@ class DashboardController extends Controller
                     new ScheduleListing,
                     'admin.schedules.index',
                     ['filter' => ['unscheduled' => '1']],
+                ) : null,
+                // Izin edar akan habis (15 §7.4, T-071): jumlah PRODUK yang izin berlakunya habis
+                // ≤ hari ini + `inventory.registration_reminder_days`; tautan ke daftar produk tersaring.
+                $user->can('products.view') ? self::item(
+                    'registrations_expiring',
+                    Product::query(),
+                    new ProductListing,
+                    'admin.products.index',
+                    ['filter' => ['registration_status' => 'expiring']],
                 ) : null,
                 $user->can('employees.view') ? self::item(
                     'no_account',

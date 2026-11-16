@@ -2,7 +2,9 @@
 
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBarcode;
+use App\Domain\Catalog\Models\ProductRegistration;
 use App\Domain\Catalog\Models\ProductUnit;
+use App\Domain\Catalog\Queries\ActiveRegistration;
 use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\NikCipher;
@@ -101,6 +103,31 @@ test('T-070 data demo: 14 produk fiktif dengan satuan dasar, kemasan besar, dan 
     $pesticide = Product::query()->where('sku', 'DM-HER-002')->sole();
     expect($tool->tracks_batch || $tool->requires_registration)->toBeFalse()
         ->and($pesticide->tracks_batch && $pesticide->tracks_expiry && $pesticide->requires_registration && $pesticide->is_restricted)->toBeTrue();
+});
+
+test('T-071 data demo izin edar: contoh berlaku, akan habis, habis, dan tanpa izin; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    $active = fn (string $sku) => ActiveRegistration::for(Product::query()->where('sku', $sku)->sole());
+    expect(ProductRegistration::query()->count())->toBe(11)
+        ->and($active('DM-INS-001'))->not->toBeNull()
+        ->and($active('DM-INS-002'))->not->toBeNull()
+        ->and($active('DM-HER-002'))->toBeNull()
+        ->and($active('DM-MOL-001'))->toBeNull()
+        ->and(ProductRegistration::query()->pluck('registration_no')->every(fn (string $no) => str_starts_with($no, 'RI-DEMO-')))->toBeTrue();
+});
+
+test('T-068 data demo: gudang & toko dengan rak (+ Q-01), 5 kendaraan fiktif, canvas punya lokasi stok; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    $locations = DB::table('stock_locations')->pluck('type', 'code')->all();
+    expect($locations)->toMatchArray(['GD-UNDAAN' => 'warehouse', 'TK-KALIREJO' => 'store', 'KDR-K9101DM' => 'vehicle', 'KDR-K9102DM' => 'vehicle'])
+        ->and(DB::table('vehicles')->count())->toBe(5)
+        ->and(DB::table('vehicles')->where('is_canvas', true)->whereNull('home_location_id')->count())->toBe(0)
+        ->and(DB::table('stock_bins')->where('code', 'Q-01')->count())->toBe(2)
+        ->and(DB::table('stock_bins')->count())->toBe(9);
 });
 
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {

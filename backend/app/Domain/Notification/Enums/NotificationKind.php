@@ -23,6 +23,8 @@ enum NotificationKind: string
     case ApprovalRequested = 'approval_requested';
     case ApprovalDecided = 'approval_decided';
     case ApprovalEscalated = 'approval_escalated';
+    // Paket A (15 §9.1)
+    case RegistrationExpiring = 'registration_expiring';
 
     public function label(): string
     {
@@ -41,6 +43,7 @@ enum NotificationKind: string
             self::ApprovalRequested => 'Menunggu persetujuan',
             self::ApprovalDecided => 'Persetujuan diputuskan',
             self::ApprovalEscalated => 'Persetujuan tereskalasi',
+            self::RegistrationExpiring => 'Izin edar akan habis',
         };
     }
 

@@ -125,6 +125,12 @@ class Product extends Model
         return $this->hasMany(ProductBarcode::class);
     }
 
+    /** @return HasMany<ProductRegistration, $this> izin edar, termasuk yang habis/dicabut (riwayat perpanjangan) */
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(ProductRegistration::class);
+    }
+
     /** URL foto relatif (`/storage/...`, lolos CSP `img-src 'self'`), atau null. */
     public function photoUrl(): ?string
     {

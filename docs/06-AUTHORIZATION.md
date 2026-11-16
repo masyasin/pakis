@@ -214,6 +214,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | — | — | Dasbor | `dashboard.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | — | — | Persetujuan (angka = menunggu keputusan saya) | `approvals.view`, atau ada yang menunggu keputusannya (PA-27) | ✅ | ❌ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Produk (T-070; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Distribusi | Master | Izin Edar (T-071; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Kategori (T-069; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Lokasi Stok (T-068; role Paket A: `15` §6.4) | `stock_locations.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Kendaraan (T-068; role Paket A: `15` §6.4) | `vehicles.view` | ✅ | ✅ | ❌ | ✅ | ✅ |

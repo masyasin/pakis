@@ -16,6 +16,9 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
+import type { RegistrationRow } from '@/components/catalog/registration-ui';
+import { RegistrationsPanel } from '@/components/catalog/registrations-panel';
+import type { RegistrationState } from '@/components/catalog/registrations-panel';
 import { FormStatus } from '@/components/form-status';
 import {
     DetailCard,
@@ -93,8 +96,10 @@ type Props = {
     product: Product;
     units: UnitRow[];
     unitOptions: { value: number; label: string; integer_only: boolean }[];
+    registrations: RegistrationRow[];
+    registrationState: RegistrationState;
     history?: HistoryRow[];
-    can: { manage: boolean };
+    can: { manage: boolean; manage_registrations: boolean };
 };
 
 const SAVE_OPTIONS = { preserveScroll: true, preserveState: true } as const;
@@ -130,6 +135,8 @@ export default function ProductShow({
     product,
     units,
     unitOptions,
+    registrations,
+    registrationState,
     history,
     can,
 }: Props) {
@@ -227,10 +234,12 @@ export default function ProductShow({
                     />
                 )}
                 {active === 'izin' && (
-                    <EmptyPanel
-                        icon={ShieldCheck}
-                        title="Izin edar belum tersedia"
-                        text="Pencatatan nomor izin edar dan masa berlakunya dibangun di tahap berikutnya (T-071)."
+                    <RegistrationsPanel
+                        productId={product.id}
+                        requiresRegistration={product.requires_registration}
+                        state={registrationState}
+                        rows={registrations}
+                        canManage={can.manage_registrations}
                     />
                 )}
                 {active === 'harga' && (

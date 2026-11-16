@@ -53,8 +53,10 @@ class DashboardController extends Controller
             'refresh_seconds' => (int) setting('ui.dashboard_refresh_seconds'),
             'pending' => array_values(array_filter([
                 // "Menunggu persetujuan saya" (15 §7.4). Basis sama dengan ApprovalController::index
-                // tab "Menunggu saya" (calon penyetuju dihitung mesin, ApprovalVisibility).
-                $user->can('approvals.view') ? self::item(
+                // tab "Menunggu saya" (calon penyetuju dihitung mesin, ApprovalVisibility). PA-27:
+                // calon penyetuju tanpa `approvals.view` (atasan langsung, kepala lokasi) tetap boleh
+                // membuka tab itu, jadi kartu juga muncul untuknya selama ada yang menunggu.
+                $user->can('approvals.view') || $approvals->pendingCountFor($user) > 0 ? self::item(
                     'approvals',
                     $approvals->constrainTab(ApprovalRequest::query(), $user, ApprovalVisibility::TAB_MINE),
                     new ApprovalListing,

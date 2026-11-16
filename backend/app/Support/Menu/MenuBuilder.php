@@ -81,7 +81,13 @@ final class MenuBuilder
         $groups = [];
 
         foreach (self::ITEMS as [$group, $title, $icon, $permission, $route]) {
-            if (! Route::has($route) || ! $user->can($permission)) {
+            if (! Route::has($route)) {
+                continue;
+            }
+            $badge = self::badge($route, $user);
+            // PA-27: item berangka (Persetujuan) juga tampil bagi calon penyetuju tanpa izinnya selama
+            // ada yang menunggu dia — route-nya memang terbuka untuk mereka (tab "Menunggu saya").
+            if (! $user->can($permission) && ! ($badge !== null && $badge > 0)) {
                 continue;
             }
 
@@ -89,7 +95,6 @@ final class MenuBuilder
             $groups[$key] ??= ['section' => $group === null ? null : self::SECTIONS[$group], 'title' => $group, 'items' => []];
             // Relatif: aman dari perbedaan host APP_URL dan cocok untuk penanda item aktif.
             $item = ['title' => $title, 'href' => route($route, absolute: false), 'icon' => $icon];
-            $badge = self::badge($route, $user);
             if ($badge !== null) {
                 $item['badge'] = $badge;
             }

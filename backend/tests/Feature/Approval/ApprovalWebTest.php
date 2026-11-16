@@ -250,7 +250,7 @@ test('15 §9.1 notifikasi approval_* membawa tautan ke detail permintaan', funct
     expect(ApprovalRequest::query()->count())->toBe(1);
 });
 
-test('15 §7.4 widget dasbor "Menunggu persetujuan saya": jumlah = tab mine, tautan membuka tab itu; tanpa approvals.view tidak dikirim', function () {
+test('15 §7.4 widget dasbor "Menunggu persetujuan saya": jumlah = tab mine, tautan membuka tab itu', function () {
     $this->a->rule([['permission', 'purchase_orders.approve']]);
     $approver = $this->a->user(permissions: ['purchase_orders.approve']);
     $this->a->submit($this->a->user());
@@ -262,11 +262,33 @@ test('15 §7.4 widget dasbor "Menunggu persetujuan saya": jumlah = tab mine, tau
     $path = parse_url($pending['approvals']['href'], PHP_URL_PATH).'?'.parse_url($pending['approvals']['href'], PHP_URL_QUERY);
     $this->actingAs($approver)->get($path)->assertOk()
         ->assertInertia(fn (Assert $page) => $page->where('listing.pagination.total', 1));
+});
 
-    // HRD calon penyetuju tanpa approvals.view: kotak masuk tetap terbuka, tetapi kartu dasbor tidak.
-    $hrd = $this->a->user('hrd', ['purchase_orders.approve']);
-    $keys = collect($this->actingAs($hrd)->get('/dasbor')->viewData('page')['props']['pending'])->pluck('key');
-    expect($keys)->not->toContain('approvals');
+test('PA-27 atasan langsung TANPA approvals.view yang jadi penyetuju: kartu dasbor & menu Persetujuan muncul (angka = tab mine); tanpa yang menunggu tidak muncul', function () {
+    $org = $this->a->org;
+    $boss = $org->employee();
+    $staff = $org->employee(supervisor: $boss);
+    $this->a->rule([['direct_supervisor']]);
+    // HRD tidak memegang approvals.view (15 §6.4); di sini ia atasan langsung pegawai dokumen.
+    $bossUser = $this->a->user('hrd', employee: $boss);
+    $idle = $this->a->user('hrd');
+    $this->a->submit($this->a->user(), attributes: ['scope_employee_id' => $staff->id]);
+    expect($bossUser->can('approvals.view'))->toBeFalse();
+
+    $props = $this->actingAs($bossUser)->get('/dasbor')->assertOk()->viewData('page')['props'];
+    $card = collect($props['pending'])->keyBy('key')['approvals'] ?? null;
+    expect($card)->not->toBeNull()
+        ->and($card['count'])->toBe(1);
+    $menu = collect($props['auth']['menu'])->flatMap(fn ($g) => $g['items'])->keyBy('title');
+    expect($menu['Persetujuan']['badge'] ?? null)->toBe(1);
+
+    $path = parse_url($card['href'], PHP_URL_PATH).'?'.parse_url($card['href'], PHP_URL_QUERY);
+    $this->actingAs($bossUser)->get($path)->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('listing.pagination.total', 1));
+
+    $idleProps = $this->actingAs($idle)->get('/dasbor')->assertOk()->viewData('page')['props'];
+    expect(collect($idleProps['pending'])->pluck('key'))->not->toContain('approvals')
+        ->and(collect($idleProps['auth']['menu'])->flatMap(fn ($g) => $g['items'])->pluck('title'))->not->toContain('Persetujuan');
 });
 
 test('PA-38 props can.cancel & cancel_requires_note; pembatalan admin lewat HTTP wajib note', function () {

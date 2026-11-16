@@ -1257,7 +1257,7 @@ Catatan penting:
 
 | Grup | Menu | Syarat |
 |---|---|---|
-| — | Persetujuan (dengan angka menunggu) | `approvals.view` |
+| — | Persetujuan (dengan angka menunggu) | `approvals.view`, atau ada permintaan yang menunggu keputusan pengguna (PA-27) |
 | Penjualan | Pelanggan · Verifikasi Kios · Area Penjualan · Daftar Harga · Promo | `customers.view` · `customers.verify` · `sales_areas.view` · `prices.view` · `promotions.view` |
 | Persediaan | Posisi Stok · Kartu Stok · Mutasi · Stock Opname · Pemusnahan · Nomor Seri · Telusur Batch | `stock.view` · `stock.view` · `stock_transfers.view` · `stock_opnames.view` · `stock_disposals.manage` · `stock.view` · `stock.view` |
 | Pembelian | Purchase Order · Penerimaan Barang · Retur ke Prinsipal · Supplier · Prinsipal | `purchase_orders.view` · `goods_receipts.view` · `purchase_returns.manage` · `suppliers.view` · `suppliers.view` |
@@ -1459,7 +1459,7 @@ Total listing setelah Paket A: listing Fase 0 + 29 listing baru (jumlah Fase 0 b
 
 | Widget | Untuk | Isi |
 |---|---|---|
-| Menunggu persetujuan saya | Semua pemegang `approvals.view` | Jumlah + 5 teratas, tertua dulu |
+| Menunggu persetujuan saya | Semua pemegang `approvals.view`, dan calon penyetuju tanpa izin itu selama ada yang menunggu keputusannya (PA-27) | Jumlah + 5 teratas, tertua dulu |
 | Stok mendekati ED | `stock.view` | Nilai & jumlah batch ED ≤ 30/60/90 hari per lokasi (scope) |
 | Izin edar akan habis | `products.view` | Jumlah produk izin berakhir ≤ 60 hari |
 | Stok di bawah minimum | `stock.view` | 10 produk terbawah per lokasi |

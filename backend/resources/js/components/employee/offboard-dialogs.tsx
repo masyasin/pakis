@@ -4,17 +4,11 @@ import { ModePicker } from '@/components/employee/assignments-panel';
 import type { ModeOption } from '@/components/employee/assignments-panel';
 import InputError from '@/components/input-error';
 import { AsyncSelect } from '@/components/pakis/async-select';
+import { FormDialog } from '@/components/pakis/form-dialog';
 import { NativeSelect } from '@/components/pakis/native-select';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -113,198 +107,168 @@ export function OffboardDialog({
     };
 
     return (
-        <Dialog open onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-                <form onSubmit={submit} className="grid gap-4" noValidate>
-                    <DialogTitle className="flex items-center gap-2">
-                        <UserX
-                            className="size-5 text-destructive"
-                            aria-hidden="true"
-                        />
-                        Nonaktifkan {employeeName}
-                    </DialogTitle>
-                    <DialogDescription>
-                        Data pegawai, riwayat penugasan, presensi, dan riwayat
-                        perubahan tetap tersimpan. Akses login dan Pakis Pro
-                        dicabut saat itu juga.
-                    </DialogDescription>
+        <FormDialog
+            open
+            onOpenChange={(v) => !v && onClose()}
+            icon={UserX}
+            tone="danger"
+            size="lg"
+            title={`Nonaktifkan ${employeeName}`}
+            description="Data pegawai, riwayat penugasan, presensi, dan riwayat perubahan tetap tersimpan. Akses login dan Pakis Pro dicabut saat itu juga."
+            onSubmit={submit}
+            noValidate
+            footer={
+                <>
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        Batal
+                    </Button>
+                    <Button
+                        type="submit"
+                        variant="destructive"
+                        disabled={
+                            form.processing ||
+                            !nameMatches ||
+                            form.data.current_password === '' ||
+                            form.data.exit_reason_id === ''
+                        }
+                    >
+                        {form.processing && <Spinner />}
+                        Nonaktifkan Pegawai
+                    </Button>
+                </>
+            }
+        >
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="exit_date">Tanggal keluar</Label>
+                    <Input
+                        id="exit_date"
+                        type="date"
+                        min={impact.earliest_exit}
+                        max={today}
+                        value={form.data.exit_date}
+                        onChange={(e) =>
+                            form.setData('exit_date', e.target.value)
+                        }
+                        aria-invalid={err.exit_date ? true : undefined}
+                    />
+                    <InputError message={err.exit_date} />
+                </div>
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="exit_reason_id">Alasan</Label>
+                    <NativeSelect
+                        id="exit_reason_id"
+                        value={form.data.exit_reason_id}
+                        onChange={(e) =>
+                            form.setData('exit_reason_id', e.target.value)
+                        }
+                        aria-invalid={err.exit_reason_id ? true : undefined}
+                    >
+                        <option value="">Pilih alasan…</option>
+                        {reasons.map((r) => (
+                            <option key={r.value} value={r.value}>
+                                {r.label}
+                            </option>
+                        ))}
+                    </NativeSelect>
+                    <InputError message={err.exit_reason_id} />
+                </div>
+                <div className="grid content-start gap-2 sm:col-span-2">
+                    <Label htmlFor="exit_note">
+                        Catatan{' '}
+                        <span className="font-normal text-muted-foreground">
+                            (opsional)
+                        </span>
+                    </Label>
+                    <Input
+                        id="exit_note"
+                        value={form.data.exit_note}
+                        maxLength={255}
+                        placeholder="Mis. surat pengunduran diri 1 Nov 2026"
+                        onChange={(e) =>
+                            form.setData('exit_note', e.target.value)
+                        }
+                    />
+                    <InputError message={err.exit_note} />
+                </div>
+            </div>
 
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="exit_date">Tanggal keluar</Label>
-                            <Input
-                                id="exit_date"
-                                type="date"
-                                min={impact.earliest_exit}
-                                max={today}
-                                value={form.data.exit_date}
-                                onChange={(e) =>
-                                    form.setData('exit_date', e.target.value)
-                                }
-                                aria-invalid={err.exit_date ? true : undefined}
-                            />
-                            <InputError message={err.exit_date} />
-                        </div>
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="exit_reason_id">Alasan</Label>
-                            <NativeSelect
-                                id="exit_reason_id"
-                                value={form.data.exit_reason_id}
-                                onChange={(e) =>
-                                    form.setData(
-                                        'exit_reason_id',
-                                        e.target.value,
-                                    )
-                                }
-                                aria-invalid={
-                                    err.exit_reason_id ? true : undefined
-                                }
-                            >
-                                <option value="">Pilih alasan…</option>
-                                {reasons.map((r) => (
-                                    <option key={r.value} value={r.value}>
-                                        {r.label}
-                                    </option>
-                                ))}
-                            </NativeSelect>
-                            <InputError message={err.exit_reason_id} />
-                        </div>
-                        <div className="grid content-start gap-2 sm:col-span-2">
-                            <Label htmlFor="exit_note">
-                                Catatan{' '}
-                                <span className="font-normal text-muted-foreground">
-                                    (opsional)
-                                </span>
-                            </Label>
-                            <Input
-                                id="exit_note"
-                                value={form.data.exit_note}
-                                maxLength={255}
-                                placeholder="Mis. surat pengunduran diri 1 Nov 2026"
-                                onChange={(e) =>
-                                    form.setData('exit_note', e.target.value)
-                                }
-                            />
-                            <InputError message={err.exit_note} />
-                        </div>
-                    </div>
+            <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
+                <p className="mb-1.5 flex items-center gap-2 font-semibold text-destructive">
+                    <AlertTriangle className="size-4" aria-hidden="true" />
+                    Dampak
+                </p>
+                <ul className="list-disc space-y-0.5 pl-5 text-foreground/85">
+                    {impactLines(impact).map((line) => (
+                        <li key={line}>{line}</li>
+                    ))}
+                </ul>
+            </div>
 
-                    <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm">
-                        <p className="mb-1.5 flex items-center gap-2 font-semibold text-destructive">
-                            <AlertTriangle
-                                className="size-4"
-                                aria-hidden="true"
-                            />
-                            Dampak
-                        </p>
-                        <ul className="list-disc space-y-0.5 pl-5 text-foreground/85">
-                            {impactLines(impact).map((line) => (
-                                <li key={line}>{line}</li>
-                            ))}
-                        </ul>
-                    </div>
+            {impact.subordinates.length > 0 && (
+                <div className="rounded-lg border bg-status-info-bg p-3 text-sm text-status-info">
+                    <p className="mb-1.5 font-semibold">
+                        {impact.subordinates.length} bawahan masih menunjuk
+                        pegawai ini sebagai atasan
+                    </p>
+                    <p className="mb-2 text-xs">
+                        Sebaiknya pindahkan atasan mereka lebih dulu (Ubah
+                        penugasan di detail pegawai masing-masing).
+                    </p>
+                    <ul className="flex flex-wrap gap-1.5">
+                        {impact.subordinates.map((s) => (
+                            <li key={s.id}>
+                                <Link
+                                    href={
+                                        show(s.id, {
+                                            query: { tab: 'penugasan' },
+                                        }).url
+                                    }
+                                    className="inline-flex items-center gap-1 rounded-full border bg-card px-2.5 py-0.5 text-xs text-foreground hover:border-primary"
+                                >
+                                    {s.name}
+                                    <span className="font-mono text-muted-foreground">
+                                        {s.number}
+                                    </span>
+                                </Link>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+            )}
 
-                    {impact.subordinates.length > 0 && (
-                        <div className="rounded-lg border bg-status-info-bg p-3 text-sm text-status-info">
-                            <p className="mb-1.5 font-semibold">
-                                {impact.subordinates.length} bawahan masih
-                                menunjuk pegawai ini sebagai atasan
-                            </p>
-                            <p className="mb-2 text-xs">
-                                Sebaiknya pindahkan atasan mereka lebih dulu
-                                (Ubah penugasan di detail pegawai
-                                masing-masing).
-                            </p>
-                            <ul className="flex flex-wrap gap-1.5">
-                                {impact.subordinates.map((s) => (
-                                    <li key={s.id}>
-                                        <Link
-                                            href={
-                                                show(s.id, {
-                                                    query: { tab: 'penugasan' },
-                                                }).url
-                                            }
-                                            className="inline-flex items-center gap-1 rounded-full border bg-card px-2.5 py-0.5 text-xs text-foreground hover:border-primary"
-                                        >
-                                            {s.name}
-                                            <span className="font-mono text-muted-foreground">
-                                                {s.number}
-                                            </span>
-                                        </Link>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    )}
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="confirm_name">
-                                Ketik nama pegawai:{' '}
-                                <span className="font-semibold">
-                                    {employeeName}
-                                </span>
-                            </Label>
-                            <Input
-                                id="confirm_name"
-                                value={form.data.confirm_name}
-                                autoComplete="off"
-                                onChange={(e) =>
-                                    form.setData('confirm_name', e.target.value)
-                                }
-                                aria-invalid={
-                                    err.confirm_name ? true : undefined
-                                }
-                            />
-                            <InputError message={err.confirm_name} />
-                        </div>
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="offboard_password">
-                                Password Anda
-                            </Label>
-                            <PasswordInput
-                                id="offboard_password"
-                                value={form.data.current_password}
-                                autoComplete="current-password"
-                                onChange={(e) =>
-                                    form.setData(
-                                        'current_password',
-                                        e.target.value,
-                                    )
-                                }
-                                aria-invalid={
-                                    err.current_password ? true : undefined
-                                }
-                            />
-                            <InputError message={err.current_password} />
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                        >
-                            Batal
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="destructive"
-                            disabled={
-                                form.processing ||
-                                !nameMatches ||
-                                form.data.current_password === '' ||
-                                form.data.exit_reason_id === ''
-                            }
-                        >
-                            {form.processing && <Spinner />}
-                            Nonaktifkan Pegawai
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="confirm_name">
+                        Ketik nama pegawai:{' '}
+                        <span className="font-semibold">{employeeName}</span>
+                    </Label>
+                    <Input
+                        id="confirm_name"
+                        value={form.data.confirm_name}
+                        autoComplete="off"
+                        onChange={(e) =>
+                            form.setData('confirm_name', e.target.value)
+                        }
+                        aria-invalid={err.confirm_name ? true : undefined}
+                    />
+                    <InputError message={err.confirm_name} />
+                </div>
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="offboard_password">Password Anda</Label>
+                    <PasswordInput
+                        id="offboard_password"
+                        value={form.data.current_password}
+                        autoComplete="current-password"
+                        onChange={(e) =>
+                            form.setData('current_password', e.target.value)
+                        }
+                        aria-invalid={err.current_password ? true : undefined}
+                    />
+                    <InputError message={err.current_password} />
+                </div>
+            </div>
+        </FormDialog>
     );
 }
 
@@ -353,158 +317,133 @@ export function RehireDialog({
     };
 
     return (
-        <Dialog open onOpenChange={(v) => !v && onClose()}>
-            <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-                <form onSubmit={submit} className="grid gap-4" noValidate>
-                    <DialogTitle className="flex items-center gap-2">
-                        <UserCheck
-                            className="size-5 text-primary"
-                            aria-hidden="true"
-                        />
-                        Aktifkan kembali {employeeName}
-                    </DialogTitle>
-                    <DialogDescription>
-                        Tanggal aktif kembali menjadi tanggal masuk baru (masa
-                        kerja dihitung ulang). Tanggal masuk & keluar lama tetap
-                        ada di Riwayat Perubahan.
-                    </DialogDescription>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="rehire_date">
-                                Tanggal aktif kembali
-                            </Label>
-                            <Input
-                                id="rehire_date"
-                                type="date"
-                                max={today}
-                                min={exitDate ?? undefined}
-                                value={form.data.rehire_date}
-                                onChange={(e) =>
-                                    form.setData('rehire_date', e.target.value)
-                                }
-                                aria-invalid={
-                                    err.rehire_date ? true : undefined
-                                }
-                            />
-                            <InputError message={err.rehire_date} />
-                        </div>
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="rh_position">Jabatan</Label>
-                            <AsyncSelect
-                                id="rh_position"
-                                source="positions"
-                                value={one(form.data.position_id)}
-                                onChange={(v) =>
-                                    form.setData('position_id', first(v))
-                                }
-                            />
-                            <InputError message={err.position_id} />
-                        </div>
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="rh_location">Lokasi tugas</Label>
-                            <AsyncSelect
-                                id="rh_location"
-                                source="locations"
-                                value={one(form.data.location_id)}
-                                onChange={(v) =>
-                                    form.setData('location_id', first(v))
-                                }
-                            />
-                            <InputError message={err.location_id} />
-                        </div>
-                        <div className="grid content-start gap-2">
-                            <Label htmlFor="rh_supervisor">
-                                Atasan langsung{' '}
-                                <span className="font-normal text-muted-foreground">
-                                    (opsional)
-                                </span>
-                            </Label>
-                            <AsyncSelect
-                                id="rh_supervisor"
-                                source="employees"
-                                params={{ exclude: String(employeeId) }}
-                                value={one(form.data.supervisor_employee_id)}
-                                placeholder="Cari nama atau nomor pegawai"
-                                onChange={(v) =>
-                                    form.setData(
-                                        'supervisor_employee_id',
-                                        first(v),
-                                    )
-                                }
-                            />
-                            <InputError message={err.supervisor_employee_id} />
-                        </div>
-                    </div>
-
-                    <ModePicker
-                        value={form.data.attendance_mode}
-                        modes={modes}
-                        onChange={(v) => form.setData('attendance_mode', v)}
-                        error={err.attendance_mode}
+        <FormDialog
+            open
+            onOpenChange={(v) => !v && onClose()}
+            icon={UserCheck}
+            size="lg"
+            title={`Aktifkan kembali ${employeeName}`}
+            description="Tanggal aktif kembali menjadi tanggal masuk baru (masa kerja dihitung ulang). Tanggal masuk & keluar lama tetap ada di Riwayat Perubahan."
+            onSubmit={submit}
+            noValidate
+            footer={
+                <>
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        Batal
+                    </Button>
+                    <Button
+                        type="submit"
+                        disabled={
+                            form.processing || form.data.current_password === ''
+                        }
+                    >
+                        {form.processing && <Spinner />}
+                        Aktifkan Kembali
+                    </Button>
+                </>
+            }
+        >
+            <div className="grid gap-4 sm:grid-cols-2">
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="rehire_date">Tanggal aktif kembali</Label>
+                    <Input
+                        id="rehire_date"
+                        type="date"
+                        max={today}
+                        min={exitDate ?? undefined}
+                        value={form.data.rehire_date}
+                        onChange={(e) =>
+                            form.setData('rehire_date', e.target.value)
+                        }
+                        aria-invalid={err.rehire_date ? true : undefined}
                     />
+                    <InputError message={err.rehire_date} />
+                </div>
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="rh_position">Jabatan</Label>
+                    <AsyncSelect
+                        id="rh_position"
+                        source="positions"
+                        value={one(form.data.position_id)}
+                        onChange={(v) => form.setData('position_id', first(v))}
+                    />
+                    <InputError message={err.position_id} />
+                </div>
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="rh_location">Lokasi tugas</Label>
+                    <AsyncSelect
+                        id="rh_location"
+                        source="locations"
+                        value={one(form.data.location_id)}
+                        onChange={(v) => form.setData('location_id', first(v))}
+                    />
+                    <InputError message={err.location_id} />
+                </div>
+                <div className="grid content-start gap-2">
+                    <Label htmlFor="rh_supervisor">
+                        Atasan langsung{' '}
+                        <span className="font-normal text-muted-foreground">
+                            (opsional)
+                        </span>
+                    </Label>
+                    <AsyncSelect
+                        id="rh_supervisor"
+                        source="employees"
+                        params={{ exclude: String(employeeId) }}
+                        value={one(form.data.supervisor_employee_id)}
+                        placeholder="Cari nama atau nomor pegawai"
+                        onChange={(v) =>
+                            form.setData('supervisor_employee_id', first(v))
+                        }
+                    />
+                    <InputError message={err.supervisor_employee_id} />
+                </div>
+            </div>
 
-                    {hasAccount && (
-                        <div className="flex items-start gap-2">
-                            <Checkbox
-                                id="activate_account"
-                                checked={form.data.activate_account}
-                                disabled={!canActivateAccount}
-                                onCheckedChange={(v) =>
-                                    form.setData('activate_account', v === true)
-                                }
-                            />
-                            <Label
-                                htmlFor="activate_account"
-                                className="grid gap-0.5 text-sm font-normal"
-                            >
-                                Aktifkan juga akun login
-                                <span className="text-xs text-muted-foreground">
-                                    {canActivateAccount
-                                        ? 'HP Pakis Pro perlu didaftarkan & disetujui ulang.'
-                                        : 'Anda tidak berwenang mengaktifkan akun; minta Administrator.'}
-                                </span>
-                            </Label>
-                        </div>
-                    )}
+            <ModePicker
+                value={form.data.attendance_mode}
+                modes={modes}
+                onChange={(v) => form.setData('attendance_mode', v)}
+                error={err.attendance_mode}
+            />
 
-                    <div className="grid gap-2 sm:max-w-sm">
-                        <Label htmlFor="rehire_password">Password Anda</Label>
-                        <PasswordInput
-                            id="rehire_password"
-                            value={form.data.current_password}
-                            autoComplete="current-password"
-                            onChange={(e) =>
-                                form.setData('current_password', e.target.value)
-                            }
-                            aria-invalid={
-                                err.current_password ? true : undefined
-                            }
-                        />
-                        <InputError message={err.current_password} />
-                    </div>
+            {hasAccount && (
+                <div className="flex items-start gap-2">
+                    <Checkbox
+                        id="activate_account"
+                        checked={form.data.activate_account}
+                        disabled={!canActivateAccount}
+                        onCheckedChange={(v) =>
+                            form.setData('activate_account', v === true)
+                        }
+                    />
+                    <Label
+                        htmlFor="activate_account"
+                        className="grid gap-0.5 text-sm font-normal"
+                    >
+                        Aktifkan juga akun login
+                        <span className="text-xs text-muted-foreground">
+                            {canActivateAccount
+                                ? 'HP Pakis Pro perlu didaftarkan & disetujui ulang.'
+                                : 'Anda tidak berwenang mengaktifkan akun; minta Administrator.'}
+                        </span>
+                    </Label>
+                </div>
+            )}
 
-                    <DialogFooter className="gap-2">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                        >
-                            Batal
-                        </Button>
-                        <Button
-                            type="submit"
-                            disabled={
-                                form.processing ||
-                                form.data.current_password === ''
-                            }
-                        >
-                            {form.processing && <Spinner />}
-                            Aktifkan Kembali
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+            <div className="grid gap-2 sm:max-w-sm">
+                <Label htmlFor="rehire_password">Password Anda</Label>
+                <PasswordInput
+                    id="rehire_password"
+                    value={form.data.current_password}
+                    autoComplete="current-password"
+                    onChange={(e) =>
+                        form.setData('current_password', e.target.value)
+                    }
+                    aria-invalid={err.current_password ? true : undefined}
+                />
+                <InputError message={err.current_password} />
+            </div>
+        </FormDialog>
     );
 }

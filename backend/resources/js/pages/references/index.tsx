@@ -3,6 +3,7 @@ import {
     ArrowDown,
     ArrowUp,
     GripVertical,
+    ListChecks,
     ListOrdered,
     Lock,
     Pencil,
@@ -15,6 +16,7 @@ import { FormStatus } from '@/components/form-status';
 import InputError from '@/components/input-error';
 import { DataTable } from '@/components/pakis/data-table';
 import type { DataTableColumn } from '@/components/pakis/data-table';
+import { FormDialog } from '@/components/pakis/form-dialog';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { tabChipClass } from '@/components/pakis/page-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
@@ -322,103 +324,94 @@ function ItemDialog({
     };
 
     return (
-        <Dialog open={editing !== null} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="sm:max-w-md">
-                <form onSubmit={submit} className="space-y-5">
-                    <DialogHeader className="pr-6">
-                        <DialogTitle>
-                            {item ? `Ubah · ${item.name}` : 'Tambah item'}
-                        </DialogTitle>
-                        <DialogDescription>
-                            Grup {groupLabel}.
-                        </DialogDescription>
-                    </DialogHeader>
+        <FormDialog
+            open={editing !== null}
+            onOpenChange={(o) => !o && onClose()}
+            icon={ListChecks}
+            title={item ? `Ubah · ${item.name}` : 'Tambah item'}
+            description={`Grup ${groupLabel}.`}
+            onSubmit={submit}
+            footer={
+                <>
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        Batal
+                    </Button>
+                    <Button type="submit" disabled={processing}>
+                        {item ? 'Simpan Item' : 'Tambah Item'}
+                    </Button>
+                </>
+            }
+        >
+            <FormStatus tone="error" message={errors.group} />
 
-                    <FormStatus tone="error" message={errors.group} />
+            <div className="grid gap-2">
+                <Label htmlFor="reference-code">Kode</Label>
+                <Input
+                    id="reference-code"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    disabled={item?.is_system}
+                    className="font-mono"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={50}
+                    aria-invalid={!!errors.code || undefined}
+                    aria-describedby="reference-code-help"
+                />
+                <p
+                    id="reference-code-help"
+                    className="text-xs text-muted-foreground"
+                >
+                    {item?.is_system
+                        ? 'Kode item sistem dipakai program, jadi terkunci.'
+                        : 'Huruf kecil, angka, dan garis bawah. Contoh: gudang_cabang.'}
+                </p>
+                <InputError message={errors.code} />
+            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="reference-code">Kode</Label>
-                        <Input
-                            id="reference-code"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            disabled={item?.is_system}
-                            className="font-mono"
-                            autoComplete="off"
-                            spellCheck={false}
-                            maxLength={50}
-                            aria-invalid={!!errors.code || undefined}
-                            aria-describedby="reference-code-help"
-                        />
-                        <p
-                            id="reference-code-help"
-                            className="text-xs text-muted-foreground"
-                        >
-                            {item?.is_system
-                                ? 'Kode item sistem dipakai program, jadi terkunci.'
-                                : 'Huruf kecil, angka, dan garis bawah. Contoh: gudang_cabang.'}
-                        </p>
-                        <InputError message={errors.code} />
-                    </div>
+            <div className="grid gap-2">
+                <Label htmlFor="reference-name">Nama</Label>
+                <Input
+                    id="reference-name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    maxLength={150}
+                    aria-invalid={!!errors.name || undefined}
+                />
+                <InputError message={errors.name} />
+            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="reference-name">Nama</Label>
-                        <Input
-                            id="reference-name"
-                            value={name}
-                            onChange={(e) => setName(e.target.value)}
-                            maxLength={150}
-                            aria-invalid={!!errors.name || undefined}
-                        />
-                        <InputError message={errors.name} />
-                    </div>
+            <div className="grid gap-2">
+                <Label htmlFor="reference-description">
+                    Deskripsi{' '}
+                    <span className="font-normal text-muted-foreground">
+                        (opsional)
+                    </span>
+                </Label>
+                <Input
+                    id="reference-description"
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    maxLength={255}
+                />
+                <InputError message={errors.description} />
+            </div>
 
-                    <div className="space-y-2">
-                        <Label htmlFor="reference-description">
-                            Deskripsi{' '}
-                            <span className="font-normal text-muted-foreground">
-                                (opsional)
-                            </span>
-                        </Label>
-                        <Input
-                            id="reference-description"
-                            value={description}
-                            onChange={(e) => setDescription(e.target.value)}
-                            maxLength={255}
-                        />
-                        <InputError message={errors.description} />
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                        <Checkbox
-                            id="reference-active"
-                            checked={active}
-                            onCheckedChange={(v) => setActive(v === true)}
-                        />
-                        <div className="space-y-0.5">
-                            <Label htmlFor="reference-active">Aktif</Label>
-                            <p className="text-xs text-muted-foreground">
-                                Item nonaktif tidak muncul di pilihan baru,
-                                tetapi tetap tampil di data lama.
-                            </p>
-                        </div>
-                    </div>
-
-                    <DialogFooter>
-                        <Button
-                            type="button"
-                            variant="outline"
-                            onClick={onClose}
-                        >
-                            Batal
-                        </Button>
-                        <Button type="submit" disabled={processing}>
-                            {item ? 'Simpan Item' : 'Tambah Item'}
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+            <div className="flex items-start gap-3">
+                <Checkbox
+                    id="reference-active"
+                    checked={active}
+                    onCheckedChange={(v) => setActive(v === true)}
+                />
+                <div className="space-y-0.5">
+                    <Label htmlFor="reference-active">Aktif</Label>
+                    <p className="text-xs text-muted-foreground">
+                        Item nonaktif tidak muncul di pilihan baru, tetapi tetap
+                        tampil di data lama.
+                    </p>
+                </div>
+            </div>
+        </FormDialog>
     );
 }
 

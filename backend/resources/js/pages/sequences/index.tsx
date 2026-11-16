@@ -5,16 +5,9 @@ import type { FormEvent } from 'react';
 import { FormStatus } from '@/components/form-status';
 import { DataTable } from '@/components/pakis/data-table';
 import type { DataTableColumn } from '@/components/pakis/data-table';
+import { FormDialog } from '@/components/pakis/form-dialog';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { ListingProps } from '@/types/listing';
@@ -250,124 +243,116 @@ function EditPatternDialog({
     const invalid = patternErrors.length > 0;
 
     return (
-        <Dialog open={sequence !== null} onOpenChange={(o) => !o && onClose()}>
-            <DialogContent className="sm:max-w-lg">
-                <form onSubmit={submit} className="space-y-5">
-                    <DialogHeader className="pr-6">
-                        <DialogTitle>Ubah pola · {sequence?.name}</DialogTitle>
-                        <DialogDescription>
-                            Perubahan berlaku untuk nomor berikutnya. Nomor yang
-                            sudah terbit tidak berubah.
-                        </DialogDescription>
-                    </DialogHeader>
+        <FormDialog
+            open={sequence !== null}
+            onOpenChange={(o) => !o && onClose()}
+            icon={Hash}
+            title={`Ubah pola · ${sequence?.name ?? ''}`}
+            description="Perubahan berlaku untuk nomor berikutnya. Nomor yang sudah terbit tidak berubah."
+            onSubmit={submit}
+            footer={
+                <>
+                    <Button type="button" variant="outline" onClick={onClose}>
+                        Batal
+                    </Button>
+                    <Button type="submit" disabled={processing || invalid}>
+                        Simpan Pola
+                    </Button>
+                </>
+            }
+        >
+            <FormStatus
+                tone="error"
+                message={errors.pattern ?? errors.reset_period}
+            />
 
-                    <FormStatus
-                        tone="error"
-                        message={errors.pattern ?? errors.reset_period}
-                    />
-
-                    <div className="space-y-2">
-                        <Label htmlFor="sequence-pattern">Pola</Label>
-                        <Input
-                            id="sequence-pattern"
-                            ref={inputRef}
-                            value={pattern}
-                            onChange={(e) => setPattern(e.target.value)}
-                            className="font-mono"
-                            autoComplete="off"
-                            spellCheck={false}
-                            maxLength={100}
-                            aria-invalid={invalid || undefined}
-                            aria-describedby="sequence-pattern-help"
-                        />
-                        <p
-                            id="sequence-pattern-help"
-                            className="text-xs text-muted-foreground"
-                        >
-                            Teks tetap ditulis langsung (huruf besar, angka,
-                            atau - / . _). Klik token untuk menyisipkannya.
-                        </p>
-                        <div
-                            className="flex flex-wrap gap-1.5"
-                            aria-label="Token yang tersedia"
-                        >
-                            {TOKENS.map((t) => (
-                                <button
-                                    key={t.token}
-                                    type="button"
-                                    onClick={() => insertToken(t.token)}
-                                    title={t.help}
-                                    className="rounded-md border bg-muted/50 px-2 py-1 font-mono text-xs transition-colors hover:border-primary/40 hover:bg-primary/10 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
-                                >
-                                    {t.token}
-                                    <span className="sr-only">: {t.help}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="sequence-reset">Periode reset</Label>
-                        <NativeSelect
-                            id="sequence-reset"
-                            value={reset}
-                            onChange={(e) => setReset(e.target.value)}
-                        >
-                            {resetOptions.map((o) => (
-                                <option key={o.value} value={o.value}>
-                                    {o.label}
-                                </option>
-                            ))}
-                        </NativeSelect>
-                    </div>
-
-                    <section
-                        aria-live="polite"
-                        className="rounded-lg border bg-muted/40 p-3.5"
-                    >
-                        <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                            <Hash className="size-3.5" aria-hidden="true" />
-                            Pratinjau 3 nomor berikutnya
-                        </h3>
-                        {invalid ? (
-                            <ul className="space-y-1 text-sm text-status-danger">
-                                {patternErrors.map((message) => (
-                                    <li key={message}>{message}</li>
-                                ))}
-                            </ul>
-                        ) : preview ? (
-                            <ol className="flex flex-wrap gap-2">
-                                {preview.numbers.map((n) => (
-                                    <li
-                                        key={n}
-                                        className="rounded-md bg-card px-2.5 py-1 font-mono text-sm shadow-xs"
-                                    >
-                                        {n}
-                                    </li>
-                                ))}
-                            </ol>
-                        ) : (
-                            <p className="text-sm text-muted-foreground">
-                                Memuat pratinjau…
-                            </p>
-                        )}
-                    </section>
-
-                    <DialogFooter>
-                        <Button
+            <div className="grid gap-2">
+                <Label htmlFor="sequence-pattern">Pola</Label>
+                <Input
+                    id="sequence-pattern"
+                    ref={inputRef}
+                    value={pattern}
+                    onChange={(e) => setPattern(e.target.value)}
+                    className="font-mono"
+                    autoComplete="off"
+                    spellCheck={false}
+                    maxLength={100}
+                    aria-invalid={invalid || undefined}
+                    aria-describedby="sequence-pattern-help"
+                />
+                <p
+                    id="sequence-pattern-help"
+                    className="text-xs text-muted-foreground"
+                >
+                    Teks tetap ditulis langsung (huruf besar, angka, atau - / .
+                    _). Klik token untuk menyisipkannya.
+                </p>
+                <div
+                    className="flex flex-wrap gap-1.5"
+                    aria-label="Token yang tersedia"
+                >
+                    {TOKENS.map((t) => (
+                        <button
+                            key={t.token}
                             type="button"
-                            variant="outline"
-                            onClick={onClose}
+                            onClick={() => insertToken(t.token)}
+                            title={t.help}
+                            className="rounded-md border bg-muted/50 px-2 py-1 font-mono text-xs transition-colors hover:border-primary/40 hover:bg-primary/10 focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none"
                         >
-                            Batal
-                        </Button>
-                        <Button type="submit" disabled={processing || invalid}>
-                            Simpan Pola
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+                            {t.token}
+                            <span className="sr-only">: {t.help}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div className="grid gap-2">
+                <Label htmlFor="sequence-reset">Periode reset</Label>
+                <NativeSelect
+                    id="sequence-reset"
+                    value={reset}
+                    onChange={(e) => setReset(e.target.value)}
+                >
+                    {resetOptions.map((o) => (
+                        <option key={o.value} value={o.value}>
+                            {o.label}
+                        </option>
+                    ))}
+                </NativeSelect>
+            </div>
+
+            <section
+                aria-live="polite"
+                className="rounded-lg border bg-muted/40 p-3.5"
+            >
+                <h3 className="mb-2 flex items-center gap-1.5 text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    <Hash className="size-3.5" aria-hidden="true" />
+                    Pratinjau 3 nomor berikutnya
+                </h3>
+                {invalid ? (
+                    <ul className="space-y-1 text-sm text-status-danger">
+                        {patternErrors.map((message) => (
+                            <li key={message}>{message}</li>
+                        ))}
+                    </ul>
+                ) : preview ? (
+                    <ol className="flex flex-wrap gap-2">
+                        {preview.numbers.map((n) => (
+                            <li
+                                key={n}
+                                className="rounded-md bg-card px-2.5 py-1 font-mono text-sm shadow-xs"
+                            >
+                                {n}
+                            </li>
+                        ))}
+                    </ol>
+                ) : (
+                    <p className="text-sm text-muted-foreground">
+                        Memuat pratinjau…
+                    </p>
+                )}
+            </section>
+        </FormDialog>
     );
 }
 

@@ -1,16 +1,11 @@
 import { router } from '@inertiajs/react';
+import { ClipboardCheck, ClipboardX } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
+import { FormDialog } from '@/components/pakis/form-dialog';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { approve, reject } from '@/routes/admin/attendance-corrections';
@@ -89,31 +84,23 @@ export function CorrectionDecisionDialog({ pending, onClose }: Props) {
     };
 
     return (
-        <Dialog
+        <FormDialog
             open={pending !== null}
             onOpenChange={(isOpen) => !isOpen && close()}
-        >
-            <DialogContent>
-                <DialogTitle>
+            icon={pending?.kind === 'reject' ? ClipboardX : ClipboardCheck}
+            tone={pending?.kind === 'reject' ? 'danger' : 'default'}
+            title={
+                <>
                     {copy?.title} {pending?.correction.number}?
-                </DialogTitle>
-                <DialogDescription>
+                </>
+            }
+            description={
+                <>
                     {pending?.correction.employee.name}. {copy?.description}
-                </DialogDescription>
-                <div className="grid gap-2">
-                    <Label htmlFor="decision-note">{copy?.label}</Label>
-                    <textarea
-                        id="decision-note"
-                        className="min-h-16 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
-                        value={note}
-                        maxLength={500}
-                        rows={2}
-                        onChange={(e) => setNote(e.target.value)}
-                        aria-invalid={error ? true : undefined}
-                    />
-                    <InputError message={error} />
-                </div>
-                <DialogFooter className="gap-2">
+                </>
+            }
+            footer={
+                <>
                     <DialogClose asChild>
                         <Button variant="outline">Batal</Button>
                     </DialogClose>
@@ -129,8 +116,22 @@ export function CorrectionDecisionDialog({ pending, onClose }: Props) {
                         {processing && <Spinner />}
                         {copy?.button}
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </>
+            }
+        >
+            <div className="grid gap-2">
+                <Label htmlFor="decision-note">{copy?.label}</Label>
+                <textarea
+                    id="decision-note"
+                    className="min-h-16 w-full rounded-md border border-input bg-card px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                    value={note}
+                    maxLength={500}
+                    rows={2}
+                    onChange={(e) => setNote(e.target.value)}
+                    aria-invalid={error ? true : undefined}
+                />
+                <InputError message={error} />
+            </div>
+        </FormDialog>
     );
 }

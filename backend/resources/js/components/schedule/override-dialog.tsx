@@ -56,7 +56,7 @@ export function OverrideDialog({ target, onClose, defaultDate }: Props) {
             open={target !== null}
             onOpenChange={(open) => !open && onClose()}
         >
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent>
                 {target && (
                     <OverrideForm
                         key={`${target.employee?.id ?? 'massal'}:${target.date ?? ''}`}

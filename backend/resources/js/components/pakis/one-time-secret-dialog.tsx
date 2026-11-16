@@ -1,13 +1,7 @@
-import { Check, Copy, TriangleAlert } from 'lucide-react';
+import { Check, Copy, KeyRound, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
+import { FormDialog } from '@/components/pakis/form-dialog';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
 
 /**
  * Menampilkan rahasia yang hanya bisa dilihat SEKALI, mis. password sementara dari admin (BR-014,
@@ -45,59 +39,55 @@ export function OneTimeSecretDialog({
     };
 
     return (
-        <Dialog
+        <FormDialog
             open={secret !== null}
             onOpenChange={(open) => !open && onDone()}
+            icon={KeyRound}
+            title={title}
+            description={description}
+            onEscapeKeyDown={(e) => e.preventDefault()}
+            onPointerDownOutside={(e) => e.preventDefault()}
+            onInteractOutside={(e) => e.preventDefault()}
+            footer={
+                <Button type="button" onClick={onDone}>
+                    {doneLabel}
+                </Button>
+            }
         >
-            <DialogContent
-                onEscapeKeyDown={(e) => e.preventDefault()}
-                onPointerDownOutside={(e) => e.preventDefault()}
-                onInteractOutside={(e) => e.preventDefault()}
-            >
-                <DialogTitle>{title}</DialogTitle>
-                <DialogDescription>{description}</DialogDescription>
+            <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
+                <code
+                    data-testid="one-time-secret"
+                    className="min-w-0 flex-1 font-mono text-lg tracking-wider break-all select-all"
+                >
+                    {secret}
+                </code>
+                <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={copy}
+                    aria-label="Salin ke clipboard"
+                >
+                    {copied ? (
+                        <Check aria-hidden="true" />
+                    ) : (
+                        <Copy aria-hidden="true" />
+                    )}
+                    {copied ? 'Tersalin' : 'Salin'}
+                </Button>
+            </div>
 
-                <div className="flex items-center gap-2 rounded-lg border bg-muted/40 p-3">
-                    <code
-                        data-testid="one-time-secret"
-                        className="min-w-0 flex-1 font-mono text-lg tracking-wider break-all select-all"
-                    >
-                        {secret}
-                    </code>
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={copy}
-                        aria-label="Salin ke clipboard"
-                    >
-                        {copied ? (
-                            <Check aria-hidden="true" />
-                        ) : (
-                            <Copy aria-hidden="true" />
-                        )}
-                        {copied ? 'Tersalin' : 'Salin'}
-                    </Button>
-                </div>
-
-                <p className="flex items-start gap-2 rounded-lg bg-status-warning-bg px-3 py-2.5 text-sm text-status-warning">
-                    <TriangleAlert
-                        className="mt-px size-4 shrink-0"
-                        aria-hidden="true"
-                    />
-                    <span>
-                        Nilai ini tidak bisa dilihat lagi setelah dialog
-                        ditutup. Sampaikan langsung ke pemilik akun; jangan
-                        kirim lewat grup chat.
-                    </span>
-                </p>
-
-                <DialogFooter>
-                    <Button type="button" onClick={onDone}>
-                        {doneLabel}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+            <p className="flex items-start gap-2 rounded-lg bg-status-warning-bg px-3 py-2.5 text-sm text-status-warning">
+                <TriangleAlert
+                    className="mt-px size-4 shrink-0"
+                    aria-hidden="true"
+                />
+                <span>
+                    Nilai ini tidak bisa dilihat lagi setelah dialog ditutup.
+                    Sampaikan langsung ke pemilik akun; jangan kirim lewat grup
+                    chat.
+                </span>
+            </p>
+        </FormDialog>
     );
 }

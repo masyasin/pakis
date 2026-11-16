@@ -253,7 +253,7 @@ export default function AttendanceSummary({
                     }
                 }}
             >
-                <DialogContent className="max-h-[92vh] gap-4 overflow-y-auto p-4 sm:max-w-2xl sm:p-6">
+                <DialogContent size="lg">
                     {calendar && (
                         <>
                             <div className="flex items-center gap-3 pr-8">

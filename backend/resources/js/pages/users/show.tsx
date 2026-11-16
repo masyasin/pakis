@@ -15,6 +15,7 @@ import {
     UserRound,
     UsersRound,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { DetailCard, Field, FieldGrid } from '@/components/employee/detail-ui';
@@ -23,6 +24,7 @@ import InputError from '@/components/input-error';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { DeviceSummaryList } from '@/components/pakis/device-summary-list';
 import type { DeviceSummary } from '@/components/pakis/device-summary-list';
+import { FormDialog, FormDialogFooter } from '@/components/pakis/form-dialog';
 import { OneTimeSecretDialog } from '@/components/pakis/one-time-secret-dialog';
 import { PageTabs } from '@/components/pakis/page-tabs';
 import type { PageTab } from '@/components/pakis/page-tabs';
@@ -30,14 +32,7 @@ import { StatusBadge } from '@/components/pakis/status-badge';
 import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { DialogClose } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { formatPhone } from '@/lib/employee-format';
@@ -322,6 +317,7 @@ export default function UserShow(props: Props) {
 
             <ConfirmAction
                 open={pending === 'toggle'}
+                icon={Power}
                 title={
                     user.is_active
                         ? `Nonaktifkan akun ${user.username}?`
@@ -346,6 +342,7 @@ export default function UserShow(props: Props) {
             />
             <ConfirmAction
                 open={pending === 'reset-mfa'}
+                icon={ShieldOff}
                 title={`Reset MFA ${user.username}?`}
                 description="Aplikasi autentikator & kode pemulihan lama tidak berlaku lagi, dan semua sesinya dicabut. Bila role-nya mewajibkan MFA, ia harus mengaktifkan ulang saat login berikutnya."
                 confirmLabel="Reset MFA"
@@ -356,6 +353,7 @@ export default function UserShow(props: Props) {
             />
             <ConfirmAction
                 open={pending === 'revoke'}
+                icon={LogOut}
                 title={`Cabut semua sesi ${user.username}?`}
                 description="Semua peramban yang sedang masuk dengan akun ini keluar dan harus login ulang."
                 confirmLabel="Cabut Semua Sesi"
@@ -388,6 +386,7 @@ export default function UserShow(props: Props) {
 
 function ConfirmAction({
     open,
+    icon,
     title,
     description,
     confirmLabel,
@@ -397,6 +396,7 @@ function ConfirmAction({
     onConfirm,
 }: {
     open: boolean;
+    icon: LucideIcon;
     title: string;
     description: string;
     confirmLabel: string;
@@ -406,25 +406,29 @@ function ConfirmAction({
     onConfirm: () => void;
 }) {
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-            <DialogContent>
-                <DialogTitle>{title}</DialogTitle>
-                <DialogDescription>{description}</DialogDescription>
-                <DialogFooter className="gap-2">
-                    <DialogClose asChild>
-                        <Button variant="outline">Batal</Button>
-                    </DialogClose>
-                    <Button
-                        variant={destructive ? 'destructive' : 'default'}
-                        disabled={processing}
-                        onClick={onConfirm}
-                    >
-                        {processing && <Spinner />}
-                        {confirmLabel}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+        <FormDialog
+            open={open}
+            onOpenChange={(o) => !o && onCancel()}
+            icon={icon}
+            tone={destructive ? 'danger' : 'default'}
+            title={title}
+            description={description}
+        >
+            {/* Konfirmasi tanpa isian: tanpa badan, garis bawah kepala sudah jadi pemisah kaki. */}
+            <FormDialogFooter className="border-t-0">
+                <DialogClose asChild>
+                    <Button variant="outline">Batal</Button>
+                </DialogClose>
+                <Button
+                    variant={destructive ? 'destructive' : 'default'}
+                    disabled={processing}
+                    onClick={onConfirm}
+                >
+                    {processing && <Spinner />}
+                    {confirmLabel}
+                </Button>
+            </FormDialogFooter>
+        </FormDialog>
     );
 }
 
@@ -471,53 +475,49 @@ function ResetPasswordDialog({
     };
 
     return (
-        <Dialog open={open} onOpenChange={(o) => !o && close()}>
-            <DialogContent>
-                <form onSubmit={submit} className="grid gap-4">
-                    <DialogTitle>Reset password {user.username}?</DialogTitle>
-                    <DialogDescription>
-                        Sistem membuat password sementara yang ditampilkan
-                        sekali, mencabut semua sesi akun ini, dan mewajibkan
-                        ganti password saat masuk. Masukkan password Anda
-                        sendiri untuk melanjutkan.
-                    </DialogDescription>
-                    <div className="grid gap-2">
-                        <Label htmlFor="admin_current_password">
-                            Password Anda
-                        </Label>
-                        <PasswordInput
-                            id="admin_current_password"
-                            autoComplete="current-password"
-                            autoFocus
-                            value={http.data.current_password}
-                            onChange={(e) =>
-                                http.setData('current_password', e.target.value)
-                            }
-                            aria-invalid={
-                                http.errors.current_password ? true : undefined
-                            }
-                        />
-                        <InputError message={http.errors.current_password} />
-                    </div>
-                    <DialogFooter className="gap-2">
-                        <Button type="button" variant="outline" onClick={close}>
-                            Batal
-                        </Button>
-                        <Button
-                            type="submit"
-                            variant="destructive"
-                            disabled={
-                                http.processing ||
-                                http.data.current_password === ''
-                            }
-                        >
-                            {http.processing && <Spinner />}
-                            Reset Password
-                        </Button>
-                    </DialogFooter>
-                </form>
-            </DialogContent>
-        </Dialog>
+        <FormDialog
+            open={open}
+            onOpenChange={(o) => !o && close()}
+            icon={KeyRound}
+            tone="danger"
+            title={`Reset password ${user.username}?`}
+            description="Sistem membuat password sementara yang ditampilkan sekali, mencabut semua sesi akun ini, dan mewajibkan ganti password saat masuk. Masukkan password Anda sendiri untuk melanjutkan."
+            onSubmit={submit}
+            footer={
+                <>
+                    <Button type="button" variant="outline" onClick={close}>
+                        Batal
+                    </Button>
+                    <Button
+                        type="submit"
+                        variant="destructive"
+                        disabled={
+                            http.processing || http.data.current_password === ''
+                        }
+                    >
+                        {http.processing && <Spinner />}
+                        Reset Password
+                    </Button>
+                </>
+            }
+        >
+            <div className="grid gap-2">
+                <Label htmlFor="admin_current_password">Password Anda</Label>
+                <PasswordInput
+                    id="admin_current_password"
+                    autoComplete="current-password"
+                    autoFocus
+                    value={http.data.current_password}
+                    onChange={(e) =>
+                        http.setData('current_password', e.target.value)
+                    }
+                    aria-invalid={
+                        http.errors.current_password ? true : undefined
+                    }
+                />
+                <InputError message={http.errors.current_password} />
+            </div>
+        </FormDialog>
     );
 }
 

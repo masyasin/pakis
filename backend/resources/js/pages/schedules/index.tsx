@@ -1,22 +1,21 @@
 import { Head, Link, router, useForm, usePage } from '@inertiajs/react';
-import { CalendarPlus, Copy } from 'lucide-react';
+import { CalendarClock, CalendarPlus, Copy } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import InputError from '@/components/input-error';
 import { DataTable } from '@/components/pakis/data-table';
 import type { DataTableColumn } from '@/components/pakis/data-table';
+import {
+    FormDialog,
+    FormDialogBody,
+    FormDialogFooter,
+    FormDialogForm,
+} from '@/components/pakis/form-dialog';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { ScheduleTabs } from '@/components/schedule/schedule-tabs';
 import { DayOffLabel, ShiftChip } from '@/components/schedule/shift-chip';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -299,16 +298,18 @@ type PatternDialogProps = {
 /** Isi dialog baru di-mount saat dibuka: target awal mengikuti pilihan terbaru. */
 function PatternDialog({ open, onOpenChange, ...props }: PatternDialogProps) {
     return (
-        <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-                {open && (
-                    <PatternForm
-                        {...props}
-                        onClose={() => onOpenChange(false)}
-                    />
-                )}
-            </DialogContent>
-        </Dialog>
+        <FormDialog
+            open={open}
+            onOpenChange={onOpenChange}
+            icon={CalendarClock}
+            size="lg"
+            title="Tetapkan pola jadwal"
+            description="Pola berlaku mulai tanggal yang dipilih. Jadwal sebelum tanggal itu tidak berubah. Hari tanpa shift = libur."
+        >
+            {open && (
+                <PatternForm {...props} onClose={() => onOpenChange(false)} />
+            )}
+        </FormDialog>
     );
 }
 
@@ -398,119 +399,113 @@ function PatternForm({
         (errors as Record<string, string | undefined>)[`days.${day}`];
 
     return (
-        <form onSubmit={submit} noValidate className="grid gap-5">
-            <div className="grid gap-1">
-                <DialogTitle>Tetapkan pola jadwal</DialogTitle>
-                <DialogDescription>
-                    Pola berlaku mulai tanggal yang dipilih. Jadwal sebelum
-                    tanggal itu tidak berubah. Hari tanpa shift = libur.
-                </DialogDescription>
-            </div>
+        <FormDialogForm onSubmit={submit} noValidate>
+            <FormDialogBody>
+                <fieldset className="grid gap-2">
+                    <legend className="mb-2 text-sm font-medium">Untuk</legend>
+                    <TargetOption
+                        checked={target === 'selected'}
+                        disabled={selectedIds.length === 0}
+                        onChange={() => chooseTarget('selected')}
+                        label={`Pegawai terpilih (${formatNumber(selectedIds.length)})`}
+                        help={
+                            selectedIds.length === 0
+                                ? 'Centang pegawai di daftar lebih dulu.'
+                                : 'Hanya pegawai yang dicentang.'
+                        }
+                    />
+                    <TargetOption
+                        checked={target === 'filtered'}
+                        onChange={() => chooseTarget('filtered')}
+                        label={`Semua hasil filter (${formatNumber(filteredTotal)})`}
+                        help={
+                            tooMany
+                                ? `Lebih dari ${formatNumber(limit)} pegawai. Persempit filter lalu ulangi.`
+                                : 'Semua pegawai yang tampil dengan pencarian & filter saat ini, di semua halaman.'
+                        }
+                    />
+                    <InputError message={errors.employee_ids} />
+                </fieldset>
 
-            <fieldset className="grid gap-2">
-                <legend className="mb-2 text-sm font-medium">Untuk</legend>
-                <TargetOption
-                    checked={target === 'selected'}
-                    disabled={selectedIds.length === 0}
-                    onChange={() => chooseTarget('selected')}
-                    label={`Pegawai terpilih (${formatNumber(selectedIds.length)})`}
-                    help={
-                        selectedIds.length === 0
-                            ? 'Centang pegawai di daftar lebih dulu.'
-                            : 'Hanya pegawai yang dicentang.'
-                    }
-                />
-                <TargetOption
-                    checked={target === 'filtered'}
-                    onChange={() => chooseTarget('filtered')}
-                    label={`Semua hasil filter (${formatNumber(filteredTotal)})`}
-                    help={
-                        tooMany
-                            ? `Lebih dari ${formatNumber(limit)} pegawai. Persempit filter lalu ulangi.`
-                            : 'Semua pegawai yang tampil dengan pencarian & filter saat ini, di semua halaman.'
-                    }
-                />
-                <InputError message={errors.employee_ids} />
-            </fieldset>
-
-            <div className="grid gap-2 sm:max-w-xs">
-                <Label htmlFor="effective_from">Berlaku mulai</Label>
-                <Input
-                    id="effective_from"
-                    type="date"
-                    value={data.effective_from}
-                    required
-                    onChange={(e) =>
-                        form.setData('effective_from', e.target.value)
-                    }
-                    aria-invalid={errors.effective_from ? true : undefined}
-                />
-                <InputError message={errors.effective_from} />
-            </div>
-
-            <fieldset className="grid gap-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                    <legend className="text-sm font-medium">
-                        Shift per hari
-                    </legend>
-                    <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={copyMonday}
-                        disabled={data.days.mon === ''}
-                    >
-                        <Copy aria-hidden="true" />
-                        Salin Senin ke Selasa–Sabtu
-                    </Button>
+                <div className="grid gap-2 sm:max-w-xs">
+                    <Label htmlFor="effective_from">Berlaku mulai</Label>
+                    <Input
+                        id="effective_from"
+                        type="date"
+                        value={data.effective_from}
+                        required
+                        onChange={(e) =>
+                            form.setData('effective_from', e.target.value)
+                        }
+                        aria-invalid={errors.effective_from ? true : undefined}
+                    />
+                    <InputError message={errors.effective_from} />
                 </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                    {DAYS.map((d) => (
-                        <div key={d.key} className="grid gap-1.5">
-                            <Label htmlFor={`day-${d.key}`}>{d.long}</Label>
-                            <NativeSelect
-                                id={`day-${d.key}`}
-                                value={data.days[d.key]}
-                                disabled={shifts.loading}
-                                onChange={(e) =>
-                                    form.setData('days', {
-                                        ...data.days,
-                                        [d.key]: e.target.value,
-                                    })
-                                }
-                            >
-                                <option value="">Libur</option>
-                                {shifts.options.map((o) => (
-                                    <option
-                                        key={o.value}
-                                        value={String(o.value)}
-                                    >
-                                        {o.label}
-                                        {o.hint ? ` (${o.hint})` : ''}
-                                    </option>
-                                ))}
-                            </NativeSelect>
-                            <InputError message={errorFor(d.key)} />
-                        </div>
-                    ))}
+
+                <fieldset className="grid gap-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                        <legend className="text-sm font-medium">
+                            Shift per hari
+                        </legend>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={copyMonday}
+                            disabled={data.days.mon === ''}
+                        >
+                            <Copy aria-hidden="true" />
+                            Salin Senin ke Selasa–Sabtu
+                        </Button>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                        {DAYS.map((d) => (
+                            <div key={d.key} className="grid gap-1.5">
+                                <Label htmlFor={`day-${d.key}`}>{d.long}</Label>
+                                <NativeSelect
+                                    id={`day-${d.key}`}
+                                    value={data.days[d.key]}
+                                    disabled={shifts.loading}
+                                    onChange={(e) =>
+                                        form.setData('days', {
+                                            ...data.days,
+                                            [d.key]: e.target.value,
+                                        })
+                                    }
+                                >
+                                    <option value="">Libur</option>
+                                    {shifts.options.map((o) => (
+                                        <option
+                                            key={o.value}
+                                            value={String(o.value)}
+                                        >
+                                            {o.label}
+                                            {o.hint ? ` (${o.hint})` : ''}
+                                        </option>
+                                    ))}
+                                </NativeSelect>
+                                <InputError message={errorFor(d.key)} />
+                            </div>
+                        ))}
+                    </div>
+                    {shifts.failed && (
+                        <p className="text-sm text-destructive">
+                            Daftar shift gagal dimuat. Tutup lalu buka lagi
+                            dialog ini.
+                        </p>
+                    )}
+                    <InputError message={errors.days} />
+                </fieldset>
+
+                <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
+                    <span className="text-muted-foreground">Pratinjau: </span>
+                    {DAYS.map(
+                        (d) => `${d.short} ${shiftLabel(data.days[d.key])}`,
+                    ).join(' · ')}
                 </div>
-                {shifts.failed && (
-                    <p className="text-sm text-destructive">
-                        Daftar shift gagal dimuat. Tutup lalu buka lagi dialog
-                        ini.
-                    </p>
-                )}
-                <InputError message={errors.days} />
-            </fieldset>
+            </FormDialogBody>
 
-            <div className="rounded-md border bg-muted/40 px-3 py-2 text-sm">
-                <span className="text-muted-foreground">Pratinjau: </span>
-                {DAYS.map(
-                    (d) => `${d.short} ${shiftLabel(data.days[d.key])}`,
-                ).join(' · ')}
-            </div>
-
-            <DialogFooter className="gap-2">
+            <FormDialogFooter>
                 <DialogClose asChild>
                     <Button type="button" variant="outline">
                         Batal
@@ -528,8 +523,8 @@ function PatternForm({
                     {(form.processing || loadingIds) && <Spinner />}
                     Tetapkan untuk {formatNumber(employeeIds.length)} pegawai
                 </Button>
-            </DialogFooter>
-        </form>
+            </FormDialogFooter>
+        </FormDialogForm>
     );
 }
 

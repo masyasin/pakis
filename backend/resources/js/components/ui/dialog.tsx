@@ -44,18 +44,44 @@ function DialogOverlay({
   )
 }
 
+/**
+ * Dua ukuran baku popup (keputusan Mas 16 Nov 2026): `sm` untuk konfirmasi & 1-3 isian, `lg` untuk
+ * isian dua kolom / konten lebar. Ukuran lain sengaja tidak disediakan agar semua popup seragam.
+ */
+const DIALOG_SIZES = {
+  sm: "sm:max-w-md",
+  lg: "sm:max-w-2xl",
+} as const
+
+export type DialogSize = keyof typeof DIALOG_SIZES
+
 function DialogContent({
   className,
   children,
+  size = "sm",
   ...props
-}: React.ComponentProps<typeof DialogPrimitive.Content>) {
+}: React.ComponentProps<typeof DialogPrimitive.Content> & {
+  size?: DialogSize
+}) {
   return (
     <DialogPortal data-slot="dialog-portal">
       <DialogOverlay />
       <DialogPrimitive.Content
         data-slot="dialog-content"
+        data-size={size}
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 grid w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] gap-4 rounded-lg border p-6 shadow-lg duration-200 sm:max-w-lg",
+          // Latar putih kartu (bukan bg-background yang kehijauan) agar sama dengan kartu form halaman.
+          "bg-card text-card-foreground fixed z-50 grid gap-4 border p-5 shadow-[0_1px_2px_rgb(0_0_0/0.04),0_16px_40px_-16px_rgb(0_0_0/0.25)] duration-200 sm:p-6",
+          // Isi panjang digulir di dalam popup; kaki (DialogFooter) menempel di bawah.
+          "max-h-[90dvh] overflow-y-auto overscroll-contain",
+          // HP (< sm): panel dari bawah selebar layar (bottom sheet), sudut atas membulat.
+          "inset-x-0 bottom-0 w-full rounded-t-xl border-x-0 border-b-0",
+          // sm ke atas: kartu di tengah layar.
+          "sm:inset-x-auto sm:bottom-auto sm:top-1/2 sm:left-1/2 sm:w-[calc(100%-2rem)] sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-xl sm:border",
+          DIALOG_SIZES[size],
+          "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+          "max-sm:data-[state=open]:slide-in-from-bottom max-sm:data-[state=closed]:slide-out-to-bottom",
+          "sm:data-[state=closed]:zoom-out-95 sm:data-[state=open]:zoom-in-95",
           className
         )}
         {...props}
@@ -74,7 +100,8 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="dialog-header"
-      className={cn("flex flex-col gap-2 text-center sm:text-left", className)}
+      // Rata kiri juga di HP: bottom sheet dibaca seperti kartu form, bukan alert di tengah.
+      className={cn("flex flex-col gap-1.5 text-left", className)}
       {...props}
     />
   )
@@ -85,7 +112,10 @@ function DialogFooter({ className, ...props }: React.ComponentProps<"div">) {
     <div
       data-slot="dialog-footer"
       className={cn(
-        "flex flex-col-reverse gap-2 sm:flex-row sm:justify-end",
+        // Garis atas selebar kartu (margin negatif = padding DialogContent) dan menempel di bawah
+        // saat isi digulir, agar tombol selalu terlihat. HP: bertumpuk penuh lebar, tombol utama
+        // (anak terakhir) di atas; sm ke atas: berjajar di kanan.
+        "bg-card sticky bottom-0 z-10 -mx-5 -mb-5 flex flex-col-reverse gap-2 border-t px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:-mx-6 sm:-mb-6 sm:flex-row sm:justify-end sm:px-6 sm:pb-4",
         className
       )}
       {...props}
@@ -100,7 +130,7 @@ function DialogTitle({
   return (
     <DialogPrimitive.Title
       data-slot="dialog-title"
-      className={cn("text-lg leading-none font-semibold", className)}
+      className={cn("text-base leading-snug font-semibold", className)}
       {...props}
     />
   )

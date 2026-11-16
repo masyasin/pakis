@@ -1,17 +1,12 @@
 import { useForm } from '@inertiajs/react';
+import { CalendarClock } from 'lucide-react';
 import { useEffect } from 'react';
 import InputError from '@/components/input-error';
 import { AsyncSelect } from '@/components/pakis/async-select';
+import { FormDialog } from '@/components/pakis/form-dialog';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { Button } from '@/components/ui/button';
-import {
-    Dialog,
-    DialogClose,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogTitle,
-} from '@/components/ui/dialog';
+import { DialogClose } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -96,169 +91,15 @@ export function ManualAttendanceDialog({
     const showOut = data.type !== 'check_in';
 
     return (
-        <Dialog open={open} onOpenChange={close}>
-            <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
-                <DialogTitle>Isi presensi manual</DialogTitle>
-                <DialogDescription>
-                    Untuk pegawai yang tidak bisa presensi dari HP (rusak,
-                    hilang, ketinggalan). Jam langsung tercatat sebagai koreksi
-                    yang disetujui atas nama Anda.
-                </DialogDescription>
-
-                <div className="grid gap-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="manual-employee">Pegawai</Label>
-                        <AsyncSelect
-                            id="manual-employee"
-                            source="employees"
-                            value={
-                                data.employee_id === null
-                                    ? []
-                                    : [data.employee_id]
-                            }
-                            onChange={(value) =>
-                                form.setData(
-                                    'employee_id',
-                                    value.length ? Number(value[0]) : null,
-                                )
-                            }
-                            disabled={preset !== undefined}
-                            placeholder="Ketik nama atau nomor pegawai…"
-                            aria-label="Pegawai"
-                        />
-                        <InputError message={errors.employee_id} />
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2">
-                            <Label htmlFor="manual-date">Tanggal</Label>
-                            <Input
-                                id="manual-date"
-                                type="date"
-                                min={options.min_date}
-                                max={options.max_date}
-                                value={data.work_date}
-                                disabled={preset !== undefined}
-                                onChange={(e) =>
-                                    form.setData('work_date', e.target.value)
-                                }
-                                aria-invalid={
-                                    errors.work_date ? true : undefined
-                                }
-                            />
-                            <InputError message={errors.work_date} />
-                        </div>
-                        <div className="grid gap-2">
-                            <Label htmlFor="manual-type">Yang diisi</Label>
-                            <NativeSelect
-                                id="manual-type"
-                                value={data.type}
-                                onChange={(e) =>
-                                    form.setData(
-                                        'type',
-                                        e.target
-                                            .value as (typeof TYPES)[number]['value'],
-                                    )
-                                }
-                            >
-                                {TYPES.map((t) => (
-                                    <option key={t.value} value={t.value}>
-                                        {t.label}
-                                    </option>
-                                ))}
-                            </NativeSelect>
-                            <InputError message={errors.type} />
-                        </div>
-                    </div>
-
-                    <div className="grid gap-4 sm:grid-cols-2">
-                        {showIn && (
-                            <div className="grid gap-2">
-                                <Label htmlFor="manual-in">Jam masuk</Label>
-                                <Input
-                                    id="manual-in"
-                                    type="time"
-                                    value={data.proposed_check_in}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'proposed_check_in',
-                                            e.target.value,
-                                        )
-                                    }
-                                    aria-invalid={
-                                        errors.proposed_check_in
-                                            ? true
-                                            : undefined
-                                    }
-                                />
-                                <InputError
-                                    message={errors.proposed_check_in}
-                                />
-                            </div>
-                        )}
-                        {showOut && (
-                            <div className="grid gap-2">
-                                <Label htmlFor="manual-out">Jam pulang</Label>
-                                <Input
-                                    id="manual-out"
-                                    type="time"
-                                    value={data.proposed_check_out}
-                                    onChange={(e) =>
-                                        form.setData(
-                                            'proposed_check_out',
-                                            e.target.value,
-                                        )
-                                    }
-                                    aria-invalid={
-                                        errors.proposed_check_out
-                                            ? true
-                                            : undefined
-                                    }
-                                />
-                                <InputError
-                                    message={errors.proposed_check_out}
-                                />
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="manual-reason">Alasan</Label>
-                        <NativeSelect
-                            id="manual-reason"
-                            value={data.reason_code}
-                            onChange={(e) =>
-                                form.setData('reason_code', e.target.value)
-                            }
-                        >
-                            {options.reasons.map((r) => (
-                                <option key={r.value} value={r.value}>
-                                    {r.label}
-                                </option>
-                            ))}
-                        </NativeSelect>
-                        <InputError message={errors.reason_code} />
-                    </div>
-
-                    <div className="grid gap-2">
-                        <Label htmlFor="manual-note">Catatan</Label>
-                        <textarea
-                            id="manual-note"
-                            className={textareaClass}
-                            rows={2}
-                            maxLength={500}
-                            value={data.note}
-                            placeholder="Mis. HP pegawai rusak, presensi dicatat di pos satpam."
-                            onChange={(e) =>
-                                form.setData('note', e.target.value)
-                            }
-                            aria-invalid={errors.note ? true : undefined}
-                        />
-                        <InputError message={errors.note} />
-                    </div>
-                </div>
-
-                <DialogFooter className="gap-2">
+        <FormDialog
+            open={open}
+            onOpenChange={close}
+            icon={CalendarClock}
+            size="lg"
+            title="Isi presensi manual"
+            description="Untuk pegawai yang tidak bisa presensi dari HP (rusak, hilang, ketinggalan). Jam langsung tercatat sebagai koreksi yang disetujui atas nama Anda."
+            footer={
+                <>
                     <DialogClose asChild>
                         <Button variant="outline">Batal</Button>
                     </DialogClose>
@@ -266,8 +107,147 @@ export function ManualAttendanceDialog({
                         {form.processing && <Spinner />}
                         Simpan Presensi
                     </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
+                </>
+            }
+        >
+            <div className="grid gap-4">
+                <div className="grid gap-2">
+                    <Label htmlFor="manual-employee">Pegawai</Label>
+                    <AsyncSelect
+                        id="manual-employee"
+                        source="employees"
+                        value={
+                            data.employee_id === null ? [] : [data.employee_id]
+                        }
+                        onChange={(value) =>
+                            form.setData(
+                                'employee_id',
+                                value.length ? Number(value[0]) : null,
+                            )
+                        }
+                        disabled={preset !== undefined}
+                        placeholder="Ketik nama atau nomor pegawai…"
+                        aria-label="Pegawai"
+                    />
+                    <InputError message={errors.employee_id} />
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="grid gap-2">
+                        <Label htmlFor="manual-date">Tanggal</Label>
+                        <Input
+                            id="manual-date"
+                            type="date"
+                            min={options.min_date}
+                            max={options.max_date}
+                            value={data.work_date}
+                            disabled={preset !== undefined}
+                            onChange={(e) =>
+                                form.setData('work_date', e.target.value)
+                            }
+                            aria-invalid={errors.work_date ? true : undefined}
+                        />
+                        <InputError message={errors.work_date} />
+                    </div>
+                    <div className="grid gap-2">
+                        <Label htmlFor="manual-type">Yang diisi</Label>
+                        <NativeSelect
+                            id="manual-type"
+                            value={data.type}
+                            onChange={(e) =>
+                                form.setData(
+                                    'type',
+                                    e.target
+                                        .value as (typeof TYPES)[number]['value'],
+                                )
+                            }
+                        >
+                            {TYPES.map((t) => (
+                                <option key={t.value} value={t.value}>
+                                    {t.label}
+                                </option>
+                            ))}
+                        </NativeSelect>
+                        <InputError message={errors.type} />
+                    </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                    {showIn && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="manual-in">Jam masuk</Label>
+                            <Input
+                                id="manual-in"
+                                type="time"
+                                value={data.proposed_check_in}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'proposed_check_in',
+                                        e.target.value,
+                                    )
+                                }
+                                aria-invalid={
+                                    errors.proposed_check_in ? true : undefined
+                                }
+                            />
+                            <InputError message={errors.proposed_check_in} />
+                        </div>
+                    )}
+                    {showOut && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="manual-out">Jam pulang</Label>
+                            <Input
+                                id="manual-out"
+                                type="time"
+                                value={data.proposed_check_out}
+                                onChange={(e) =>
+                                    form.setData(
+                                        'proposed_check_out',
+                                        e.target.value,
+                                    )
+                                }
+                                aria-invalid={
+                                    errors.proposed_check_out ? true : undefined
+                                }
+                            />
+                            <InputError message={errors.proposed_check_out} />
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="manual-reason">Alasan</Label>
+                    <NativeSelect
+                        id="manual-reason"
+                        value={data.reason_code}
+                        onChange={(e) =>
+                            form.setData('reason_code', e.target.value)
+                        }
+                    >
+                        {options.reasons.map((r) => (
+                            <option key={r.value} value={r.value}>
+                                {r.label}
+                            </option>
+                        ))}
+                    </NativeSelect>
+                    <InputError message={errors.reason_code} />
+                </div>
+
+                <div className="grid gap-2">
+                    <Label htmlFor="manual-note">Catatan</Label>
+                    <textarea
+                        id="manual-note"
+                        className={textareaClass}
+                        rows={2}
+                        maxLength={500}
+                        value={data.note}
+                        placeholder="Mis. HP pegawai rusak, presensi dicatat di pos satpam."
+                        onChange={(e) => form.setData('note', e.target.value)}
+                        aria-invalid={errors.note ? true : undefined}
+                    />
+                    <InputError message={errors.note} />
+                </div>
+            </div>
+        </FormDialog>
     );
 }

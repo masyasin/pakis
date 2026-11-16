@@ -29,7 +29,12 @@ abstract interface class SelfieCamera {
   Future<void> close();
 }
 
+/// Kamera perangkat. Bawaan kamera depan (selfie presensi); lampiran koreksi memakai kamera
+/// belakang (`lens: CameraLensDirection.back`) untuk memotret dokumen.
 class DeviceSelfieCamera implements SelfieCamera {
+  DeviceSelfieCamera({this.lens = CameraLensDirection.front});
+
+  final CameraLensDirection lens;
   CameraController? _controller;
 
   @override
@@ -40,7 +45,7 @@ class DeviceSelfieCamera implements SelfieCamera {
     } on CameraException catch (e) {
       throw _problem(e);
     }
-    final front = cameras.where((c) => c.lensDirection == CameraLensDirection.front);
+    final front = cameras.where((c) => c.lensDirection == lens);
     if (front.isEmpty) {
       throw const CameraProblem(CameraProblemKind.noCamera);
     }

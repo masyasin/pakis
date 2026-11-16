@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:typed_data';
 
+import 'package:camera/camera.dart' show CameraLensDirection;
 import 'package:material_ui/material_ui.dart';
 
 import 'selfie_camera.dart';
@@ -8,16 +9,43 @@ import 'selfie_compressor.dart';
 
 /// Langkah foto pada alur absen (07 §5): kamera depan dengan bingkai wajah, tanpa galeri.
 /// Kembali (`Navigator.pop`) dengan JPEG ≤ 100 KB, atau null bila dibatalkan.
+///
+/// Dipakai juga untuk foto profil ([open]) dan foto lampiran koreksi ([openDocument], kamera
+/// belakang tanpa bingkai wajah). Tetap tanpa galeri: aplikasi tidak memasang image picker.
 class SelfieCaptureScreen extends StatefulWidget {
-  const SelfieCaptureScreen({required this.camera, this.compressor = const SelfieCompressor(), super.key});
+  const SelfieCaptureScreen({
+    required this.camera,
+    this.compressor = const SelfieCompressor(),
+    this.title = 'Foto selfie',
+    this.hint = 'Posisikan wajah di dalam bingkai, lalu ketuk tombol.',
+    this.faceFrame = true,
+    super.key,
+  });
 
   final SelfieCamera camera;
   final SelfieCompressor compressor;
+  final String title;
+  final String hint;
+  final bool faceFrame;
 
   static Future<Uint8List?> open(BuildContext context, {SelfieCamera? camera}) => Navigator.of(context).push(
     MaterialPageRoute<Uint8List>(
       fullscreenDialog: true,
       builder: (_) => SelfieCaptureScreen(camera: camera ?? DeviceSelfieCamera()),
+    ),
+  );
+
+  /// Foto dokumen untuk lampiran koreksi (surat, bukti), JPEG ≤ [maxBytes].
+  static Future<Uint8List?> openDocument(BuildContext context, {required int maxBytes}) => Navigator.of(context).push(
+    MaterialPageRoute<Uint8List>(
+      fullscreenDialog: true,
+      builder: (_) => SelfieCaptureScreen(
+        camera: DeviceSelfieCamera(lens: CameraLensDirection.back),
+        compressor: SelfieCompressor.document(maxBytes: maxBytes),
+        title: 'Foto lampiran',
+        hint: 'Arahkan kamera ke dokumen sampai tulisannya terbaca, lalu ketuk tombol.',
+        faceFrame: false,
+      ),
     ),
   );
 
@@ -102,7 +130,7 @@ class _SelfieCaptureScreenState extends State<SelfieCaptureScreen> with WidgetsB
       appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
-        title: const Text('Foto selfie'),
+        title: Text(widget.title),
         leading: IconButton(
           tooltip: 'Batal',
           icon: const Icon(Icons.close),
@@ -138,14 +166,14 @@ class _SelfieCaptureScreenState extends State<SelfieCaptureScreen> with WidgetsB
                       children: [
                         if (_ready) Center(child: widget.camera.preview()),
                         if (!_ready) const Center(child: CircularProgressIndicator(color: Colors.white)),
-                        const IgnorePointer(child: CustomPaint(painter: _FaceFramePainter())),
+                        if (widget.faceFrame) const IgnorePointer(child: CustomPaint(painter: _FaceFramePainter())),
                       ],
                     ),
                   ),
                   Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Posisikan wajah di dalam bingkai, lalu ketuk tombol.',
+                      widget.hint,
                       style: text.bodyLarge?.copyWith(color: Colors.white),
                       textAlign: TextAlign.center,
                     ),

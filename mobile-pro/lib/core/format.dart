@@ -15,6 +15,9 @@ abstract final class Fmt {
 
   static String longDate(DateTime value) => DateFormat('EEEE, d MMMM y', locale).format(value);
 
+  /// `November 2026`.
+  static String monthYear(DateTime value) => DateFormat('MMMM y', locale).format(value);
+
   static String time(DateTime value) => DateFormat('HH.mm', locale).format(value);
 
   static String number(num value) => NumberFormat.decimalPattern(locale).format(value);

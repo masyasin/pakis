@@ -41,6 +41,14 @@ void main() {
     expect(encoder.calls.first.quality, 85, reason: 'kualitas terbaik dicoba lebih dulu');
   });
 
+  test('lampiran koreksi (dokumen): sisi terpanjang 1.600 px, ≤ batas lampiran', () async {
+    final encoder = FakeEncoder(3000, 4000, bytesPerPixelAt100: 0.25);
+    final out = await SelfieCompressor.document(maxBytes: 500 * 1024, encoder: encoder).compress(photo);
+
+    expect(max(encoder.calls.first.outW, encoder.calls.first.outH), 1600);
+    expect(out.lengthInBytes, lessThanOrEqualTo(500 * 1024));
+  });
+
   test('foto lanskap juga sisi terpanjang 720 px', () async {
     final encoder = FakeEncoder(1920, 1080);
     await SelfieCompressor(encoder).compress(photo);

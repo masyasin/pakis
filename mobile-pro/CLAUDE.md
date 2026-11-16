@@ -48,8 +48,8 @@ lib/
 │   ├── theme/             # token 07 §1.1, BrandColor (port BrandTheme.php), AppTheme
 │   ├── format.dart        # tanggal/jam/angka Indonesia (07 §7)
 │   └── providers.dart     # provider inti (override di main() & test)
-├── features/<fitur>/      # startup (splash, wajib update), auth (T-032), attendance/capture (selfie), …
-└── shared/widgets/        # PagedList, FilterSheet, EmptyState, StatusBadge
+├── features/<fitur>/      # startup, auth (T-032), attendance (T-042), home (shell tab), history, corrections, approvals, notifications, profile (T-043)
+└── shared/widgets/        # PagedList, FilterSheet, EmptyState, StatusBadge, ListItemCard
 ```
 
 Nama berkas snake_case (lint `file_names`); kelas tetap seperti di TASKS (`ApiClient`, `DeviceId`, …).
@@ -96,6 +96,15 @@ Bila prototipe berbeda dari spesifikasi, **dokumen spesifikasi yang berlaku**:
 - **Beranda & alur (T-042):** `features/attendance/home/attendance_home.dart` (isi tab Presensi di `HomeScreen`) → `selfieCaptureProvider` (kamera) → `result/attendance_submit_screen.dart` (GPS → kirim → hasil). `AttendanceRecorder` kirim online dulu (`is_offline=0`); galat sementara (`SyncService.isTransient`) → antrean; **bila antrean masih berisi, presensi baru ikut antre** lalu antrean dikirim saat itu juga (masuk tidak didahului pulang). Hasil diterapkan ke beranda lewat `attendanceHomeProvider.apply()` (tombol berganti walau offline). `attendance/today` terakhir disimpan di `StoreKeys.attendanceToday` (per pegawai, maks 12 jam) untuk dibuka tanpa sinyal. Jam dari server ditampilkan apa adanya lewat `Fmt.wallClock` (sudah `general.timezone`); `client_time` = `Fmt.isoWithOffset` jam HP.
 - **Test alur:** `test/features/attendance/attendance_home_test.dart` (aplikasi utuh, `pumpPakisPro(overrides: [queueDbProvider, locationServiceProvider, selfieCaptureProvider])`, server palsu `test/helpers/attendance_server.dart`). Daftar di `ListView` dibangun lazy: pakai `scrollUntilVisible` + `pumpAndSettle` sebelum mengetuk kartu bawah.
 - **Belum:** uji di HP Android 8 nyata (kamera, GPS, mode pesawat), toleransi telat di kartu shift (tidak ada di respons `attendance/today`), jarak ke lokasi sebelum presensi (GPS hanya diambil saat tombol ditekan; indikator memakai akurasi & jarak presensi terakhir).
+
+## Tab, daftar, profil (T-043)
+
+- **Beranda = shell** (`features/home/home_screen.dart`): header nama · jabatan/lokasi + `NotificationBell` (jumlah belum dibaca = `meta.pagination.total` dengan `filter[read]=unread`), tab bawah dari `homeTabsFor(user)` menurut permission token: Presensi & Riwayat (`attendance.self`), Koreksi (`attendance_corrections.create`), Persetujuan (`attendance_corrections.approve`), Profil. **Notifikasi = lonceng → layar penuh**, bukan tab, agar tab ≤ 5 di 360 dp. Tab dibangun saat pertama dibuka (daftar tidak memuat sebelum dilihat), lalu dipertahankan (`IndexedStack`). Layar detail/form di-`Navigator.push` (tetap di bawah gerbang router).
+- **Daftar:** Riwayat (`features/history`), Koreksi saya (`features/corrections`), Persetujuan (`features/approvals`), Notifikasi (`features/notifications`) semua `PagedList`; item pakai `ListItemCard` (`shared/widgets/list_item_card.dart`). `PagedList.onLoaded` memberi state filter efektif server (Riwayat: rekap `attendance/summary?month=` mengikuti `filters.month`). Muat ulang setelah aksi = ganti `key` (`ValueKey(_version)`).
+- **Koreksi:** form `CorrectionFormScreen` (tanggal ≤ `correction_max_days` ke belakang, jenis, jam 24 jam, alasan, keterangan ≥ 10, lampiran). **Alasan = salinan kode `ReferenceSeeder`** (`correctionReasons`): API v1 belum punya lookup `correction_reason` untuk HP; server tetap memvalidasi kode aktif. **Lampiran = foto kamera belakang** (`SelfieCaptureScreen.openDocument`, tanpa galeri karena tidak ada image picker; ≤ min(config, 500 KB), sisi 1.600 px). Lampiran tidak bisa dibuka di HP (belum ada endpoint unduh API v1) → teks "lihat di web".
+- **Persetujuan:** detail → Setujui (catatan opsional) / Tolak (alasan wajib 5–500). 409 `STATE_CONFLICT`/404 → pesan + kembali ke daftar (dimuat ulang).
+- **Profil** (`features/profile`): inisial nama (belum ada endpoint unduh foto profil di 05), ubah HP (JSON `PUT /me` + `current_password`), ganti foto (kamera depan → **`POST /me` multipart + `_method=PUT`**: PHP tidak mengurai multipart pada `PUT`), ubah password (`ProfilePasswordScreen` → `sessionProvider.changePassword`), keluar dari sesi web lain, info perangkat, Keluar.
+- **Test:** `test/features/home_tabs_test.dart` (server palsu per "METHOD path-akhir", helper `listing()` untuk meta 05 §3).
 
 ## Rilis APK (persiapan T-047, SEC-067)
 

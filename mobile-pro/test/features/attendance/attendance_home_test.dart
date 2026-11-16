@@ -156,6 +156,8 @@ void main() {
     await tester.tap(find.widgetWithText(FilledButton, 'Selesai'));
     await tester.pumpAndSettle();
 
+    await tester.scrollUntilVisible(find.text('1 presensi menunggu sinyal'), 120);
+    await tester.pumpAndSettle();
     expect(find.text('1 presensi menunggu sinyal'), findsOneWidget);
     expect(find.textContaining('Ketuk Pulang'), findsOneWidget, reason: 'tombol berganti walau offline');
     expect(queue.all().single.selfie, hasLength(60 * 1024));

@@ -259,7 +259,7 @@ void main() {
       expect(find.textContaining('tidak berlaku di HP ini'), findsOneWidget);
     });
 
-    testWidgets('Keluar → konfirmasi → /auth/logout, token dihapus, kembali ke masuk', (tester) async {
+    testWidgets('Profil → Keluar → konfirmasi → /auth/logout, token dihapus, kembali ke masuk', (tester) async {
       final store = signedInStore();
       final hooks = FakeSessionHooks();
       final adapter = server({
@@ -268,7 +268,12 @@ void main() {
       });
       await pumpPakisPro(tester, adapter: adapter, store: store, hooks: hooks);
 
-      await tester.tap(find.byTooltip('Keluar'));
+      // Keluar ada di tab Profil (T-043), di bagian bawah daftar.
+      await tester.tap(find.text('Profil'));
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.widgetWithText(OutlinedButton, 'Keluar'), 120);
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(OutlinedButton, 'Keluar'));
       await tester.pumpAndSettle();
       await tester.tap(find.widgetWithText(FilledButton, 'Keluar'));
       await tester.pumpAndSettle();

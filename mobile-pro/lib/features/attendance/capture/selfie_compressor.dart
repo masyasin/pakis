@@ -44,11 +44,22 @@ class NativeJpegEncoder implements JpegEncoder {
       );
 }
 
-/// Mengecilkan foto kamera menjadi selfie absen.
+/// Mengecilkan foto kamera menjadi selfie absen (bawaan) atau foto lampiran ([document]).
 class SelfieCompressor {
-  const SelfieCompressor([this._encoder = const NativeJpegEncoder()]);
+  const SelfieCompressor([
+    this._encoder = const NativeJpegEncoder(),
+    this.longestSide = SelfieLimits.longestSide,
+    this.maxBytes = SelfieLimits.maxBytes,
+  ]);
+
+  /// Foto dokumen lampiran koreksi (surat dokter dsb.): tetap terbaca, ≤ [maxBytes] (dari
+  /// `attendance.correction_attachment_max_kb`, dibatasi 500 KB demi sinyal lemah).
+  const SelfieCompressor.document({required this.maxBytes, this._encoder = const NativeJpegEncoder()})
+    : longestSide = 1600;
 
   final JpegEncoder _encoder;
+  final int longestSide;
+  final int maxBytes;
 
   static const _qualities = [85, 75, 65, 55, 45];
 
@@ -59,19 +70,19 @@ class SelfieCompressor {
 
     // Plugin mengecilkan sampai sisi PENDEK = minSide. Agar sisi PANJANG = 720 px:
     // minSide = 720 × pendek / panjang.
-    var longest = SelfieLimits.longestSide;
+    var longest = longestSide;
     Uint8List? last;
     while (longest >= 240) {
       final minSide = (longest * shorter / longer).round().clamp(1, longest);
       for (final quality in _qualities) {
         last = await _encoder.encode(photo, minSide: minSide, quality: quality);
-        if (last.lengthInBytes <= SelfieLimits.maxBytes) {
+        if (last.lengthInBytes <= maxBytes) {
           return last;
         }
       }
       // Masih terlalu besar pada kualitas terendah (jarang): perkecil dimensi.
       longest = (longest * 0.8).round();
     }
-    throw StateError('Foto tidak bisa dikecilkan sampai ${SelfieLimits.maxBytes} byte (${last?.lengthInBytes})');
+    throw StateError('Foto tidak bisa dikecilkan sampai $maxBytes byte (${last?.lengthInBytes})');
   }
 }

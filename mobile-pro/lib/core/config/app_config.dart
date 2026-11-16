@@ -51,6 +51,7 @@ class AppConfig {
         maxAccuracyM: _int(attendance['max_accuracy_m']) ?? 100,
         offlineMaxHours: _int(attendance['offline_max_hours']) ?? 72,
         correctionMaxDays: _int(attendance['correction_max_days']) ?? 7,
+        correctionAttachmentMaxKb: _int(attendance['correction_attachment_max_kb']) ?? 2048,
       ),
       auth: AuthConfig(
         passwordMinLength: _int(auth['password_min_length']) ?? 10,
@@ -102,12 +103,16 @@ class AttendanceConfig {
     required this.maxAccuracyM,
     required this.offlineMaxHours,
     required this.correctionMaxDays,
+    this.correctionAttachmentMaxKb = 2048,
   });
 
   final bool requireSelfie;
   final int maxAccuracyM;
   final int offlineMaxHours;
   final int correctionMaxDays;
+
+  /// Batas lampiran koreksi (`attendance.correction_attachment_max_kb`, 05 §5.7).
+  final int correctionAttachmentMaxKb;
 }
 
 class AuthConfig {

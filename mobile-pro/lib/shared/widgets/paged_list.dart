@@ -25,6 +25,7 @@ class PagedList<T> extends StatefulWidget {
     this.emptyMessage,
     this.searchable = true,
     this.searchDebounce = const Duration(milliseconds: 400),
+    this.onLoaded,
   });
 
   final ListingFetcher<T> fetch;
@@ -36,6 +37,10 @@ class PagedList<T> extends StatefulWidget {
   final String? emptyMessage;
   final bool searchable;
   final Duration searchDebounce;
+
+  /// Dipanggil setiap halaman pertama dimuat (cari/filter/tarik), dengan state filter efektif
+  /// server, mis. agar rekap bulan di [header] mengikuti filter bulan riwayat.
+  final void Function(ListingPage<T> page)? onLoaded;
 
   @override
   State<PagedList<T>> createState() => _PagedListState<T>();
@@ -112,6 +117,9 @@ class _PagedListState<T> extends State<PagedList<T>> {
         _total = page.total;
         _loading = false;
       });
+      if (replace) {
+        widget.onLoaded?.call(page);
+      }
     } on ApiError catch (e) {
       if (!mounted || generation != _generation) {
         return;

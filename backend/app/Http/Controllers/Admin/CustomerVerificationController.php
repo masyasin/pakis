@@ -137,15 +137,17 @@ class CustomerVerificationController extends Controller
                     'status' => $customer->status->value,
                     'status_label' => $customer->status->label(),
                     'reasons' => $c->reasons,
-                    'similarity' => $c->similarity,
-                    'distance_m' => $c->distanceM,
                 ];
+                // Di luar scope: cukup tahu ada kios serupa. Jarak & kemiripan tidak dikirim — jarak dari
+                // titik yang dikirim pemanggil bisa dipakai menebak lokasi kios lain (trilaterasi).
                 if (! $scope->allowsCustomer($user, $customer->id)) {
                     return [...$base, 'id' => null, 'in_scope' => false];
                 }
 
                 return [
                     ...$base,
+                    'similarity' => $c->similarity,
+                    'distance_m' => $c->distanceM,
                     'id' => $customer->id,
                     'in_scope' => true,
                     'owner_name' => $customer->owner_name,

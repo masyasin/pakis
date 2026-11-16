@@ -9,8 +9,12 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\SalesArea;
 use App\Domain\Customer\Policies\CustomerPolicy;
 use App\Domain\Customer\Policies\SalesAreaPolicy;
+use App\Models\User;
 use App\Support\Lookup\LookupRegistry;
+use Illuminate\Cache\RateLimiting\Limit;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -29,9 +33,20 @@ class CustomerServiceProvider extends ServiceProvider
         });
     }
 
+    /** Cek duplikat per pengguna per menit (batas teknis anti enumerasi, pola DeviceServiceProvider). */
+    private const CHECK_PER_MINUTE = 30;
+
     public function boot(): void
     {
         Gate::policy(SalesArea::class, SalesAreaPolicy::class);
         Gate::policy(Customer::class, CustomerPolicy::class);
+
+        // Cek duplikat menjawab "HP ini milik pegawai/kios lain?" — dibatasi per pengguna agar tidak
+        // dipakai menyisir nomor (enumerasi). Pemakaian form normal hanya beberapa kali per menit.
+        RateLimiter::for('customer-check', function (Request $request) {
+            $user = $request->user();
+
+            return Limit::perMinute(self::CHECK_PER_MINUTE)->by($user instanceof User ? 'user:'.$user->getAuthIdentifier() : 'ip:'.$request->ip());
+        });
     }
 }

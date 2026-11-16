@@ -115,8 +115,19 @@ test('PA-52 SEC-033 duplikat lintas scope: kios di luar scope tampil tanpa id/pe
         ->assertJsonPath('data.candidates.0.id', null)
         ->assertJsonPath('data.candidates.0.in_scope', false)
         ->assertJsonMissingPath('data.candidates.0.owner_name')
-        ->assertJsonMissingPath('data.candidates.0.owner_phone');
+        ->assertJsonMissingPath('data.candidates.0.owner_phone')
+        ->assertJsonMissingPath('data.candidates.0.distance_m')
+        ->assertJsonMissingPath('data.candidates.0.similarity');
 
     $this->actingAs($sales)->postJson('/pelanggan/cek-duplikat', ['store_name' => 'X Y', 'customer_id' => $hidden->id])
         ->assertNotFound();
+});
+
+test('SEC-033 cek duplikat dibatasi per pengguna (anti enumerasi HP) → 429', function () {
+    $payload = ['store_name' => 'Kios Uji Batas', 'owner_phone' => '6281200000999'];
+    for ($i = 0; $i < 30; $i++) {
+        $this->actingAs($this->apj)->postJson('/pelanggan/cek-duplikat', $payload)->assertOk();
+    }
+
+    $this->actingAs($this->apj)->postJson('/pelanggan/cek-duplikat', $payload)->assertStatus(429);
 });

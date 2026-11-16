@@ -459,7 +459,7 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('pelanggan/{customer}/ubah', [CustomerController::class, 'edit'])->whereNumber('customer')->name('customers.edit');
         Route::put('pelanggan/{customer}', [CustomerController::class, 'update'])->whereNumber('customer')->name('customers.update');
         // Verifikasi kios, cek duplikat, OTP (15 §5, BR-165/166, T-074). `cek-duplikat` & OTP = JSON.
-        Route::post('pelanggan/cek-duplikat', [CustomerVerificationController::class, 'duplicates'])->name('customers.duplicates');
+        Route::post('pelanggan/cek-duplikat', [CustomerVerificationController::class, 'duplicates'])->middleware('throttle:customer-check')->name('customers.duplicates');
         Route::post('pelanggan/{customer}/verifikasi', [CustomerVerificationController::class, 'submit'])->whereNumber('customer')
             ->middleware('throttle:30,1')->name('customers.verify');
         Route::post('pelanggan/{customer}/verifikasi/telepon-kantor', [CustomerVerificationController::class, 'officeCall'])->whereNumber('customer')

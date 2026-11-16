@@ -1,5 +1,7 @@
 # 17 — Paket C: Lapangan & Mitra (siap eksekusi)
 
+Revisi 16 Nov 2026 (repo): PF-3 sisi C — `PeriodGuard` (dibuat T-077, Paket A) wajib di setiap Action C pemancar event akuntansi; kontrak payload event `14` §7 (§11.2).
+
 **Rentang:** T-114–T-140 · FR-C01–FR-C45 · BR-240–BR-279 · SEC-141–SEC-160 · OQ-128 dst.
 **Kontrak:** `14-ROADMAP-LENGKAP.md` (ADR-109, ADR-111, ADR-112, ADR-113), `15-PAKET-A-MASTER-GUDANG.md` (**15**), `16-PAKET-B-PENJUALAN-UANG.md` (**16**). Paket ini **tidak mengubah aturan bisnis** pesanan, piutang, kwitansi, dan stok dari A/B; ia menambah kanal (mobile offline, Mitra) dan kontrol lapangan. Bila kanal mobile butuh perilaku berbeda, aturannya ditulis eksplisit di sini (mis. BR-104 offline).
 **Modul konsep v1.4:** MOB-01 (Pakis Pro mode Sales, Canvas, Driver, Gudang, Owner), MOB-02 (Pakis Mitra), FLD-01..04, SAL-01 (kanal sales & mitra), SAL-04, MKT-01, GAR-02, AUD-02, CORE-04 (WhatsApp & push), FIN-01 (QRIS).
@@ -1301,6 +1303,8 @@ Checklist rilis Paket C (tambahan): `MitraIdorTest` hijau · test sinkron scope 
 | `receivable.restoration` | Pemulihan saldo kios (BR-264) | D `employee_receivable` · K `receivable` |
 | `sales.invoice_issued` | Nota canvas | sama dengan **16** (tanpa TRANSIT) |
 | `receivable.payment_received` | QRIS | D `bank` (rekening penampung) · K `receivable` |
+
+Aturan kontrak payload `14` §7 berlaku (kualifier lengkap sejak event pertama, mis. `bank_account_id` rekening penampung QRIS di baris `bank`, `stock_location_id` & `product_id` di baris `inventory` seperti **15** §11.4; event terpancar tidak diubah). Setiap Action C yang memancarkan event di tabel ini — canvas (T-121), QRIS (T-128), pemulihan saldo (T-130), promosi & demplot (T-132), servis (T-133) — memanggil `PeriodGuard::assertOpen()` dengan tanggal bisnis dokumen sebelum `AccountingOutbox::record()` (dibuat T-077, `PeriodGuardArchTest` berlaku untuk semua domain). Mutasi `adjustment_in`/`adjustment_out` yang ditulis Action C untuk sisa promosi kembali, suku cadang servis, dan selisih kurang canvas memakai event C di tabel ini dan **tidak** memancarkan `inventory.adjusted`; `inventory.adjusted` di Paket C hanya untuk selisih lebih canvas (tabel kasus **15** §11.4). Kasus dobel lain (PC-12(b)/(c), diputuskan 16 Nov 2026): **(b)** pembayaran `payments.method = restoration` (BR-264) **hanya** memancarkan `receivable.restoration` dan **tidak** memancarkan `receivable.payment_received`; **(c)** suku cadang servis **berbayar** dijual lewat faktur Paket B (baris produk suku cadang, `16` BR-210), sehingga persediaan & HPP berkurang lewat `sales.invoice_issued`; `service.parts_used` hanya untuk suku cadang servis **garansi**. Test kontrak per kasus di T-130 & T-133.
 
 ### 11.3 Kode galat baru
 

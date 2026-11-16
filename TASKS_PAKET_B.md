@@ -1,11 +1,13 @@
 # TASKS — Paket B: Penjualan & Uang Aman (T-088–T-113)
 
+Revisi 16 Nov 2026 (repo): PF-3 — `PeriodGuard`, kunci `accounting.lock_date`, dan `PeriodGuardArchTest` dibuat di T-077 (Paket A); T-096 menambah layar & aksi ubah tanggal kunci, katalog event, validator keseimbangan.
+
 > Siap eksekusi **setelah** exit gate Paket A lulus dan checklist `docs/16-PAKET-B-PENJUALAN-UANG.md` §0 dicentang. Format sama dengan `TASKS.md`. Spesifikasi: `docs/16-PAKET-B-PENJUALAN-UANG.md` (**16**), `docs/15-PAKET-A-MASTER-GUDANG.md` (**15**), `docs/14-ROADMAP-LENGKAP.md` (**14**). Path relatif ke `backend/`.
 >
 > **Aturan khusus paket ini**
 > - **Nama berkas halaman & komponen frontend mengikuti konvensi repo** (kebab-case huruf kecil, mis. `pages/sales/orders/form.tsx`); path PascalCase di task ini indikatif (**15** §0 S-3).
-> - Domain baru: `app/Domain/{Sales,Delivery,Receivable,Cash,Pos,Warranty,Integration,Reporting}` + `app/Domain/Accounting/{Outbox,Period}` (struktur Fase 0).
-> - Semua perubahan piutang lewat `App\Domain\Receivable\ReceivableLedger`; semua Action keuangan memanggil `App\Domain\Accounting\Period\PeriodGuard` (SEC-115, SEC-123).
+> - Domain baru: `app/Domain/{Sales,Delivery,Receivable,Cash,Pos,Warranty,Integration,Reporting}` + `app/Domain/Accounting/{Outbox,Period}` (sudah dibuat T-077 Paket A, diperluas di B; struktur Fase 0).
+> - Semua perubahan piutang lewat `App\Domain\Receivable\ReceivableLedger`; semua Action keuangan memanggil `App\Domain\Accounting\Period\PeriodGuard` (dibuat T-077 Paket A; SEC-115, SEC-123). Payload event mengikuti aturan kontrak `14` §7 (kualifier lengkap sejak event pertama, event lama tidak diubah, tabel "tidak dipancarkan", peran baru ke `20` §4.2.1).
 > - Halaman publik: `app/Http/Controllers/Public/*` + `resources/views/public/*.blade.php` (Blade, bukan Inertia). POS PWA: `resources/pos/` (entry Vite terpisah).
 > - Setiap dokumen keuangan memancarkan event **16** §11.2 di transaksi yang sama; test kontrak keseimbangan per event.
 > - Dependency baru hanya: library PDF (OQ-109, diputuskan sebelum T-091) dan `workbox-*` (T-107). Lainnya → berhenti dan tanyakan.
@@ -137,7 +139,7 @@ Jalur kritis: T-088 → T-089 → T-090 → T-091 → T-092 → T-093 → T-097 
 ### T-093 — Faktur, PPN, rekening resmi, PDF
 - Paket: B | Prioritas: P0 | Estimasi: 10 jam
 - Memenuhi: FR-B13, FR-B14, FR-B15, FR-B23, BR-107, BR-132, BR-210, BR-211, SEC-119, SEC-122
-- Dependensi: T-092, T-096 (outbox & PeriodGuard), T-111 (antrean pesan)
+- Dependensi: T-092, T-096 (katalog event & validator outbox; `PeriodGuard` dari T-077), T-111 (antrean pesan)
 - Konteks wajib: **16** §4.2 (`bank_accounts`, `tax_rates`), §4.5 (`invoices`, `invoice_lines`), §5.1 (`invoices.*`, `bank-accounts.*`, `tax-rates.*`), §5.2 (`public.official-accounts`), §6.6 (`invoice_void`), §8.1 BR-132, §8.2 BR-210, BR-211, §9 (`tax.*`, `collection.official_account_warning`), §11.2 (`sales.invoice_issued`, `sales.invoice_voided`), §10.2 SEC-119, SEC-122; **14** OQ-101
 - File: migrations `bank_accounts`, `tax_rates`, `invoices`, `invoice_lines`; sequence `invoice`; `app/Domain/Receivable/{Models/{Invoice,InvoiceLine,BankAccount,TaxRate},Enums/{InvoiceStatus,InvoiceType},ReceivableLedger.php (inti: invoice issue/void),Tax/VatCalculator.php,Actions/{IssueInvoiceFromDelivery,ReissueInvoice,RequestInvoiceVoid,SendInvoice},Approvables/InvoiceVoid,Documents/InvoicePdf,Listings/InvoiceListing,Resources/InvoiceResource}`; `app/Domain/Receivable/Settings/{SaveBankAccount}`; `app/Http/Controllers/Public/OfficialAccountController.php` + view; pages `Receivable/Invoices/*`, `Settings/BankAccounts/*`, `Settings/TaxRates/*`; `components/pakis/OfficialAccountsNotice.tsx`; tests `tests/Contract/OfficialAccountTemplateTest.php`
 - Deskripsi: Faktur terbit di transaksi bukti terima (BR-210) dengan alokasi diskon proporsional & PPN opsional. `ReceivableLedger` dibuat di sini (arch test SEC-115 mulai berlaku). Rekening resmi master + snapshot di faktur. Batal faktur via approval. PDF via `PdfRenderer`.
@@ -187,15 +189,16 @@ Jalur kritis: T-088 → T-089 → T-090 → T-091 → T-092 → T-093 → T-097 
 ### T-096 — Outbox akuntansi penjualan & uang + tanggal kunci
 - Paket: B | Prioritas: P0 | Estimasi: 6 jam
 - Memenuhi: FR-B18, BR-113, BR-229 (lock & outbox), SEC-123, ADR-104, ADR-115
-- Dependensi: Paket A (T-077)
-- Konteks wajib: **16** §8.1 BR-113, §8.2 BR-229, §9 (`accounting.lock_date`), §10.2 SEC-123, §11.2; **14** §7, ADR-104, ADR-115
-- File: `app/Domain/Accounting/Outbox/{EventCatalog.php,EventPayload.php,BalancedPayloadValidator.php}`; `app/Domain/Accounting/Period/{PeriodGuard.php,Actions/UpdateLockDate.php}`; controller `Admin/LockDateController`; page `Settings/LockDate.tsx`; tests `tests/Contract/AccountingEventCatalogTest.php`, `tests/Arch/PeriodGuardArchTest.php`
-- Deskripsi: Katalog event **16** §11.2 sebagai kelas data (kode, peran akun yang diizinkan, builder payload). `AccountingOutbox::record()` (A) menolak payload tidak seimbang. `PeriodGuard` + lock date (hanya maju; mundur Owner + alasan + password). Event pembatalan memakai `revision + 1`.
+- Dependensi: Paket A (T-077: `AccountingOutbox`, `PeriodGuard`, kunci `accounting.lock_date`, `PeriodGuardArchTest`)
+- Konteks wajib: **16** §5 (`admin.accounting.lock-date`), §8.1 BR-113, §8.2 BR-229, §9 (`accounting.lock_date`), §10.2 SEC-123, §11.2; **15** §9 (`accounting.lock_date`), §11.4; **14** §7 (aturan kontrak payload), ADR-104, ADR-115
+- File: `app/Domain/Accounting/Outbox/{EventCatalog.php,EventPayload.php,BalancedPayloadValidator.php}`; `app/Domain/Accounting/Period/Actions/UpdateLockDate.php` (`PeriodGuard.php` sudah ada dari T-077); controller `Admin/LockDateController`; page `Settings/LockDate.tsx` (di bawah `pages/site-settings/`, **15** §0 S-3); tests `tests/Contract/AccountingEventCatalogTest.php`, `tests/Feature/Accounting/UpdateLockDateTest.php`, perluasan `tests/Arch/PeriodGuardArchTest.php` (T-077)
+- Deskripsi: Katalog event **16** §11.2 sebagai kelas data (kode, peran akun yang diizinkan, builder payload). `AccountingOutbox::record()` (A) menolak payload tidak seimbang. **Tidak** membuat `PeriodGuard` (sudah ada dari T-077); task ini menambah layar & aksi ubah lock date `UpdateLockDate` (BR-229: hanya maju; mundur Owner + alasan + password; izin `accounting.lock`) yang menggantikan pengubahan lewat layar Pengaturan umum (penanda `locked` sementara Paket A), dan menambah kasus `ReceivableLedger` ke `PeriodGuardArchTest`. Event pembatalan memakai `revision + 1`.
 - Kriteria penerimaan:
   - [ ] Payload tidak seimbang → exception (test per event dengan fixture)
   - [ ] Peran akun di luar katalog event ditolak
   - [ ] Lock date mundur oleh Finance → 403; oleh Owner dengan alasan → berhasil & tercatat
-  - [ ] Arch test: Action domain `Sales/Receivable/Cash/Pos` yang memanggil outbox juga memanggil `PeriodGuard`
+  - [ ] Setelah task ini, `accounting.lock_date` tidak bisa diubah lewat layar Pengaturan umum (hanya `UpdateLockDate`)
+  - [ ] Arch test T-077 (semua domain pemanggil outbox) tetap hijau untuk Action B; kasus baru: Action domain `Sales/Receivable/Cash/Pos` yang memanggil `ReceivableLedger` juga memanggil `PeriodGuard`
 - Verifikasi: `php artisan test --filter='AccountingEvent|PeriodGuard|LockDate'`
 - Di luar lingkup: jurnal (Paket F)
 

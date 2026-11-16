@@ -14,14 +14,14 @@ Sumber kebenaran kerangka: `docs/14-ROADMAP-LENGKAP.md`. Kode modul = konsep v1.
 
 | Paket | Rentang | Jumlah | Estimasi | Status |
 |---|---|---|---|---|
-| A — Master & Gudang | T-067–T-087 + T-085A | 22 | ±170 jam | Dirinci: `TASKS_PAKET_A.md` (revisi 16 Nov 2026: + T-085A, T-070 10 jam) |
-| B — Penjualan & Uang Aman | T-088–T-113 | 26 | ±197 jam | Outline. Dirinci berikutnya (Lapis 2) |
-| C — Lapangan & Mitra | T-114–T-140 | 27 | ±244 jam | Outline |
-| D — Armada & BBM | T-141–T-153 | 13 | ±101 jam | Outline |
-| E — SDM Lanjut & Payroll | T-049–T-066 (ada) + T-154–T-158 | 18 + 5 | ±132 + ±35 jam | T-049–T-066 sudah detail di `TASKS.md` (ditunda). T-154–T-158 outline |
-| F — Keuangan & Prinsipal | T-159–T-178 | 20 | ±172 jam | Outline |
-| G — Cerdas & Kinerja | T-179–T-192 | 14 | ±142 jam | Outline |
-| **Total sisa** | | **126 baru** | **±1.050 jam** + Fase HR ±132 jam | |
+| A — Master & Gudang | T-067–T-087 + T-085A | 22 | ±172 jam | Dirinci: `TASKS_PAKET_A.md` (revisi 16 Nov 2026: + T-085A, T-070 10 jam, T-077 14 jam) |
+| B — Penjualan & Uang Aman | T-088–T-113 | 26 | ±211 jam | Dirinci: `TASKS_PAKET_B.md` |
+| C — Lapangan & Mitra | T-114–T-140 | 27 | ±251 jam | Dirinci: `TASKS_PAKET_C.md` |
+| D — Armada & BBM | T-141–T-153 | 13 | ±110 jam | Dirinci: `TASKS_PAKET_D.md` |
+| E — SDM Lanjut & Payroll | T-049–T-066 (ada) + T-063A, T-064A, T-154–T-158, T-158A | 18 + 8 | ±135 + ±59 jam | Fase HR `13`/`TASKS.md` setelah Paket A + E1; E2 setelah D (PE-1). Dirinci: `TASKS_PAKET_E.md` |
+| F — Keuangan & Prinsipal | T-159–T-178 | 20 | ±184 jam | Dirinci: `TASKS_PAKET_F.md` |
+| G — Cerdas & Kinerja | T-179–T-192 | 14 | ±146 jam | Dirinci: `TASKS_PAKET_G.md` |
+| **Total** | | **130 baru** (126 + T-085A, T-063A, T-064A, T-158A) | **±1.133 jam** + Fase HR ±135 jam | Semua paket dirinci; tabel di bawah = outline asli (bila berbeda, yang berlaku `TASKS_PAKET_*.md`) |
 
 ---
 

@@ -1,6 +1,6 @@
 # TASKS — Paket A: Master & Gudang (T-067–T-087, + T-085A)
 
-Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10–PA-24 dari `docs/12-OPEN-QUESTIONS.md` (termasuk task baru T-085A).
+Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10–PA-24 dari `docs/12-OPEN-QUESTIONS.md` (termasuk task baru T-085A) + PF-3 sisi A (`PeriodGuard` di T-077), kontrak payload event `14` §7 (**15** §11.4).
 
 > Siap eksekusi **setelah** Fase 0 + 0,5 selesai (exit gate `Implementasi_Plan.md`, T-041–T-045) dan checklist penyelarasan `docs/15-PAKET-A-MASTER-GUDANG.md` §0 dicentang. Format sama dengan `TASKS.md`. Spesifikasi sumber: `docs/15-PAKET-A-MASTER-GUDANG.md` (disingkat **15**), kerangka `docs/14-ROADMAP-LENGKAP.md` (**14**). Path relatif ke `backend/`.
 >
@@ -15,11 +15,12 @@ Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10�
 > - Setiap listing baru: kelas listing + `#[UsesListing]` + `DataTable` + kunci di `07` §3.4 + `tests/Fixtures/listing_catalog.php` (**15** §7.3).
 > - Setiap setting baru: `SettingRegistry` + `08` §2 + test registri (**15** §9).
 > - Setiap permission baru sudah dibuat T-067. Task lain hanya memakai, tidak menambah.
+> - Setiap Action yang memanggil `AccountingOutbox::record()` memanggil `App\Domain\Accounting\Period\PeriodGuard` dengan tanggal bisnis dokumen (dibuat T-077, `PeriodGuardArchTest`), mengisi kualifier payload, dan menguji kasus "tidak dipancarkan" miliknya (**15** §11.4).
 
 | Ringkasan | Nilai |
 |---|---|
 | Task | 22 (T-067–T-087 + T-085A) |
-| Estimasi | 170 jam (rentang 145–210) |
+| Estimasi | 172 jam (rentang 147–212) |
 | Exit gate | **15** §10.2 checklist rilis + UAT-A01–A21 lulus + `ReconcileStockLedger` = 0 selisih di data UAT |
 
 ## Urutan & dependensi
@@ -244,11 +245,11 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - Di luar lingkup: pemakaian anggaran & bonus barang (Paket B)
 
 ### T-077 — Inti stok: StockLedger, batch, mutasi, reservasi, HPP, outbox
-- Paket: A | Prioritas: P0 | Estimasi: 12 jam
-- Memenuhi: FR-A21, BR-101, BR-114, BR-154, BR-155, BR-159, SEC-102, NFR-A02, NFR-A03, ADR-103, ADR-104
+- Paket: A | Prioritas: P0 | Estimasi: 14 jam (12 + 2 untuk `PeriodGuard`, arch test lintas domain, tipe setting `date`)
+- Memenuhi: FR-A21, BR-101, BR-114, BR-154, BR-155, BR-159, SEC-102, NFR-A02, NFR-A03, ADR-103, ADR-104, ADR-115 (`PeriodGuard`, PF-3)
 - Dependensi: T-068, T-070
-- Konteks wajib: **15** §4.8 (semua tabel), §8.1 BR-101, BR-114, §8.2 BR-154, BR-155, BR-159, §9 (`inventory.negative_stock_allowed`, `inventory.reservation_ttl_hours`), §10.2 SEC-102, §11.1 (`ReconcileStockLedger`, `ReleaseExpiredReservations`), §11.3; **14** ADR-103, ADR-104, §7
-- File: migrations `stock_batches`, `stock_movements` (+ trigger append-only), `stock_reservations`, `product_costs`, `product_stock_levels`, `stock_batch_status_logs`, `accounting_events` (+ trigger: hanya `status`, `journal_entry_id`, `error` yang boleh di-UPDATE, DELETE ditolak); `app/Domain/Inventory/Ledger/{StockLedger.php,StockLine.php,MovementType.php,LedgerResult.php,BatchKey.php,CostCalculator.php,Exceptions/{InsufficientStock,StockConflict,BatchNotAvailable}.php}`; `app/Domain/Inventory/Models/{StockBatch,StockMovement,StockReservation,ProductCost,ProductStockLevel,StockBatchStatusLog}.php`; `app/Domain/Accounting/Outbox/{AccountingOutbox.php,Models/AccountingEvent.php,EventCode.php}`; commands `inventory:reconcile`, `inventory:release-reservations`, `inventory:stress` (hanya env testing/CI; uji konkurensi lewat skrip ini, bukan Pest `--parallel`); kunci `inventory.*` + grup `inventory` di registri; case `NotificationKind::StockReconcileMismatch` + kunci `notification.on_stock_reconcile_mismatch`; tests `tests/Feature/Inventory/Ledger/*`, `tests/Arch/StockLedgerArchTest.php`, `tests/Concurrency/LastUnitTest.php`
+- Konteks wajib: **15** §4.8 (semua tabel), §8.1 BR-101, BR-114, §8.2 BR-154, BR-155, BR-159, §9 (`inventory.negative_stock_allowed`, `inventory.reservation_ttl_hours`, `accounting.lock_date`, tipe `date`), §10.2 SEC-102, §11.1 (`ReconcileStockLedger`, `ReleaseExpiredReservations`), §11.3 (`PERIOD_LOCKED`), §11.4; **14** ADR-103, ADR-104, ADR-115, §7 (aturan kontrak payload); **16** BR-229, SEC-123 (lanjutan di T-096)
+- File: migrations `stock_batches`, `stock_movements` (+ trigger append-only), `stock_reservations`, `product_costs`, `product_stock_levels`, `stock_batch_status_logs`, `accounting_events` (+ trigger: hanya `status`, `journal_entry_id`, `error` yang boleh di-UPDATE, DELETE ditolak); `app/Domain/Inventory/Ledger/{StockLedger.php,StockLine.php,MovementType.php,LedgerResult.php,BatchKey.php,CostCalculator.php,Exceptions/{InsufficientStock,StockConflict,BatchNotAvailable}.php}`; `app/Domain/Inventory/Models/{StockBatch,StockMovement,StockReservation,ProductCost,ProductStockLevel,StockBatchStatusLog}.php`; `app/Domain/Accounting/Outbox/{AccountingOutbox.php,Models/AccountingEvent.php,EventCode.php}`; `app/Domain/Accounting/Period/PeriodGuard.php`; tipe `date` di `SettingType`/`SettingDefinition` + kunci `accounting.lock_date` + grup `accounting` di registri (`08` §2); kode `PERIOD_LOCKED` di sub-tabel "khusus web" `05` §2.3 + `ErrorCode`; commands `inventory:reconcile`, `inventory:release-reservations`, `inventory:stress` (hanya env testing/CI; uji konkurensi lewat skrip ini, bukan Pest `--parallel`); kunci `inventory.*` + grup `inventory` di registri; case `NotificationKind::StockReconcileMismatch` + kunci `notification.on_stock_reconcile_mismatch`; tests `tests/Feature/Inventory/Ledger/*`, `tests/Feature/Accounting/PeriodGuardTest.php`, `tests/Arch/StockLedgerArchTest.php`, `tests/Arch/PeriodGuardArchTest.php`, `tests/Concurrency/LastUnitTest.php`
 - Deskripsi: API publik `StockLedger`:
   - `receive(StockLocation, Product, BatchKey{batch_no, expiry, bin}, Qty base, UnitCost, Source, businessDate)`
   - `issue(StockBatch|list, Qty, Source, MovementType)` — mengurangi, memakai `avg_cost`
@@ -257,7 +258,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - `adjust(StockBatch|BatchKey, signed Qty, Source, reasonId)`
   - `setStatus(StockBatch, status, reasonId, user)`
 
-  Semua method menerima `Source{type, id, line_id}` dan wajib dipanggil di dalam `DB::transaction` milik Action pemanggil (method melempar bila tidak ada transaksi aktif). Kunci baris `stock_batches` urut `id` naik, retry deadlock maks 3x, lalu `StockConflict` → `409 STATE_CONFLICT` (kode bersama, **15** §11.3). `AccountingOutbox::record(code, source, businessDate, payload)` ditulis Action pemanggil di transaksi yang sama (payload: peran akun + nilai string desimal).
+  Semua method menerima `Source{type, id, line_id}` dan wajib dipanggil di dalam `DB::transaction` milik Action pemanggil (method melempar bila tidak ada transaksi aktif). Kunci baris `stock_batches` urut `id` naik, retry deadlock maks 3x, lalu `StockConflict` → `409 STATE_CONFLICT` (kode bersama, **15** §11.3). `AccountingOutbox::record(code, source, businessDate, payload)` ditulis Action pemanggil di transaksi yang sama (payload: peran akun + nilai string desimal + kualifier **15** §11.4: `stock_location_id` & `product_id` per baris, `refs.supplier_id` untuk `inventory.goods_received`/`inventory.purchase_returned`). `PeriodGuard::assertOpen(date)` membaca `setting('accounting.lock_date')` (kosong = terbuka) dan menolak dengan `422 PERIOD_LOCKED` (jalur galat web T-067); Action pemanggil outbox memanggilnya dengan tanggal bisnis dokumen sebelum menulis mutasi. `PeriodGuardArchTest` berlaku untuk semua domain (bukan hanya `Sales/Receivable/Cash/Pos`): setiap kelas Action yang memanggil `AccountingOutbox::record()` juga memanggil `PeriodGuard`. Layar & aksi ubah lock date (`UpdateLockDate`, BR-229, `accounting.lock`), katalog event B, dan validator keseimbangan **bukan** bagian task ini (T-096).
 - Kriteria penerimaan:
   - [ ] Arch test: hanya `App\Domain\Inventory\Ledger` yang memanggil `update/insert` pada `stock_batches.qty_*` dan `stock_movements`
   - [ ] UPDATE/DELETE `stock_movements` ditolak trigger (test SQL langsung)
@@ -266,10 +267,13 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] `qty_after` setiap mutasi = saldo batch setelahnya; `inventory:reconcile` pada data acak 1.000 mutasi = 0 selisih
   - [ ] Pemanggilan di luar transaksi melempar `LogicException`
   - [ ] Setting `inventory.negative_stock_allowed` berpenanda `locked` dan hanya bisa `false` (test registri)
+  - [ ] `accounting.lock_date` tipe `date`, default kosong, berpenanda `locked` (test registri dua arah dengan `08` §2); `PeriodGuard::assertOpen()` → `PERIOD_LOCKED` untuk tanggal ≤ lock date, lolos untuk tanggal sesudahnya dan bila kosong
+  - [ ] `PeriodGuardArchTest`: Action fixture yang memanggil `AccountingOutbox::record()` tanpa `PeriodGuard` membuat test merah (domain apa pun)
+  - [ ] Galat `PERIOD_LOCKED` di dalam transaksi Action → rollback: tidak ada `stock_movements` maupun `accounting_events` tertulis
   - [ ] Selisih rekonsiliasi mengirim notifikasi `stock_reconcile_mismatch` ke Owner & `super_admin` (default lonceng saja)
   - [ ] Seeder volume (`InventoryVolumeSeeder`, testing saja) 1 juta mutasi; query kartu stok per batch & per produk-lokasi-periode memakai index (assert `EXPLAIN` tanpa `ALL`)
-- Verifikasi: `php artisan test --filter='Ledger|StockLedgerArch|LastUnit'` · `php artisan inventory:stress --workers=20` (CI)
-- Di luar lingkup: dokumen pemakai (T-080–T-086), mesin jurnal (Paket F)
+- Verifikasi: `php artisan test --filter='Ledger|StockLedgerArch|LastUnit|PeriodGuard'` · `php artisan inventory:stress --workers=20` (CI)
+- Di luar lingkup: dokumen pemakai (T-080–T-086), layar & aturan ubah tanggal kunci (T-096), mesin jurnal (Paket F)
 
 ### T-078 — FEFO, kedaluwarsa otomatis, alert ED
 - Paket: A | Prioritas: P0 | Estimasi: 6 jam
@@ -318,6 +322,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] Klik posting dua kali (dua request bersamaan) → satu posting, satu `409 STATE_CONFLICT`
   - [ ] Jumlah nomor seri ≠ qty → `SERIAL_COUNT_MISMATCH`; duplikat → `SERIAL_DUPLICATE`
   - [ ] Outbox `inventory.goods_received` berisi D `inventory` = K `goods_received_not_invoiced` = Σ qty × biaya
+  - [ ] `PostGoodsReceipt` memanggil `PeriodGuard` dengan tanggal bisnis penerimaan (≤ lock date → `PERIOD_LOCKED`, stok tidak berubah); payload membawa `stock_location_id` & `product_id` per baris + `refs.supplier_id`; baris `registration_mismatch` ikut event yang sama, tanpa event terpisah (**15** §11.4)
   - [ ] Harga beli hanya tampil untuk pemegang `purchase_orders.view` / `stock.view_cost` (SEC-107)
   - [ ] 2 listing + ekspor `goods_receipts` & `serial_numbers` (`ExportableListing`) lulus kontrak
 - Verifikasi: `php artisan test --filter='GoodsReceipt|Serial'`
@@ -334,6 +339,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] Retur melebihi qty tersedia batch → `INSUFFICIENT_STOCK`
   - [ ] Ditolak → reservasi dilepas; dibatalkan setelah approved → reservasi dilepas
   - [ ] Payload outbox seimbang (D = K) dengan selisih biaya ke `inventory_variance`
+  - [ ] `ShipPurchaseReturn` memanggil `PeriodGuard` dengan tanggal bisnis kirim; payload membawa `stock_location_id` & `product_id` per baris + `refs.supplier_id`; selisih biaya tidak memancarkan `inventory.adjusted` terpisah (**15** §11.4)
 - Verifikasi: `php artisan test --filter=PurchaseReturn`
 - Di luar lingkup: nota debit/pemotongan hutang (Paket F)
 
@@ -348,6 +354,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] Setelah kirim, stok asal berkurang dan TRANSIT bertambah dengan batch, ED, biaya sama
   - [ ] Terima 48 dari 50 → status `received_with_variance`, 2 tetap di TRANSIT sampai approval; setelah disetujui `adjustment_out` + outbox `inventory.transfer_variance`
   - [ ] Terima > kirim → `TRANSFER_OVER_RECEIPT`; penerima = pengirim → `TRANSFER_SAME_PERSON`
+  - [ ] `ReceiveStockTransfer` dan putusan selisih memanggil `PeriodGuard` dengan tanggal bisnis terima/putusan; kirim tidak memancarkan event, terima memancarkan `inventory.transferred` sekali (`refs.from/to_stock_location_id`), selisih memancarkan `inventory.transfer_variance`, bukan `inventory.adjusted` (**15** §11.4)
   - [ ] Staf lokasi lain (bukan asal/tujuan) → 404
   - [ ] Pengingat terkirim sekali per hari setelah ambang
 - Verifikasi: `php artisan test --filter=StockTransfer`
@@ -366,6 +373,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] Baris selisih ≥ ambang tidak bisa `review` sebelum hitung ulang oleh pengguna lain (`OPNAME_RECOUNT_REQUIRED`)
   - [ ] Batch yang sedang di opname lain → `OPNAME_BATCH_LOCKED`
   - [ ] Selisih Rp 1,2 jt → rantai 2 langkah; posting menulis `adjustment_*` dan outbox `inventory.adjusted` seimbang
+  - [ ] `PostStockOpname` memanggil `PeriodGuard` dengan tanggal bisnis posting; batch temuan memakai `inventory.adjusted`, bukan `inventory.goods_received`/`inventory.opening_balance`; payload membawa `stock_location_id` & `product_id` per baris (**15** §11.4)
   - [ ] Ditolak → kembali `review` (bukan `cancelled`)
 - Verifikasi: `php artisan test --filter=StockOpname`
 - Di luar lingkup: opname canvas (Paket C)
@@ -384,6 +392,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] Saksi tidak menerima field NIK (validasi menolak kunci tak dikenal)
   - [ ] Eksekusi → qty 0, status `disposed`, outbox `inventory.written_off`
   - [ ] Metode `return_to_principal` membuat retur prinsipal (T-081), bukan mutasi `disposal`
+  - [ ] `ExecuteDisposalReport` memanggil `PeriodGuard` dengan tanggal bisnis eksekusi; karantina, lepas karantina & pindah rak (`bin_move_*`) tidak memancarkan event apa pun; `return_to_principal` tidak memancarkan `inventory.written_off` (**15** §11.4)
 - Verifikasi: `php artisan test --filter='Quarantine|Disposal'`
 - Di luar lingkup: prosedur resmi dinas (OQ-115) — template BA generik dulu
 
@@ -431,6 +440,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] Setelah ditutup → `OPENING_BALANCE_CLOSED`; setting tidak bisa dibuka lagi (penanda `one_way`: `false → true` ditolak)
   - [ ] File 30.000 baris batch diterima (batas `import.max_rows_opening_stock`, NFR-A01)
   - [ ] `product_costs.avg_cost` = rata-rata tertimbang biaya file; outbox `inventory.opening_balance` total = Σ qty × biaya
+  - [ ] Aksi impor saldo awal memanggil `PeriodGuard` dengan tanggal bisnis saldo awal; payload membawa `stock_location_id` & `product_id` per baris; tidak memancarkan `inventory.goods_received` (**15** §11.4)
   - [ ] Runbook dapat diikuti tim Pakis (dicek saat UAT-A19)
 - Verifikasi: `php artisan test --filter=OpeningStock`
 - Di luar lingkup: saldo awal piutang (T-112)
@@ -462,16 +472,16 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 |---|---|---|
 | Fondasi (approval, lokasi, satuan) | T-067–T-069 | 21 |
 | Master (produk + komponen unggahan, izin, supplier, kios, harga, promo) | T-070–T-076 | 52 |
-| Stok inti & FEFO | T-077–T-078 | 18 |
+| Stok inti & FEFO | T-077–T-078 | 20 |
 | Pembelian | T-079–T-081 | 23 |
 | Operasi gudang | T-082–T-084 | 21 |
 | Impor & cutover (+ kerangka impor generik) | T-085A, T-085–T-086 | 22 |
 | Laporan, hardening, UAT | T-087 | 13 |
-| **Total** | 22 task | **170** |
+| **Total** | 22 task | **172** |
 
 Revisi 16 Nov 2026: +8 jam T-085A (PA-15), +2 jam T-070 untuk `app/Support/Upload/` (PA-22).
 
-Rentang: optimis 145 jam (master Pakis rapi, OQ terjawab cepat) · pesimis 210 jam (format Excel sangat beragam, aturan approval berubah saat UAT).
+Rentang: optimis 147 jam (master Pakis rapi, OQ terjawab cepat) · pesimis 212 jam (format Excel sangat beragam, aturan approval berubah saat UAT).
 
 ## Pertanyaan terbuka yang memblokir
 

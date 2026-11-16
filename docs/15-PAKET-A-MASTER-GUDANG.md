@@ -1,6 +1,6 @@
 # 15 — Paket A: Master & Gudang (siap eksekusi)
 
-Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10–PA-24 dari `12`.
+Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10–PA-24 dari `12` + PF-3 sisi A (`PeriodGuard` di T-077), kontrak payload event `14` §7 (§11.4).
 
 **Rentang:** T-067–T-087 (+ T-085A) · FR-A01–FR-A30 · BR-150–BR-170 · SEC-101–SEC-110
 **Kontrak lintas modul:** `14-ROADMAP-LENGKAP.md` (ADR-101–ADR-115, nama tabel §5–§6, event §7, penomoran §8, role §10, status §11).
@@ -21,7 +21,7 @@ Paket ini ditulis dari docs v1.0 ditambah perubahan yang terlihat di `TASKS.md` 
 
 ## 1. Ruang Lingkup
 
-**Termasuk:** mesin approval generik, lokasi stok & rak, kendaraan minimal (untuk lokasi canvas), kategori, satuan & konversi, produk, izin edar, prinsipal & supplier, area penjualan, pelanggan/kios (verifikasi, duplikat, ubah nomor HP, limit & tempo), price list berversi, promo, buku stok batch/ED + reservasi + HPP moving average, outbox event akuntansi, FEFO & karantina otomatis, PO, penerimaan barang (batch/ED/izin/nomor seri), retur ke prinsipal, mutasi stok, stock opname hitung buta, karantina manual & pemusnahan, import master & saldo awal stok, laporan stok & telusur batch.
+**Termasuk:** mesin approval generik, lokasi stok & rak, kendaraan minimal (untuk lokasi canvas), kategori, satuan & konversi, produk, izin edar, prinsipal & supplier, area penjualan, pelanggan/kios (verifikasi, duplikat, ubah nomor HP, limit & tempo), price list berversi, promo, buku stok batch/ED + reservasi + HPP moving average, outbox event akuntansi + tanggal kunci (`PeriodGuard`, §11.4), FEFO & karantina otomatis, PO, penerimaan barang (batch/ED/izin/nomor seri), retur ke prinsipal, mutasi stok, stock opname hitung buta, karantina manual & pemusnahan, import master & saldo awal stok, laporan stok & telusur batch.
 
 **Di luar lingkup (paket lain):** pesanan penjualan, pengiriman, faktur, pembayaran (B); layar mobile gudang (C); data kendaraan lengkap, dokumen kendaraan (D); jurnal (F); saran pembelian (F); kanal OTP WhatsApp nyata (C, OQ-004).
 
@@ -775,6 +775,8 @@ CREATE TABLE accounting_events (
 ```
 Lokasi stok tipe `vehicle` & `in_transit`: `stock_bin_id` selalu NULL. Batch di bin zona `quarantine` selalu berstatus `quarantine` (BR-164).
 
+Isi `payload` event Paket A (kualifier wajib sejak event pertama), tabel kasus "tidak dipancarkan", dan `PeriodGuard` yang wajib dipanggil setiap pemanggil `AccountingOutbox::record()`: §11.4. `PeriodGuard` + kunci `accounting.lock_date` dibuat T-077 bersama outbox (PF-3), tanpa tabel baru.
+
 ### 4.9 Pembelian & nomor seri (T-079–T-081)
 
 ```sql
@@ -1499,16 +1501,17 @@ Total listing setelah Paket A: listing Fase 0 + 29 listing baru (jumlah Fase 0 b
 | **BR-167** | **Penugasan kios.** Tepat satu penugasan aktif per kios (unik DB). Pengalihan = tutup penugasan lama (`end_date = tanggal efektif − 1`) dan buat baru dalam satu transaksi, perbarui cache di `customers`. Tanggal efektif boleh hari ini atau masa depan (job harian 00:05 menerapkan yang jatuh tempo). Pengalihan massal maks 500 kios per aksi. Pegawai yang dinonaktifkan/dimutasi (Fase 0) memicu daftar "kios tanpa sales aktif" di dashboard Admin Penjualan, tidak dialihkan otomatis |
 | **BR-168** | **Penentuan harga.** `PriceResolver::resolve(customer, product, unit, qty, at, channel)`: urutan price list = (1) `store` bila channel `pos` (Paket B), (2) price list kios (`customers.price_list_id`), (3) price list `area` untuk area kios, (4) `default`. Di tiap list dipakai versi `published` dengan `effective_from ≤ at < effective_to`. Item dipilih: satuan sama, `min_qty` terbesar ≤ qty. Tidak ada item di list → lanjut ke list berikutnya. Tidak ada sama sekali → `422 PRICE_NOT_FOUND`. Hasil membawa `price_list_version_id` untuk disnapshot di baris dokumen (ADR-108). Versi `published` tidak bisa diubah; koreksi = versi baru. `effective_from` versi baru ≥ sekarang (tidak berlaku surut) kecuali `prices.publish` dengan alasan |
 | **BR-169** | **Promo.** `PromotionEngine::apply(lines, customer, channel, at)`: kandidat = promo `active`, periode cocok, kanal cocok, scope cocok, target cocok. Urut `priority` asc. Promo `is_stackable=false` yang terpilih mengunci baris yang terkena dari promo lain. Diskon dihitung dari harga setelah promo sebelumnya (stacking berurutan). Diskon tidak membuat harga baris < 0. `buy_x_get_y` menambah baris bonus (harga 0) yang stoknya ikut dialokasikan FEFO (mutasi `promo_issue`, Paket B). Anggaran: `budget_used` ditambah saat dokumen jual diposting (Paket B) dengan kunci baris; melewati anggaran → promo berhenti berlaku untuk dokumen baru dan status `ended` saat habis. Simulasi (`admin.promotions.simulate`) memakai mesin yang sama tanpa menulis data |
-| **BR-170** | **Impor master & saldo awal.** Memakai kerangka impor generik `app/Support/Import` yang diekstrak dari impor pegawai Fase 0 di T-085A (staging `import_batches`/`import_rows`, pemetaan kolom tersimpan, validasi per baris; kontrak per tipe: `fields`, `normalize`, `validate`, `rowKey`, `apply`). Idempoten lewat `import_rows.row_key` = **sha256 kunci gabungan** (bukan kunci alami mentah, karena kunci gabungan bisa > 100 karakter) + `file_hash`. Batas baris per tipe impor diatur lewat setting (`import.max_rows` Fase 0 maks 10.000 tidak cukup untuk saldo awal 30.000 batch, NFR-A01). Kunci idempoten: produk = SKU; kios = HP ternormalisasi (atau kode); harga = versi + satuan + `min_qty`; saldo awal = lokasi stok + SKU + batch + bin. Saldo awal: hanya bila setting `inventory.opening_balance_open=true`, hanya ke lokasi tanpa mutasi selain `opening_balance`, menulis mutasi `opening_balance` dengan biaya dari file, lalu `product_costs` = rata-rata tertimbang biaya file; outbox `inventory.opening_balance`. Setelah Owner menutup saldo awal (`opening_balance_open=false`, konfirmasi password), impor saldo awal ditolak |
+| **BR-170** | **Impor master & saldo awal.** Memakai kerangka impor generik `app/Support/Import` yang diekstrak dari impor pegawai Fase 0 di T-085A (staging `import_batches`/`import_rows`, pemetaan kolom tersimpan, validasi per baris; kontrak per tipe: `fields`, `normalize`, `validate`, `rowKey`, `apply`). Idempoten lewat `import_rows.row_key` = **sha256 kunci gabungan** (bukan kunci alami mentah, karena kunci gabungan bisa > 100 karakter) + `file_hash`. Batas baris per tipe impor diatur lewat setting (`import.max_rows` Fase 0 maks 10.000 tidak cukup untuk saldo awal 30.000 batch, NFR-A01). Kunci idempoten: produk = SKU; kios = HP ternormalisasi (atau kode); harga = versi + satuan + `min_qty`; saldo awal = lokasi stok + SKU + batch + bin. Saldo awal: **tanggal bisnis = tanggal cutover** yang diisi pengimpor per batch impor (default hari ini, wajib > `accounting.lock_date` bila diisi, dipakai mutasi `opening_balance`, `PeriodGuard`, dan event `inventory.opening_balance`); hanya bila setting `inventory.opening_balance_open=true`, hanya ke lokasi tanpa mutasi selain `opening_balance`, menulis mutasi `opening_balance` dengan biaya dari file, lalu `product_costs` = rata-rata tertimbang biaya file; outbox `inventory.opening_balance`. Setelah Owner menutup saldo awal (`opening_balance_open=false`, konfirmasi password), impor saldo awal ditolak |
 
 ## 9. Setting Baru (SettingRegistry)
 
-Ditambahkan ke registri `08` §2 oleh task yang tercantum (+ test registri). Semua bisa diubah dari layar Pengaturan oleh pemegang `settings.update` (nama izin di repo) kecuali ditandai **terkunci**. Tidak ada yang `is_public` kecuali disebut. Grup baru (`approval`, `inventory`, `purchasing`, `customer`, `product`, `pricing`, `upload`) ditambahkan ke `SettingRegistry::GROUPS` oleh task pertama yang memakai grup itu. Tidak ada grup `map` (PA-20).
+Ditambahkan ke registri `08` §2 oleh task yang tercantum (+ test registri). Semua bisa diubah dari layar Pengaturan oleh pemegang `settings.update` (nama izin di repo) kecuali ditandai **terkunci**. Tidak ada yang `is_public` kecuali disebut. Grup baru (`approval`, `inventory`, `purchasing`, `customer`, `product`, `pricing`, `upload`, `accounting`) ditambahkan ke `SettingRegistry::GROUPS` oleh task pertama yang memakai grup itu. Tidak ada grup `map` (PA-20).
 
 **Tipe & penanda baru (PA-19, dibuat T-067 di `SettingType`/`SettingDefinition` + `08` §2 + test registri):**
 - Tipe `decimal` (string desimal, tanpa float), `int_list` (daftar bilangan bulat; `multi_enum` Fase 0 berisi string), dan `money` (rupiah, `DECIMAL(18,2)` sebagai string).
 - Penanda `locked`: hanya `super_admin` yang bisa mengubah, wajib konfirmasi password, perubahan tercatat audit (selain grup `SENSITIVE_GROUPS` Fase 0 yang hanya butuh konfirmasi password).
 - Penanda `one_way`: nilai bool hanya boleh berubah `true → false`; `false → true` ditolak.
+- Tipe `date` (tanggal `YYYY-MM-DD`, boleh kosong) untuk `accounting.lock_date` — ditambahkan T-077 dengan pola yang sama (`SettingType` + `08` §2 + test registri) karena `SettingType` Fase 0 belum punya tipe tanggal.
 
 Nama kunci Fase 0 yang dipakai ulang, bukan dibuat ulang: `export.sync_max_rows` (batas ekspor langsung), `export.mass_export_alert_rows` (ambang event keamanan `mass_export`, SEC-110), `auth.otp_length` (panjang kode OTP kios, artinya sama), `import.max_rows`/`import.max_file_mb` (batas impor pegawai & default tipe lain).
 
@@ -1528,6 +1531,7 @@ Nama kunci Fase 0 yang dipakai ulang, bukan dibuat ulang: `export.sync_max_rows`
 | `inventory.opening_balance_open` | bool | `true` | Penanda `one_way` (hanya `true → false`), konfirmasi password | T-086 |
 | `inventory.negative_stock_allowed` | bool | `false` | Penanda `locked`; hanya boleh `false` (test) | T-077 |
 | `inventory.reservation_ttl_hours` | int | `72` | 1–720 | T-077 |
+| `accounting.lock_date` | date | kosong (= tidak ada periode terkunci) | Dokumen ber-outbox bertanggal bisnis ≤ nilai ini ditolak `PERIOD_LOCKED` (§11.4). Selama Paket A berpenanda `locked` (hanya `super_admin` + konfirmasi password, tercatat audit); aturan maju/mundur (BR-229), izin `accounting.lock`, dan layar khusus dibuat T-096 (**16**) | T-077 (kunci) / T-096 (aksi ubah) |
 | `purchasing.allow_receipt_without_po` | bool | `false` | — | T-080 |
 | `purchasing.over_receipt_tolerance_pct` | decimal | `0` | 0–20 | T-080 |
 | `purchasing.receipt_two_person` | bool | `true` | — | T-080 |
@@ -1599,7 +1603,7 @@ Pola Fase 0 (catatan T-029): tiap jenis = case `NotificationKind` + kunci `notif
 | SEC-109 | Unggahan baru (foto toko, dokumen izin edar, dokumen kelayakan pembeli terbatas, berita acara, foto pemusnahan, foto label nomor seri, foto opname) memakai satu komponen `app/Support/Upload/` yang diekstrak T-070 dari `CorrectionAttachment`/`AvatarStore` (dipakai T-070, T-071, T-074, T-080, T-083, T-084): deteksi jenis dari isi berkas (bukan ekstensi/MIME klien), allowlist JPG/PNG/WEBP/PDF, batas `upload.max_image_kb` (gambar) / `upload.max_pdf_kb` (PDF) (default 5 MB / 10 MB), nama acak, disk privat, metadata (EXIF/lokasi) dibuang dari foto. | Test komponen + test per endpoint |
 | SEC-110 | Aksi sensitif dicatat di `audit_logs` dengan nilai lama/baru: perubahan aturan approval, delegasi, limit kredit, HP kios, penggabungan kios, terbit harga, aktivasi promo, posting opname, pemusnahan, lepas karantina, tutup saldo awal, ubah penanda produk. Ekspor master/stok/pelanggan tercatat event keamanan `mass_export` bila melebihi setting Fase 0 `export.mass_export_alert_rows` (default 1.000), otomatis lewat `RecordExportCreated`. | Test audit per aksi |
 
-Checklist rilis Paket A (tambahan `09` §6): arch test StockLedger hijau · uji konkurensi stok lulus · rekonsiliasi saldo vs mutasi = 0 pada data UAT · semua listing baru lulus `ListingContractTest` · test IDOR untuk setiap resource ber-scope stok/pelanggan · OTP rate limit aktif · trigger append-only terpasang di produksi (cek `SHOW TRIGGERS`).
+Checklist rilis Paket A (tambahan `09` §6): arch test StockLedger & `PeriodGuardArchTest` hijau · uji konkurensi stok lulus · rekonsiliasi saldo vs mutasi = 0 pada data UAT · semua listing baru lulus `ListingContractTest` · test IDOR untuk setiap resource ber-scope stok/pelanggan · OTP rate limit aktif · trigger append-only terpasang di produksi (cek `SHOW TRIGGERS`).
 
 ## 11. Job, Event & Kode Galat
 
@@ -1624,7 +1628,7 @@ Semua job memakai `onOneServer()` + `withoutOverlapping()` (pola Fase 0) dan men
 
 ### 11.2 Event domain (in-process, untuk notifikasi & modul lain)
 
-`ApprovalRequested`, `ApprovalStepActivated`, `ApprovalDecided`, `GoodsReceiptPosted`, `StockTransferShipped`, `StockTransferReceived`, `StockOpnamePosted`, `BatchStatusChanged`, `CustomerActivated`, `CustomerPhoneChanged`, `CustomerReassigned`, `PriceListVersionPublished`, `PromotionActivated`, `ProductRegistrationExpiring`. Listener notifikasi memakai kanal in-app Fase 0 (`NotificationRouter`), jenis & kunci kanal di §9.1. Event akuntansi ditulis ke `accounting_events` **di dalam transaksi yang sama** dengan dokumen (bukan lewat listener).
+`ApprovalRequested`, `ApprovalStepActivated`, `ApprovalDecided`, `GoodsReceiptPosted`, `StockTransferShipped`, `StockTransferReceived`, `StockOpnamePosted`, `BatchStatusChanged`, `CustomerActivated`, `CustomerPhoneChanged`, `CustomerReassigned`, `PriceListVersionPublished`, `PromotionActivated`, `ProductRegistrationExpiring`. Listener notifikasi memakai kanal in-app Fase 0 (`NotificationRouter`), jenis & kunci kanal di §9.1. Event akuntansi ditulis ke `accounting_events` **di dalam transaksi yang sama** dengan dokumen (bukan lewat listener), setelah `PeriodGuard` dan dengan kualifier payload §11.4.
 
 ### 11.3 Kode galat (`05` §2.3)
 
@@ -1670,6 +1674,39 @@ Semua job memakai `onOneServer()` + `withoutOverlapping()` (pola Fase 0) dan men
 | `PRICE_VERSION_LOCKED` | 409 | Ubah item versi non-draft |
 | `OPENING_BALANCE_CLOSED` | 409 | Impor saldo awal setelah ditutup |
 | `LOCATION_HAS_MOVEMENTS` | 409 | Saldo awal ke lokasi yang sudah bertransaksi |
+| `PERIOD_LOCKED` | 422 | Tanggal bisnis dokumen ber-outbox ≤ `accounting.lock_date` (§11.4; arti & status sama dengan **16** §11.3). Ditambahkan T-077; task Paket B yang pertama mengembalikannya lewat API memindahkannya ke tabel utama `05` §2.3 + `api_error.dart` |
+
+### 11.4 Kontrak event akuntansi & tanggal kunci (PF-3, `14` §7)
+
+**Tanggal kunci (`PeriodGuard`).** T-077 membuat `App\Domain\Accounting\Period\PeriodGuard` (`assertOpen(date)`) bersama `AccountingOutbox`, membaca `setting('accounting.lock_date')` (§9). Setiap Action Paket A yang memanggil `AccountingOutbox::record()` — posting penerimaan (T-080), kirim retur prinsipal (T-081), terima mutasi & putusan selisih mutasi (T-082), posting opname (T-083), eksekusi pemusnahan (T-084), impor saldo awal (T-086) — memanggil `PeriodGuard::assertOpen()` dengan tanggal bisnis dokumen (nilai `business_date` yang sama dengan yang ditulis ke `stock_movements` dan `accounting_events`) **sebelum** menulis mutasi, di transaksi yang sama. Tanggal ≤ lock date → `422 PERIOD_LOCKED`, tidak ada mutasi maupun event yang tertulis. Lock date kosong → semua tanggal terbuka. `tests/Arch/PeriodGuardArchTest.php` (dibuat T-077) mewajibkan setiap kelas Action di **semua** domain (`App\Domain\*`, bukan hanya `Sales/Receivable/Cash/Pos`) yang memanggil `AccountingOutbox::record()` juga memanggil `PeriodGuard`; paket berikutnya tidak membuat arch test kedua, hanya menambah kasus (T-096 menambah pemanggil `ReceivableLedger`).
+
+**Kualifier payload event Paket A** (aturan umum `14` §7: lengkap sejak event pertama, event lama tidak pernah diubah):
+
+| Event | Kualifier wajib |
+|---|---|
+| Semua `inventory.*` | Setiap baris `lines[]` membawa `stock_location_id` (lokasi stok tempat mutasi dinilai) dan `product_id`, sehingga dimensi lokasi & produk (ADR-125) tersedia untuk backfill tanpa membaca ulang dokumen |
+| `inventory.goods_received`, `inventory.purchase_returned` | + `refs.supplier_id` (dimensi `payable`/`goods_received_not_invoiced`, `20` §4.2.1). `inventory.purchase_returned` membawa dua nilai BR-159 (biaya batch & HPP rata-rata, selisih ke `inventory_variance`) |
+| `inventory.transferred`, `inventory.transfer_variance` | + `refs.from_stock_location_id` & `refs.to_stock_location_id`. `inventory.transferred` tidak berjurnal: `lines: []`, rincian `product_id`/qty/nilai per lokasi untuk jejak di `refs` (pola **16** §11.2 untuk event tanpa baris) |
+
+Peran yang dipakai Paket A: `inventory`, `goods_received_not_invoiced`, `payable`, `inventory_variance`, `inventory_loss`, `opening_balance_equity` (katalog `20` §4.2.1). Paket A tidak memperkenalkan peran baru.
+
+**Event ini TIDAK dipancarkan bila …** (cegah jurnal dobel, test kontrak per baris di task pemilik):
+
+| Kasus | Event yang dipakai | Tidak dipancarkan | Task |
+|---|---|---|---|
+| Pindah rak dalam satu lokasi stok (`bin_move_out`/`bin_move_in`), termasuk karantina manual & lepas karantina | — (tanpa event: lokasi stok & nilai tidak berubah) | `inventory.transferred`, `inventory.adjusted` | T-084 |
+| Kirim mutasi (asal → TRANSIT) | — (event baru saat terima) | `inventory.transferred` saat kirim | T-082 |
+| Terima mutasi (TRANSIT → tujuan) | `inventory.transferred` sekali per penerimaan | — | T-082 |
+| Selisih mutasi disetujui (`adjustment_out` dari TRANSIT) | `inventory.transfer_variance` | `inventory.adjusted` | T-082 |
+| Batch kedaluwarsa otomatis / ubah status batch | — (hanya `stock_batch_status_logs`) | `inventory.written_off` (baru saat eksekusi pemusnahan) | T-078, T-084 |
+| Pemusnahan metode `return_to_principal` | `inventory.purchase_returned` (lewat retur T-081) | `inventory.written_off` | T-084 |
+| Selisih biaya retur prinsipal (biaya batch ≠ HPP rata-rata) | Baris `inventory_variance` di `inventory.purchase_returned` yang sama | `inventory.adjusted` | T-081 |
+| Baris penerimaan `registration_mismatch` masuk bin karantina | Baris di `inventory.goods_received` yang sama | Event terpisah apa pun | T-080 |
+| Batch ditemukan saat opname (`adjustment_in` batch baru) | `inventory.adjusted` | `inventory.goods_received`, `inventory.opening_balance` | T-083 |
+| Saldo awal stok | `inventory.opening_balance` | `inventory.goods_received` | T-086 |
+| Penyesuaian stok oleh dokumen Paket C (`adjustment_in`/`adjustment_out` untuk sisa promosi kembali, suku cadang servis, selisih kurang canvas) | Event C (**17** §11.2: `marketing.promo_goods_returned`, `service.parts_used`, `field.canvas_shortage`; suku cadang servis berbayar dijual lewat faktur B sehingga memakai `sales.invoice_issued`, PC-12(c)) | `inventory.adjusted` | T-121, T-132, T-133 (C) |
+| Selisih lebih canvas | `inventory.adjusted` (**17** §11.2) | — | T-121 (C) |
+| Penjualan, retur penjualan, POS (`sale`, `sales_return`, `pos_*`) | Event Paket B (**16** §11.2) | Event `inventory.*` apa pun | B |
 
 ## 12. Pengujian
 
@@ -1680,6 +1717,7 @@ Semua job memakai `onOneServer()` + `withoutOverlapping()` (pola Fase 0) dan men
 | Unit `Qty`/`Money` | Konversi satuan & pembulatan half-up, `integer_only`, operasi brick/math tanpa float (arch test: tidak ada `float` di `App\Domain\Inventory`) | T-069, T-077 |
 | Approval engine | Pemilihan aturan (rentang inklusif/eksklusif, prioritas, kondisi), snapshot, rantai 2 langkah, direct_supervisor & location_head, resolusi kosong → eskalasi, maker-checker (pengaju, pembuat, delegasi), delegasi kedaluwarsa, tolak di langkah 2, batal oleh pengaju, dua penyetuju memutuskan bersamaan (hanya satu menang) | T-067 |
 | StockLedger | Masuk/keluar/reservasi/konsumsi/lepas, saldo tidak minus, trigger append-only, `qty_after` benar, rollback bila outbox gagal | T-077 |
+| Tanggal kunci & outbox | `PeriodGuardArchTest` (semua domain), dokumen bertanggal ≤ `accounting.lock_date` → `PERIOD_LOCKED` tanpa mutasi & event, lock date kosong = terbuka, kualifier payload §11.4 ada di setiap event, kasus "tidak dipancarkan" §11.4 per dokumen | T-077 (+ T-080–T-084, T-086 per dokumen) |
 | Konkurensi | 20 proses paralel lewat skrip artisan `inventory:stress` di CI MariaDB (bukan Pest `--parallel`, yang rusak di Pest 5.3.5, `backend/CLAUDE.md`) mengambil 1 unit terakhir: tepat 1 sukses, 19 `INSUFFICIENT_STOCK`, saldo 0 | T-077 |
 | HPP | Kasus: stok 0 → biaya terima; stok 10 @1.000 + terima 10 @1.200 = 1.100; terima saat stok minus (tidak mungkin, dites ditolak); presisi 4 desimal | T-077 |
 | FEFO | Urutan ED, NULL terakhir, tie-break `received_date`, lewati karantina/ED/izin habis, `min_sell_days_before_expiry`, alokasi lintas beberapa batch | T-078 |
@@ -1752,7 +1790,7 @@ OQ-101 (PKP) memengaruhi BR-159 (biaya terima tanpa PPN masukan). Sampai dijawab
 | FR-A13–FR-A16, FR-A18, BR-125, BR-126, BR-165, BR-166, SEC-105 | T-074 | Kios, UAT-A05–A07 |
 | FR-A19, BR-168, SEC-106 | T-075 | Harga, UAT-A08 |
 | FR-A20, BR-169 | T-076 | Promo, UAT-A09 |
-| FR-A21, BR-101, BR-114, BR-154, BR-155, BR-159, SEC-102, NFR-A02, NFR-A03 | T-077 | StockLedger, konkurensi, HPP |
+| FR-A21, BR-101, BR-114, BR-154, BR-155, BR-159, SEC-102, NFR-A02, NFR-A03, ADR-115 (`PeriodGuard`, §11.4) | T-077 | StockLedger, konkurensi, HPP, tanggal kunci & outbox |
 | FR-A22, FR-A23, BR-102, BR-156, BR-157 | T-078 | FEFO, job ED |
 | FR-A24, BR-160 | T-079 | PO, UAT-A01 |
 | FR-A25, BR-103, BR-144, BR-158, SEC-104 | T-080 | Penerimaan, UAT-A10–A12 |

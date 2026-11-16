@@ -1,5 +1,7 @@
 # TASKS — Paket C: Lapangan & Mitra (T-114–T-140)
 
+Revisi 16 Nov 2026 (repo): PF-3 sisi C — Action C yang memancarkan event akuntansi memanggil `PeriodGuard` (dibuat T-077); kontrak payload event `14` §7.
+
 > Siap eksekusi **setelah** exit gate Paket B (termasuk pilot) lulus dan checklist `docs/17-PAKET-C-LAPANGAN-MITRA.md` §0 dicentang. Spesifikasi: **17** (`docs/17-…`), **16**, **15**, **14**. Path backend relatif ke `backend/`; mobile di `mobile-pro/`, `mobile-mitra/`, `mobile-shared/`.
 >
 > **Aturan khusus paket ini**
@@ -8,6 +10,8 @@
 > - Setiap Action yang mengubah entitas tersinkron memanggil `SyncChangeRecorder` (ADR-117; arch test dari T-114).
 > - Dependency Flutter baru hanya dari **17** §0.1; dicatat di `03` §5.
 > - Permission Paket C dibuat seluruhnya di T-114.
+> - **Addendum Paket E2 (`19` §0.2, keputusan PE-1) diterapkan di task C pemiliknya:** T-131 menambah nilai metrik driver ke ENUM `incentive_schemes.metric` (BR-303) dan mengisi status `sent_to_payroll` saat input payroll dibuat (E2 T-154); penyesuaian insentif dilipat ke `incentive_results.final_amount` (tidak ada sumber `incentive_adjustment` terpisah, PE-7). T-134 memakai cuti yang disetujui (T-060) sebagai pemicu saran `leave_cover` untuk sales.
+> - Setiap Action yang memanggil `AccountingOutbox::record()` memanggil `App\Domain\Accounting\Period\PeriodGuard` dengan tanggal bisnis dokumen (arch test `PeriodGuardArchTest` dari T-077, berlaku semua domain) dan mengikuti aturan kontrak payload `14` §7 (kualifier lengkap sejak event pertama; kasus "tidak dipancarkan" **15** §11.4 / **17** §11.2).
 > - Test mobile: `fvm flutter analyze && fvm flutter test` di setiap folder Flutter yang disentuh.
 
 | Ringkasan | Nilai |
@@ -170,6 +174,7 @@ Jalur kritis: T-114 → T-115 → T-119 → T-121 → T-140. Mitra (T-135–T-13
   - [ ] Stok sistem kendaraan kurang → tidak minus, selisih muncul di rekonsiliasi
   - [ ] Kredit melewati limit saat sinkron → nota sah + approval `canvas_credit_exception` + red flag
   - [ ] Selisih kurang disetujui → piutang karyawan + event `field.canvas_shortage`
+  - [ ] Action canvas yang memancarkan event (nota canvas, rekonsiliasi selisih) memanggil `PeriodGuard` dengan tanggal bisnis dokumen (`PeriodGuardArchTest` T-077); selisih kurang tidak memancarkan `inventory.adjusted` (**15** §11.4)
   - [ ] Nota tercetak di printer uji memuat nomor, kios, item, total, rekening resmi
   - [ ] Tutup jualan dengan antrean tersisa → `SESSION_HAS_PENDING_SYNC`
 - Verifikasi: `php artisan test --filter=Canvas` · `fvm flutter test test/features/canvas` · uji manual printer (dicatat di PR)
@@ -266,6 +271,7 @@ Jalur kritis: T-114 → T-115 → T-119 → T-121 → T-140. Mitra (T-135–T-13
   - [ ] Webhook dibayar → payment `qris` + alokasi ke faktur terpilih; tidak ada kwitansi; tidak menambah uang di tangan
   - [ ] Kedaluwarsa → `QRIS_EXPIRED`
   - [ ] Nominal ≥ ambang diverifikasi ulang ke penyedia sebelum alokasi
+  - [ ] `SettleQrisPayment` memanggil `PeriodGuard` dengan tanggal bisnis pembayaran (`PeriodGuardArchTest` T-077); baris `bank` membawa `bank_account_id` rekening penampung (`14` §7)
 - Verifikasi: `php artisan test --filter=Qris`
 - Di luar lingkup: QRIS statis
 
@@ -294,6 +300,7 @@ Jalur kritis: T-114 → T-115 → T-119 → T-121 → T-140. Mitra (T-135–T-13
   - [ ] Pembekuan berlaku segera di web & sinkron; item perangkat sebelum `frozen_at` diterima + flag, sesudahnya `EMPLOYEE_FROZEN`
   - [ ] Paket bukti: manifest hash cocok dengan isi ZIP (test verifikasi)
   - [ ] Pemulihan saldo: faktur kios berkurang, piutang karyawan bertambah, event seimbang
+  - [ ] `RestoreCustomerPayment` memanggil `PeriodGuard` dengan tanggal bisnis pemulihan (`PeriodGuardArchTest` T-077)
   - [ ] Lepas pembekuan hanya Owner + password + alasan
 - Verifikasi: `php artisan test --filter='Investigation|Freeze|Restoration'`
 - Di luar lingkup: tindakan hukum
@@ -325,6 +332,7 @@ Jalur kritis: T-114 → T-115 → T-119 → T-121 → T-140. Mitra (T-135–T-13
   - [ ] Pemakaian > rencana → tidak bisa ditutup tanpa approval
   - [ ] HP peserta tanpa persetujuan ditolak (CHECK)
   - [ ] Event keluar & kembali produk seimbang
+  - [ ] `IssuePromoGoods` & `ReturnPromoGoods` memanggil `PeriodGuard` dengan tanggal bisnis keluar/kembali (`PeriodGuardArchTest` T-077); kembali promo (`adjustment_in`) tidak memancarkan `inventory.adjusted` (**15** §11.4)
 - Verifikasi: `php artisan test --filter=PromoActivity`
 - Di luar lingkup: klaim biaya ke prinsipal (Paket F)
 
@@ -338,6 +346,7 @@ Jalur kritis: T-114 → T-115 → T-119 → T-121 → T-140. Mitra (T-135–T-13
   - [ ] Status garansi otomatis dari nomor seri & kartu
   - [ ] Perbaikan berbayar tanpa persetujuan pelanggan → `SERVICE_ESTIMATE_NOT_APPROVED`
   - [ ] Biaya servis → faktur `charge`; suku cadang garansi → event `service.parts_used`
+  - [ ] `UseSparePart` memanggil `PeriodGuard` dengan tanggal bisnis pemakaian (`PeriodGuardArchTest` T-077); `adjustment_out` suku cadang tidak memancarkan `inventory.adjusted` (**15** §11.4)
   - [ ] Setiap perubahan status mengantre pesan ke pemohon
 - Verifikasi: `php artisan test --filter='ServiceTicket|WarrantyClaim'`
 - Di luar lingkup: modul bengkel lengkap

@@ -120,6 +120,12 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 
 ### 6.2 Sedang dikerjakan
 - **T-067 selesai (16 Nov 2026)**: fondasi (bagian 1) + mesin approval & UI (bagian 2). Paket A berikutnya: T-068/T-069/T-073 boleh paralel (urutan `TASKS_PAKET_A.md`).
+- **Pembagian sisa Paket A dua jalur paralel (disetujui Mas 16 Nov 2026):**
+  - **Jalur 1 Gudang & Stok (sesi pakis-eb, ±63 jam):** T-068 → T-073 → T-074 → T-077 → T-078 → T-082 → T-083 → T-084.
+  - **Jalur 2 Produk & Komersial (sesi pakis-28, ±78 jam):** T-069 → T-070 → T-071 → T-072 → T-075 → T-076 → T-079 → T-080 → T-081 → T-085 → T-086.
+  - **T-087** dikerjakan bersama setelah kedua jalur selesai.
+  - **Titik tunggu:** T-077 ← T-070; T-078 ← T-071; T-075 ← T-073; T-080 ← T-077 + T-078; T-084 ← T-081; T-085 ← T-074 + T-077. Sesi pemilik prasyarat mengabari begitu task itu di-push.
+  - **Aturan:** DB test terpisah per sesi (pakis-28 `pakis_one_test_p55`, pakis-eb `p41`/`p67*`); berkas titik panas (`routes/admin.php`, `MenuBuilder`, `SettingRegistry` + `08` §2, `NotificationKind`, `ReferenceGroup`, `listing_catalog.php` + `07` §3.4, `config/pakis.php`, `docs/15`) disunting setelah mengabari sesi lain, hanya menambah di blok modul sendiri, commit kecil; commit pathspec eksplisit + `git fetch`/rebase sebelum push; §6.4 hanya ditambah baris; tiap task tetap plan mode + persetujuan Mas.
 - **Exit gate Fase 0,5 tinggal uji HP** (keputusan Mas 16 Nov 2026, `12` f43d749): T-036A bagian 2, cakupan BR-060–BR-070, dan retensi lewat scheduler selesai. **Uji HP MOB-01–MOB-09 + satu HP Android 8 nyata DITUNDA**, dijalankan Mas belakangan dalam satu putaran untuk semua alur mobile (presensi, riwayat, koreksi, persetujuan, notifikasi, profil, tugas luar kota). T-042 tetap "sedang" sampai uji itu.
 
 ### 6.3 Blocker aktif

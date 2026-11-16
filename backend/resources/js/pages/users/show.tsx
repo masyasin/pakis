@@ -1,6 +1,7 @@
-import { Head, Link, router, useHttp } from '@inertiajs/react';
+import { Head, Link, router, useHttp, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
+    BadgeCheck,
     History,
     KeyRound,
     Lock,
@@ -15,6 +16,8 @@ import {
     UsersRound,
 } from 'lucide-react';
 import { useState } from 'react';
+import type { ReactNode } from 'react';
+import { DetailCard, Field, FieldGrid } from '@/components/employee/detail-ui';
 import { toast } from 'sonner';
 import InputError from '@/components/input-error';
 import { NativeSelect } from '@/components/pakis/native-select';
@@ -37,7 +40,9 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
+import { formatPhone } from '@/lib/employee-format';
 import { formatRelativeTime } from '@/lib/relative-time';
+import type { User as AuthUser } from '@/types/auth';
 import {
     edit,
     index,
@@ -140,6 +145,10 @@ type Pending = 'toggle' | 'reset-mfa' | 'revoke' | 'reset-password' | null;
 /** Detail pengguna (05 §4.4 `admin.users.show`: tab profil, role, sesi, perangkat, riwayat). */
 export default function UserShow(props: Props) {
     const { user, tab, can, protectedReason } = props;
+    // Foto pengguna lain belum punya route (hanya `profil/foto` milik sendiri), jadi foto hanya
+    // tampil saat membuka akun sendiri; selain itu inisial.
+    const { auth } = usePage<{ auth: { user: AuthUser | null } }>().props;
+    const photoUrl = auth.user?.id === user.id ? auth.user.avatar : null;
     const [pending, setPending] = useState<Pending>(null);
     const [processing, setProcessing] = useState(false);
     const [temporary, setTemporary] = useState<string | null>(null);
@@ -197,121 +206,85 @@ export default function UserShow(props: Props) {
                     </Link>
                 </Button>
 
-                <header className="flex flex-wrap items-start justify-between gap-4">
-                    <div className="min-w-0 space-y-1.5">
-                        <h1 className="text-[1.4rem] leading-tight font-bold break-words">
-                            {user.name}
-                        </h1>
-                        <div className="flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
-                            <span className="font-mono">{user.username}</span>
-                            <StatusBadge
-                                status={
-                                    user.is_active
-                                        ? 'user.active'
-                                        : 'user.inactive'
-                                }
-                            />
-                            {user.mfa_enabled ? (
-                                <span className="inline-flex items-center gap-1 text-status-success">
-                                    <ShieldCheck
-                                        className="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    MFA aktif
+                <UserHero
+                    user={user}
+                    photoUrl={photoUrl}
+                    actions={
+                        hasActions ? (
+                            <div className="flex flex-wrap justify-end gap-2">
+                                {can.update && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link href={edit(user.id)}>
+                                            <Pencil aria-hidden="true" />
+                                            Ubah
+                                        </Link>
+                                    </Button>
+                                )}
+                                {can.resetPassword && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() =>
+                                            setPending('reset-password')
+                                        }
+                                    >
+                                        <KeyRound aria-hidden="true" />
+                                        Reset Password
+                                    </Button>
+                                )}
+                                {can.resetMfa && user.mfa_enabled && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPending('reset-mfa')}
+                                    >
+                                        <ShieldOff aria-hidden="true" />
+                                        Reset MFA
+                                    </Button>
+                                )}
+                                {can.revokeSessions && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setPending('revoke')}
+                                    >
+                                        <LogOut aria-hidden="true" />
+                                        Cabut Semua Sesi
+                                    </Button>
+                                )}
+                                {can.toggle && (
+                                    <Button
+                                        variant={
+                                            user.is_active
+                                                ? 'destructive'
+                                                : 'default'
+                                        }
+                                        size="sm"
+                                        onClick={() => setPending('toggle')}
+                                    >
+                                        <Power aria-hidden="true" />
+                                        {user.is_active
+                                            ? 'Nonaktifkan'
+                                            : 'Aktifkan'}
+                                    </Button>
+                                )}
+                            </div>
+                        ) : null
+                    }
+                    notice={
+                        protectedReason ? (
+                            <p className="flex items-start gap-2.5 rounded-lg bg-status-info-bg px-3.5 py-3 text-sm text-status-info">
+                                <Lock
+                                    className="mt-px size-4 shrink-0"
+                                    aria-hidden="true"
+                                />
+                                <span>
+                                    {PROTECTED_MESSAGE[protectedReason]}
                                 </span>
-                            ) : (
-                                <span className="inline-flex items-center gap-1">
-                                    <ShieldOff
-                                        className="size-4"
-                                        aria-hidden="true"
-                                    />
-                                    {user.mfa_required
-                                        ? 'MFA wajib, belum aktif'
-                                        : 'MFA belum aktif'}
-                                </span>
-                            )}
-                            {user.must_change_password && (
-                                <Badge variant="outline">
-                                    Wajib ganti password
-                                </Badge>
-                            )}
-                            {user.is_locked && (
-                                <Badge variant="destructive">
-                                    Terkunci sementara
-                                </Badge>
-                            )}
-                        </div>
-                    </div>
-
-                    {hasActions && (
-                        <div className="flex flex-wrap gap-2">
-                            {can.update && (
-                                <Button variant="outline" size="sm" asChild>
-                                    <Link href={edit(user.id)}>
-                                        <Pencil aria-hidden="true" />
-                                        Ubah
-                                    </Link>
-                                </Button>
-                            )}
-                            {can.resetPassword && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPending('reset-password')}
-                                >
-                                    <KeyRound aria-hidden="true" />
-                                    Reset Password
-                                </Button>
-                            )}
-                            {can.resetMfa && user.mfa_enabled && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPending('reset-mfa')}
-                                >
-                                    <ShieldOff aria-hidden="true" />
-                                    Reset MFA
-                                </Button>
-                            )}
-                            {can.revokeSessions && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => setPending('revoke')}
-                                >
-                                    <LogOut aria-hidden="true" />
-                                    Cabut Semua Sesi
-                                </Button>
-                            )}
-                            {can.toggle && (
-                                <Button
-                                    variant={
-                                        user.is_active
-                                            ? 'destructive'
-                                            : 'default'
-                                    }
-                                    size="sm"
-                                    onClick={() => setPending('toggle')}
-                                >
-                                    <Power aria-hidden="true" />
-                                    {user.is_active
-                                        ? 'Nonaktifkan'
-                                        : 'Aktifkan'}
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </header>
-
-                {protectedReason && (
-                    <p className="flex items-start gap-2.5 rounded-lg bg-status-info-bg px-3.5 py-3 text-sm text-status-info">
-                        <Lock
-                            className="mt-px size-4 shrink-0"
-                            aria-hidden="true"
-                        />
-                        <span>{PROTECTED_MESSAGE[protectedReason]}</span>
-                    </p>
-                )}
+                            </p>
+                        ) : null
+                    }
+                />
 
                 <PageTabs
                     tabs={tabs}
@@ -547,86 +520,254 @@ function ResetPasswordDialog({
     );
 }
 
-function Item({
+function initialsOf(name: string): string {
+    return name
+        .split(/\s+/)
+        .slice(0, 2)
+        .map((w) => w[0]?.toUpperCase() ?? '')
+        .join('');
+}
+
+function mfaLabel(user: UserDetail): string {
+    if (user.mfa_enabled) {
+        return 'Aktif';
+    }
+
+    return user.mfa_required ? 'Wajib, belum aktif' : 'Belum aktif';
+}
+
+/**
+ * Kartu identitas akun, seragam dengan `EmployeeHero` (pita warna merek, avatar, ringkasan) agar dua
+ * halaman detail terasa satu aplikasi. Pita diredupkan bila akun nonaktif supaya statusnya terbaca sekilas.
+ */
+function UserHero({
+    user,
+    photoUrl,
+    actions,
+    notice,
+}: {
+    user: UserDetail;
+    photoUrl: string | null;
+    actions: ReactNode;
+    notice: ReactNode;
+}) {
+    const roleLabels = user.roles.map((r) => r.label).join(', ');
+
+    return (
+        <section className="overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]">
+            <div
+                aria-hidden="true"
+                className={[
+                    'relative h-20 bg-gradient-to-r from-primary via-primary/85 to-primary-strong sm:h-24',
+                    user.is_active ? '' : 'opacity-60 grayscale',
+                ].join(' ')}
+            >
+                <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_-30%,rgb(255_255_255/0.22),transparent_50%),radial-gradient(circle_at_10%_130%,rgb(255_255_255/0.10),transparent_45%)]" />
+            </div>
+
+            <div className="px-4 pb-5 sm:px-6">
+                <div className="relative z-10 -mt-10 flex flex-wrap items-end justify-between gap-3 sm:-mt-12">
+                    {photoUrl ? (
+                        <img
+                            src={photoUrl}
+                            alt={`Foto ${user.name}`}
+                            className="size-20 rounded-full object-cover ring-4 ring-card sm:size-24"
+                        />
+                    ) : (
+                        <span
+                            aria-hidden="true"
+                            className="grid size-20 place-items-center rounded-full bg-sidebar-accent text-2xl font-bold text-primary ring-4 ring-card sm:size-24 sm:text-3xl"
+                        >
+                            {initialsOf(user.name)}
+                        </span>
+                    )}
+                    {actions}
+                </div>
+
+                <div className="mt-3 space-y-2">
+                    <h1 className="text-[1.5rem] leading-tight font-bold break-words sm:text-[1.75rem]">
+                        {user.name}
+                    </h1>
+                    <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-md border bg-muted px-2 py-0.5 font-mono text-xs">
+                            {user.username}
+                        </span>
+                        <StatusBadge
+                            status={
+                                user.is_active ? 'user.active' : 'user.inactive'
+                            }
+                        />
+                        {user.must_change_password && (
+                            <Badge variant="outline">
+                                Wajib ganti password
+                            </Badge>
+                        )}
+                        {user.is_locked && (
+                            <Badge variant="destructive">
+                                Terkunci sementara
+                            </Badge>
+                        )}
+                    </div>
+                </div>
+
+                {notice && <div className="mt-4">{notice}</div>}
+            </div>
+
+            <dl className="grid grid-cols-2 border-t sm:grid-cols-4">
+                <Summary label="Role" index={0}>
+                    {roleLabels || 'Belum ada'}
+                </Summary>
+                <Summary label="MFA" index={1}>
+                    <span
+                        className={
+                            user.mfa_enabled
+                                ? 'inline-flex items-center gap-1 text-status-success'
+                                : user.mfa_required
+                                  ? 'inline-flex items-center gap-1 text-status-warning'
+                                  : 'inline-flex items-center gap-1'
+                        }
+                    >
+                        {user.mfa_enabled ? (
+                            <ShieldCheck
+                                className="size-4"
+                                aria-hidden="true"
+                            />
+                        ) : (
+                            <ShieldOff className="size-4" aria-hidden="true" />
+                        )}
+                        {mfaLabel(user)}
+                    </span>
+                </Summary>
+                <Summary label="Login terakhir" index={2}>
+                    {user.last_login_at
+                        ? formatRelativeTime(user.last_login_at)
+                        : 'Belum pernah'}
+                </Summary>
+                <Summary label="Dibuat" index={3}>
+                    {user.created_at
+                        ? formatRelativeTime(user.created_at)
+                        : '–'}
+                </Summary>
+            </dl>
+        </section>
+    );
+}
+
+/** Sel ringkasan di dasar hero: 2 kolom di HP (garis tengah & atas baris kedua), 4 kolom di layar lebar. */
+function Summary({
     label,
+    index,
     children,
 }: {
     label: string;
-    children: React.ReactNode;
+    index: 0 | 1 | 2 | 3;
+    children: ReactNode;
 }) {
     return (
-        <div className="grid gap-0.5 sm:grid-cols-[12rem_1fr] sm:gap-4">
-            <dt className="text-sm text-muted-foreground">{label}</dt>
-            <dd className="min-w-0 text-sm break-words">{children}</dd>
+        <div
+            className={[
+                'min-w-0 px-4 py-3 sm:px-6',
+                index % 2 === 1 ? 'border-l' : '',
+                index >= 2 ? 'border-t sm:border-t-0' : '',
+                index === 2 ? 'sm:border-l' : '',
+            ].join(' ')}
+        >
+            <dt className="text-xs text-muted-foreground">{label}</dt>
+            <dd className="mt-0.5 truncate text-sm font-semibold">
+                {children}
+            </dd>
         </div>
     );
 }
 
-const Dash = () => <span className="text-muted-foreground">–</span>;
-
 function ProfileTab({ user }: { user: UserDetail }) {
+    // Status, MFA, login terakhir, dan tanggal dibuat sudah ada di ringkasan hero; kartu ini hanya
+    // memuat detail yang tidak tampil di sana agar tidak ada informasi ganda.
+    const mfaRequiredBy = user.roles
+        .filter((r) => r.mfa_required)
+        .map((r) => r.label);
+
     return (
-        <dl className="grid gap-3 rounded-xl border bg-card p-4 sm:p-5">
-            <Item label="Nama">{user.name}</Item>
-            <Item label="Username">
-                <span className="font-mono">{user.username}</span>
-            </Item>
-            <Item label="Email">
-                {user.email ? (
-                    <>
-                        {user.email}{' '}
-                        <span className="text-xs text-muted-foreground">
-                            (
-                            {user.email_verified
-                                ? 'terverifikasi'
-                                : 'belum terverifikasi'}
+        <div className="grid gap-4 lg:grid-cols-2">
+            <DetailCard title="Kontak & identitas" icon={UserRound}>
+                <FieldGrid>
+                    <Field label="Nama" value={user.name} wide />
+                    <Field label="Username" value={user.username} mono />
+                    <Field
+                        label="HP"
+                        value={user.phone ? formatPhone(user.phone) : null}
+                    />
+                    <Field
+                        label="Email"
+                        value={user.email}
+                        hint={
+                            user.email
+                                ? user.email_verified
+                                    ? 'terverifikasi'
+                                    : 'belum terverifikasi'
+                                : undefined
+                        }
+                        wide
+                    />
+                    <Field
+                        label="Pegawai terkait"
+                        wide
+                        value={
+                            user.employee ? (
+                                user.employee.url ? (
+                                    <Link
+                                        href={user.employee.url}
+                                        className="inline-flex items-center gap-1.5 font-medium text-primary underline-offset-4 hover:underline"
+                                    >
+                                        <BadgeCheck
+                                            className="size-4"
+                                            aria-hidden="true"
+                                        />
+                                        {user.employee.name} (
+                                        {user.employee.number})
+                                    </Link>
+                                ) : (
+                                    `${user.employee.name} (${user.employee.number})`
+                                )
+                            ) : (
+                                'Tidak terhubung ke data pegawai'
                             )
-                        </span>
-                    </>
-                ) : (
-                    <Dash />
-                )}
-            </Item>
-            <Item label="HP">{user.phone ?? <Dash />}</Item>
-            <Item label="Pegawai terkait">
-                {user.employee ? (
-                    user.employee.url ? (
-                        <Link
-                            href={user.employee.url}
-                            className="font-medium text-primary underline-offset-4 hover:underline"
-                        >
-                            {user.employee.name} · {user.employee.number}
-                        </Link>
-                    ) : (
-                        `${user.employee.name} · ${user.employee.number}`
-                    )
-                ) : (
-                    <Dash />
-                )}
-            </Item>
-            <Item label="Login terakhir">
-                {user.last_login_at ? (
-                    <>
-                        {formatRelativeTime(user.last_login_at)}
-                        {user.last_login_ip && (
-                            <span className="text-muted-foreground">
-                                {' '}
-                                · {user.last_login_ip}
-                            </span>
-                        )}
-                    </>
-                ) : (
-                    'Belum pernah'
-                )}
-            </Item>
-            <Item label="Dibuat">
-                {user.created_at ? (
-                    formatRelativeTime(user.created_at)
-                ) : (
-                    <Dash />
-                )}
-            </Item>
-        </dl>
+                        }
+                    />
+                </FieldGrid>
+            </DetailCard>
+
+            <DetailCard title="Keamanan akun" icon={ShieldCheck}>
+                <FieldGrid>
+                    <Field
+                        label="Kewajiban MFA"
+                        wide
+                        value={
+                            mfaRequiredBy.length > 0
+                                ? `Wajib, karena role ${mfaRequiredBy.join(', ')}`
+                                : 'Tidak wajib untuk role akun ini'
+                        }
+                    />
+                    <Field
+                        label="IP login terakhir"
+                        value={user.last_login_ip}
+                        mono
+                    />
+                    <Field
+                        label="Wajib ganti password"
+                        value={user.must_change_password ? 'Ya' : 'Tidak'}
+                    />
+                    <Field
+                        label="Kunci sementara"
+                        value={
+                            user.is_locked
+                                ? 'Terkunci (terlalu banyak login gagal)'
+                                : 'Tidak'
+                        }
+                    />
+                </FieldGrid>
+            </DetailCard>
+        </div>
     );
 }
 

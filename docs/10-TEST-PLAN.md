@@ -111,3 +111,60 @@ Selain itu, **setiap modul** wajib punya test fitur yang membuktikan pencarian m
 - 0 temuan High/Critical terbuka dari pengujian keamanan.
 - UAT-01 s.d. UAT-20 lulus dan diparaf Pakis.
 - Uji beban k6: p95 `POST /api/v1/attendance` < 2 s, 0% galat 5xx.
+
+## 9. Cakupan BR-060–BR-070 (16 Nov 2026)
+
+Pemeriksaan per kriteria (keputusan Mas 16 Nov 2026). Test = nama berkas di `backend/tests/Feature/` (singkatan di bawah) atau `mobile-pro/test/`. Status: ✅ teruji, 🟡 sebagian, ❌ belum. Kriteria yang baru teruji pada pemeriksaan ini ditandai **(baru)**. Tidak ada kriteria yang ternyata belum diimplementasikan.
+
+Singkatan: AA `Api/V1/Attendance/AttendanceApiTest`, AL `Api/V1/Attendance/AttendanceLocationTest`, CA `Api/V1/Attendance/CorrectionApiTest`, CP `Api/V1/Attendance/CorrectionApprovalTest`, SR `Attendance/AttendanceStatusResolverTest`, SV `Attendance/ScheduleResolverTest`, SH `Attendance/ShiftTest`, HO `Attendance/HolidayTest`, MA `Attendance/ManualAttendanceTest`, CW `Attendance/CorrectionWebTest`, BC `Attendance/BusinessRuleCoverageTest`, BK `Attendance/BusinessRuleCorrectionCoverageTest`, ND `Notification/NotificationDeliveryTest`.
+
+| BR | Kriteria | Test | Status |
+|---|---|---|---|
+| BR-060 | Masuk sah mulai `start − checkin_open_min` (tepat batas diterima) | AA "jendela masuk" | ✅ |
+| BR-060 | Masuk sah sampai `end`; sesudahnya `OUTSIDE_WINDOW` | BC **(baru)** | ✅ |
+| BR-060 | Pulang ≥ masuk + `attendance.min_minutes_between_in_out` | AA "pulang terlalu cepat" | ✅ |
+| BR-060 | Pulang sah sampai `end + checkout_close_min` (tepat batas diterima) | BC **(baru)** | ✅ |
+| BR-060 | Shift `crosses_midnight`: `end` di hari berikutnya; definisi shift sah | AA "lintas tengah malam", SH | ✅ |
+| BR-061 | Override (shift/libur) → pola `effective_from` terbaru ≤ tanggal → tidak dijadwalkan | SV, ShiftPatternTest, ScheduleOverrideTest | ✅ |
+| BR-062 | Libur inklusif `start_date`–`end_date`, semua lokasi / lokasi penugasan utama pada tanggal itu | HO, SV | ✅ |
+| BR-062 | Override ber-shift di hari libur = hari kerja | SV "hari libur menang…", SR tabel kebenaran | ✅ |
+| BR-063 | Kandidat hari ini + kemarin bila lintas tengah malam (pulang 06.05 → kemarin) | AA "lintas tengah malam" | ✅ |
+| BR-063 | Shift kemarin yang tidak lintas tengah malam bukan kandidat | BC **(baru)** | ✅ |
+| BR-063 | Tanpa kandidat → `OUTSIDE_WINDOW`; tanpa jadwal → `NO_SCHEDULE`; `allow_unscheduled` → tanggal lokal tanpa shift | AA "jendela masuk", "tanpa jadwal" | ✅ |
+| BR-064 | Akurasi > `attendance.max_accuracy_m` → `LOW_ACCURACY` | AL | ✅ |
+| BR-064 | Haversine; toleransi = radius + min(akurasi, 50 m) | AL | ✅ |
+| BR-064 | Radius lokasi kosong → `attendance.default_radius_m` | BC **(baru)**; tugas luar kota: FieldTripAttendanceTest | ✅ |
+| BR-064 | Mode `location` / `any_location` / `anywhere` (lokasi terdekat & jarak dicatat) | AL | ✅ |
+| BR-065 | Mock → 422, tanpa log & berkas, security event koordinat 3 desimal + ID & model perangkat tanpa `device_uid`, notifikasi HRD + kepala lokasi | AA "lokasi palsu" | ✅ |
+| BR-065 | (klien) `is_mock` diteruskan ke server, tidak disaring di HP | `core/location/location_service_test.dart`, `features/attendance/attendance_recorder_test.dart` | ✅ |
+| BR-066 | Online memakai waktu server | AA "absen masuk online" | ✅ |
+| BR-066 | Telat dengan `late_tolerance_min`; tepat batas = 0 | AA "toleransi telat", SR | ✅ |
+| BR-066 | Pulang cepat dengan `attendance.early_leave_tolerance_min` | BC **(baru)** (sebelumnya hanya toleransi 0 di SR) | ✅ |
+| BR-066 | `work_minutes`; masuk kedua → 409; pulang berulang, yang terakhir dipakai, semua log tersimpan | AA "masuk kedua", SR | ✅ |
+| BR-067 | Offline: `recorded_at = client_time`; ≤ `offline_max_hours`; masa depan > `max_clock_skew_minutes` ditolak | AA "offline 70 jam", "terlalu jauh di masa depan" | ✅ |
+| BR-067 | Selisih jam HP > batas → diterima, `flags.clock_skew_s`, `has_anomaly` | AA "jam perangkat meleset" | ✅ |
+| BR-067 | Online dengan jam HP meleset: waktu tetap waktu server | BC **(baru)** | ✅ |
+| BR-067 | Replay `client_uuid` → data lama (`replayed`), payload baru diabaikan | AA "replay" | ✅ |
+| BR-067 | Radius & lokasi palsu tetap berlaku untuk offline | BC **(baru)** | ✅ |
+| BR-067 | (klien) antrean offline terkirim 1×, `client_uuid` tidak ganda, `client_time` = waktu tekan, selisih jam dari header `Date` | `core/offline/sync_service_test.dart`, `core/offline/queue_db_test.dart`, `features/attendance/attendance_recorder_test.dart` | ✅ (uji HP Android 8 nyata = MOB-10, lapangan) |
+| BR-068 | Urutan holiday → off → absent → no_checkout → late → early_leave → present, idempoten | SR tabel kebenaran, "job diulang" | ✅ |
+| BR-068 | Hari ditutup `attendance.daily_close_time` (non-default) / `end + checkout_close_min` lintas hari | BC **(baru)**, SR "shift malam" | ✅ |
+| BR-068 | Snapshot lokasi/jabatan/departemen dari penugasan utama pada tanggal itu | SR "hitungan menit & snapshot", "mutasi" | ✅ |
+| BR-068 | `has_anomaly` = flags atau `within_radius = false` (anywhere) | AL "mode anywhere", AA "jam perangkat meleset", FieldTripAttendanceTest | ✅ |
+| BR-068 | Job memproses hari ini & kemarin | SR "command tanpa argumen" | ✅ |
+| BR-069 | Tanggal ≤ hari ini dan ≥ hari ini − `correction_max_days` | CA "batas tanggal" | ✅ |
+| BR-069 | Satu `pending` per pegawai-tanggal | CA | ✅ |
+| BR-069 | Jam usulan di jendela shift; tanpa shift = bebas | CA "jendela shift"; BK **(baru)** untuk tanpa shift | ✅ |
+| BR-069 | Pulang ≥ masuk usulan + jeda; koreksi pulang saja memakai jam masuk hari itu | CA; BK **(baru)** | ✅ |
+| BR-069 | Lintas tengah malam: jam sebelum jendela masuk = esok hari | CA | ✅ |
+| BR-069 | Penyetuju = atasan langsung saat diajukan; wewenang 06 §6 | CA "ajukan koreksi", CP "06 §6" | ✅ |
+| BR-069 | Disetujui → jam diganti, log asli utuh, `is_corrected`, status dihitung ulang, audit; tanggal tanpa baris dibuat | CP, CW | ✅ |
+| BR-069 | Tolak wajib catatan ≥ 5; batal hanya pengaju saat `pending` | CP "tolak wajib catatan", CA "batal oleh pengaju" | ✅ |
+| BR-069 | Lampiran JPEG/PNG/PDF ≤ batas, isi diperiksa, metadata dibuang, privat | CA "lampiran" | ✅ |
+| BR-069 | Presensi manual: langsung `approved`, bukan untuk diri sendiri, batas tanggal & jam sama | MA, CW | ✅ |
+| BR-070 | Koreksi diajukan → penyetuju / kepala lokasi + HRD; diputuskan → pengaju; presensi manual → pegawai | CA, CP, MA | ✅ |
+| BR-070 | Perangkat `pending` → pemegang `devices.manage` dalam scope | `Api/V1/Auth/ApiAuthTest` (scope `all`); BC **(baru)** untuk scope `location` | ✅ |
+| BR-070 | Lokasi palsu → HRD + kepala lokasi; ekspor/impor selesai → peminta; password berubah/direset, login perangkat baru, akun terkunci → pemilik | AA, `Export/*`, `Import/*`, `Auth/*`, `Profile/PasswordUpdateTest` | ✅ |
+| BR-070 | Lonceng selalu; kanal luar = jenis ∩ global ∩ alamat; antrean; `notification_deliveries` tanpa isi | ND | ✅ |
+| BR-070 | Kuota WhatsApp harian/per orang, jeda kanal, cadangan WA → Telegram → Email, alert sekali | ND | ✅ |
+| BR-070 | Kuota OTP lupa password terpisah dari kuota notifikasi | BC **(baru)** | ✅ |

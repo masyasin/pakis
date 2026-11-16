@@ -75,3 +75,10 @@ Schedule::command('customers:apply-assignments')
     ->timezone(DisplayTime::timezone())
     ->onOneServer()
     ->withoutOverlapping();
+
+// Versi daftar harga (15 §11.1 ActivatePriceVersions, T-075): rapikan status versi yang sudah
+// digantikan. Resolusi harga memakai rentang tanggal, jadi jeda 5 menit tidak memengaruhi harga.
+Schedule::command('pricing:activate-versions')
+    ->everyFiveMinutes()
+    ->onOneServer()
+    ->withoutOverlapping();

@@ -11,6 +11,7 @@ use App\Providers\FortifyServiceProvider;
 use App\Providers\InventoryServiceProvider;
 use App\Providers\NotificationServiceProvider;
 use App\Providers\OrganizationServiceProvider;
+use App\Providers\PricingServiceProvider;
 use App\Providers\PurchasingServiceProvider;
 
 return [
@@ -26,4 +27,5 @@ return [
     InventoryServiceProvider::class,
     CustomerServiceProvider::class,
     PurchasingServiceProvider::class,
+    PricingServiceProvider::class,
 ];

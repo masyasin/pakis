@@ -38,6 +38,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateTimeIn } from '@/lib/approval-format';
+import { formatRupiah } from '@/lib/money';
+import { formatQty } from '@/lib/qty';
 
 type FlagKey =
     | 'tracks_batch'
@@ -85,6 +87,17 @@ type UnitRow = {
     barcodes: { id: number; barcode: string }[];
 };
 
+type PriceRow = {
+    list_id: number;
+    list: string;
+    kind_label: string;
+    version_id: number;
+    version_no: number;
+    unit: string;
+    min_qty: string;
+    price: string;
+};
+
 type HistoryRow = {
     id: number;
     occurred_at: string;
@@ -100,6 +113,8 @@ type Props = {
     registrations: RegistrationRow[];
     registrationState: RegistrationState;
     history?: HistoryRow[];
+    /** null = pengguna tanpa izin `prices.view` (tab Harga disembunyikan). */
+    prices?: PriceRow[] | null;
     can: { manage: boolean; manage_registrations: boolean };
 };
 
@@ -139,12 +154,15 @@ export default function ProductShow({
     registrations,
     registrationState,
     history,
+    prices,
     can,
 }: Props) {
     const page = usePage();
     const query = new URLSearchParams(page.url.split('?')[1] ?? '');
     const requested = query.get('tab');
-    const active: TabKey = TABS.some((t) => t.key === requested)
+    // Tab Harga hanya untuk pemegang prices.view (server mengirim prices = null bila tidak berhak).
+    const tabs = TABS.filter((t) => t.key !== 'harga' || prices !== null);
+    const active: TabKey = tabs.some((t) => t.key === requested)
         ? (requested as TabKey)
         : 'data';
 
@@ -214,7 +232,7 @@ export default function ProductShow({
                 <PageTabs
                     label="Bagian produk"
                     active={active}
-                    tabs={TABS.map((t) => ({
+                    tabs={tabs.map((t) => ({
                         key: t.key,
                         label: t.label,
                         icon: t.icon,
@@ -243,12 +261,8 @@ export default function ProductShow({
                         canManage={can.manage_registrations}
                     />
                 )}
-                {active === 'harga' && (
-                    <EmptyPanel
-                        icon={Tag}
-                        title="Harga belum tersedia"
-                        text="Daftar harga per satuan dan per tingkat pembeli dibangun di tahap berikutnya (T-075)."
-                    />
+                {active === 'harga' && prices !== null && (
+                    <PricesTab rows={prices ?? []} />
                 )}
                 {active === 'stok' && (
                     <EmptyPanel
@@ -836,6 +850,67 @@ function HistoryTab({ rows }: { rows: HistoryRow[] }) {
                     </TimelineItem>
                 ))}
             </Timeline>
+        </DetailCard>
+    );
+}
+
+/** Harga berlaku sekarang per daftar harga (T-075, hanya baca; ubah lewat menu Daftar Harga). */
+function PricesTab({ rows }: { rows: PriceRow[] }) {
+    if (rows.length === 0) {
+        return (
+            <EmptyPanel
+                icon={Tag}
+                title="Belum ada harga berlaku"
+                text="Produk ini belum ada di versi daftar harga yang sedang berlaku. Isi lewat menu Penjualan › Daftar Harga."
+            />
+        );
+    }
+
+    return (
+        <DetailCard title="Harga berlaku sekarang" icon={Tag}>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="text-left text-xs text-muted-foreground">
+                        <tr className="border-b">
+                            <th className="py-2 pr-3 font-medium">
+                                Daftar harga
+                            </th>
+                            <th className="py-2 pr-3 font-medium">Satuan</th>
+                            <th className="py-2 pr-3 font-medium">
+                                Mulai jumlah
+                            </th>
+                            <th className="py-2 pr-3 font-medium">Harga</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((r, i) => (
+                            <tr
+                                key={`${r.version_id}-${i}`}
+                                className="border-b last:border-0"
+                            >
+                                <td className="py-2.5 pr-3">
+                                    <Link
+                                        href={`/daftar-harga/versi/${r.version_id}/item`}
+                                        className="font-medium hover:underline"
+                                    >
+                                        {r.list}
+                                    </Link>
+                                    <span className="block text-xs text-muted-foreground">
+                                        {r.kind_label} · versi {r.version_no}
+                                    </span>
+                                </td>
+                                <td className="py-2.5 pr-3">{r.unit}</td>
+                                <td className="py-2.5 pr-3">
+                                    ≥ {formatQty(r.min_qty)}
+                                </td>
+                                <td className="py-2.5 pr-3 font-medium tabular-nums">
+                                    {formatRupiah(r.price)}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
         </DetailCard>
     );
 }

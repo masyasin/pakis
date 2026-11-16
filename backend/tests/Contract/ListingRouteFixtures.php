@@ -9,6 +9,8 @@ use App\Domain\Device\Support\DeviceTokens;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Inventory\Actions\SaveStockLocation;
 use App\Domain\Organization\Models\Location;
+use App\Domain\Pricing\Models\PriceList;
+use App\Domain\Pricing\Models\PriceListVersion;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Domain\Region\Models\Province;
 use App\Models\User;
@@ -44,6 +46,20 @@ final class ListingRouteFixtures
                 $batch->save();
 
                 return $batch->id;
+            })()],
+            // Versi draf tanpa item: cukup untuk menguji bentuk daftar item (T-075).
+            'admin.price-lists.items.index' => ['version' => (function () {
+                // Dipanggil berulang dalam satu test: pakai ulang bila sudah ada.
+                $list = PriceList::query()->where('code', 'KONTRAK')->first();
+                if ($list === null) {
+                    $list = (new PriceList)->forceFill(['code' => 'KONTRAK', 'name' => 'Daftar kontrak', 'kind' => 'tier', 'is_active' => true]);
+                    $list->save();
+                }
+                $version = PriceListVersion::query()->firstWhere('price_list_id', $list->id)
+                    ?? (new PriceListVersion)->forceFill(['price_list_id' => $list->id, 'version_no' => 1, 'effective_from' => now(), 'status' => 'draft']);
+                $version->save();
+
+                return $version->id;
             })()],
             default => [],
         };

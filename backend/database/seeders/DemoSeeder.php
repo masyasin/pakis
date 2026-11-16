@@ -12,6 +12,7 @@ use App\Domain\Catalog\Models\ProductBarcode;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductRegistration;
 use App\Domain\Catalog\Models\ProductUnit;
+use App\Domain\Customer\Models\SalesArea;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Models\Assignment;
@@ -28,6 +29,13 @@ use App\Domain\Numbering\NumberGenerator;
 use App\Domain\Organization\Models\Department;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
+use App\Domain\Pricing\Actions\CreatePriceVersion;
+use App\Domain\Pricing\Actions\PublishPriceVersion;
+use App\Domain\Pricing\Actions\SavePriceList;
+use App\Domain\Pricing\Actions\UpsertPriceItems;
+use App\Domain\Pricing\Enums\PriceListKind;
+use App\Domain\Pricing\Models\PriceList;
+use App\Domain\Pricing\Support\PriceRounding;
 use App\Domain\Purchasing\Actions\SavePrincipal;
 use App\Domain\Purchasing\Actions\SaveSupplier;
 use App\Domain\Purchasing\Models\Principal;
@@ -35,6 +43,7 @@ use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Models\User;
+use App\Support\Money\Money;
 use App\Support\Time\DisplayTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -171,6 +180,7 @@ class DemoSeeder extends Seeder
         $this->seedStock();
         $this->call(CustomerDemoSeeder::class);
         $this->seedPurchasing();
+        $this->seedPricing();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -475,6 +485,78 @@ class DemoSeeder extends Seeder
                 'village_code' => null, 'payment_term_days' => $term, 'bank_name' => $bank, 'bank_account_no' => $account,
                 'bank_account_name' => $name, 'is_active' => $active,
             ], $rows, null);
+        }
+    }
+
+    /**
+     * Harga demo T-075 (rupiah per satuan dasar, angka bulat fiktif). Kemasan besar = harga satuan
+     * dasar × faktor dikurangi 5%; tier "mulai 10" satuan dasar = −3%.
+     *
+     * @var array<string, int>
+     */
+    private const BASE_PRICES = [
+        'DM-INS-001' => 85000, 'DM-INS-002' => 62000, 'DM-FUN-001' => 135000, 'DM-FUN-002' => 98000,
+        'DM-HER-001' => 78000, 'DM-HER-002' => 410000, 'DM-MOL-001' => 45000, 'DM-ROD-001' => 18000,
+        'DM-PER-001' => 32000, 'DM-PUP-001' => 27000, 'DM-BIB-001' => 95000, 'DM-BIB-002' => 52000,
+        'DM-ALT-001' => 650000, 'DM-ALT-002' => 15000,
+    ];
+
+    /**
+     * Daftar harga demo: Bawaan + Grosir (tier, harga −4%) + area Kudus Utara (−2%). Tiap list punya
+     * versi 1 terbit (berlaku sejak awal bulan lalu) dan list Bawaan punya versi 2 DRAF (+5%) untuk
+     * dicoba ajukan/terbitkan. List yang sudah ada (kode sama) dilewati.
+     */
+    /**
+     * kode => [nama, jenis, kode area | null, persen dari harga dasar].
+     *
+     * @var array<string, array{0: string, 1: string, 2: string|null, 3: string}>
+     */
+    private const PRICE_LISTS = [
+        'DEFAULT' => ['Harga Bawaan', 'default', null, '0'],
+        'GROSIR' => ['Harga Grosir', 'tier', null, '-4'],
+        'AREA-KDS-UTR' => ['Harga Area Kudus Utara', 'area', 'KDS-UTR', '-2'],
+    ];
+
+    private function seedPricing(): void
+    {
+        $units = ProductUnit::query()->with('product:id,sku')->whereHas('product', fn ($q) => $q->whereIn('sku', array_keys(self::BASE_PRICES)))->get();
+        $start = CarbonImmutable::now(DisplayTime::timezone())->subMonthNoOverflow()->startOfMonth()->format('Y-m-d\TH:i');
+
+        foreach (self::PRICE_LISTS as $code => $spec) {
+            [$name, $kindValue, $areaCode, $percent] = $spec;
+            $kind = PriceListKind::from($kindValue);
+            if (PriceList::query()->where('code', $code)->exists()) {
+                continue;
+            }
+            $areaId = $areaCode === null ? null : SalesArea::query()->where('code', $areaCode)->value('id');
+            if ($kind === PriceListKind::Area && $areaId === null) {
+                continue; // area demo T-073 belum ada (seeder pelanggan dilewati)
+            }
+            $list = app(SavePriceList::class)->handle(null, [
+                'code' => $code, 'name' => $name, 'kind' => $kind->value, 'sales_area_id' => $areaId,
+                'stock_location_id' => null, 'description' => 'Data demo', 'is_active' => true,
+            ], null);
+
+            $version = app(CreatePriceVersion::class)->handle($list, ['mode' => 'empty', 'effective_from' => $start, 'note' => 'Harga awal (demo)'], null);
+            $rows = [];
+            foreach ($units as $unit) {
+                $base = Money::of(self::BASE_PRICES[$unit->product->sku]);
+                $price = PriceRounding::adjust($unit->is_base ? $base : $base->times($unit->factor)->times('0.95'), $percent);
+                $rows[] = ['product_unit_id' => $unit->id, 'min_qty' => '1', 'price' => (string) $price];
+                if ($unit->is_base) {
+                    $rows[] = ['product_unit_id' => $unit->id, 'min_qty' => '10', 'price' => (string) PriceRounding::adjust($price, '-3')];
+                }
+            }
+            app(UpsertPriceItems::class)->handle($version, $rows, [], null);
+            app(PublishPriceVersion::class)->handle($version, null);
+
+            if ($kind === PriceListKind::Default) {
+                app(CreatePriceVersion::class)->handle($list, [
+                    'mode' => 'copy_percent', 'source_version_id' => $version->id, 'percent' => '5',
+                    'effective_from' => CarbonImmutable::now(DisplayTime::timezone())->addMonthNoOverflow()->startOfMonth()->format('Y-m-d\TH:i'),
+                    'note' => 'Rencana kenaikan 5% (demo, draf)',
+                ], null);
+            }
         }
     }
 

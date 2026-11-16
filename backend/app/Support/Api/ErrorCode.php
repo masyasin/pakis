@@ -51,6 +51,8 @@ enum ErrorCode: string
     // Khusus web (05 §2.4a), satuan & konversi (BR-150, T-069).
     case QTY_NOT_INTEGER = 'QTY_NOT_INTEGER';
     case UNIT_FACTOR_LOCKED = 'UNIT_FACTOR_LOCKED';
+    case PRICE_VERSION_LOCKED = 'PRICE_VERSION_LOCKED';
+    case PRICE_NOT_FOUND = 'PRICE_NOT_FOUND';
     // Khusus web (05 §2.4a), verifikasi & HP kios (BR-165/166, T-074).
     case CUSTOMER_PHONE_DUPLICATE = 'CUSTOMER_PHONE_DUPLICATE';
     case PHONE_BELONGS_TO_EMPLOYEE = 'PHONE_BELONGS_TO_EMPLOYEE';
@@ -80,6 +82,7 @@ enum ErrorCode: string
             self::ATTENDANCE_NOT_CHECKED_IN,
             self::CORRECTION_DUPLICATE_PENDING,
             self::APPROVAL_ALREADY_PENDING,
+            self::PRICE_VERSION_LOCKED,
             self::UNIT_FACTOR_LOCKED => 409,
             self::PAYLOAD_TOO_LARGE => 413,
             self::VALIDATION_FAILED,
@@ -91,6 +94,7 @@ enum ErrorCode: string
             self::ATTENDANCE_OFFLINE_TOO_OLD,
             self::CORRECTION_NOT_ALLOWED,
             self::APPROVAL_RULE_MISSING,
+            self::PRICE_NOT_FOUND,
             self::QTY_NOT_INTEGER,
             self::CUSTOMER_PHONE_DUPLICATE,
             self::PHONE_BELONGS_TO_EMPLOYEE,
@@ -148,6 +152,8 @@ enum ErrorCode: string
             self::APPROVAL_ALREADY_PENDING => 'Dokumen ini sudah punya permintaan persetujuan yang masih berjalan.',
             self::QTY_NOT_INTEGER => 'Jumlah untuk satuan ini harus bilangan bulat.',
             self::UNIT_FACTOR_LOCKED => 'Faktor satuan ini sudah dipakai dokumen sehingga tidak bisa diubah.',
+            self::PRICE_VERSION_LOCKED => 'Versi harga ini sudah diajukan atau terbit sehingga tidak bisa diubah. Buat versi baru.',
+            self::PRICE_NOT_FOUND => 'Belum ada harga berlaku untuk produk dan satuan ini.',
             self::CUSTOMER_PHONE_DUPLICATE => 'Nomor HP ini sudah dipakai kios lain. Satu nomor hanya untuk satu kios.',
             // BR-166(3): pesan sengaja tidak menyebut nama pegawai/akun pemilik nomor.
             self::PHONE_BELONGS_TO_EMPLOYEE => 'Nomor HP ini terdaftar sebagai nomor pegawai atau akun pengguna. Pakai nomor pemilik kios.',

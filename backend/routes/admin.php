@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MasterImportController;
 use App\Http\Controllers\Admin\MfaSetupController;
 use App\Http\Controllers\Admin\PositionController;
+use App\Http\Controllers\Admin\PriceListController;
 use App\Http\Controllers\Admin\PrincipalController;
 use App\Http\Controllers\Admin\ProductBarcodeController;
 use App\Http\Controllers\Admin\ProductCategoryController;
@@ -437,6 +438,22 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     Route::middleware('can:suppliers.view')->group(function () {
         Route::get('supplier', [SupplierController::class, 'index'])->name('suppliers.index');
         Route::get('supplier/{supplier}', [SupplierController::class, 'show'])->whereNumber('supplier')->name('suppliers.show');
+    });
+
+    // Daftar harga berversi (15 §5 `admin.price-lists.*`, FR-A19, BR-168, SEC-106, T-075). Rute versi
+    // memakai id versi langsung; item hanya bisa diubah selama versi draf (Policy + trigger DB).
+    Route::middleware('can:prices.view')->group(function () {
+        Route::get('daftar-harga', [PriceListController::class, 'index'])->name('price-lists.index');
+        Route::get('daftar-harga/{list}', [PriceListController::class, 'show'])->whereNumber('list')->name('price-lists.show');
+        Route::get('daftar-harga/versi/{version}/item', [PriceListController::class, 'items'])->whereNumber('version')->name('price-lists.items.index');
+        Route::get('daftar-harga/versi/{version}/item/ekspor', [PriceListController::class, 'exportItems'])->whereNumber('version')->name('price-lists.items.export');
+    });
+    Route::middleware('can:prices.manage')->group(function () {
+        Route::post('daftar-harga', [PriceListController::class, 'store'])->name('price-lists.store');
+        Route::put('daftar-harga/{list}', [PriceListController::class, 'update'])->whereNumber('list')->name('price-lists.update');
+        Route::post('daftar-harga/{list}/versi', [PriceListController::class, 'storeVersion'])->whereNumber('list')->name('price-lists.versions.store');
+        Route::put('daftar-harga/versi/{version}/item', [PriceListController::class, 'upsertItems'])->whereNumber('version')->name('price-lists.items.upsert');
+        Route::post('daftar-harga/versi/{version}/ajukan', [PriceListController::class, 'submitVersion'])->whereNumber('version')->name('price-lists.versions.submit');
     });
 
     // Area penjualan (15 §5 `admin.sales-areas.*`, FR-A12, T-073): tambah/ubah lewat dialog di halaman

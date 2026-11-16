@@ -35,6 +35,7 @@ final class SettingRegistry
         'upload' => 'Unggahan berkas',
         'customer' => 'Pelanggan',
         'inventory' => 'Gudang & stok',
+        'pricing' => 'Harga',
     ];
 
     /** Grup yang perubahannya butuh konfirmasi ulang password (06 §1.6, 07 §4). */
@@ -244,6 +245,10 @@ final class SettingRegistry
 
             // 2.10 Gudang & stok (15 §9). T-071: pengingat izin edar; kunci inventory.* lain ditambah T-077+.
             $t('inventory.registration_reminder_days', SettingType::Int, 60, 'Ambang "izin edar akan habis" (hari)', 'Izin yang habis dalam jumlah hari ini ditandai akan habis dan memicu pengingat pertama. Pengingat berikutnya H-30, H-7, dan H-0.', min: 7, max: 365),
+
+            // 2.11 Harga (T-075, 15 §9, BR-168).
+            $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),
+            $t('pricing.allow_backdated_publish', SettingType::Bool, false, 'Izinkan versi harga berlaku surut', 'Bila aktif, pemegang izin terbit harga boleh menerbitkan versi yang mulai berlaku di masa lalu dengan alasan tertulis. Bawaan: tidak boleh.'),
         ];
     }
 

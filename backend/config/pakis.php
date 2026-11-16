@@ -9,6 +9,8 @@ use App\Domain\Attendance\Listings\ScheduleOverrideListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Catalog\Listings\ProductListing;
+use App\Domain\Pricing\Approvables\PriceListPublish;
+use App\Domain\Pricing\Listings\PriceListItemListing;
 use App\Domain\Customer\Approvables\CustomerActivation;
 use App\Domain\Customer\Listings\CustomerListing;
 use App\Domain\Device\Listings\DeviceListing;
@@ -65,6 +67,7 @@ return [
         'attendance_summary' => AttendanceSummaryListing::class,
         'attendance_corrections' => AttendanceCorrectionListing::class,
         'products' => ProductListing::class, // T-070 (15 §5, izin products.view)
+        'price_list_items' => PriceListItemListing::class, // T-075 (15 §5, izin prices.view)
         'customers' => CustomerListing::class, // T-073 (15 §5, izin customers.export; HP selalu termasking, SEC-108)
     ],
 
@@ -94,7 +97,8 @@ return [
         'customer_credit_limit' => ['label' => 'Limit kredit kios', 'model' => null, 'conditions' => []],
         'customer_phone_change' => ['label' => 'Ganti nomor HP kios', 'model' => null, 'conditions' => []],
         'customer_merge' => ['label' => 'Gabung kios duplikat', 'model' => null, 'conditions' => []],
-        'price_list_publish' => ['label' => 'Terbit daftar harga', 'model' => null, 'conditions' => []],
+        // T-075: dokumen = baris price_list_versions.
+        'price_list_publish' => ['label' => 'Terbit daftar harga', 'model' => PriceListPublish::class, 'conditions' => []],
         'promotion_activate' => ['label' => 'Aktivasi promo', 'model' => null, 'conditions' => []],
         'serial_swap' => ['label' => 'Tukar nomor seri', 'model' => null, 'conditions' => []],
     ],

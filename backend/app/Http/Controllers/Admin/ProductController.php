@@ -15,6 +15,9 @@ use App\Domain\Catalog\Models\ProductRegistration;
 use App\Domain\Catalog\Models\ProductUnit;
 use App\Domain\Catalog\Queries\ActiveRegistration;
 use App\Domain\Catalog\Support\RegistrationState;
+use App\Domain\Pricing\Models\PriceList;
+use App\Domain\Pricing\Models\PriceListItem;
+use App\Domain\Pricing\PriceResolver;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Http\Controllers\Controller;
@@ -134,6 +137,9 @@ class ProductController extends Controller
             ])->values(),
             'unitOptions' => self::unitOptions(),
             'registrations' => $registrations->map(fn (ProductRegistration $r) => ProductRegistrationController::row($r, $today))->values(),
+            // Tab Harga (T-075): harga berlaku sekarang di tiap daftar harga aktif, lazy (hanya saat tab dibuka).
+            // Harga hanya untuk pemegang `prices.view` (staf gudang memegang products.view tanpa izin harga).
+            'prices' => $user->can('prices.view') ? fn () => self::currentPrices($product) : null,
             'registrationState' => RegistrationState::of($active?->valid_until->toDateString(), $registrations->isNotEmpty()),
             'history' => fn () => self::history($product, $units->map(fn (ProductUnit $u) => $u->id)->all(), $registrations->map(fn (ProductRegistration $r) => $r->id)->all()),
             'can' => ['manage' => $user->can('products.manage'), 'manage_registrations' => $user->can('product_registrations.manage')],
@@ -260,6 +266,31 @@ class ProductController extends Controller
                     default => null,
                 },
             ])->values()->all();
+    }
+
+    /**
+     * Harga berlaku sekarang per daftar harga aktif untuk satu produk (urutan jenis: bawaan dulu).
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private static function currentPrices(Product $product): array
+    {
+        $rows = [];
+        foreach (PriceList::query()->where('is_active', true)->orderByRaw("kind = 'default' desc")->orderBy('name')->get() as $list) {
+            $version = PriceResolver::effectiveVersion($list->id, now());
+            if ($version === null) {
+                continue;
+            }
+            foreach (PriceListItem::query()->with('productUnit.unit:id,name')->where('price_list_version_id', $version->id)
+                ->where('product_id', $product->id)->orderBy('product_unit_id')->orderBy('min_qty')->get() as $item) {
+                $rows[] = [
+                    'list_id' => $list->id, 'list' => $list->name, 'kind_label' => $list->kind->label(), 'version_id' => $version->id,
+                    'version_no' => $version->version_no, 'unit' => $item->productUnit->unitLabel(), 'min_qty' => $item->min_qty, 'price' => $item->price,
+                ];
+            }
+        }
+
+        return $rows;
     }
 
     /** Nilai agregat MAX(DATE) dari driver bisa string atau Carbon; kembalikan Y-m-d atau null. */

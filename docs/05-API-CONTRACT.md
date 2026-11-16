@@ -88,6 +88,8 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 | `APPROVAL_ALREADY_PENDING` | 409 | Dokumen sudah punya permintaan persetujuan aktif. Ditambah 16 Nov 2026 (T-067) |
 | `QTY_NOT_INTEGER` | 422 | Qty pecahan untuk satuan yang hanya menerima bilangan bulat (meta `integer_only`, BR-150). Ditambah 16 Nov 2026 (T-069); pindah ke §2.3 bila dipakai API mobile (B/C) |
 | `UNIT_FACTOR_LOCKED` | 409 | Faktor satuan produk sudah dipakai dokumen (harga, PO, mutasi, …) sehingga tidak bisa diubah; buat satuan baru (BR-150). Ditambah 16 Nov 2026 (T-070) |
+| `PRICE_VERSION_LOCKED` | 409 | Ubah item versi daftar harga yang bukan `draft` (SEC-106, `15` §12). Ditambah 17 Nov 2026 (T-075) |
+| `PRICE_NOT_FOUND` | 422 | Tidak ada harga berlaku di daftar harga mana pun untuk produk/satuan/qty itu (BR-168). Ditambah 17 Nov 2026 (T-075) |
 | `CUSTOMER_PHONE_DUPLICATE` | 422 | HP pemilik sudah dipakai kios lain yang belum nonaktif/digabung (BR-166(2)). `details.owner_phone` = pesan field. Ditambah 17 Nov 2026 (T-074) |
 | `PHONE_BELONGS_TO_EMPLOYEE` | 422 | HP kios = HP pegawai aktif atau HP akun pengguna aktif setelah normalisasi (BR-166(3), SEC-105). Pesan tidak menyebut pemilik nomor. Ditambah 17 Nov 2026 (T-074) |
 | `CUSTOMER_NOT_VERIFIED` | 422 | Limit kredit diminta untuk kios yang belum terverifikasi (BR-125). Ditambah 17 Nov 2026 (T-074) |

@@ -52,6 +52,7 @@ final class MenuBuilder
         // di antaranya sesuai urutan 15 §6.5). Menu ini juga membuka login web pemegang `customers.view` (BR-017).
         ['Penjualan', 'Pelanggan', 'customer', 'customers.view', 'admin.customers.index'],
         ['Penjualan', 'Area Penjualan', 'sales_area', 'sales_areas.view', 'admin.sales-areas.index'],
+        ['Penjualan', 'Daftar Harga', 'price_list', 'prices.view', 'admin.price-lists.index'],
         ['Pembelian', 'Supplier', 'supplier', 'suppliers.view', 'admin.suppliers.index'],
         ['Pembelian', 'Prinsipal', 'principal', 'suppliers.view', 'admin.principals.index'],
         ['Master', 'Produk', 'product', 'products.view', 'admin.products.index'],

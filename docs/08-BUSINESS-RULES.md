@@ -193,6 +193,17 @@ Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok
 
 Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`).
 
+### 2.11 Harga
+
+Grup `pricing` (tab "Harga"), dipakai daftar harga berversi (T-075, `15` §9) dan promo (T-076).
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `pricing.rounding` | enum | `none` | `none`, `100`, `500`, `1000` | ❌ |
+| `pricing.allow_backdated_publish` | bool | `false` | — | ❌ |
+
+Catatan: `pricing.rounding` membulatkan ke atas harga hasil salin versi ±% (dan promo T-076) ke kelipatan nilai itu; `none` = dua desimal half-up. `pricing.allow_backdated_publish` mati = versi baru tidak boleh berlaku surut (BR-168); hidup = pemegang `prices.publish` boleh menerbitkan versi berlaku surut dengan alasan.
+
 ## 3. Grup Referensi
 
 | `group_code` | Dipakai di | Item sistem (kode dipakai logika) |

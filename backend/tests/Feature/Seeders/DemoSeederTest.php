@@ -12,7 +12,9 @@ use App\Domain\Organization\Enums\AttendanceMode;
 use App\Domain\Organization\Models\Department;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
+use App\Domain\Pricing\PriceResolver;
 use App\Models\User;
+use App\Support\Money\Qty;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -141,6 +143,20 @@ test('T-072 data demo: 6 prinsipal & 4 supplier fiktif, rekening terenkripsi, pr
         ->and(DB::table('supplier_products')->count())->toBe(13)
         ->and(DB::table('suppliers')->pluck('bank_account_no_enc')->every(fn (?string $c) => $c !== null && ! str_contains($c, '999')))->toBeTrue()
         ->and(DB::table('principals')->pluck('name')->every(fn (string $n) => str_contains($n, 'Demo')))->toBeTrue();
+});
+
+test('T-075 data demo harga: daftar bawaan & grosir terbit + versi draf; harga bisa diresolusi; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    expect(DB::table('price_lists')->whereIn('code', ['DEFAULT', 'GROSIR'])->count())->toBe(2)
+        ->and(DB::table('price_list_versions')->where('status', 'draft')->count())->toBe(1);
+
+    $unit = ProductUnit::query()->where('is_base', true)
+        ->whereHas('product', fn ($q) => $q->where('sku', 'DM-INS-001'))->sole();
+    $price = app(PriceResolver::class)->resolve(null, $unit->product, $unit, Qty::of('1'));
+    expect((string) $price->price)->toBe('85000.00')
+        ->and((string) app(PriceResolver::class)->resolve(null, $unit->product, $unit, Qty::of('10'))->price)->toBe('82450.00');
 });
 
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {

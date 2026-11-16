@@ -18,3 +18,36 @@ Schedule::command('attendance:resolve-day')
     ->everyFifteenMinutes()
     ->onOneServer()
     ->withoutOverlapping();
+
+// Retensi (T-045, SEC-013, NFR-011). Malam hari waktu LOKAL, berurutan agar tidak berebut disk.
+Schedule::command('attendance:purge-selfies')
+    ->dailyAt('02:45')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();
+
+Schedule::command('retention:purge')
+    ->dailyAt('03:00')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();
+
+// Berkas ekspor sudah tidak bisa diunduh begitu lewat `expires_at`; job ini menghapus fisiknya.
+Schedule::command('exports:expire')
+    ->hourly()
+    ->onOneServer()
+    ->withoutOverlapping();
+
+// Alert SEC-041: tiap 5 menit memindai jendela 10 menit (tumpang tindih disengaja; event
+// dilaporkan sekali lewat penanda id, login gagal per IP diredam satu jam).
+Schedule::command('security:scan-alerts')
+    ->everyFiveMinutes()
+    ->onOneServer()
+    ->withoutOverlapping();
+
+// Integritas berkas SEC-070 (manifest ditulis saat deploy, T-046).
+Schedule::command('integrity:check')
+    ->dailyAt('03:15')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();

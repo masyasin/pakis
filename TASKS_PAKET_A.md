@@ -83,6 +83,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [ ] Pengguna yang sudah memutuskan langkah 1 tidak bisa memutuskan langkah 2 pada permintaan yang sama (BR-153(11))
   - [ ] Nominal ≥ `approval.reauth_amount` mewajibkan konfirmasi password (`PasswordConfirmation::isRecent()`); di bawah ambang tidak
   - [ ] `PaketAMatrixTest` memverifikasi setiap sel ✅/❌ **15** §6.4 untuk 10 role (data-driven); `PermissionMatrixTest` Fase 0 tetap hijau
+  - [ ] Keempat role baru Paket A memegang `dashboard.view` (**15** §6.4 catatan): login web pengguna ber-role itu mendarat di `/dasbor` dengan 200, bukan 403 (test per role)
   - [ ] Test "izin baru default ❌ untuk semua role selain `owner`/`super_admin`": izin uji yang ditambahkan ke katalog tidak jatuh ke `administrator`/`hrd`/role lain
   - [ ] Migrasi data idempoten: dijalankan dua kali hasilnya sama; izin yang ditambah/dicabut pengguna di role bawaan tidak berubah; hanya sel Paket A yang ditambah
   - [ ] `supervisor` dan `admin_penjualan` `mfa_required = true` (instalasi baru & lewat migrasi data untuk `supervisor` yang ada)

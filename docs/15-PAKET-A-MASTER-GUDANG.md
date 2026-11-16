@@ -1244,6 +1244,7 @@ Katalog di `app/Domain/Access/Support/PermissionCatalog.php`, matriks default di
 | `master_imports.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
 
 Catatan penting:
+- **Izin Fase 0 untuk role baru:** keempat role baru (`admin_penjualan`, `kepala_gudang`, `staf_gudang`, `purchasing`) juga mendapat **`dashboard.view`** (Fase 0). Sejak T-044 (commit 8934937) route `admin.dashboard` memakai `can:dashboard.view`, dan Fortify mengarahkan setiap login web ke `/dasbor`, sehingga role web tanpa izin ini kena 403 tepat setelah login. Widget dasbor Paket A (§7.4) tetap disaring per izin modulnya. Aturan umum ada di `14` §10.1.
 - **Owner memegang semua izin Paket A dan terkunci** (BR-031, `06` §2; `RoleCatalog::LOCKED`), sama seperti Fase 0 (PA-10). Pemisahan tugas tidak ditegakkan dengan mencabut izin Owner, melainkan oleh **maker-checker mesin approval** (BR-153(4): pembuat/pengaju tidak pernah memutuskan dokumennya sendiri, **termasuk Owner**) + audit (SEC-110).
 - `administrator` tidak melihat stok, harga, atau pelanggan. Perannya mengurus sistem, bukan transaksi.
 - Maker-checker berlaku walau pemegang punya izin: pembuat dokumen tidak bisa menyetujui dokumennya sendiri (BR-153).

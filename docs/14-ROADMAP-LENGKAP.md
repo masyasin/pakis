@@ -517,6 +517,8 @@ Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B di `16` §9, P
 
 Role Fase 0 `kepala_lokasi` tetap ada untuk absensi. Kepala gudang/toko boleh memegang dua role sekaligus (`06` §2: permission digabung, scope terluas).
 
+**Aturan umum role baru (semua paket):** setiap role baru yang bisa login web (bukan guard `mitra`/`principal`, bukan role khusus aplikasi seperti `pegawai`) wajib mendapat **`dashboard.view`** di task pertama paketnya. Sejak T-044 route `admin.dashboard` memakai `can:dashboard.view` dan setiap login web diarahkan ke `/dasbor`, sehingga role tanpa izin ini kena 403 setelah login. Role yang hanya memakai Pakis Pro (mis. `driver` bila tanpa akses web) dikecualikan dan dinyatakan eksplisit di matriks paketnya. Test matriks tiap paket memeriksa ini.
+
 ### 10.2 Namespace permission per paket
 
 Nama final, matriks per role, dan jumlah total ditulis di `06` §3–§4 oleh task pertama tiap paket (+ `PermissionCatalog`, + test matriks). Pemetaan ke permission kunci konsep §15.2:

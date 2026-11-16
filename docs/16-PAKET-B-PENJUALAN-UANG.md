@@ -1964,7 +1964,7 @@ Semua payload memakai peran akun dan wajib seimbang (test kontrak per event). At
 | `SHIFT_HAS_PENDING_SYNC` | 409 | Tutup shift sebelum semua transaksi tersinkron |
 | `POS_DEVICE_REVOKED` | 401 | Token perangkat dicabut |
 | `SERIAL_ALREADY_SOLD` | 422 | Nomor seri sudah terjual |
-| `PERIOD_LOCKED` | 422 | Tanggal ≤ `accounting.lock_date`. Sudah ada sejak T-077 di sub-tabel "khusus web" `05` §2.3 (**15** §11.3); task B pertama yang mengembalikannya lewat API memindahkannya ke tabel utama + `api_error.dart` |
+| `PERIOD_LOCKED` | 422 | Tanggal ≤ `accounting.lock_date`. Sudah ada sejak T-077 di tabel "khusus web" `05` §2.4a (**15** §11.3, PA-32); task B pertama yang mengembalikannya lewat API memindahkannya ke tabel utama + `api_error.dart` |
 | `TEMPLATE_HARDCODED_NUMBER` | 422 | Template memuat nomor rekening keras |
 | `OPENING_RECEIVABLE_CLOSED` | 409 | Impor saldo awal piutang setelah ditutup |
 

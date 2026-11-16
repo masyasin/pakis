@@ -36,6 +36,15 @@ final class ApiExceptionRenderer
             return null;
         }
 
+        return $this->toJson($e);
+    }
+
+    /**
+     * Badan galat 05 §2.2. Publik agar endpoint JSON di rute web (PA-16, mis. pencarian duplikat)
+     * memakai format yang sama lewat InertiaApiErrorRenderer.
+     */
+    public function toJson(Throwable $e): JsonResponse
+    {
         [$code, $details, $message, $headers] = $this->resolve($e);
 
         return new JsonResponse([

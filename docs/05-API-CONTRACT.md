@@ -65,7 +65,7 @@ Pesan untuk pengguna akhir berbahasa Indonesia. Stack trace, nama tabel, dan SQL
 | `SERVICE_UNAVAILABLE` | 503 | Server sedang maintenance (deploy). Klien mencoba lagi nanti. Ditambah 14 Nov 2026 (T-003) |
 | `SERVER_ERROR` | 500 | Galat tak terduga (dicatat dengan `request_id`) |
 
-Tabel ini dicocokkan dua arah dengan enum `App\Support\Api\ErrorCode` oleh `tests/Contract/ApiErrorFormatTest.php`. Menambah kode berarti mengubah keduanya.
+Tabel ini dan tabel §2.4a bersama-sama dicocokkan dua arah dengan enum `App\Support\Api\ErrorCode` oleh `tests/Contract/ApiErrorFormatTest.php`. Menambah kode berarti mengubah keduanya. Kode di tabel ini wajib juga ada di Pakis Pro (`mobile-pro/lib/core/api/api_error.dart`, dicek `api_error_contract_test.dart`).
 
 ### 2.4 Header
 
@@ -76,6 +76,16 @@ Tabel ini dicocokkan dua arah dengan enum `App\Support\Api\ErrorCode` oleh `test
 | `X-App-Version` | → | Ya (API) | Semver Pakis Pro, mis. `1.0.3` |
 | `X-Request-Id` | ↔ | Tidak | Dibuat server bila kosong (ULID), dikembalikan di respons |
 | `Accept: application/json` | → | Ya | |
+
+### 2.4a Kode Galat Khusus Web
+
+Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). Format galatnya sama dengan §2.2 bila request meminta JSON; pada request Inertia biasa kode ini dikembalikan sebagai galat form + toast berisi pesan kode (PA-16, `15` §11.3). Sengaja ditaruh di luar §2.3 sehingga **tidak** wajib ada di `api_error.dart` dan test kontrak Dart tidak membacanya (PA-32). Bila suatu kode kelak dikirim lewat API, pindahkan barisnya ke §2.3 dan tambahkan ke Pakis Pro. Tiap task menambah kodenya sendiri di sini + enum `ErrorCode` saat kode itu pertama dipakai.
+
+| Kode | HTTP | Arti |
+|---|---|---|
+| `APPROVAL_RULE_MISSING` | 422 | Tidak ada aturan approval yang cocok untuk dokumen (BR-153). Ditambah 16 Nov 2026 (T-067) |
+| `APPROVAL_SELF_DECISION` | 403 | Pengaju/pembuat dokumen mencoba memutuskan persetujuannya sendiri (SEC-101). Ditambah 16 Nov 2026 (T-067) |
+| `APPROVAL_ALREADY_PENDING` | 409 | Dokumen sudah punya permintaan persetujuan aktif. Ditambah 16 Nov 2026 (T-067) |
 
 ## 3. Standar Daftar (Listing) — Web & API
 

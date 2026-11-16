@@ -1834,7 +1834,7 @@ Setiap Action F yang memancarkan event di atas memanggil `PeriodGuard::assertOpe
 | Otorisasi | Matriks §6.4 (`PermissionMatrixTest`), scope SPV/KGD/SLS/KSR, IDOR per resource | T-159, T-178 |
 | Listing | 32 listing baru di `listing_catalog.php` + `07` §3.4 (27 + 5 yang dilengkapi revisi 16 Nov) | Semua task |
 | Ekspor | Ekspor pajak, jurnal, laporan, file transfer lewat `StartExport`/`export_files` (bukan penulis sendiri); formula di-escape; `mass_export` tercatat di atas ambang | T-164, T-167, T-171, T-172 |
-| Kode galat | Setiap kode §11.3 ada di `05` §2.3 (tabel utama atau sub-tabel "khusus web") + `ErrorCode` (`ApiErrorFormatTest`) | Semua task |
+| Kode galat | Setiap kode §11.3 ada di `05` §2.3 (tabel utama) atau §2.4a (tabel "khusus web", PA-32) + `ErrorCode` (`ApiErrorFormatTest`) | Semua task |
 
 ### 12.2 UAT Paket F
 

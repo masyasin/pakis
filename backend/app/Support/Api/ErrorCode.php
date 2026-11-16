@@ -3,8 +3,9 @@
 namespace App\Support\Api;
 
 /**
- * Kode galat API (05 §2.3). Nilai identik dengan kontrak dan dicocokkan dua arah oleh
- * tests/Contract/ApiErrorFormatTest.php, jadi menambah kode = ubah dokumen + enum ini.
+ * Kode galat (05 §2.3 untuk API, §2.4a untuk kode khusus web). Nilai identik dengan kontrak dan
+ * dicocokkan dua arah oleh tests/Contract/ApiErrorFormatTest.php, jadi menambah kode = ubah dokumen
+ * + enum ini. Kode §2.4a sengaja tidak wajib ada di Pakis Pro (PA-32), karena Paket A tanpa API.
  *
  * Pesan di sini generik dan aman untuk pengguna akhir. Pesan yang lebih spesifik
  * (mis. jarak dari lokasi) dikirim lewat `details`, bukan dengan membocorkan pesan exception.
@@ -43,6 +44,10 @@ enum ErrorCode: string
     case PAYLOAD_TOO_LARGE = 'PAYLOAD_TOO_LARGE';
     case SERVICE_UNAVAILABLE = 'SERVICE_UNAVAILABLE';
     case SERVER_ERROR = 'SERVER_ERROR';
+    // Khusus web (05 §2.4a), dipakai mesin approval Paket A (T-067).
+    case APPROVAL_RULE_MISSING = 'APPROVAL_RULE_MISSING';
+    case APPROVAL_SELF_DECISION = 'APPROVAL_SELF_DECISION';
+    case APPROVAL_ALREADY_PENDING = 'APPROVAL_ALREADY_PENDING';
 
     public function status(): int
     {
@@ -57,13 +62,15 @@ enum ErrorCode: string
             self::PASSWORD_CHANGE_REQUIRED,
             self::DEVICE_PENDING,
             self::FORBIDDEN,
-            self::CORRECTION_SELF_APPROVAL => 403,
+            self::CORRECTION_SELF_APPROVAL,
+            self::APPROVAL_SELF_DECISION => 403,
             self::NOT_FOUND => 404,
             self::METHOD_NOT_ALLOWED => 405,
             self::STATE_CONFLICT,
             self::ATTENDANCE_ALREADY_CHECKED_IN,
             self::ATTENDANCE_NOT_CHECKED_IN,
-            self::CORRECTION_DUPLICATE_PENDING => 409,
+            self::CORRECTION_DUPLICATE_PENDING,
+            self::APPROVAL_ALREADY_PENDING => 409,
             self::PAYLOAD_TOO_LARGE => 413,
             self::VALIDATION_FAILED,
             self::ATTENDANCE_NO_SCHEDULE,
@@ -72,7 +79,8 @@ enum ErrorCode: string
             self::ATTENDANCE_MOCK_LOCATION,
             self::ATTENDANCE_LOW_ACCURACY,
             self::ATTENDANCE_OFFLINE_TOO_OLD,
-            self::CORRECTION_NOT_ALLOWED => 422,
+            self::CORRECTION_NOT_ALLOWED,
+            self::APPROVAL_RULE_MISSING => 422,
             self::ACCOUNT_LOCKED => 423,
             self::APP_UPDATE_REQUIRED => 426,
             self::RATE_LIMITED => 429,
@@ -118,6 +126,10 @@ enum ErrorCode: string
             self::PAYLOAD_TOO_LARGE => 'Berkas atau data terlalu besar.',
             self::SERVICE_UNAVAILABLE => 'Server sedang dalam perbaikan. Coba lagi beberapa saat lagi.',
             self::SERVER_ERROR => 'Terjadi kesalahan di server. Coba lagi atau hubungi admin dengan kode permintaan.',
+            self::APPROVAL_RULE_MISSING => 'Belum ada aturan persetujuan yang cocok untuk dokumen ini. Hubungi admin.',
+            // SEC-101: maker-checker; pengaju/pembuat dokumen tidak boleh memutuskan sendiri.
+            self::APPROVAL_SELF_DECISION => 'Anda tidak boleh memutuskan persetujuan atas dokumen yang Anda ajukan atau buat sendiri.',
+            self::APPROVAL_ALREADY_PENDING => 'Dokumen ini sudah punya permintaan persetujuan yang masih berjalan.',
         };
     }
 }

@@ -9,7 +9,7 @@ Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10�
 > - Domain baru: `app/Domain/{Approval,Catalog,Customer,Pricing,Purchasing,Inventory,Fleet}` dengan struktur sama seperti Fase 0 (`Models/`, `Actions/`, `Policies/`, `Enums/`, `Events/`, `Listings/`).
 > - Uang & qty memakai value object `App\Support\Money\{Money,Qty,UnitCost}` berbasis `brick/math`. Dependency baru paket ini **hanya** `brick/math` `^1.0` (langsung, T-069; sudah terpasang 1.0.0 tidak langsung), dicatat di `03` §5. Tanpa `leaflet`/tile peta (PA-20). Dependency lain → berhenti dan tanyakan.
 > - Ekspor selalu pola Fase 0: listing `implements ExportableListing` + kunci `config/pakis.php` `exports` + `StartExport` (**15** §5). Tidak ada kelas `*Export` sendiri.
-> - Unggahan berkas selalu lewat `app/Support/Upload/` (diekstrak T-070, SEC-109). Galat domain di rute web lewat jalur Inertia yang ditetapkan T-067 (**15** §11.3); kode baru masuk sub-tabel "khusus web" `05` §2.3 + `ErrorCode` oleh task yang pertama memakainya.
+> - Unggahan berkas selalu lewat `app/Support/Upload/` (diekstrak T-070, SEC-109). Galat domain di rute web lewat jalur Inertia yang ditetapkan T-067 (**15** §11.3); kode baru masuk tabel "khusus web" `05` §2.4a (PA-32) + `ErrorCode` oleh task yang pertama memakainya.
 > - Notifikasi baru = case `NotificationKind` + kunci `notification.on_<jenis>` (default `[]`) + `08` §2.5 oleh task pemilik (**15** §9.1).
 > - Setiap tabel di **15** §4 dibuat oleh task yang disebut di judul sub-bagiannya. Kolom yang tidak ada di **15** tidak boleh ditambahkan tanpa mencatat di **15** dulu.
 > - Setiap listing baru: kelas listing + `#[UsesListing]` + `DataTable` + kunci di `07` §3.4 + `tests/Fixtures/listing_catalog.php` (**15** §7.3).

@@ -150,14 +150,31 @@ test('galat domain ApiError tidak dicatat sebagai error', function () {
     @unlink($path);
 });
 
-test('enum ErrorCode identik dengan tabel 05 §2.3', function () {
-    $markdown = file_get_contents(base_path('../docs/05-API-CONTRACT.md'));
-
-    // Ambil bagian "### 2.3 Kode Galat" sampai heading berikutnya, lalu baris tabel | `KODE` | HTTP |
-    $section = str($markdown)->after('### 2.3 Kode Galat')->before('### 2.4')->toString();
+/**
+ * Baris tabel | `KODE` | HTTP | di satu bagian 05: dari heading `$heading` sampai heading berikutnya.
+ *
+ * @return array<string, int>
+ */
+function documentedErrorCodes(string $markdown, string $heading): array
+{
+    $section = str($markdown)->after($heading)->before("\n#")->toString();
     preg_match_all('/^\|\s*`([A-Z_]+)`\s*\|\s*(\d{3})\s*\|/m', $section, $m, PREG_SET_ORDER);
 
-    $documented = collect($m)->mapWithKeys(fn ($row) => [$row[1] => (int) $row[2]])->sortKeys()->all();
+    return collect($m)->mapWithKeys(fn ($row) => [$row[1] => (int) $row[2]])->all();
+}
+
+test('PA-32 enum ErrorCode identik dengan tabel 05 §2.3 + §2.4a (kode khusus web)', function () {
+    $markdown = file_get_contents(base_path('../docs/05-API-CONTRACT.md'));
+
+    $api = documentedErrorCodes($markdown, '### 2.3 Kode Galat');
+    // §2.4a sengaja di luar rentang §2.3–§2.4 yang dibaca test kontrak Dart (PA-32).
+    $web = documentedErrorCodes($markdown, '### 2.4a Kode Galat Khusus Web');
+
+    expect($api)->not->toBeEmpty()
+        ->and($web)->not->toBeEmpty()
+        ->and(array_intersect_key($api, $web))->toBe([]);
+
+    $documented = collect($api + $web)->sortKeys()->all();
     $implemented = collect(ErrorCode::cases())->mapWithKeys(fn ($c) => [$c->value => $c->status()])->sortKeys()->all();
 
     expect($documented)->not->toBeEmpty()

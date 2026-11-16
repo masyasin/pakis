@@ -1,6 +1,7 @@
 <?php
 
 use App\Exceptions\ApiExceptionRenderer;
+use App\Exceptions\InertiaApiErrorRenderer;
 use App\Http\Middleware\AssignRequestId;
 use App\Http\Middleware\EnforceMfa;
 use App\Http\Middleware\EnforceSessionLifetime;
@@ -76,10 +77,14 @@ return Application::configure(basePath: dirname(__DIR__))
         // API: format 05 §2.2 tanpa detail internal (SEC-061).
         $exceptions->render(new ApiExceptionRenderer);
 
+        // Web: ApiError dari Action → kembali ke form + toast pesan kode, bukan 500 (PA-16, 15 §11.3).
+        $exceptions->render(new InertiaApiErrorRenderer);
+
         // Web: halaman galat generik saat debug mati (SEC-061). Saat debug nyala, halaman
         // developer Laravel tetap dipakai agar galat mudah dilacak di lokal.
         $exceptions->respond(function (Response $response, Throwable $e, Request $request) {
-            if (ApiExceptionRenderer::appliesTo($request)) {
+            // ApiError di web yang meminta JSON sudah berformat 05 §2.2; jangan diganti halaman galat.
+            if (ApiExceptionRenderer::appliesTo($request) || ($e instanceof ApiError && $request->expectsJson())) {
                 return $response;
             }
 

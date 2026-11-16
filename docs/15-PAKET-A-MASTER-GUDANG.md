@@ -1631,9 +1631,11 @@ Semua job memakai `onOneServer()` + `withoutOverlapping()` (pola Fase 0) dan men
 
 `ApprovalRequested`, `ApprovalStepActivated`, `ApprovalDecided`, `GoodsReceiptPosted`, `StockTransferShipped`, `StockTransferReceived`, `StockOpnamePosted`, `BatchStatusChanged`, `CustomerActivated`, `CustomerPhoneChanged`, `CustomerReassigned`, `PriceListVersionPublished`, `PromotionActivated`, `ProductRegistrationExpiring`. Listener notifikasi memakai kanal in-app Fase 0 (`NotificationRouter`), jenis & kunci kanal di §9.1. Event akuntansi ditulis ke `accounting_events` **di dalam transaksi yang sama** dengan dokumen (bukan lewat listener), setelah `PeriodGuard` dan dengan kualifier payload §11.4.
 
-### 11.3 Kode galat (`05` §2.3)
+### 11.3 Kode galat (`05` §2.3 dan §2.4a)
 
 **Jalur galat domain di rute web (PA-16, ditetapkan T-067).** Paket A hanya punya rute web Inertia (§5), sedangkan `ApiError` Fase 0 hanya dirender sebagai JSON untuk `api/*`/`expectsJson()`. T-067 menetapkan satu jalur untuk semua task Paket A: `ApiError` pada request Inertia → `back()->withErrors()` / toast berisi **pesan dari kode galat** (bukan pesan exception), + test. Endpoint yang memang JSON (mis. `admin.customers.duplicates`) memakai format `05` §2.2. Task tidak membuat penanganan galat sendiri per controller.
+
+Rincian yang diterapkan T-067 (`app/Exceptions/InertiaApiErrorRenderer.php`, didaftarkan di `bootstrap/app.php`): (a) `details` berbentuk `field => pesan` (string atau daftar string) menjadi galat field; bila tidak ada, galat umum di kunci `form`. Toast `type=error` selalu berisi `publicMessage()` kode, jadi halaman tidak perlu menampilkan `errors.form` sebagai toast kedua. (b) `NOT_FOUND` → halaman 404 dan `FORBIDDEN` → halaman 403, sama dengan `abort()` (SEC-033). Kode lain yang berstatus 403 (mis. `APPROVAL_SELF_DECISION`, `RECEIPT_SAME_PERSON`) adalah aturan bisnis, jadi ikut jalur form + toast. (c) Request web yang `expectsJson()` menerima format `05` §2.2. (d) GET yang gagal dan kembali ke URL yang sama diarahkan ke dasbor agar tidak berputar.
 
 **Kode yang dipakai bersama (sudah ada di `05` §2.3, tidak ditambah ulang).** Kode dengan arti sama memakai kode yang ada (PA-17):
 
@@ -1644,7 +1646,7 @@ Semua job memakai `onOneServer()` + `withoutOverlapping()` (pola Fase 0) dan men
 | `CHANNEL_UNAVAILABLE` | 503 | Kanal OTP WhatsApp tidak aktif → pakai telepon kantor |
 | `VALIDATION_FAILED` / `FORBIDDEN` / `NOT_FOUND` | 422/403/404 | Validasi field, tanpa izin, di luar scope (SEC-033) |
 
-**Sub-tabel "khusus web" (baru).** Ditulis di sub-tabel tersendiri `05` §2.3 yang **tidak** diwajibkan di `mobile-pro/lib/core/api/api_error.dart`, karena Paket A tidak punya API mobile. Test kontrak Dart (`api_error_contract_test.dart`) diubah **sekali** oleh sesi mobile agar melewati sub-tabel itu; `tests/Contract/ApiErrorFormatTest.php` tetap mencocokkan seluruh tabel dua arah dengan enum `ErrorCode`. Tiap task menambah kodenya sendiri ke sub-tabel `05` + `ErrorCode` saat kode itu pertama dipakai:
+**Tabel "khusus web" (baru, `05` §2.4a — PA-32).** Ditulis di tabel tersendiri `05` §2.4a (setelah §2.4) yang **tidak** diwajibkan di `mobile-pro/lib/core/api/api_error.dart`, karena Paket A tidak punya API mobile. Test kontrak Dart (`api_error_contract_test.dart`) hanya membaca §2.3–§2.4, jadi tidak perlu diubah; `tests/Contract/ApiErrorFormatTest.php` mencocokkan §2.3 + §2.4a dua arah dengan enum `ErrorCode`. Tiap task menambah kodenya sendiri ke `05` §2.4a + `ErrorCode` saat kode itu pertama dipakai:
 
 | Kode | HTTP | Arti |
 |---|---|---|

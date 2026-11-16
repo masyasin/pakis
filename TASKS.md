@@ -546,7 +546,7 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
   - [x] Test BR-071: absen di luar radius kantor pada tanggal tugas diterima sesuai aturan tugas (3 aturan), di luar tanggal tugas ditolak; absen di kantor pada tanggal tugas tetap sah
   - [x] Tugas tumpang tindih ditolak; tugas `pending`/`rejected` tidak membuka lokasi tambahan
   - [x] Listing lolos test kontrak; IDOR test untuk route ber-ID
-  - [ ] Bagian 2 (setelah T-040): pengajuan dari Pakis Pro + persetujuan (06 §6) + notifikasi. Bagian 1 (dibuat admin/atasan, BR-071, web, tab pegawai, beberapa titik tujuan) selesai 16 Nov 2026
+  - [x] Bagian 2 (setelah T-040): pengajuan dari Pakis Pro + persetujuan (06 §6) + notifikasi (selesai 16 Nov 2026: API + web + mobile). Bagian 1 (dibuat admin/atasan, BR-071, web, tab pegawai, beberapa titik tujuan) selesai 16 Nov 2026
 - Verifikasi: `php artisan test --filter=FieldTrip`
 
 ### T-037 — Resolver status harian & job

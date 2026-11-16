@@ -1,0 +1,84 @@
+<?php
+
+namespace App\Http\Controllers\Admin;
+
+use App\Domain\Access\DataScope;
+use App\Domain\Attendance\Listings\AttendanceCorrectionListing;
+use App\Domain\Attendance\Listings\ScheduleListing;
+use App\Domain\Attendance\Queries\TodaySummary;
+use App\Domain\Device\Listings\DeviceListing;
+use App\Domain\Device\Models\Device;
+use App\Domain\Employee\Enums\EmployeeStatus;
+use App\Domain\Employee\Listings\EmployeeListing;
+use App\Domain\Employee\Models\Employee;
+use App\Http\Controllers\Controller;
+use App\Models\User;
+use App\Support\Listing\HasListing;
+use App\Support\Listing\ListingQuery;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\Request;
+use Inertia\Inertia;
+use Inertia\Response;
+
+/**
+ * Dasbor (05 §4.2, 07 §4, FR-040, T-044). Semua angka dalam scope pengguna. Daftar "Perlu
+ * tindakan" dihitung dengan LISTING YANG SAMA dengan halaman tujuannya + filter yang dibawa di URL,
+ * jadi angka di kartu = jumlah baris saat kartu diklik (URL state, 07 §3.3). Kartu yang izinnya
+ * tidak dimiliki tidak dikirim sama sekali.
+ */
+class DashboardController extends Controller
+{
+    public function __invoke(Request $request, TodaySummary $summary, DataScope $scope): Response
+    {
+        $user = $request->user();
+        abort_unless($user instanceof User, 403);
+
+        return Inertia::render('dashboard', [
+            'attendance' => $user->can('attendance.view') ? $summary->for($user) : null,
+            'pending' => array_values(array_filter([
+                $user->can('attendance_corrections.view') ? self::item(
+                    'corrections',
+                    (new AttendanceCorrectionListing)->exportQuery($user),
+                    new AttendanceCorrectionListing,
+                    'admin.attendance-corrections.index',
+                    ['filter' => ['status' => ['pending']]],
+                ) : null,
+                $user->can('devices.view') ? self::item(
+                    'devices',
+                    Device::query()->visibleTo($user),
+                    new DeviceListing,
+                    'admin.devices.index',
+                    ['filter' => ['status' => ['pending']]],
+                ) : null,
+                $user->can('schedules.view') ? self::item(
+                    'unscheduled',
+                    // Basis sama dengan ScheduleController::index (pegawai aktif dalam scope).
+                    $scope->apply(Employee::query()->where('employees.status', EmployeeStatus::Active->value), $user, 'employees.id'),
+                    new ScheduleListing,
+                    'admin.schedules.index',
+                    ['filter' => ['unscheduled' => '1']],
+                ) : null,
+                $user->can('employees.view') ? self::item(
+                    'no_account',
+                    (new EmployeeListing)->exportQuery($user),
+                    new EmployeeListing,
+                    'admin.employees.index',
+                    ['filter' => ['has_account' => '0']],
+                ) : null,
+            ])),
+            'can' => ['view_attendance' => $user->can('attendance.view')],
+        ]);
+    }
+
+    /**
+     * @param  Builder<*>  $base
+     * @param  array<string, mixed>  $query
+     * @return array{key: string, count: int, href: string}
+     */
+    private static function item(string $key, Builder $base, HasListing $listing, string $route, array $query): array
+    {
+        $count = ListingQuery::apply($base, $listing, Request::create('/', 'GET', $query))->query()->count();
+
+        return ['key' => $key, 'count' => $count, 'href' => route($route, $query)];
+    }
+}

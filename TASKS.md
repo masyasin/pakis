@@ -646,8 +646,8 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/07-UI-SPEC.md` §4 (Dasbor)
 - File: `Admin/DashboardController`, `app/Domain/Attendance/Queries/TodaySummary.php`, `pages/Dashboard.tsx`
 - Kriteria penerimaan:
-  - [ ] Angka mengikuti scope pengguna (test `kepala_lokasi`)
-  - [ ] Kartu "pending" menaut ke daftar dengan filter yang sesuai (URL state)
+  - [x] Angka mengikuti scope pengguna (test `kepala_lokasi`)
+  - [x] Kartu "pending" menaut ke daftar dengan filter yang sesuai (URL state)
 - Verifikasi: `php artisan test --filter=Dashboard`
 
 ### T-045 — Job terjadwal: retensi, alert, integritas

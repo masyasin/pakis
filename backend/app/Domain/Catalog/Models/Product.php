@@ -3,6 +3,7 @@
 namespace App\Domain\Catalog\Models;
 
 use App\Domain\Catalog\Enums\ProductStatus;
+use App\Domain\Purchasing\Models\Principal;
 use App\Domain\Reference\Models\ReferenceItem;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -48,6 +49,7 @@ use Illuminate\Support\Facades\Storage;
  * @property-read ProductCategory $category
  * @property-read ReferenceItem $baseUnit
  * @property-read ReferenceItem|null $formulation
+ * @property-read Principal|null $principal
  */
 class Product extends Model
 {
@@ -123,6 +125,12 @@ class Product extends Model
     public function barcodes(): HasMany
     {
         return $this->hasMany(ProductBarcode::class);
+    }
+
+    /** @return BelongsTo<Principal, $this> prinsipal/merek (T-072), termasuk yang sudah dinonaktifkan */
+    public function principal(): BelongsTo
+    {
+        return $this->belongsTo(Principal::class)->withTrashed();
     }
 
     /** @return HasMany<ProductRegistration, $this> izin edar, termasuk yang habis/dicabut (riwayat perpanjangan) */

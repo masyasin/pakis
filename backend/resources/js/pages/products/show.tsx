@@ -52,6 +52,7 @@ type Product = Record<FlagKey, boolean> & {
     category: string | null;
     kind_label: string | null;
     brand: string | null;
+    principal: string | null;
     active_ingredient: string | null;
     formulation: string | null;
     package_size: string | null;
@@ -270,6 +271,7 @@ function DataTab({ product }: { product: Product }) {
             <DetailCard title="Identitas" icon={Package}>
                 <FieldGrid>
                     <Field label="SKU" value={product.sku} mono />
+                    <Field label="Prinsipal" value={product.principal} />
                     <Field label="Merek" value={product.brand} />
                     <Field
                         label="Bahan aktif"

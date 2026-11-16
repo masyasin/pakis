@@ -215,6 +215,8 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | — | — | Persetujuan (angka = menunggu keputusan saya) | `approvals.view`, atau ada yang menunggu keputusannya (PA-27) | ✅ | ❌ | ❌ | ✅ | ✅ |
 | Distribusi | Penjualan | Pelanggan (T-073; role Paket A: `15` §6.4) | `customers.view` | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Distribusi | Penjualan | Area Penjualan (T-073; role Paket A: `15` §6.4) | `sales_areas.view` | ✅ | ✅ | ❌ | ❌ | ✅ |
+| Distribusi | Pembelian | Supplier (T-072; role Paket A: `15` §6.4) | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Distribusi | Pembelian | Prinsipal (T-072; role Paket A: `15` §6.4) | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Master | Produk (T-070; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Izin Edar (T-071; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Kategori (T-069; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |

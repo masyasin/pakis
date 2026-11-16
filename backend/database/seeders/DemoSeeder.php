@@ -28,6 +28,10 @@ use App\Domain\Numbering\NumberGenerator;
 use App\Domain\Organization\Models\Department;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
+use App\Domain\Purchasing\Actions\SavePrincipal;
+use App\Domain\Purchasing\Actions\SaveSupplier;
+use App\Domain\Purchasing\Models\Principal;
+use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Models\User;
@@ -166,6 +170,7 @@ class DemoSeeder extends Seeder
         $this->seedRegistrations();
         $this->seedStock();
         $this->call(CustomerDemoSeeder::class);
+        $this->seedPurchasing();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -394,6 +399,82 @@ class DemoSeeder extends Seeder
                 'plate_no' => $plate, 'name' => $name, 'vehicle_type' => $type, 'is_canvas' => $canvas,
                 'home_location_id' => $locations[$home] ?? null, 'is_active' => $active,
             ], null);
+        }
+    }
+
+    /**
+     * Prinsipal & supplier demo T-072: nama FIKTIF berakhiran "Demo" (bukan mitra asli Pakis; data asli
+     * diisi lewat layar atau impor). kode => [nama, kontak, telepon, situs].
+     *
+     * @var array<string, array{0: string, 1: string, 2: string, 3: string|null}>
+     */
+    private const PRINCIPALS = [
+        'AGROKIMIA' => ['PT Agro Kimia Demo', 'Bagian Penjualan', '024-7600001', 'www.agrokimia-demo.test'],
+        'TANIMAKMUR' => ['PT Tani Makmur Demo', 'Rina (sales area)', '0291-430002', null],
+        'BENIHUNGGUL' => ['PT Benih Unggul Demo', 'Layanan Mitra', '031-5300003', 'www.benihunggul-demo.test'],
+        'PUPUKSUBUR' => ['CV Pupuk Subur Demo', 'Admin Gudang', '0291-430004', null],
+        'ALATTANI' => ['CV Alat Tani Demo', 'Sales Kudus', '0812-0000-0005', null],
+        'SINARCHEM' => ['PT Sinar Chem Demo', 'Bagian Distribusi', '021-5800006', 'www.sinarchem-demo.test'],
+    ];
+
+    /** SKU produk demo => kode prinsipal. */
+    private const PRODUCT_PRINCIPALS = [
+        'DM-INS-001' => 'AGROKIMIA', 'DM-INS-002' => 'SINARCHEM', 'DM-FUN-001' => 'TANIMAKMUR', 'DM-FUN-002' => 'AGROKIMIA',
+        'DM-HER-001' => 'SINARCHEM', 'DM-HER-002' => 'TANIMAKMUR', 'DM-MOL-001' => 'AGROKIMIA', 'DM-ROD-001' => 'SINARCHEM',
+        'DM-PER-001' => 'TANIMAKMUR', 'DM-PUP-001' => 'PUPUKSUBUR', 'DM-BIB-001' => 'BENIHUNGGUL', 'DM-BIB-002' => 'BENIHUNGGUL',
+        'DM-ALT-001' => 'ALATTANI', 'DM-ALT-002' => 'ALATTANI',
+    ];
+
+    /**
+     * Supplier demo: nama => [prinsipal (beli langsung pabrik) | null, tempo, bank, rekening dummy, aktif?,
+     * produk dipasok [SKU => lead time hari]]. Rekening dummy berawalan 999 (bukan rekening sungguhan).
+     *
+     * @var array<string, array{0: string|null, 1: int, 2: string, 3: string, 4: bool, 5: array<string, int>}>
+     */
+    private const SUPPLIERS = [
+        'PT Agro Kimia Demo (pabrik)' => ['AGROKIMIA', 45, 'BRI', '9990012345678', true, ['DM-INS-001' => 7, 'DM-FUN-002' => 7, 'DM-MOL-001' => 10]],
+        'CV Distributor Tani Demo' => [null, 30, 'BCA', '9990098765', true, ['DM-INS-002' => 3, 'DM-HER-001' => 3, 'DM-FUN-001' => 4, 'DM-PER-001' => 4, 'DM-ROD-001' => 5]],
+        'CV Sarana Benih Demo' => [null, 14, 'Mandiri', '9990011122233', true, ['DM-BIB-001' => 5, 'DM-BIB-002' => 5, 'DM-PUP-001' => 6]],
+        'UD Alat Pertanian Demo' => [null, 0, 'BRI', '9990044455566', false, ['DM-ALT-001' => 14, 'DM-ALT-002' => 14]],
+    ];
+
+    private function seedPurchasing(): void
+    {
+        foreach (self::PRINCIPALS as $code => $spec) {
+            [$name, $contact, $phone, $website] = $spec;
+            if (Principal::withTrashed()->where('code', $code)->exists()) {
+                continue;
+            }
+            app(SavePrincipal::class)->handle(null, [
+                'code' => $code, 'name' => $name, 'contact_name' => $contact, 'phone' => $phone,
+                'email' => null, 'address' => null, 'website' => $website, 'is_active' => true,
+            ], null);
+        }
+
+        $principals = Principal::query()->pluck('id', 'code');
+        foreach (self::PRODUCT_PRINCIPALS as $sku => $code) {
+            // Hanya produk yang belum punya prinsipal (ubahan dari layar tidak ditimpa).
+            Product::query()->where('sku', $sku)->whereNull('principal_id')->update(['principal_id' => $principals[$code] ?? null]);
+        }
+
+        $products = Product::query()->pluck('id', 'sku');
+        foreach (self::SUPPLIERS as $name => $spec) {
+            [$principal, $term, $bank, $account, $active, $supplied] = $spec;
+            if (Supplier::withTrashed()->where('name', $name)->exists()) {
+                continue;
+            }
+            $rows = [];
+            foreach ($supplied as $sku => $lead) {
+                if (isset($products[$sku])) {
+                    $rows[] = ['product_id' => (int) $products[$sku], 'supplier_sku' => null, 'lead_time_days' => $lead, 'is_preferred' => $principal !== null];
+                }
+            }
+            app(SaveSupplier::class)->handle(null, [
+                'name' => $name, 'principal_id' => $principal === null ? null : ($principals[$principal] ?? null),
+                'tax_id' => null, 'contact_name' => 'Bagian Penjualan', 'phone' => '0291-440000', 'email' => null, 'address' => null,
+                'village_code' => null, 'payment_term_days' => $term, 'bank_name' => $bank, 'bank_account_no' => $account,
+                'bank_account_name' => $name, 'is_active' => $active,
+            ], $rows, null);
         }
     }
 

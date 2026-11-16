@@ -40,6 +40,8 @@ class ProductRequest extends FormRequest
                 : ['prohibited'],
             'name' => ['required', 'string', 'min:2', 'max:150'],
             'product_category_id' => ['required', 'integer', Rule::exists('product_categories', 'id')->whereNull('deleted_at')],
+            // T-072: prinsipal opsional, hanya yang aktif (produk lama boleh tetap menunjuk prinsipal nonaktif).
+            'principal_id' => ['nullable', 'integer', Rule::exists('principals', 'id')->whereNull('deleted_at')],
             'brand' => ['nullable', 'string', 'max:80'],
             'active_ingredient' => ['nullable', 'string', 'max:255'],
             'formulation_id' => ['nullable', 'integer', Rule::exists('reference_items', 'id')->where('group_code', ReferenceGroup::Formulation->value)],

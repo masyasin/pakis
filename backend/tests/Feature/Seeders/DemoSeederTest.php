@@ -130,6 +130,19 @@ test('T-068 data demo: gudang & toko dengan rak (+ Q-01), 5 kendaraan fiktif, ca
         ->and(DB::table('stock_bins')->count())->toBe(9);
 });
 
+test('T-072 data demo: 6 prinsipal & 4 supplier fiktif, rekening terenkripsi, produk dikaitkan; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    expect(DB::table('principals')->count())->toBe(6)
+        ->and(DB::table('suppliers')->count())->toBe(4)
+        ->and(DB::table('suppliers')->where('is_active', false)->count())->toBe(1)
+        ->and(DB::table('products')->whereNull('principal_id')->count())->toBe(0)
+        ->and(DB::table('supplier_products')->count())->toBe(13)
+        ->and(DB::table('suppliers')->pluck('bank_account_no_enc')->every(fn (?string $c) => $c !== null && ! str_contains($c, '999')))->toBeTrue()
+        ->and(DB::table('principals')->pluck('name')->every(fn (string $n) => str_contains($n, 'Demo')))->toBeTrue();
+});
+
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {
     app()->detectEnvironment(fn () => 'production');
 

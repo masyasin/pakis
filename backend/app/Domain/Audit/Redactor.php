@@ -14,7 +14,7 @@ final class Redactor
     public const MASK = '***';
 
     /** Nama kunci persis. */
-    private const EXACT = ['nik', 'nik_enc', 'nik_hash', 'secret', 'remember_token', 'current_password'];
+    private const EXACT = ['nik', 'nik_enc', 'nik_hash', 'secret', 'remember_token', 'current_password', 'bank_account_no', 'bank_account_no_enc'];
 
     /** Pola kunci (regex, tanpa delimiter). */
     private const PATTERNS = ['^password', '^two_factor_', 'token', '^otp', 'secret$', 'api_key'];

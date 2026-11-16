@@ -3,6 +3,7 @@ import { ArrowLeft, Package } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
+import { AsyncSelect } from '@/components/pakis/async-select';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { SettingsSection } from '@/components/settings-section';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ type ProductData = Flags & {
     name: string;
     product_category_id: number;
     brand: string | null;
+    principal_id: number | null;
     active_ingredient: string | null;
     formulation_id: number | null;
     package_size: string | null;
@@ -100,6 +102,7 @@ export default function ProductForm({
             product?.product_category_id ?? firstCategory?.value ?? '',
         ),
         brand: product?.brand ?? '',
+        principal_id: product?.principal_id ? String(product.principal_id) : '',
         active_ingredient: product?.active_ingredient ?? '',
         formulation_id: product?.formulation_id
             ? String(product.formulation_id)
@@ -286,6 +289,28 @@ export default function ProductForm({
                             <InputError
                                 message={form.errors.product_category_id}
                             />
+                        </div>
+                        <div className="grid gap-2">
+                            <Label htmlFor="product-principal">
+                                Prinsipal (opsional)
+                            </Label>
+                            <AsyncSelect
+                                id="product-principal"
+                                source="principals"
+                                value={
+                                    form.data.principal_id === ''
+                                        ? []
+                                        : [form.data.principal_id]
+                                }
+                                onChange={(v) =>
+                                    form.setData(
+                                        'principal_id',
+                                        String(v[0] ?? ''),
+                                    )
+                                }
+                                placeholder="Cari produsen / pemilik merek"
+                            />
+                            <InputError message={form.errors.principal_id} />
                         </div>
                         <div className="grid gap-2">
                             <Label htmlFor="product-brand">

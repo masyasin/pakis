@@ -100,7 +100,7 @@ class ProductController extends Controller
 
     public function show(Request $request, Product $product): Response
     {
-        $product->load(['category:id,name,kind,requires_batch,requires_expiry,requires_serial,requires_registration', 'baseUnit:id,name', 'formulation:id,name']);
+        $product->load(['category:id,name,kind,requires_batch,requires_expiry,requires_serial,requires_registration', 'baseUnit:id,name', 'formulation:id,name', 'principal:id,name']);
         $units = ProductUnit::query()->with(['unit:id,name,meta', 'barcodes:id,product_unit_id,barcode'])
             ->where('product_id', $product->id)->orderByDesc('is_base')->orderBy('factor')->get();
         $user = self::user($request);
@@ -168,6 +168,8 @@ class ProductController extends Controller
             'product_category_id' => $p->product_category_id,
             'category' => $p->category->name ?? null,
             'kind_label' => $p->relationLoaded('category') ? $p->category->kind->label() : null,
+            'principal_id' => $p->principal_id,
+            'principal' => $p->relationLoaded('principal') ? $p->principal?->name : null,
             'brand' => $p->brand,
             'active_ingredient' => $p->active_ingredient,
             'formulation_id' => $p->formulation_id,

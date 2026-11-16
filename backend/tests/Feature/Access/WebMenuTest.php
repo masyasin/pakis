@@ -6,6 +6,7 @@ use App\Models\User;
 use App\Support\Menu\MenuBuilder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\ApprovalWorld;
@@ -39,6 +40,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
         'Penjualan' => ['Pelanggan', 'Area Penjualan'],
+        'Pembelian' => ['Supplier', 'Prinsipal'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
@@ -69,12 +71,24 @@ test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai mod
 });
 
 test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › Pelanggan & Area Penjualan (T-073) + Master › Produk (T-070), Izin Edar (T-071), Kategori (T-069), Lokasi Stok & Kendaraan (T-068)', function (string $role, array $top, array $sales, array $master) {
-    expect(menuOf($role))->toBe(array_filter(['' => $top, 'Penjualan' => $sales, 'Master' => $master]));
+    // Grup Pembelian (T-072) diuji terpisah di bawah.
+    expect(Arr::except(menuOf($role), 'Pembelian'))->toBe(array_filter(['' => $top, 'Penjualan' => $sales, 'Master' => $master]));
 })->with([
     'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan'], ['Pelanggan', 'Area Penjualan'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
     'kepala_gudang' => ['kepala_gudang', ['Dasbor', 'Persetujuan'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
     'staf_gudang' => ['staf_gudang', ['Dasbor'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
     'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
+]);
+
+test('T-072 menu Pembelian › Supplier & Prinsipal hanya untuk pemegang suppliers.view (15 §6.4)', function (string $role, ?array $expected) {
+    expect(menuOf($role)['Pembelian'] ?? null)->toBe($expected);
+})->with([
+    'owner' => ['owner', ['Supplier', 'Prinsipal']],
+    'purchasing' => ['purchasing', ['Supplier', 'Prinsipal']],
+    'kepala_gudang' => ['kepala_gudang', ['Supplier', 'Prinsipal']],
+    'admin_penjualan' => ['admin_penjualan', null],
+    'staf_gudang' => ['staf_gudang', null],
+    'supervisor' => ['supervisor', null],
 ]);
 
 test('T-073 administrator melihat Area Penjualan (sales_areas.view) tanpa Pelanggan', function () {
@@ -109,7 +123,7 @@ test('06 §8 setiap grup menu punya seksi sidebar (Distribusi / HRIS / Sistem), 
         ->assertInertia(function (Assert $page) {
             $sections = array_column($page->toArray()['props']['auth']['menu'], 'section', 'title');
             expect($sections)->toMatchArray([
-                '' => null, 'Penjualan' => 'Distribusi', 'Master' => 'Distribusi', 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
+                '' => null, 'Penjualan' => 'Distribusi', 'Pembelian' => 'Distribusi', 'Master' => 'Distribusi', 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
                 'Pengguna & Akses' => 'Sistem', 'Pengaturan' => 'Sistem', 'Audit' => 'Sistem',
             ]);
         });

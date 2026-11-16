@@ -28,7 +28,10 @@ import {
     UsersRound,
     BriefcaseBusiness,
     CircleDot,
+    Factory,
     FileBadge,
+    Handshake,
+    ShoppingBag,
     Package,
     Stamp,
     Store,
@@ -96,6 +99,8 @@ const ICONS: Record<string, LucideIcon> = {
     category: Tags,
     product: Package,
     registration: FileBadge,
+    supplier: Handshake,
+    principal: Factory,
     warehouse: Warehouse,
     vehicle: Truck,
     customer: Store,
@@ -125,6 +130,7 @@ function MenuCount({ count }: { count?: number }) {
 const GROUP_ICONS: Record<string, LucideIcon> = {
     // Ikon grup sendiri agar tidak sama dengan item pertamanya (Pelanggan = Store).
     Penjualan: ShoppingCart,
+    Pembelian: ShoppingBag,
     'Unit Kerja': Building2,
     Kepegawaian: UsersRound,
     Presensi: ClipboardCheck,

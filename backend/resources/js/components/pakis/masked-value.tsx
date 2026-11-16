@@ -17,15 +17,20 @@ export function MaskedValue({
     masked,
     reveal,
     label = 'NIK',
+    responseKey = 'nik',
 }: {
     /** Nilai termasking dari server, null = tidak diisi. */
     masked: string | null;
     /** Endpoint POST pembuka nilai lengkap; null = pengguna tidak berhak. */
     reveal: RouteDefinition<'post'> | null;
     label?: string;
+    /** Kunci nilai lengkap di respons JSON (NIK = `nik`, rekening supplier = `account`). */
+    responseKey?: string;
 }) {
     const [full, setFull] = useState<string | null>(null);
-    const http = useHttp<Record<string, never>, { nik: string | null }>({});
+    const http = useHttp<Record<string, never>, Record<string, string | null>>(
+        {},
+    );
 
     if (masked === null) {
         return <span className="text-muted-foreground">–</span>;
@@ -36,7 +41,7 @@ export function MaskedValue({
             return;
         }
         http.submit(reveal, {
-            onSuccess: (res) => setFull(res.nik),
+            onSuccess: (res) => setFull(res[responseKey] ?? null),
             onHttpException: () => {
                 toast.error(
                     `${label} tidak bisa dibuka. Muat ulang halaman lalu coba lagi.`,

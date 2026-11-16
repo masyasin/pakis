@@ -49,6 +49,8 @@ return [
     'product_categories', // T-069
     'products', // T-070
     'product_registrations', // T-071
+    'principals', // T-072
+    'suppliers', // T-072
     'stock_locations', // T-068
     'stock_bins', // T-068
     'vehicles', // T-068

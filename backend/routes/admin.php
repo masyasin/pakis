@@ -24,6 +24,7 @@ use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MasterImportController;
 use App\Http\Controllers\Admin\MfaSetupController;
 use App\Http\Controllers\Admin\PositionController;
+use App\Http\Controllers\Admin\PrincipalController;
 use App\Http\Controllers\Admin\ProductBarcodeController;
 use App\Http\Controllers\Admin\ProductCategoryController;
 use App\Http\Controllers\Admin\ProductController;
@@ -42,6 +43,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\StockBinController;
 use App\Http\Controllers\Admin\StockLocationController;
+use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VehicleController;
 use App\Support\Import\ImportRegistry;
@@ -416,6 +418,24 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('produk/{product}/izin-edar', [ProductRegistrationController::class, 'store'])->whereNumber('product')->name('product-registrations.store');
         Route::put('produk/{product}/izin-edar/{registration}', [ProductRegistrationController::class, 'update'])->whereNumber(['product', 'registration'])->name('product-registrations.update');
         Route::post('produk/{product}/izin-edar/{registration}/cabut', [ProductRegistrationController::class, 'revoke'])->whereNumber(['product', 'registration'])->name('product-registrations.revoke');
+    });
+
+    // Prinsipal & supplier (15 §5 `admin.principals.*`, `admin.suppliers.*`, FR-A11, SEC-108, T-072).
+    // Produk dipasok disimpan lewat form supplier (tanpa rute terpisah). Tanpa hapus: dinonaktifkan.
+    Route::get('prinsipal', [PrincipalController::class, 'index'])->middleware('can:suppliers.view')->name('principals.index');
+    Route::middleware('can:suppliers.manage')->group(function () {
+        Route::post('prinsipal', [PrincipalController::class, 'store'])->name('principals.store');
+        Route::put('prinsipal/{principal}', [PrincipalController::class, 'update'])->whereNumber('principal')->name('principals.update');
+        Route::get('supplier/baru', [SupplierController::class, 'create'])->name('suppliers.create');
+        Route::post('supplier', [SupplierController::class, 'store'])->name('suppliers.store');
+        Route::get('supplier/{supplier}/ubah', [SupplierController::class, 'edit'])->whereNumber('supplier')->name('suppliers.edit');
+        Route::put('supplier/{supplier}', [SupplierController::class, 'update'])->whereNumber('supplier')->name('suppliers.update');
+        Route::post('supplier/{supplier}/rekening', [SupplierController::class, 'revealAccount'])->whereNumber('supplier')
+            ->middleware('throttle:30,1')->name('suppliers.reveal-account');
+    });
+    Route::middleware('can:suppliers.view')->group(function () {
+        Route::get('supplier', [SupplierController::class, 'index'])->name('suppliers.index');
+        Route::get('supplier/{supplier}', [SupplierController::class, 'show'])->whereNumber('supplier')->name('suppliers.show');
     });
 
     // Area penjualan (15 §5 `admin.sales-areas.*`, FR-A12, T-073): tambah/ubah lewat dialog di halaman

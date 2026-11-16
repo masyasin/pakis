@@ -1,19 +1,24 @@
 # 20 — Paket F: Keuangan & Prinsipal (siap eksekusi)
 
+> Revisi 16 Nov 2026 (repo): menerapkan PD-1, PF-1–PF-3 (sisi D/F), PF-5, PF-10–PF-12 dari `12`.
+
 **Rentang:** T-159–T-178 · FR-F01–FR-F32 · BR-320–BR-359 · SEC-176–SEC-190 · OQ-151 dst.
-**Kontrak:** `14` (ADR-104 outbox, ADR-115 tanggal kunci, §7 katalog event), **15**–**19**. Paket ini **mengonsumsi** `accounting_events` yang sudah ditulis sejak Paket A (termasuk backfill), menambah buku besar, bank, hutang, pajak, prinsipal, konsinyasi, aset, saran pembelian, dan member petani.
+**Kontrak:** `14` (ADR-104 outbox, ADR-115 tanggal kunci, §7 katalog event), **15**–**19**. Paket ini **mengonsumsi** `accounting_events` yang sudah ditulis sejak Paket A (termasuk backfill), menambah buku besar, bank, hutang, pajak, prinsipal, konsinyasi, aset, saran pembelian, dan member petani. F **tidak mengubah payload event armada (D) maupun payroll (E2)**: kualifier rekening (`bank_account_id`), `refs.supplier_id`, dan bentuk agregat payload sudah ditetapkan di paket pemancarnya sejak event pertama (PF-1, PF-2); F hanya mengonsumsi. Satu-satunya perluasan builder lama adalah `pos.shift_closed` untuk metode bayar `points` yang baru ada di F (§11.2), dan itu hanya berlaku untuk event sesudah T-176.
+**Urutan (PF-10):** F dikerjakan setelah Paket B–D **dan E2** (**19**, keputusan PE-1: E2 = event payroll, setelah D). Ketergantungan per task ke C/D/E2 ditulis di `TASKS_PAKET_F.md`.
 **Modul konsep v1.4:** FIN-02, FIN-03, FIN-05, PRC-02, PRC-03, SAL-06, INV-06, POS-02.
 
 ## 0. Penyelarasan (cek sebelum T-159)
 
 | # | Asumsi | Cek |
 |---|---|---|
-| S-1 | OQ-106 sudah dijawab: modul F menjadi **pembukuan utama** atau hanya **ekspor jurnal** ke software lama. Bila ekspor saja: kerjakan T-159, T-160, T-172 (+ T-166–T-171, T-173–T-176 tetap berguna); T-161, T-163–T-164 opsional | `12` |
-| S-2 | OQ-101 (PKP) sudah dijawab sebelum T-170/T-171. Format unggah faktur pajak **diverifikasi terhadap ketentuan & sistem DJP yang berlaku saat task dikerjakan**; dokumen ini tidak menetapkan skema file | `12` |
-| S-3 | Semua event sejak Paket A berstatus `pending` dan seimbang (test kontrak **16** T-096) | `accounting_events` |
+| S-1 | **Menunggu OQ-106** (§13): modul F menjadi **pembukuan utama** atau hanya **ekspor jurnal** ke software lama. Bila ekspor saja: kerjakan T-159, T-160, T-172 (+ T-166–T-171, T-173–T-176 tetap berguna); T-161, T-163–T-164 opsional | `12` |
+| S-2 | **Menunggu OQ-101** (§13) sebelum T-170/T-171. Format unggah faktur pajak **diverifikasi terhadap ketentuan & sistem DJP yang berlaku saat task dikerjakan**; dokumen ini tidak menetapkan skema file | `12` |
+| S-3 | Semua event sejak Paket A berstatus `pending` dan seimbang (test kontrak **16** T-096), dan payload event yang mengkredit/mendebit `bank` sudah membawa kualifier rekening (`bank_account_id`) sejak event pertama — B (**16** §11.2), D (**18** §11.2), E2 (**19**, `payroll.paid`) — serta `fleet.maintenance_approved` K `payable` membawa `refs.supplier_id` (**18**). Karena itu backfill tidak butuh perbaikan event lama (PF-1, PF-2) | `accounting_events` |
 | S-4 | Bagan akun (CoA) contoh di §4.1 adalah **template**; akuntan Pakis menetapkan versi final sebelum backfill (OQ-151) | — |
-| S-5 | Tidak ada dependency baru. Ekspor memakai OpenSpout; PDF laporan memakai library ADR-114 | `03` §5 |
+| S-5 | **Dependency baru yang dibutuhkan F — menunggu keputusan, agent tidak memilih library:** (a) library PDF (ringkasan klaim, label aset, ekspor laporan PDF; ADR-114, **menunggu OQ-109**); (b) pembuat QR (label aset, kartu member; **menunggu OQ-160f**). Uji beban T-178 memakai k6 yang mengikuti **PA-4 (masih menunggu)**. Ekspor XLSX/CSV memakai OpenSpout lewat kerangka ekspor Fase 0. `brick/math` dijadikan dependency langsung di Paket A (`12`, hasil `15` §0 S-6), bukan di F | `03` §5 |
 | S-6 | Nama berkas frontend mengikuti konvensi repo (**15** §0 S-3) | — |
+| S-7 | Urutan (PF-10): Paket B–D dan E2 selesai. Task yang butuh C (T-117, T-132, T-133, T-135), D (T-141, T-151), atau E2 (task E2 event payroll, **19**) menulis dependensinya sendiri | `TASKS_PAKET_F.md` |
+| S-8 | `PeriodGuard` (**16** T-096) dipanggil Action pemancar event di A–E (untuk A/C/E lewat task paketnya, PF-3); arch test `tests/Arch/PeriodGuardArchTest.php` diperluas ke domain baru F (`Purchasing` hutang, `Principal`, `Asset`, `Consignment`, `Tax`) di T-159 | Repo |
 
 ### 0.1 ADR baru
 
@@ -84,20 +89,20 @@ Konvensi `04` §1 + **14** §6.1. `[audit]` = `created_by`, `updated_by`, `creat
 
 ### 4.1 Penomoran, referensi, ALTER (T-159)
 
-Kode `document_sequences` baru (format default, dapat diubah lewat setting **14** §8):
+Kode `document_sequences` baru. Pola default mengikuti **14** §8 (`XX-{YY}{MM}-{SEQ:n}`, token `PatternParser`); dapat diubah di layar Penomoran (BR-025). Kode yang belum ada di **14** §8 ditulis dengan gaya yang sama dan ditambahkan ke **14** §8:
 
-| Kode | Contoh | Reset |
-|---|---|---|
-| `journal_entry` | `JU/2027/03/000123` | bulanan |
-| `purchase_invoice` | `FB/2027/03/00045` | bulanan |
-| `supplier_payment` | `BYS/2027/03/00012` | bulanan |
-| `supplier_debit_note` | `ND/2027/00007` | tahunan |
-| `principal_claim` | `KLM/2027/00031` | tahunan |
-| `consignment` | `KSG/2027/0004` | tahunan |
-| `consignment_report` | `LKS/2027/03/0019` | bulanan |
-| `fixed_asset` | `AST-000123` | tidak |
-| `asset_disposal` | `HPS-AST/2027/0003` | tahunan |
-| `farmer_member` | `MBR-0001234` | tidak |
+| Kode | Pola default | Contoh | Reset |
+|---|---|---|---|
+| `journal_entry` | `JU-{YY}{MM}-{SEQ:5}` (= **14** §8) | `JU-2703-00123` | monthly |
+| `purchase_invoice` | `FB-{YY}{MM}-{SEQ:4}` (= **14** §8) | `FB-2703-0045` | monthly |
+| `supplier_payment` | `BYS-{YY}{MM}-{SEQ:5}` | `BYS-2703-00012` | monthly |
+| `supplier_debit_note` | `ND-{YYYY}-{SEQ:5}` | `ND-2027-00007` | yearly |
+| `principal_claim` | `KLM-{YYYY}-{SEQ:5}` | `KLM-2027-00031` | yearly |
+| `consignment` | `KNS-{YY}{MM}-{SEQ:4}` (= **14** §8) | `KNS-2703-0004` | monthly |
+| `consignment_report` | `LKS-{YY}{MM}-{SEQ:4}` | `LKS-2703-0019` | monthly |
+| `fixed_asset` | `AST-{SEQ:5}` (= **14** §8) | `AST-00123` | never |
+| `asset_disposal` | `HPS-AST-{YYYY}-{SEQ:4}` | `HPS-AST-2027-0003` | yearly |
+| `farmer_member` | `MBR-{SEQ:7}` | `MBR-0001234` | never |
 
 `reference_items` grup baru: `asset_location_reason`, `journal_manual_reason`, `bank_fee_type`, `claim_rejection_reason`.
 
@@ -186,7 +191,8 @@ CREATE TABLE chart_of_accounts (
 CREATE TABLE account_mappings (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   account_role VARCHAR(60) NOT NULL,              -- 'receivable', 'inventory', 'expense', 'bank', …  (§4.2.1)
-  qualifier_type ENUM('none','bank_account','expense_category','stock_location_type','stock_location','tax_code','asset_category','payroll_component') NOT NULL DEFAULT 'none',
+  qualifier_type ENUM('none','bank_account','expense_category','stock_location','tax_code','asset_category','payroll_component') NOT NULL DEFAULT 'none',
+  -- 'stock_location_type' sengaja tidak ada: inventory.transferred tanpa jurnal, jadi akun persediaan per tipe lokasi akan menyimpang dari stok fisik (§4.2.1)
   qualifier_value VARCHAR(60) NOT NULL DEFAULT '*',   -- '*' = default peran; selain itu id/kode kualifier
   account_id BIGINT UNSIGNED NOT NULL,
   effective_from DATE NOT NULL,                   -- pemetaan baru tidak mengubah jurnal lama (NFR-F07)
@@ -333,13 +339,14 @@ Sumber tunggal di kode (`app/Domain/Accounting/AccountRoleCatalog.php`), dibaca 
 
 | Peran | Tipe akun yang diizinkan | Kualifier | Dipakai event |
 |---|---|---|---|
-| `bank` | asset (kas setara) | `bank_account` (wajib per rekening) | B, D, E, F |
-| `cash_head_office`, `cash_in_transit`, `cash_store`, `petty_cash`, `trip_advance` | asset | `stock_location` (toko) untuk `cash_store` | B, D |
+| `bank` | asset (kas setara) | `bank_account` (wajib per rekening) | B, D, E, F — payload B (**16** §11.2), D (**18** §11.2), dan E2 (`payroll.paid`, **19**) membawa `bank_account_id` di setiap baris `bank` sejak event pertama (PF-1), sehingga backfill tidak butuh perbaikan event lama |
+| `cash_head_office`, `cash_in_transit`, `cash_store`, `petty_cash`, `trip_advance` | asset | `stock_location` (toko) untuk `cash_store` | B, D (`petty_cash` hanya dikredit dokumen kas kecil B; D tidak pernah mengkredit `petty_cash`, **18** §11.2) |
+| `fleet_card_clearing` | asset / liability (kartu BBM prabayar/voucher = aset; tagihan kartu armada = kewajiban; OQ-140) | — | D (`fleet.fuel_approved` untuk `fleet_card`/`voucher`, **18** §11.2) |
 | `receivable`, `customer_deposit` | asset / liability | — | B, F |
 | `employee_receivable`, `employee_loan_receivable` | asset | — | B, C, D, E |
-| `inventory` | asset | `stock_location_type` (opsional) | A, B, C, F |
+| `inventory` | asset | — (tanpa kualifier: `inventory.transferred` tidak berjurnal, jadi pemetaan per tipe lokasi stok tidak dipakai dan tidak disediakan) | A, B, C, F |
 | `goods_received_not_invoiced` | liability | — | A, F |
-| `payable` | liability | — | D, F |
+| `payable` | liability | — (dimensi `supplier_id` dari `refs`; event D `fleet.maintenance_approved` membawa `refs.supplier_id` sejak D, PF-2) | A (`inventory.purchase_returned`), D, F |
 | `vat_output`, `vat_input` | liability / asset | `tax_code` | B, F |
 | `principal_receivable` | asset | — | F |
 | `salary_payable`, `bpjs_payable`, `pph21_payable` | liability | — | E |
@@ -483,7 +490,7 @@ CREATE TABLE purchase_invoice_lines (
   discount_amount DECIMAL(18,2) NOT NULL DEFAULT 0,
   line_total DECIMAL(18,2) NOT NULL,              -- neto sebelum PPN
   price_variance DECIMAL(18,2) NOT NULL DEFAULT 0,-- line_total − qty × receipt_unit_cost
-  expense_account_role VARCHAR(60) NULL,          -- invoice_type expense: mis. 'vehicle_maintenance_expense'
+  expense_account_role VARCHAR(60) NULL,          -- invoice_type expense: mis. 'vehicle_maintenance_expense', atau 'fixed_asset' (+ kualifier asset_category) untuk perolehan aset (BR-339, PF-5)
   KEY pil_invoice_idx (purchase_invoice_id),
   KEY pil_grl_idx (goods_receipt_line_id),
   CONSTRAINT pil_invoice_fk FOREIGN KEY (purchase_invoice_id) REFERENCES purchase_invoices(id),
@@ -790,14 +797,16 @@ CREATE TABLE tax_exports (
   item_count INT UNSIGNED NOT NULL,
   total_tax_base DECIMAL(18,2) NOT NULL,
   total_tax_amount DECIMAL(18,2) NOT NULL,
-  file_path VARCHAR(255) NULL,                    -- storage privat; dihapus setelah tax.export_file_retention_days
-  file_sha256 CHAR(64) NULL,
+  export_file_id BIGINT UNSIGNED NULL,            -- export_files (Fase 0): berkas privat, antrean, expires_at = tax.export_file_retention_days
+  file_sha256 CHAR(64) NULL,                      -- dicatat untuk event mass_export & bukti unggah
   status ENUM('queued','generated','downloaded','uploaded','result_imported','failed','expired') NOT NULL DEFAULT 'queued',
+  download_count TINYINT UNSIGNED NOT NULL DEFAULT 0,   -- dibatasi tax.export_max_downloads dalam tax.export_download_window_hours
   downloaded_at TIMESTAMP NULL, downloaded_by BIGINT UNSIGNED NULL,
   result_file_path VARCHAR(255) NULL,             -- file hasil dari sistem DJP (nomor faktur pajak), bila tersedia
   error VARCHAR(500) NULL,
   [audit],
-  KEY tex_period_idx (tax_period, direction)
+  KEY tex_period_idx (tax_period, direction),
+  CONSTRAINT tex_file_fk FOREIGN KEY (export_file_id) REFERENCES export_files(id)
 );
 
 CREATE TABLE tax_export_items (
@@ -809,6 +818,8 @@ CREATE TABLE tax_export_items (
   CONSTRAINT tei_invoice_fk FOREIGN KEY (tax_invoice_id) REFERENCES tax_invoices(id)
 );
 ```
+
+**Kerangka ekspor Fase 0 (PF-12).** File pajak dan jurnal **tidak** dibuat oleh mekanisme sendiri. Listing `tax_invoices` (filter masa, arah, status `ready`) dan listing baris ekspor jurnal `implements ExportableListing` dan didaftarkan di `config/pakis.php` `exports`; route memanggil `StartExport` sehingga antrean, batas baris (`export.sync_max_rows`/`export.max_rows`), escape formula (`FormulaEscaper`, SEC-051), halaman Unduhan, kedaluwarsa `export_files.expires_at`, dan event keamanan `mass_export` (`export.mass_export_alert_rows`) dipakai apa adanya. `tax_exports`/`accounting_exports` hanya menyimpan batch (item yang ikut, status unggah, cegah ekspor ganda) dan menunjuk `export_files.id`. Formatter/adapter menentukan kolom & urutan; bila format resmi bukan XLSX/CSV, penulis format baru ditambahkan di `app/Support/Export` (satu jalur untuk semua modul), bukan di domain `Tax`/`Accounting`.
 
 **Format file tidak ditetapkan di dokumen ini.** `TaxExportFormatter` adalah adapter (ADR-113) dengan satu implementasi per format resmi yang berlaku saat T-171 dikerjakan; struktur kolom diambil dari dokumentasi/contoh resmi DJP yang diverifikasi bersama konsultan pajak Pakis (OQ-101, OQ-145). Test memakai **fixture contoh resmi** yang disimpan di repo, bukan struktur karangan.
 
@@ -832,11 +843,13 @@ CREATE TABLE accounting_exports (
   date_from DATE NOT NULL, date_to DATE NOT NULL,
   granularity ENUM('entry','daily_summary') NOT NULL DEFAULT 'entry',
   entry_count INT UNSIGNED NOT NULL DEFAULT 0,
-  file_path VARCHAR(255) NULL, file_sha256 CHAR(64) NULL,
+  export_file_id BIGINT UNSIGNED NULL,            -- export_files (Fase 0), lihat catatan kerangka ekspor §4.6
+  file_sha256 CHAR(64) NULL,
   status ENUM('queued','generated','failed','expired') NOT NULL DEFAULT 'queued',
   error VARCHAR(500) NULL,
   [audit],
-  KEY aex_range_idx (target_system, date_from)
+  KEY aex_range_idx (target_system, date_from),
+  CONSTRAINT aex_file_fk FOREIGN KEY (export_file_id) REFERENCES export_files(id)
 );
 
 CREATE TABLE accounting_export_entries (          -- mencegah jurnal yang sama diekspor dua kali tanpa sengaja
@@ -1071,7 +1084,7 @@ CREATE TABLE seasonal_factors (                   -- pengali permintaan per bula
   UNIQUE KEY sf_unique (scope_type, scope_id, sales_area_id, month),
   CONSTRAINT sf_month_chk CHECK (month BETWEEN 1 AND 12 AND factor >= 0 AND factor <= 10)
 );
--- Catatan: sales_area_id NULL pada UNIQUE tidak mencegah duplikat di MySQL; Action memakai
+-- Catatan: sales_area_id NULL pada UNIQUE tidak mencegah duplikat di MariaDB/MySQL; Action memakai
 -- upsert dengan kunci normalisasi (sales_area_id → 0) di kolom bantu:
 ALTER TABLE seasonal_factors
   ADD COLUMN area_key BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(sales_area_id, 0)) STORED,
@@ -1211,10 +1224,10 @@ CREATE TABLE loyalty_points (                     -- buku poin, append-only
 | `admin.journals.attachments.store`/`show` | `/akuntansi/jurnal/{entry}/lampiran` | `journals.create_manual` / `journals.view` | Unduh via signed URL 5 menit |
 | `admin.ledger.show` | GET `/akuntansi/buku-besar` | `journals.view` | Per akun + dimensi |
 | `admin.fiscal-periods.index`/`show` | `/akuntansi/periode` | `periods.view` | Checklist tutup buku |
-| `admin.fiscal-periods.start-closing`/`close` | POST `/akuntansi/periode/{period}/tutup` | `periods.close` | MFA ulang; menggeser `accounting.lock_date` |
+| `admin.fiscal-periods.start-closing`/`close` | POST `/akuntansi/periode/{period}/tutup` | `periods.close` | MFA ulang; menggeser `accounting.lock_date`. Nasib route B `admin.accounting.lock-date`, migrasi `lock_date` → `fiscal_periods`, dan urutan tutup **menunggu OQ-160a** (PF-4) |
 | `admin.fiscal-periods.reopen` | POST `/akuntansi/periode/{period}/buka` | `periods.reopen` | Owner + alasan + konfirmasi password |
-| `admin.accounting-exports.*` | `/akuntansi/ekspor` | `accounting_exports.generate` | + `exports.mass` |
-| `admin.external-account-mappings.*` | `/akuntansi/ekspor/pemetaan` | `accounting_exports.generate` | |
+| `admin.accounting-exports.*` | `/akuntansi/ekspor` | `accounting_exports.generate` | Kerangka ekspor Fase 0 (`StartExport`); ekspor massal dipantau `mass_export` (PA-3: `exports.mass` dihapus) |
+| `admin.external-account-mappings.index`/`store`/`update` | `/akuntansi/ekspor/pemetaan` | `accounting_exports.generate` | Listing `external_account_mappings` |
 | `admin.bank-statements.index`/`create`/`store`/`show` | `/bank/mutasi` | `bank_statements.import` / `bank_reconciliation.view` | Unggah CSV per rekening |
 | `admin.bank-reconciliation.show` | GET `/bank/rekonsiliasi/{statement}` | `bank_reconciliation.view` | Dua panel: mutasi ↔ dokumen sistem |
 | `admin.bank-reconciliation.auto`/`match`/`unmatch`/`ignore`/`fee` | POST `/bank/rekonsiliasi/{statement}/...` | `bank_reconciliation.manage` | `fee` = biaya bank/bunga → jurnal |
@@ -1223,32 +1236,32 @@ CREATE TABLE loyalty_points (                     -- buku poin, append-only
 | `admin.financial-reports.balance-sheet` | GET `/laporan/keuangan/neraca` | `reports.financial.view` | |
 | `admin.financial-reports.income-statement` | GET `/laporan/keuangan/laba-rugi` | `reports.financial.view` | `group_by` lokasi/area/prinsipal |
 | `admin.financial-reports.cash-flow` | GET `/laporan/keuangan/arus-kas` | `reports.financial.view` | Metode tidak langsung |
-| `admin.financial-reports.export` | POST `/laporan/keuangan/{report}/ekspor` | `reports.financial.view` + `exports.mass` | XLSX/PDF |
+| `admin.financial-reports.export` | POST `/laporan/keuangan/{report}/ekspor` | `reports.financial.view` | XLSX lewat kerangka ekspor Fase 0; PDF menunggu OQ-109. `exports.mass` dihapus (PA-3); izin ekspor khusus laporan keuangan ikut OQ-160d (PF-8) |
 | `admin.margin-reports.cogs` | GET `/laporan/hpp-margin` | `margin_reports.view` (B) | Per produk/kios/sales/area/prinsipal |
 | `admin.purchase-invoices.index`/`create`/`store`/`show`/`submit`/`void` | `/hutang/faktur-beli` | `purchase_invoices.view` / `.manage` | Pilih penerimaan belum difakturkan |
 | `admin.purchase-invoices.approve-variance` | POST `/hutang/faktur-beli/{pi}/setujui-selisih` | `purchase_invoices.approve_variance` | Via mesin approval |
 | `admin.payables.aging` | GET `/hutang/umur` | `purchase_invoices.view` | |
 | `admin.payables.opening.*` | `/hutang/saldo-awal` | `payables.import_opening` | Hanya saat `payables.opening_balance_open` |
 | `admin.supplier-debit-notes.index`/`show` | `/hutang/nota-debit` | `purchase_invoices.view` | Dibuat otomatis dari retur/klaim |
-| `admin.supplier-bank-changes.index`/`store`/`callback` | `/pemasok/{supplier}/perubahan-rekening` | `suppliers.manage` (A) | Callback dicatat oleh orang ≠ pengaju |
+| `admin.supplier-bank-changes.index`/`store`/`callback` | `/pemasok/{supplier}/perubahan-rekening` | `suppliers.manage` (A) — izin khusus & pengaju FIN **menunggu OQ-160d** (PF-8) | Listing `supplier_bank_changes`; callback dicatat oleh orang ≠ pengaju |
 | `admin.supplier-payments.index`/`create`/`store`/`submit`/`show` | `/hutang/pembayaran` | `supplier_payments.view` / `.manage` | → approval `supplier_payment` |
 | `admin.supplier-payments.execute` | POST `/hutang/pembayaran/{sp}/bayar` | `supplier_payments.execute` | Unggah bukti; ≠ penyetuju |
-| `admin.supplier-payments.bank-file` | POST `/hutang/pembayaran/file-bank` | `supplier_payments.execute` + `exports.mass` | Hanya `approved`; tercatat |
+| `admin.supplier-payments.bank-file` | POST `/hutang/pembayaran/file-bank` | `supplier_payments.execute` | Hanya `approved`; lewat kerangka ekspor Fase 0, tercatat `mass_export` (PA-3) |
 | `admin.principal-programs.*` | `/prinsipal/program` | `principal_programs.view` / `.manage` | Progres & akrual |
 | `admin.principal-claims.*` | `/prinsipal/klaim` | `principal_claims.manage` | Kumpulkan dasar klaim otomatis |
 | `admin.principal-claims.decision` | POST `/prinsipal/klaim/{claim}/keputusan` | `principal_claims.manage` | Catat jawaban prinsipal |
 | `admin.principal-claims.settle` | POST `/prinsipal/klaim/{claim}/penyelesaian` | `principal_claims.manage` | |
 | `admin.principal-claims.write-off` | POST `/prinsipal/klaim/{claim}/hapus` | `principal_claims.manage` | → approval `principal_claim_write_off` |
-| `admin.principal-reports.index` | GET `/laporan/prinsipal` | `principal_programs.view` | FR-F32 |
-| `admin.tax-invoices.index`/`show`/`prepare`/`cancel`/`replace` | `/pajak/faktur` | `tax_invoices.view` / `.manage` | Hanya bila `tax.is_pkp` |
-| `admin.tax-exports.index`/`store`/`download`/`import-result` | `/pajak/ekspor` | `tax_exports.generate` + `exports.mass` | MFA ulang saat unduh |
+| `admin.principal-reports.index` | GET `/laporan/prinsipal` | `principal_programs.view` | FR-F32; listing `principal_reports` |
+| `admin.tax-invoices.index`/`show`/`prepare`/`cancel`/`replace` | `/pajak/faktur` | `tax_invoices.view` / `.manage` | Hanya bila `tax.is_pkp` (menunggu OQ-101) |
+| `admin.tax-exports.index`/`store`/`download`/`import-result` | `/pajak/ekspor` | `tax_exports.generate` | Kerangka ekspor Fase 0; MFA ulang saat unduh; batas unduhan dari setting. `exports.mass` dihapus (PA-3) |
 | `admin.tax-reports.vat-recap` | GET `/pajak/rekap-ppn` | `tax_invoices.view` | |
-| `admin.customer-tax-profiles.*` | `/pelanggan/{customer}/identitas-pajak` | `customer_tax_profiles.manage` | Lihat penuh: `.view_full` (tercatat) |
+| `admin.customer-tax-profiles.index`/`store`/`update`/`show` | `/pelanggan/{customer}/identitas-pajak` | `customer_tax_profiles.manage` | Listing `customer_tax_profiles`; lihat penuh: `.view_full` (tercatat) |
 | `admin.consignments.*` | `/konsinyasi` | `consignments.view` / `.manage` | → approval `consignment_agreement` |
 | `admin.consignments.ship`/`withdraw` | POST `/konsinyasi/{ksg}/kirim` · `/tarik` | `consignments.manage` | Membuat `stock_transfers` |
 | `admin.consignment-reports.*` | `/konsinyasi/{ksg}/laporan` | `consignment_reports.submit` / `.post` | |
-| `admin.asset-categories.*` | `/aset/kategori` | `assets.manage` | |
-| `admin.fixed-assets.*` | `/aset` | `assets.view` / `.manage` | Label QR aset (PDF) |
+| `admin.asset-categories.index`/`store`/`update` | `/aset/kategori` | `assets.manage` | Listing `asset_categories` |
+| `admin.fixed-assets.*` | `/aset` | `assets.view` / `.manage` | Label QR aset (PDF; library PDF menunggu OQ-109, pembuat QR menunggu OQ-160f) |
 | `admin.fixed-assets.transfer` | POST `/aset/{asset}/mutasi` | `assets.transfer` | |
 | `admin.asset-disposals.*` | `/aset/penghapusan` | `assets.dispose` | → approval `asset_disposal` |
 | `admin.asset-depreciation.run`/`preview` | `/aset/penyusutan` | `asset_depreciation.run` | Pratinjau sebelum posting |
@@ -1272,8 +1285,8 @@ CREATE TABLE loyalty_points (                     -- buku poin, append-only
 |---|---|---|---|---|
 | `api.v1.consignments.mine` | GET | `/api/v1/konsinyasi/saya` | `consignment_reports.submit` | Snapshot set `field` |
 | Item sinkron | — | — | — | `consignment_count` (hitung saat kunjungan, foto + lokasi) |
-| `mitra.v1.consignment.show` | GET | `/mitra/v1/konsinyasi` | guard `mitra` | Stok titipan kios sendiri |
-| `mitra.v1.consignment.report` | POST | `/mitra/v1/konsinyasi/laporan` | guard `mitra` | Laporan terjual; perlu konfirmasi sales/admin |
+| `mitra.v1.consignment.show` | GET | `/api/mitra/v1/konsinyasi` | guard `mitra` | Stok titipan kios sendiri (prefix Mitra **17** §5.3) |
+| `mitra.v1.consignment.report` | POST | `/api/mitra/v1/konsinyasi/laporan` | guard `mitra` | Laporan terjual; perlu konfirmasi sales/admin |
 
 ## 6. Otorisasi
 
@@ -1281,9 +1294,10 @@ CREATE TABLE loyalty_points (                     -- buku poin, append-only
 
 | Kode | Nama | `data_scope` | MFA | Catatan |
 |---|---|---|---|---|
-| `akuntan` | Akuntan | all (jurnal, laporan, pajak, aset) | ✅ | Bukan penyetuju pembayaran; tidak menerima/menyetor uang. Bila Pakis memakai konsultan luar, akun berbatas waktu (`users.expires_at` Fase 0) |
+| `akuntan` | Akuntan | all (jurnal, laporan, pajak, aset) | ✅ | Bukan penyetuju pembayaran; tidak menerima/menyetor uang. Bila Pakis memakai konsultan luar, akun berbatas waktu — kolom `users.expires_at` **belum ada** di Fase 0; addendum skema & perilaku login **menunggu OQ-160e** (PF-9) |
 
-Role `finance` tetap untuk kas, piutang, hutang operasional. Pemisahan: **pembuat pembayaran supplier (FIN) ≠ penyetuju (OWN/FIN lain) ≠ pengeksekusi bila berbeda orang**; **pembuat jurnal manual ≠ penyetuju** (BR-153 klausul 11).
+Role & izin didaftarkan di `app/Domain/Access/Support/{PermissionCatalog,RoleCatalog}.php` sebagai **allowlist eksplisit per role** (keputusan PA-11; tidak ada seeder role per paket), + test "izin baru default ❌ untuk semua role selain `owner`/`super_admin`" dan migrasi data idempoten yang hanya menambah sel Paket F ke role bawaan yang sudah ada.
+Role `finance` tetap untuk kas, piutang, hutang operasional. Pemisahan: **pembuat pembayaran supplier (FIN) ≠ penyetuju (OWN/FIN lain) ≠ pengeksekusi bila berbeda orang**; **pembuat jurnal manual ≠ penyetuju** (maker-checker mesin approval **15** BR-153; rujukan klausul & daftar peran terlarang **menunggu OQ-160b**, PF-6). Pemisahan tugas rekonsiliasi bank **menunggu OQ-160c** (PF-7).
 
 ### 6.2 Scope
 
@@ -1295,7 +1309,7 @@ Role `finance` tetap untuk kas, piutang, hutang operasional. Pemisahan: **pembua
 | KSR (kepala toko) | Member terdaftar di toko yang ditugaskan; kasir melihat member hanya lewat pencarian di POS |
 | ARM | Aset bertautan kendaraan |
 | FIN 🔸 `reports.financial.view` | Laba rugi & arus kas saja; neraca & laba per lokasi butuh setting `reports.finance_can_view_balance_sheet` |
-| FIN 🔸 `journals.create_manual` | Hanya jenis jurnal di allowlist `accounting.finance_manual_journal_types` (default: reklasifikasi kas & bank) |
+| FIN 🔸 `journals.create_manual` | Hanya jenis jurnal di allowlist `accounting.finance_manual_journal_types` (default: reklasifikasi kas & bank — bertentangan dengan larangan peran `bank` di jurnal manual, **menunggu OQ-160b**) |
 | FIN 🔸 `supplier_payments.approve` / `purchase_invoices.approve_variance` | Di bawah ambang approval (`approval_rules`); bukan dokumen yang ia buat |
 | ACC 🔸 `journals.approve` | Bukan jurnal yang ia buat; nilai ≤ ambang `accounting.manual_journal_owner_threshold` |
 | APJ 🔸 `customer_tax_profiles.manage` | Buat & ubah; tidak melihat identitas penuh setelah tersimpan |
@@ -1315,61 +1329,61 @@ Role `finance` tetap untuk kas, piutang, hutang operasional. Pemisahan: **pembua
 | Saran pembelian | `purchase_suggestions.view`, `purchase_suggestions.manage`, `seasonal_factors.manage` |
 | Member | `members.view`, `members.manage`, `members.view_contact`, `loyalty.adjust`, `loyalty.configure` |
 
-Dipakai ulang dari paket sebelumnya (tidak dihitung): `tax.manage` (tarif PPN, **16**), `accounting.lock` (**16**, kini dikelola lewat tutup periode — BR-325), `margin_reports.view` (**16**, laporan HPP & margin T-165), `bank_accounts.manage` (**16**), `purchase_orders.create` (**15**, PO dari saran), `pos.sell` (**16**, pakai member & tukar poin), `exports.mass` (**16**).
+Dipakai ulang dari paket sebelumnya (tidak dihitung): `tax.manage` (tarif PPN, **16**), `accounting.lock` (**16**, kini dikelola lewat tutup periode — BR-325; jalur ganda **menunggu OQ-160a**), `margin_reports.view` (**16**, laporan HPP & margin T-165; pemberian ke `akuntan` **menunggu OQ-160d**), `bank_accounts.manage` (**16**), `purchase_orders.create` (**15**, PO dari saran), `pos.sell` (**16**, pakai member & tukar poin). `exports.mass` **tidak dipakai** (dihapus, keputusan PA-3): rute ekspor memakai izin modulnya, ekspor massal dipantau event keamanan `mass_export` + `export.mass_export_alert_rows`.
 
 ### 6.4 Matriks kewenangan (default seeder)
 
-✅ penuh · 🔸 dalam scope / di bawah ambang / bukan dokumen sendiri · ❌ tidak. Kolom: OWN · ADM · SPV · APJ · KGD (kepala gudang) · PUR · SLS · KSR (🔸 = **kepala toko** saja kecuali disebut) · FIN · ACC `akuntan` · ARM · AUD. Role lain tidak mendapat permission Paket F. `super_admin` = semua.
+✅ penuh · 🔸 dalam scope / di bawah ambang / bukan dokumen sendiri · ❌ tidak. Kolom: OWN · ADM · SPV · APJ · KGD (kepala gudang) · PUR · SLS · KSR (🔸 = **kepala toko** saja kecuali disebut) · FIN · ACC `akuntan` · ARM · AUD. Role lain tidak mendapat permission Paket F. `super_admin` = semua. **Owner memegang semua izin dan terkunci** (BR-031, keputusan PA-10 berlaku global), jadi kolom OWN ✅ penuh. Pemisahan tugas ditegakkan maker-checker mesin approval (BR-153(4): pembuat/pengaju tidak pernah memutuskan) + audit, **termasuk untuk Owner** (mis. Owner yang membuat jurnal manual, pembayaran supplier, atau penyesuaian poin tidak bisa menyetujuinya sendiri). Matriks ditulis sebagai allowlist di `RoleCatalog` (PA-11). Sel yang terkait PF-8 (izin B untuk `akuntan`, izin perubahan rekening supplier, lihat rekening penuh oleh eksekutor) **menunggu OQ-160d**.
 
 | Permission | OWN | ADM | SPV | APJ | KGD | PUR | SLS | KSR | FIN | ACC | ARM | AUD |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `accounts.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `accounts.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `accounting_events.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `accounts.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `accounting_events.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `journals.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `journals.create_manual` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ✅ | ❌ | ❌ |
+| `journals.create_manual` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ✅ | ❌ | ❌ |
 | `journals.approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
-| `journals.reverse` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `journals.reverse` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `periods.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `periods.close` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `periods.close` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `periods.reopen` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `accounting_exports.generate` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `bank_statements.import` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| `accounting_exports.generate` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `bank_statements.import` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | `bank_reconciliation.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `bank_reconciliation.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| `bank_reconciliation.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | `reports.financial.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ✅ | ❌ | ✅ |
 | `purchase_invoices.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `purchase_invoices.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
+| `purchase_invoices.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ✅ | ✅ | ❌ | ❌ |
 | `purchase_invoices.approve_variance` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ |
-| `payables.import_opening` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `payables.import_opening` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `supplier_payments.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `supplier_payments.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `supplier_payments.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `supplier_payments.approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ |
-| `supplier_payments.execute` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `supplier_payments.execute` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `principal_programs.view` | ✅ | ❌ | 🔸 | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `principal_programs.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `principal_claims.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `principal_programs.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `principal_claims.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `principal_claims.approve_writeoff` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `tax_invoices.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `tax_invoices.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `tax_exports.generate` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `customer_tax_profiles.manage` | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `customer_tax_profiles.view_full` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `tax_invoices.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `tax_exports.generate` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `customer_tax_profiles.manage` | ✅ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `customer_tax_profiles.view_full` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `consignments.view` | ✅ | ❌ | 🔸 | ✅ | 🔸 | ❌ | 🔸 | ❌ | ✅ | ✅ | ❌ | ✅ |
-| `consignments.manage` | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `consignment_reports.submit` | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `consignment_reports.post` | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `consignments.manage` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `consignment_reports.submit` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `consignment_reports.post` | ✅ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `assets.view` | ✅ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ✅ | ✅ | 🔸 | ✅ |
-| `assets.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `assets.transfer` | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ✅ | 🔸 | ❌ |
-| `assets.dispose` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
-| `asset_depreciation.run` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `assets.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `assets.transfer` | ✅ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ✅ | 🔸 | ❌ |
+| `assets.dispose` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
+| `asset_depreciation.run` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | `purchase_suggestions.view` | ✅ | ❌ | ❌ | ❌ | 🔸 | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `purchase_suggestions.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `seasonal_factors.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `purchase_suggestions.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `seasonal_factors.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `members.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ✅ |
-| `members.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ |
-| `members.view_contact` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ |
+| `members.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ |
+| `members.view_contact` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ |
 | `loyalty.adjust` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ |
 | `loyalty.configure` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 
@@ -1524,8 +1538,13 @@ flowchart LR
 | `seasonal_factors` | `admin.seasonal-factors.index` | nama kategori/produk | `scope_type`, `sales_area_id`, `source` | `scope_id` | — |
 | `farmer_members` | `admin.farmer-members.index` | nomor member, nama, 4 digit HP | `home_stock_location_id`, `status`, `has_promo_consent` | `created_at` desc | Toko |
 | `loyalty_points` | `admin.farmer-members.show` | — | `entry_type`, `created_at` (rentang) | `created_at` desc | Toko |
+| `supplier_bank_changes` | `admin.supplier-bank-changes.index` | nama supplier, nama pemilik rekening baru, 4 digit akhir | `supplier_id`, `status`, `created_at` (rentang) | `created_at` desc | — |
+| `asset_categories` | `admin.asset-categories.index` | kode, nama | `depreciation_method`, `is_active` | `code` | — |
+| `external_account_mappings` | `admin.external-account-mappings.index` | kode akun, kode/nama eksternal | `target_system`, `unmapped` (ya: akun postable tanpa pemetaan) | `account_id` | — |
+| `customer_tax_profiles` | `admin.customer-tax-profiles.index` | nama pajak, 4 digit akhir identitas | `buyer_id_type`, `is_default`, `verified` (ya/tidak) | `created_at` desc | Kios (pelanggan dalam route) |
+| `principal_reports` | `admin.principal-reports.index` | nama prinsipal | `period` (wajib), `principal_id` | `purchase_value` desc | — |
 
-Total listing setelah Paket F: 154 + 27 = **181**. Semua listing didaftarkan di `tests/Fixtures/listing_catalog.php` dan diuji `ListingContractTest`.
+Total listing setelah Paket F: listing paket sebelumnya + 32 (27 + 5 listing yang dilengkapi revisi 16 Nov: `supplier_bank_changes`, `asset_categories`, `external_account_mappings`, `customer_tax_profiles`, `principal_reports`). Angka total tidak ditulis tetap (pola PA-5); semua listing didaftarkan di `docs/07-UI-SPEC.md` §3.4 dan `tests/Fixtures/listing_catalog.php` dan diuji `ListingContractTest`.
 
 ## 8. Aturan Bisnis
 
@@ -1550,62 +1569,69 @@ Total listing setelah Paket F: 154 + 27 = **181**. Semua listing didaftarkan di 
 
 | ID | Aturan |
 |---|---|
-| **BR-320** | **Bagan akun.** Kode unik, hierarki maks 5 tingkat; jurnal hanya ke akun `is_postable = true` dan `is_active = true`. `account_type` menentukan `normal_balance` default (asset/cogs/expense/other_expense = debit; lainnya kredit) dan posisi di laporan; mengubah `account_type` atau `parent_id` akun yang sudah punya baris jurnal **ditolak** (`ACCOUNT_HAS_ENTRIES`) — buat akun baru lalu reklasifikasi via jurnal manual. Akun yang dipakai pemetaan aktif atau rekening bank tidak bisa dinonaktifkan. Template awal (seeder `ChartOfAccountsTemplateSeeder`) berisi akun minimal untuk seluruh peran §4.2.1 dengan kode contoh; **bukan** CoA final (OQ-151). `requires_dimension` memaksa baris jurnal manual mengisi dimensi itu |
-| **BR-321** | **Pemetaan peran akun.** Setiap peran di `AccountRoleCatalog` wajib punya pemetaan default (`qualifier_value = '*'`) aktif sebelum mesin posting dijalankan; halaman pemetaan menampilkan peran yang kosong & jumlah event yang tertahan. Resolusi untuk satu baris event pada tanggal D: (1) pemetaan dengan kualifier persis yang `effective_from ≤ D` terbaru; (2) bila tidak ada, default peran; (3) bila tidak ada → event `failed` `ACCOUNT_ROLE_UNMAPPED`. Tipe akun hasil harus termasuk tipe yang diizinkan peran (§4.2.1), dicek saat menyimpan pemetaan. Peran `bank` **wajib** kualifier `bank_account` (tanpa default) agar saldo per rekening benar; `bank_accounts.gl_account_id` diisi otomatis dari pemetaan ini. Perubahan pemetaan hanya berlaku untuk event yang **belum** diposting; jurnal lama tidak berubah (NFR-F07) |
-| **BR-322** | **Mesin posting.** `accounting:post-events` (setiap 5 menit, batch `accounting.posting_batch_size`, default 500) mengambil event `pending` urut `business_date, id` dengan `FOR UPDATE SKIP LOCKED`. Per event: validasi payload (Σ debit = Σ kredit, nilai ≥ 0 dua desimal, peran dikenal; peran berformat `expense:{kode}` diurai jadi peran `expense` + kualifier `expense_category`); tentukan periode dari `business_date` — bila periode `closed`, jurnal memakai **hari pertama periode terbuka berikutnya** dan `description` mencatat tanggal asli (dokumen sumber sudah dijaga `PeriodGuard`, ini hanya pengaman); bentuk `journal_entries` (`auto`) + `journal_lines` dengan dimensi dari `refs` payload (lokasi, kios, area, supplier, prinsipal, kendaraan, rekening); update `account_period_balances`; set event `posted` + `journal_entry_id`. Semua dalam satu transaksi per event; gagal → `failed` + `error`, lanjut event berikutnya. Event dengan `lines: []` → `skipped`. Event `revision` > 1 (pembalik) diposting sebagai jurnal `auto` biasa dengan baris kebalikan dari payload-nya sendiri (bukan membalik jurnal lama secara otomatis), sehingga jejaknya tetap satu-ke-satu dengan event. Idempotensi: `je_event_unique` |
-| **BR-323** | **Backfill & saldo awal GL.** Prasyarat: CoA & pemetaan lengkap (BR-321), periode fiskal dibuat sejak `accounting.go_live_date` (setting, = tanggal mulai A). (1) **Saldo awal GL** per `accounting.go_live_date − 1`: impor neraca saldo dari pembukuan lama (akun, debit, kredit) → satu jurnal `opening` per lokasi; Σ D = Σ K wajib; akun piutang, stok, hutang dibandingkan dengan sub-buku (Σ saldo awal piutang B, nilai stok saldo awal A, saldo awal hutang BR-345) dan selisih ditampilkan sebelum konfirmasi — bila event `*.opening_balance` dari A/B sudah membentuk saldo itu, impor **mengecualikan** akun tersebut agar tidak dobel (peran `opening_balance_equity` menampung lawannya). (2) **Backfill**: memproses seluruh event `pending` sejak go-live dengan mesin BR-322 (job berantai per bulan, dapat dilanjutkan; periode lama dibuka sementara untuk backfill dan ditutup kembali otomatis). Laporan backfill: jumlah event per status, daftar `failed` per penyebab, neraca saldo per bulan. Exit gate Paket F: `failed = 0`, neraca seimbang tiap bulan, saldo akun piutang/stok/hutang = sub-buku (toleransi 0) |
-| **BR-324** | **Jurnal manual & pembalik.** Jurnal manual: ≥ 2 baris, seimbang, akun postable, dimensi wajib terisi, `reason` (`reference_items(journal_manual_reason)`), lampiran ≥ 1 bila nilai > `accounting.manual_journal_attachment_threshold`. Tanggal dalam periode `open`. Peran akun yang dikelola sub-buku (`receivable`, `payable`, `inventory`, `customer_deposit`, `employee_receivable`, `bank` untuk rekening yang direkonsiliasi, `fixed_asset`, `accumulated_depreciation`) **tidak boleh** dipakai di jurnal manual kecuali jenis `adjustment` oleh ACC dengan approval Owner — sehingga sub-buku dan GL tidak menyimpang diam-diam. Pengajuan → approval `manual_journal`; disetujui → `posted`. Pembalik: hanya jurnal `manual`/`opening`/`adjustment`; jurnal `auto` dibetulkan lewat dokumen sumbernya (batal/retur/nota) agar sub-buku ikut terkoreksi (`JOURNAL_AUTO_NOT_REVERSIBLE`). Pembalik bertanggal hari ini (atau tanggal lain di periode terbuka), mengisi `reversed_by_entry_id` jurnal asal |
-| **BR-325** | **Periode & tutup buku.** Periode bulanan dibuat otomatis 12 bulan ke depan (`fiscal_year_start_month`). Mulai tutup (`closing`) menjalankan checklist; kode pemeriksaan: `events_pending_zero` (fail), `events_failed_zero` (fail), `depreciation_posted` (fail bila ada aset aktif), `bank_reconciled` (warn; fail bila setting `accounting.require_bank_reconciliation`), `deposits_verified` (setoran **16** belum diverifikasi; warn), `pos_shifts_closed` (fail), `canvas_sessions_closed` (**17**; fail), `trip_allowances_settled` (**18**; warn), `payroll_locked` (**19**; warn bila periode gaji belum `locked`), `subledger_receivable_match`, `subledger_payable_match`, `subledger_inventory_match` (fail bila selisih ≠ 0), `tax_invoices_ready` (warn, bila PKP), `suspense_zero` (akun penampung `unidentified_payments` dsb.; warn). `warn` boleh diteruskan; `fail` hanya bisa di-`waive` oleh Owner dengan alasan (dicatat). Tutup → `closed`, `accounting.lock_date` = `end_date` (hanya maju), laporan periode itu dibekukan. Buka kembali: Owner + alasan + konfirmasi password, `lock_date` mundur ke hari sebelum periode, notifikasi ke ACC/FIN/Owner, `reopened_count + 1`; periode sesudahnya yang `closed` ikut dibuka. Tutup tahun: jurnal `closing` memindahkan saldo akun laba rugi ke laba ditahan (peran `retained_earnings`, ditambah ke katalog) saat periode 12 ditutup |
-| **BR-326** | **Impor mutasi bank.** Parser per bank (`BankStatementParser`, adapter ADR-113, satu kelas per format CSV yang **benar-benar** diterima dari bank Pakis; contoh file anonim di fixture — OQ-103). Validasi: rekening cocok (nomor di file, bila ada), `opening_balance` = `closing_balance` mutasi sebelumnya untuk rekening itu (bila ada; selisih → peringatan, bukan tolak), Σ amount = closing − opening (tolak bila tidak cocok: `STATEMENT_TOTAL_MISMATCH`), baris dengan hash sama dilewati (laporan "x baris sudah pernah diimpor"). File diperlakukan input tidak tepercaya: ukuran ≤ 5 MB, hanya CSV/XLSX, tanpa evaluasi formula. Input manual (rekening tanpa ekspor) hanya untuk rekening ber-`statement_parser` kosong |
-| **BR-327** | **Rekonsiliasi.** Cocok otomatis (`bank:auto-match`, setelah impor) dengan aturan berurutan, berhenti di aturan pertama yang menghasilkan **tepat satu** kandidat: (R1) VA/transfer dengan `external_id`/referensi sama; (R2) nominal sama & tanggal ±`bank.match_date_window_days` (default 3) & rekening sama untuk pembayaran B, setoran ke bank, pembayaran supplier, pembayaran gaji, isi ulang kas kecil, giro cair; (R3) kombinasi ≤ 5 dokumen dengan Σ = nominal dari tanggal yang sama (mis. beberapa VA dalam satu baris). Lebih dari satu kandidat → `suggested` (manusia memilih). Manual: pilih satu/lebih dokumen; Σ match ≤ |amount|. Baris tanpa dokumen: (a) biaya administrasi/bunga/pajak bunga → tombol `fee` membentuk jurnal (D `bank_fee_expense` · K `bank` atau D `bank` · K `interest_income`) ≤ `bank.fee_auto_limit` tanpa approval, di atas itu jurnal manual; (b) dana masuk tak dikenal → membuat `unidentified_payments` (**16**) bukan jurnal; (c) `ignored` dengan alasan (mis. transfer antar rekening sendiri yang dicocokkan di sisi lain). Selesai rekonsiliasi: semua baris `matched`/`ignored` dan saldo buku akun bank per `period_end` = `closing_balance` (bila tidak sama: daftar dokumen sistem tanpa pasangan di periode itu ditampilkan). Batal cocok (`unmatch`) diizinkan selama periode GL terbuka, dicatat |
-| **BR-328** | **Laporan keuangan.** Sumber: `journal_lines` / `account_period_balances` saja (tidak pernah dari tabel operasional). Neraca saldo per periode/rentang; neraca per tanggal (laba tahun berjalan dihitung, belum ditutup); laba rugi per rentang dengan `group_by` lokasi/area/prinsipal (baris tanpa dimensi tampil "Tidak dialokasikan"); arus kas metode tidak langsung dari perubahan saldo akun per `cash_flow_category` + laba bersih, dengan rekonsiliasi ke perubahan akun `is_cash_equivalent` (selisih ≠ 0 → peringatan "kategori arus kas akun X belum tepat"). Setiap angka dapat ditelusuri ke buku besar → jurnal → dokumen sumber. `account_period_balances` harus sama dengan agregasi `journal_lines` (job mingguan `accounting:verify-balances`, selisih → alert ke ACC). Ekspor XLSX/PDF tercatat `mass_export` |
+| **BR-320** | **Bagan akun.** Kode unik, hierarki maks `accounting.coa_max_depth` tingkat (default 5); jurnal hanya ke akun `is_postable = true` dan `is_active = true`. `account_type` menentukan `normal_balance` default (asset/cogs/expense/other_expense = debit; lainnya kredit) dan posisi di laporan; mengubah `account_type` atau `parent_id` akun yang sudah punya baris jurnal **ditolak** (`ACCOUNT_HAS_ENTRIES`) — buat akun baru lalu reklasifikasi via jurnal manual. Akun yang dipakai pemetaan aktif atau rekening bank tidak bisa dinonaktifkan. Template awal (seeder `ChartOfAccountsTemplateSeeder`) berisi akun minimal untuk seluruh peran §4.2.1 dengan kode contoh; **bukan** CoA final (OQ-151). `requires_dimension` memaksa baris jurnal manual mengisi dimensi itu |
+| **BR-321** | **Pemetaan peran akun.** Setiap peran di `AccountRoleCatalog` wajib punya pemetaan default (`qualifier_value = '*'`) aktif sebelum mesin posting dijalankan; halaman pemetaan menampilkan peran yang kosong & jumlah event yang tertahan. Resolusi untuk satu baris event pada tanggal D: (1) pemetaan dengan kualifier persis yang `effective_from ≤ D` terbaru; (2) bila tidak ada, default peran; (3) bila tidak ada → event `failed` `ACCOUNT_ROLE_UNMAPPED`. Tipe akun hasil harus termasuk tipe yang diizinkan peran (§4.2.1), dicek saat menyimpan pemetaan. Peran `bank` **wajib** kualifier `bank_account` (tanpa default) agar saldo per rekening benar; `bank_accounts.gl_account_id` diisi otomatis dari pemetaan ini. Kualifier diambil dari `bank_account_id` yang sudah dibawa setiap baris `bank` di payload sejak event pertama (B **16** §11.2, D **18** §11.2, E2 **19** `payroll.paid`; PF-1) — F tidak mengisi atau memperbaiki kualifier event lama. Perubahan pemetaan hanya berlaku untuk event yang **belum** diposting; jurnal lama tidak berubah (NFR-F07) |
+| **BR-322** | **Mesin posting.** `accounting:post-events` (setiap 5 menit, batch `accounting.posting_batch_size`, default 500) mengambil event `pending` urut `business_date, id` dengan `FOR UPDATE SKIP LOCKED`. Per event: validasi payload (Σ debit = Σ kredit, nilai ≥ 0 dua desimal, peran dikenal; peran berformat `expense:{kode}` diurai jadi peran `expense` + kualifier `expense_category`); tentukan periode dari `business_date` — bila periode `closed`, jurnal memakai **hari pertama periode terbuka berikutnya** dan `description` mencatat tanggal asli (dokumen sumber sudah dijaga `PeriodGuard` di A–E dan di Action F — `PeriodGuardArchTest` mencakup domain `Purchasing` hutang, `Principal`, `Asset`, `Consignment`, `Tax`, PF-3 — ini hanya pengaman); bentuk `journal_entries` (`auto`) + `journal_lines` dengan dimensi dari `refs` payload (lokasi, kios, area, supplier, prinsipal, kendaraan, rekening); update `account_period_balances`; set event `posted` + `journal_entry_id`. Semua dalam satu transaksi per event; gagal → `failed` + `error`, lanjut event berikutnya. Event dengan `lines: []` → `skipped`. Event `revision` > 1 (pembalik) diposting sebagai jurnal `auto` biasa dengan baris kebalikan dari payload-nya sendiri (bukan membalik jurnal lama secara otomatis), sehingga jejaknya tetap satu-ke-satu dengan event. Idempotensi: `je_event_unique` |
+| **BR-323** | **Backfill & saldo awal GL.** Prasyarat: CoA & pemetaan lengkap (BR-321), periode fiskal dibuat sejak `accounting.go_live_date` (setting, = tanggal mulai A). (1) **Saldo awal GL** per `accounting.go_live_date − 1`: impor neraca saldo dari pembukuan lama (akun, debit, kredit) → satu jurnal `opening` per lokasi; Σ D = Σ K wajib; akun piutang, stok, hutang dibandingkan dengan sub-buku (Σ saldo awal piutang B, nilai stok saldo awal A, saldo awal hutang BR-345) dan selisih ditampilkan sebelum konfirmasi — bila event `*.opening_balance` dari A/B sudah membentuk saldo itu, impor **mengecualikan** akun tersebut agar tidak dobel (peran `opening_balance_equity` menampung lawannya). (2) **Backfill**: memproses seluruh event `pending` sejak go-live dengan mesin BR-322 (job berantai per bulan, dapat dilanjutkan; cara memposting event yang tanggalnya jatuh di periode yang sudah ditutup — "dibuka sementara" tanpa Owner vs posting ke periode terbuka + catatan — **menunggu OQ-160a**, PF-4). Laporan backfill: jumlah event per status, daftar `failed` per penyebab, neraca saldo per bulan. Exit gate Paket F: `failed = 0`, neraca seimbang tiap bulan, saldo akun piutang/stok/hutang = sub-buku (toleransi 0). `failed = 0` dicapai tanpa memperbaiki event lama, karena kualifier rekening & `refs.supplier_id` sudah ada di payload D/E2 sejak event pertama (PF-1, PF-2); event yang tetap gagal karena payload diperbaiki lewat pemetaan, bukan menyunting event |
+| **BR-324** | **Jurnal manual & pembalik.** Jurnal manual: ≥ 2 baris, seimbang, akun postable, dimensi wajib terisi, `reason` (`reference_items(journal_manual_reason)`), lampiran ≥ 1 bila nilai > `accounting.manual_journal_attachment_threshold`. Tanggal dalam periode `open`. Peran akun yang dikelola sub-buku (`receivable`, `payable`, `inventory`, `customer_deposit`, `employee_receivable`, `bank` untuk rekening yang direkonsiliasi, `fixed_asset`, `accumulated_depreciation`) **tidak boleh** dipakai di jurnal manual kecuali jenis `adjustment` oleh ACC dengan approval Owner — sehingga sub-buku dan GL tidak menyimpang diam-diam (perluasan daftar ke peran kas/`petty_cash`/`trip_advance`/GRNI/`vat_*` dan langkah Owner wajib untuk setiap `adjustment` **menunggu OQ-160b**, PF-6). Pengajuan → approval `manual_journal`; disetujui → `posted`. Pembalik: hanya jurnal `manual`/`opening`/`adjustment`; jurnal `auto` dibetulkan lewat dokumen sumbernya (batal/retur/nota) agar sub-buku ikut terkoreksi (`JOURNAL_AUTO_NOT_REVERSIBLE`). Pembalik bertanggal hari ini (atau tanggal lain di periode terbuka), mengisi `reversed_by_entry_id` jurnal asal |
+| **BR-325** | **Periode & tutup buku.** Periode bulanan dibuat otomatis 12 bulan ke depan (`fiscal_year_start_month`). Mulai tutup (`closing`) menjalankan checklist; kode pemeriksaan: `events_pending_zero` (fail), `events_failed_zero` (fail), `depreciation_posted` (fail bila ada aset aktif), `bank_reconciled` (warn; fail bila setting `accounting.require_bank_reconciliation`), `deposits_verified` (setoran **16** belum diverifikasi; warn), `pos_shifts_closed` (fail), `canvas_sessions_closed` (**17**; fail), `trip_allowances_settled` (**18**; warn), `payroll_locked` (**19**; warn bila periode gaji belum `locked`), `subledger_receivable_match`, `subledger_payable_match`, `subledger_inventory_match` (fail bila selisih ≠ 0), `tax_invoices_ready` (warn, bila PKP), `suspense_zero` (akun penampung `unidentified_payments` dsb.; warn — peran & event penampung belum ada, **menunggu OQ-160c**, PF-7). `warn` boleh diteruskan; `fail` hanya bisa di-`waive` oleh Owner dengan alasan (dicatat). Tutup → `closed`, `accounting.lock_date` = `end_date` (hanya maju), laporan periode itu dibekukan. (Penyatuan dengan route B `admin.accounting.lock-date`, migrasi `lock_date` → `fiscal_periods` saat F mulai, dan kewajiban tutup berurutan **menunggu OQ-160a**, PF-4.) Buka kembali: Owner + alasan + konfirmasi password, `lock_date` mundur ke hari sebelum periode, notifikasi ke ACC/FIN/Owner, `reopened_count + 1`; periode sesudahnya yang `closed` ikut dibuka. Tutup tahun: jurnal `closing` memindahkan saldo akun laba rugi ke laba ditahan (peran `retained_earnings`, ditambah ke katalog) saat periode 12 ditutup |
+| **BR-326** | **Impor mutasi bank.** Parser per bank (`BankStatementParser`, adapter ADR-113, satu kelas per format CSV yang **benar-benar** diterima dari bank Pakis; contoh file anonim di fixture — OQ-103). Validasi: rekening cocok (nomor di file, bila ada), `opening_balance` = `closing_balance` mutasi sebelumnya untuk rekening itu (bila ada; selisih → peringatan, bukan tolak), Σ amount = closing − opening (tolak bila tidak cocok: `STATEMENT_TOTAL_MISMATCH`), baris dengan hash sama dilewati (laporan "x baris sudah pernah diimpor"). File diperlakukan input tidak tepercaya: ukuran ≤ `bank.statement_max_file_kb` (default 5120) dan ≤ `bank.statement_max_rows` baris (default 10.000), hanya CSV/XLSX (validator unggahan bersama `app/Support/Upload/`, PA-22), tanpa evaluasi formula. Input manual (rekening tanpa ekspor) hanya untuk rekening ber-`statement_parser` kosong |
+| **BR-327** | **Rekonsiliasi.** Cocok otomatis (`bank:auto-match`, setelah impor) dengan aturan berurutan, berhenti di aturan pertama yang menghasilkan **tepat satu** kandidat: (R1) VA/transfer dengan `external_id`/referensi sama; (R2) nominal sama & tanggal ±`bank.match_date_window_days` (default 3) & rekening sama untuk pembayaran B, setoran ke bank, pembayaran supplier, pembayaran gaji, isi ulang kas kecil, giro cair; (R3) kombinasi ≤ `bank.match_combination_max_docs` dokumen (default 5) dengan Σ = nominal dari tanggal yang sama (mis. beberapa VA dalam satu baris). Lebih dari satu kandidat → `suggested` (manusia memilih). Manual: pilih satu/lebih dokumen; Σ match ≤ |amount|. Baris tanpa dokumen: (a) biaya administrasi/bunga/pajak bunga → tombol `fee` membentuk jurnal (D `bank_fee_expense` · K `bank` atau D `bank` · K `interest_income`) ≤ `bank.fee_auto_limit` tanpa approval, di atas itu jurnal manual; (b) dana masuk tak dikenal → membuat `unidentified_payments` (**16**) bukan jurnal (akibatnya saldo buku ≠ saldo bank sampai dana dicocokkan; peran penampung `suspense` + event, serta pelaku `ignore`/`fee` ≠ eksekutor pembayaran, **menunggu OQ-160c**, PF-7); (c) `ignored` dengan alasan (mis. transfer antar rekening sendiri yang dicocokkan di sisi lain). Selesai rekonsiliasi: semua baris `matched`/`ignored` dan saldo buku akun bank per `period_end` = `closing_balance` (bila tidak sama: daftar dokumen sistem tanpa pasangan di periode itu ditampilkan). Batal cocok (`unmatch`) diizinkan selama periode GL terbuka, dicatat |
+| **BR-328** | **Laporan keuangan.** Sumber: `journal_lines` / `account_period_balances` saja (tidak pernah dari tabel operasional). Neraca saldo per periode/rentang; neraca per tanggal (laba tahun berjalan dihitung, belum ditutup); laba rugi per rentang dengan `group_by` lokasi/area/prinsipal (baris tanpa dimensi tampil "Tidak dialokasikan"); arus kas metode tidak langsung dari perubahan saldo akun per `cash_flow_category` + laba bersih, dengan rekonsiliasi ke perubahan akun `is_cash_equivalent` (selisih ≠ 0 → peringatan "kategori arus kas akun X belum tepat"). Setiap angka dapat ditelusuri ke buku besar → jurnal → dokumen sumber. `account_period_balances` harus sama dengan agregasi `journal_lines` (job mingguan `accounting:verify-balances`, selisih → alert ke ACC). Ekspor XLSX lewat kerangka ekspor Fase 0 (`ExportableListing`/`export_files`, escape formula, `mass_export` otomatis); PDF menunggu library OQ-109 |
 | **BR-329** | **HPP & margin.** Dari baris faktur (`invoice_lines`: neto, `unit_cost` saat serah), shift POS (`pos_sale_lines`), nota kredit (pengurang), laporan konsinyasi; dikelompokkan per produk/kios/sales/area/prinsipal/bulan. Margin kotor = neto − HPP; % = margin / neto. Diskon promo yang didanai prinsipal ditampilkan terpisah ("margin setelah dukungan prinsipal") dari klaim `approved` terkait. Angka harus cocok dengan akun `sales_revenue − sales_return` dan `cogs` di GL per bulan (test rekonsiliasi; selisih menandakan event hilang) |
-| **BR-330** | **Faktur pembelian (pencocokan 3 arah).** Faktur `purchase` dibuat dari baris penerimaan `posted` supplier yang sama yang masih punya sisa fakturkan (§4.4); qty per baris ≤ sisa (dikunci `FOR UPDATE`). Harga faktur dibandingkan `receipt_unit_cost`: selisih per baris & total; dalam toleransi `purchasing.invoice_price_tolerance_pct` (default 0,5%) **dan** `..._amount` (default Rp10.000) → `matched`, selisih dibukukan ke `purchase_price_variance`; di luar toleransi → `variance_pending` → approval `purchase_invoice_variance`. Selisih tidak mengubah HPP rata-rata produk (stok sudah keluar sebagian; konsisten & sederhana) kecuali setting `purchasing.variance_to_inventory = true` (OQ-116 landed cost terkait). Nomor faktur supplier unik per supplier (faktur `void` dikecualikan). `accounting_date` dalam periode terbuka; `due_date` default `supplier_invoice_date + suppliers.payment_term_days` (dapat diubah dengan alasan). PPN masukan dicatat bila `tax.is_pkp` dan `suppliers.is_pkp` dan ada nomor faktur pajak supplier (BR-335). Posting → event `purchase.invoice_posted`. Void: hanya `paid_amount = 0` & `debited_amount = 0` & periode terbuka → event pembalik, `qty_invoiced_base` dikembalikan |
-| **BR-331** | **Hutang dagang & nota debit.** Saldo hutang per supplier = Σ `balance` faktur `posted`/`partially_paid` − nota debit terbuka; aging per jatuh tempo (0, 1–30, 31–60, 61–90, > 90 hari lewat). Retur ke prinsipal (A) yang dikirim: `qty_returned_base` penerimaan sumber naik; bila qty retur > sisa yang belum difakturkan → `supplier_debit_notes` (`purchase_return`) senilai kelebihan × `receipt_unit_cost` (+ PPN bila faktur asal ber-PPN) dan event `purchase.debit_note_issued` (D `payable` · K `goods_received_not_invoiced` (+ K `vat_input`)); nota dialokasikan ke faktur terbuka supplier itu (otomatis ke faktur asal bila masih terbuka, jika tidak ke tertua) oleh `PayableLedger`. Tagihan servis kendaraan berjangka (**18** `fleet.maintenance_approved` dengan K `payable`) otomatis membuat `purchase_invoices` `expense` bertaut `maintenance_order_id` **tanpa** event baru (jurnal sudah dari event armada; `refs.supplier_id` wajib di payload D — ditambahkan di T-166) agar sub-buku hutang lengkap. `payable_hold` supplier menahan pengajuan pembayaran (`SUPPLIER_ON_HOLD`) |
-| **BR-332** | **Pembayaran supplier.** Pengajuan memilih faktur jatuh tempo (default: jatuh tempo ≤ hari ini + `payables.payment_lookahead_days`) dan/atau nota debit untuk dikompensasi; nominal = Σ alokasi kas; `offset` (tanpa kas) untuk kompensasi nota debit/klaim tanpa transfer. Rekening tujuan diambil dari `suppliers` saat pengajuan (`beneficiary_snapshot`: bank, 4 digit akhir, nama) — perubahan rekening supplier setelah pengajuan **membatalkan** approval dan butuh pengajuan ulang (SEC-179). Approval `supplier_payment` (pembuat ≠ penyetuju; nilai > ambang → Owner). Eksekusi oleh FIN (boleh sama dengan pembuat, tidak boleh sama dengan penyetuju): unggah bukti transfer → `paid` → event `purchase.payment_made` (D `payable` · K `bank`; biaya transfer D `bank_fee_expense` · K `bank`); giro → `paid` (D `payable` · K `outgoing_giro`) lalu `cleared` saat cair dari rekonsiliasi (D `outgoing_giro` · K `bank`). File transfer massal (format bank, adapter) hanya untuk pembayaran `approved`, tercatat `mass_export`. Void: sebelum `paid` bebas (alasan); setelah `paid` hanya bila dana kembali (pembalik + rekonsiliasi) |
+| **BR-330** | **Faktur pembelian (pencocokan 3 arah).** Faktur `purchase` dibuat dari baris penerimaan `posted` supplier yang sama yang masih punya sisa fakturkan (§4.4); qty per baris ≤ sisa (dikunci `FOR UPDATE`). Harga faktur dibandingkan `receipt_unit_cost`: selisih per baris & total; dalam toleransi `purchasing.invoice_price_tolerance_pct` (default 0,5%) **dan** `..._amount` (default Rp10.000) → `matched`, selisih dibukukan ke `purchase_price_variance`; di luar toleransi → `variance_pending` → approval `purchase_invoice_variance`. Selisih tidak mengubah HPP rata-rata produk (stok sudah keluar sebagian; konsisten & sederhana) kecuali setting `purchasing.variance_to_inventory = true` (OQ-116 landed cost terkait). Nomor faktur supplier unik per supplier (faktur `void` dikecualikan). `accounting_date` dalam periode terbuka (`PeriodGuard::assertOpen`, `PERIOD_LOCKED` 422); `due_date` default `supplier_invoice_date + suppliers.payment_term_days` (dapat diubah dengan alasan). PPN masukan dicatat bila `tax.is_pkp` dan `suppliers.is_pkp` dan ada nomor faktur pajak supplier (BR-335). Posting → event `purchase.invoice_posted`. Void: hanya `paid_amount = 0` & `debited_amount = 0` & periode terbuka → event pembalik, `qty_invoiced_base` dikembalikan |
+| **BR-331** | **Hutang dagang & nota debit.** Saldo hutang per supplier = Σ `balance` faktur `posted`/`partially_paid` − nota debit terbuka; aging per jatuh tempo (0, 1–30, 31–60, 61–90, > 90 hari lewat). Retur ke prinsipal (A) yang dikirim: `qty_returned_base` penerimaan sumber naik; bila qty retur > sisa yang belum difakturkan → `supplier_debit_notes` (`purchase_return`) senilai kelebihan × `receipt_unit_cost` (+ PPN bila faktur asal ber-PPN) dan event `purchase.debit_note_issued` (D `payable` · K `goods_received_not_invoiced` (+ K `vat_input`)); nota dialokasikan ke faktur terbuka supplier itu (otomatis ke faktur asal bila masih terbuka, jika tidak ke tertua) oleh `PayableLedger`. Tagihan servis kendaraan berjangka (**18** `fleet.maintenance_approved` dengan K `payable`) otomatis membuat `purchase_invoices` `expense` bertaut `maintenance_order_id` **tanpa** event baru — `purchase.invoice_posted` tidak dipancarkan untuk faktur ini (jurnal sudah dari event armada, PF-5) — agar sub-buku hutang lengkap. `supplier_id` faktur diambil dari `maintenance_orders.supplier_id` dan `refs.supplier_id` yang sudah ada sejak D (**18** T-151, PF-2); F hanya mengonsumsi dan tidak mengubah payload atau tabel D. Saat backfill, faktur `expense` dibentuk untuk semua perintah servis `payable` historis dari data itu. `payable_hold` supplier menahan pengajuan pembayaran (`SUPPLIER_ON_HOLD`) |
+| **BR-332** | **Pembayaran supplier.** Pengajuan memilih faktur jatuh tempo (default: jatuh tempo ≤ hari ini + `payables.payment_lookahead_days`) dan/atau nota debit untuk dikompensasi; nominal = Σ alokasi kas; `offset` (tanpa kas) untuk kompensasi nota debit/klaim tanpa transfer. Rekening tujuan diambil dari `suppliers` saat pengajuan (`beneficiary_snapshot`: bank, 4 digit akhir, nama) — perubahan rekening supplier setelah pengajuan **membatalkan** approval dan butuh pengajuan ulang (SEC-179). Approval `supplier_payment` (pembuat ≠ penyetuju; nilai > ambang → Owner). Eksekusi oleh FIN (boleh sama dengan pembuat, tidak boleh sama dengan penyetuju): unggah bukti transfer → `paid` → event `purchase.payment_made` (D `payable` · K `bank`; biaya transfer D `bank_fee_expense` · K `bank`); giro → `paid` (D `payable` · K `outgoing_giro`) lalu `cleared` saat cair dari rekonsiliasi (D `outgoing_giro` · K `bank`). File transfer massal (format bank, adapter di atas kerangka ekspor Fase 0) hanya untuk pembayaran `approved`, tercatat `mass_export`. `ExecuteSupplierPayment`/`ClearOutgoingGiro`/`VoidSupplierPayment` memanggil `PeriodGuard`. Void: sebelum `paid` bebas (alasan); setelah `paid` hanya bila dana kembali (pembalik + rekonsiliasi) |
 | **BR-333** | **Program prinsipal.** Capaian dihitung harian (`principal:compute-progress`) dari: `purchase_*` = penerimaan `posted` dikurangi retur beli, nilai = qty × `receipt_unit_cost`; `sales_*` = baris faktur & POS dikurangi nota kredit, nilai neto; hanya produk dalam scope & milik `principal_id` dan tanggal dalam periode program. Tier: tier tertinggi yang `threshold ≤ basis`; `is_retroactive` → imbalan atas seluruh basis, jika tidak hanya atas kelebihan di atas threshold tier itu; dibatasi `budget_cap`. `off_invoice_discount` hanya dicatat sebagai informasi (sudah mengurangi harga beli). Akrual (bila `accrue_monthly` dan program `active`): akhir bulan, estimasi imbalan kumulatif − akrual sebelumnya → event `principal.rebate_accrued` (D `principal_receivable` · K `rebate_income`, selisih negatif dibalik) — estimasi memakai tier yang **sudah** tercapai saja (konservatif). Saat klaim disetujui prinsipal, selisih antara nilai disetujui dan akrual dibukukan (event `principal.claim_approved` hanya untuk selisihnya). Laporan prinsipal internal (FR-F32) dari sumber yang sama |
-| **BR-334** | **Klaim prinsipal.** Sumber baris: (a) program berakhir → baris `program_period` senilai imbalan final; (b) kegiatan promosi **17** `closed` dengan `funded_by` `principal`/`shared` → `actual_cost × principal_share_pct` (shared) atau `actual_cost` (principal) + nilai produk promosi dari prinsipal bila perjanjian menyatakan, bukti = foto berlokasi + daftar hadir dari kegiatan; (c) klaim garansi **17** `warranty_claims` yang disetujui prinsipal dengan `claim_amount`; (d) manual dengan bukti. Satu sumber hanya ada di satu klaim yang tidak `cancelled`/`written_off` (`CLAIM_SOURCE_ALREADY_CLAIMED`). Pengajuan: `submitted` (+ PDF ringkasan & lampiran untuk prinsipal). Keputusan prinsipal: `approved_amount` (≤ `claimed_amount`) + referensi + tanggal → event `principal.claim_approved` (D `principal_receivable` · K `rebate_income` untuk program/klaim harga; K `promotion_expense` untuk promo — memulihkan biaya; K `warranty_expense` untuk garansi; dikurangi akrual BR-333). Penyelesaian: `cash` (rekonsiliasi bank: D `bank` · K `principal_receivable`), `payable_offset`/`credit_note` (membuat `supplier_debit_notes` `principal_claim` → D `payable` · K `principal_receivable`), `goods` (penerimaan barang pengganti diposting dengan `unit_cost` sesuai harga beli yang disepakati: D `inventory` · K `goods_received_not_invoiced`; penyelesaian menutup GRNI: D `goods_received_not_invoiced` · K `principal_receivable`, dan `qty_invoiced_base` baris penerimaan diisi penuh agar tidak ditagih supplier). Event `principal.claim_settled`. Klaim lewat `principal.claim_followup_days` tanpa keputusan → pengingat ke PUR/FIN. Hapus (sisa tidak tertagih) → approval Owner → event `principal.claim_written_off` (D `other_expense` · K `principal_receivable` untuk bagian yang sudah diakui) |
+| **BR-334** | **Klaim prinsipal.** Sumber baris: (a) program berakhir → baris `program_period` senilai imbalan final; (b) kegiatan promosi **17** `closed` dengan `funded_by` `principal`/`shared` → `actual_cost × principal_share_pct` (shared) atau `actual_cost` (principal) + nilai produk promosi dari prinsipal bila perjanjian menyatakan, bukti = foto berlokasi + daftar hadir dari kegiatan; (c) klaim garansi **17** `warranty_claims` yang disetujui prinsipal dengan `claim_amount`; (d) manual dengan bukti. Satu sumber hanya ada di satu klaim yang tidak `cancelled`/`written_off` (`CLAIM_SOURCE_ALREADY_CLAIMED`). Pengajuan: `submitted` (+ PDF ringkasan & lampiran untuk prinsipal). Keputusan prinsipal: `approved_amount` (≤ `claimed_amount`) + referensi + tanggal → event `principal.claim_approved` (D `principal_receivable` · K `rebate_income` untuk program/klaim harga; K `promotion_expense` untuk promo — memulihkan biaya; K `warranty_expense` untuk garansi; dikurangi akrual BR-333). Penyelesaian: `cash` (rekonsiliasi bank: D `bank` · K `principal_receivable`), `payable_offset`/`credit_note` (membuat `supplier_debit_notes` `principal_claim` → D `payable` · K `principal_receivable` lewat `principal.claim_settled`; nota debit bersumber `principal_claim` **tidak** memancarkan `purchase.debit_note_issued` — nota itu hanya dokumen alokasi `PayableLedger`, PF-5), `goods` (penerimaan barang pengganti diposting dengan `unit_cost` sesuai harga beli yang disepakati: D `inventory` · K `goods_received_not_invoiced`; penyelesaian menutup GRNI: D `goods_received_not_invoiced` · K `principal_receivable`, dan `qty_invoiced_base` baris penerimaan diisi penuh agar tidak ditagih supplier). Event `principal.claim_settled`. Klaim lewat `principal.claim_followup_days` tanpa keputusan → pengingat ke PUR/FIN. Hapus (sisa tidak tertagih) → approval Owner → event `principal.claim_written_off` (D `other_expense` · K `principal_receivable` untuk bagian yang sudah diakui) |
 | **BR-335** | **PPN.** Hanya bila `tax.is_pkp = true` (dari tanggal `tax.pkp_effective_date`). Keluaran: setiap `invoices` `sales`/`consignment`/`charge` dengan `tax_total > 0` → `tax_invoices` `output` `draft` saat terbit; nota kredit atas faktur ber-PPN → `output` dengan nilai negatif ditangani sebagai dokumen retur sesuai ketentuan yang berlaku (status `draft`, ditinjau ACC; OQ-101). Faktur yang di-`void` → faktur pajaknya `cancelled` bila belum diunggah, atau butuh pembatalan di sistem DJP bila sudah (status catatan). Identitas pembeli dari `customer_tax_profiles` default; kios tanpa profil memakai mode yang ditetapkan konsultan pajak (OQ-101). Penjualan POS ke konsumen akhir: mode `tax.pos_output_mode` (`per_receipt`/`daily_summary`/`none`) — default `none` sampai OQ-153 dijawab. Masukan: `purchase_invoices` dengan PPN & nomor faktur pajak supplier → `tax_invoices` `input`; `is_creditable` default true; `credited_in_period` default masa faktur, dapat digeser ACC dalam batas ketentuan (setting `tax.input_credit_max_months_late`, nilai diverifikasi). Tarif dari `tax_rates` berlaku pada tanggal transaksi; perubahan tarif tidak mengubah faktur lama |
-| **BR-336** | **Ekspor & rekap PPN.** ACC memilih masa & arah → faktur `ready` (validasi lengkap: identitas pembeli/penjual, DPP, PPN, tanggal, kode transaksi) diekspor oleh `TaxExportFormatter` aktif ke file; faktur tidak valid ditampilkan per alasan, tidak ikut. Status `exported`; setelah ACC menandai `uploaded` dan mengimpor hasil (nomor faktur pajak) atau mengisi manual → `approved`. Faktur `approved` tidak dapat diubah; koreksi → faktur pengganti (`replaced`) sesuai mekanisme sistem DJP yang berlaku. File ekspor berisi identitas pajak penuh → hanya bisa diunduh dua kali dalam 24 jam pertama oleh pembuat (MFA ulang), lalu kedaluwarsa (`tax.export_file_retention_days`, default 7) dan dihapus. Rekap PPN bulanan: Σ keluaran, Σ masukan dapat dikreditkan, selisih (kurang/lebih bayar) — **bahan** untuk konsultan, bukan SPT. Dicocokkan dengan saldo akun `vat_output`/`vat_input` per masa |
+| **BR-336** | **Ekspor & rekap PPN.** ACC memilih masa & arah → faktur `ready` (validasi lengkap: identitas pembeli/penjual, DPP, PPN, tanggal, kode transaksi) diekspor oleh `TaxExportFormatter` aktif ke file; faktur tidak valid ditampilkan per alasan, tidak ikut. Status `exported`; setelah ACC menandai `uploaded` dan mengimpor hasil (nomor faktur pajak) atau mengisi manual → `approved`. Faktur `approved` tidak dapat diubah; koreksi → faktur pengganti (`replaced`) sesuai mekanisme sistem DJP yang berlaku. File ekspor (dibuat lewat kerangka ekspor Fase 0, §4.6) berisi identitas pajak penuh → hanya bisa diunduh `tax.export_max_downloads` kali (default 2) dalam `tax.export_download_window_hours` pertama (default 24) oleh pembuat (MFA ulang), lalu kedaluwarsa (`tax.export_file_retention_days`, default 7, mengisi `export_files.expires_at`) dan dihapus. Rekap PPN bulanan: Σ keluaran, Σ masukan dapat dikreditkan, selisih (kurang/lebih bayar) — **bahan** untuk konsultan, bukan SPT. Dicocokkan dengan saldo akun `vat_output`/`vat_input` per masa |
 | **BR-337** | **Ekspor jurnal luar.** Adapter `AccountingExportAdapter` per sistem tujuan (OQ-106); default `generic_csv` (kolom: tanggal, nomor jurnal, kode akun eksternal, nama akun, debit, kredit, memo, dimensi utama). Semua akun dalam rentang wajib punya `external_account_mappings` (`EXTERNAL_MAPPING_MISSING` daftar akun). Jurnal yang sudah pernah diekspor ke sistem yang sama ditandai dan **dikecualikan** kecuali ACC memilih "ekspor ulang" (dicatat `is_reexport`). Mode `daily_summary` menggabungkan jurnal `auto` per hari per akun per lokasi. Bila modul F dipakai hanya untuk ekspor (S-1), periode tetap ditutup di F agar data yang sudah diekspor tidak berubah |
-| **BR-338** | **Konsinyasi.** Perjanjian per kios (satu aktif), approval `consignment_agreement`; kios wajib `active` & terverifikasi; produk terbatas hanya bila kios `restricted_buyer_eligible`. Sistem membuat lokasi stok `consignment` milik kios (kode `KSG-{kode kios}`). Kirim titipan = `stock_transfers` `consignment_out` dari gudang sumber ke lokasi itu (alur A: pick FEFO, surat jalan, diterima kios via bukti terima) — **tanpa** jurnal (stok tetap milik Pakis). Plafon: nilai pokok stok di lokasi titipan + yang sedang dikirim ≤ `max_value` & qty per produk ≤ `max_qty_base` (`CONSIGNMENT_LIMIT_EXCEEDED`). Laporan terjual (siklus `report_cycle`; lewat jatuh tempo → pengingat ke sales & APJ, H+`consignment.overdue_suspend_days` → `suspended`: tidak ada kiriman baru): qty terjual per produk ≤ stok sistem; dikonfirmasi kios (Mitra / tautan bertoken); diposting → stok dikurangi (`stock_movements` tipe `consignment_sale`, FEFO bila batch tidak disebut) dan **faktur `consignment`** terbit (harga dari price list perjanjian/kios saat periode laporan, jatuh tempo = tanggal posting + `payment_term_days`) → event `sales.invoice_issued` biasa (piutang & HPP); bila `commission_pct > 0`, komisi dicatat sebagai potongan faktur (OQ-154). Hitung fisik (`stock_count`/`closing`, minimal setiap `consignment.count_every_days`): selisih kurang = dianggap terjual bila kios mengakui (masuk faktur) atau hilang/rusak → approval `consignment_variance` → kios menanggung (faktur) atau Pakis (event `inventory.written_off`); selisih lebih → penyesuaian stok (`inventory.adjusted`). Tarik sisa / penutupan = `stock_transfers` `consignment_return`; lokasi titipan harus 0 sebelum perjanjian `closed`. Batch karantina/ED dekat di lokasi titipan muncul di daftar tarik (BR-102 tetap berlaku) |
-| **BR-339** | **Penyusutan.** Aset `active` dengan metode ≠ `none` disusutkan bulanan oleh `assets:depreciate` (tanggal 1 untuk bulan sebelumnya, atau manual ACC per periode; pratinjau dulu). Garis lurus: `(cost − residual) / useful_life_months`; saldo menurun: `book_value × rate / 12`, beralih ke garis lurus bila lebih besar, tidak di bawah residual. Mulai `depreciation_start` (setting `asset.depreciation_start_rule`: `next_month` default / `same_month`); bulan terakhir mengambil sisa agar `accumulated = cost − residual` tepat; lalu `fully_depreciated`. Pembulatan half-up 2 desimal per aset per bulan. Idempoten (`ad_asset_period_unique`). Satu event per run per periode: `asset.depreciated` dengan baris per kategori & lokasi (D `depreciation_expense` · K `accumulated_depreciation`, kualifier `asset_category`, dimensi `location_id`). Aset `is_opening` mulai dengan `opening_accumulated_depreciation` (masuk saldo awal GL, BR-323). Perolehan: dari faktur beli `expense`/manual ber-akun aset (event `asset.acquired`: D `fixed_asset` · K `payable`/`bank`/`goods_received_not_invoiced`) atau saldo awal; di bawah `capitalization_threshold` kategori → ditolak sebagai aset (`ASSET_BELOW_THRESHOLD`) dan dibiayakan. Kendaraan **18** ber-`ownership = owned` diingatkan bila belum bertaut aset |
+| **BR-338** | **Konsinyasi.** Perjanjian per kios (satu aktif), approval `consignment_agreement`; kios wajib `active` & terverifikasi; produk terbatas hanya bila kios `restricted_buyer_eligible`. Sistem membuat lokasi stok `consignment` milik kios (kode `KSG-{kode kios}`). Kirim titipan = `stock_transfers` `consignment_out` dari gudang sumber ke lokasi itu (alur A: pick FEFO, surat jalan, diterima kios via bukti terima) — **tanpa** jurnal (stok tetap milik Pakis). Plafon: nilai pokok stok di lokasi titipan + yang sedang dikirim ≤ `max_value` & qty per produk ≤ `max_qty_base` (`CONSIGNMENT_LIMIT_EXCEEDED`). Laporan terjual (siklus `report_cycle`; lewat jatuh tempo → pengingat ke sales & APJ, H+`consignment.overdue_suspend_days` → `suspended`: tidak ada kiriman baru): qty terjual per produk ≤ stok sistem; dikonfirmasi kios (Mitra / tautan bertoken); diposting → stok dikurangi (`stock_movements` tipe `consignment_sale`, FEFO bila batch tidak disebut) dan **faktur `consignment`** terbit lewat `ReceivableLedger` (**16** ADR-109; satu-satunya penulis saldo piutang, sama dengan faktur penjualan biasa) (harga dari price list perjanjian/kios saat periode laporan, jatuh tempo = tanggal posting + `payment_term_days`) → event `sales.invoice_issued` biasa (piutang & HPP); posting laporan memanggil `PeriodGuard`; bila `commission_pct > 0`, komisi dicatat sebagai potongan faktur (OQ-154). Hitung fisik (`stock_count`/`closing`, minimal setiap `consignment.count_every_days`): selisih kurang = dianggap terjual bila kios mengakui (masuk faktur) atau hilang/rusak → approval `consignment_variance` → kios menanggung (faktur) atau Pakis (event `inventory.written_off`); selisih lebih → penyesuaian stok (`inventory.adjusted`). Tarik sisa / penutupan = `stock_transfers` `consignment_return`; lokasi titipan harus 0 sebelum perjanjian `closed`. Batch karantina/ED dekat di lokasi titipan muncul di daftar tarik (BR-102 tetap berlaku) |
+| **BR-339** | **Penyusutan.** Aset `active` dengan metode ≠ `none` disusutkan bulanan oleh `assets:depreciate` (tanggal 1 untuk bulan sebelumnya, atau manual ACC per periode; pratinjau dulu). Garis lurus: `(cost − residual) / useful_life_months`; saldo menurun: `book_value × rate / 12`, beralih ke garis lurus bila lebih besar, tidak di bawah residual. Mulai `depreciation_start` (setting `asset.depreciation_start_rule`: `next_month` default / `same_month`); bulan terakhir mengambil sisa agar `accumulated = cost − residual` tepat; lalu `fully_depreciated`. Pembulatan half-up 2 desimal per aset per bulan. Idempoten (`ad_asset_period_unique`). Satu event per run per periode: `asset.depreciated` dengan baris per kategori & lokasi (D `depreciation_expense` · K `accumulated_depreciation`, kualifier `asset_category`, dimensi `location_id`). Aset `is_opening` mulai dengan `opening_accumulated_depreciation` (masuk saldo awal GL, BR-323). Perolehan (satu jalur jurnal per kasus, PF-5): (i) dari faktur beli `expense` → baris faktur berperan `fixed_asset` (kualifier `asset_category`) sehingga jurnal D `fixed_asset` · K `payable` dibentuk oleh `purchase.invoice_posted`; aset yang `purchase_invoice_id`-nya terisi diaktifkan **tanpa** `asset.acquired`; (ii) perolehan tanpa faktur beli (dibayar dari rekening, atau dari penerimaan barang ber-GRNI) → `asset.acquired`: D `fixed_asset` · K `bank` (baris membawa `bank_account_id`) / `goods_received_not_invoiced`, tidak pernah K `payable`; (iii) saldo awal (tanpa event, lewat jurnal `opening` BR-323); di bawah `capitalization_threshold` kategori → ditolak sebagai aset (`ASSET_BELOW_THRESHOLD`) dan dibiayakan. Kendaraan **18** ber-`ownership = owned` diingatkan bila belum bertaut aset |
 | **BR-340** | **Mutasi & penghapusan aset.** Mutasi lokasi/pemegang: tercatat, diterima penerima (konfirmasi), mengubah `location_id`; penyusutan bulan mutasi dibebankan ke lokasi baru (sederhana, didokumentasikan). Penghapusan (`sale`/`write_off`/`loss`/`trade_in`): approval `asset_disposal` (bukti wajib: berita acara/foto/kuitansi); saat posting, penyusutan disusulkan s.d. bulan pelepasan, lalu event `asset.disposed` (D `accumulated_depreciation`, D `bank` (hasil jual), D/K `asset_disposal_loss`/`asset_disposal_gain` · K `fixed_asset`). Kendaraan terkait → `vehicles.fleet_status = 'sold'`/`inactive` dan penugasan diakhiri (**18**) |
-| **BR-341** | **Saran pembelian.** Harian (`purchasing:suggest`, 04:00) per produk aktif × gudang (`warehouse`): permintaan harian = (qty keluar penjualan & POS & konsinyasi terjual + `lost_sales` tervalidasi **16**) dalam `purchasing.suggestion_window_days` (default 90) / hari aktif stok; × faktor musim bulan target (produk > kategori > 1,0; area dari gudang). Titik pesan ulang = permintaan × (lead time supplier preferred, default `purchasing.default_lead_time_days`) × faktor + permintaan × `purchasing.default_safety_days`, minimal `product_stock_levels.min_qty_base`. Tersedia = stok tersedia jual (tanpa karantina/rusak/ED < batas jual) + PO terbuka belum diterima − reservasi. Saran bila tersedia < titik pesan ulang: qty = (titik pesan ulang + permintaan × `purchasing.order_cover_days`) − tersedia, dibatasi `max_qty_base` bila ada, dibulatkan **ke atas** ke kelipatan satuan beli. Alasan (chip) disimpan. Faktor musim "hitung dari data": rata-rata permintaan bulan m ÷ rata-rata bulanan, dari ≥ 1 tahun data (`computed_from_years`), dibatasi 0,2–5; manual menimpa computed. Saran → PO `draft` dikelompokkan per supplier (A, approval PO tetap). Saran tidak pernah membuat PO otomatis |
+| **BR-341** | **Saran pembelian.** Harian (`purchasing:suggest`, 04:00) per produk aktif × gudang (`warehouse`): permintaan harian = (qty keluar penjualan & POS & konsinyasi terjual + `lost_sales` tervalidasi **16**) dalam `purchasing.suggestion_window_days` (default 90) / hari aktif stok; × faktor musim bulan target (produk > kategori > 1,0; area dari gudang). Titik pesan ulang = permintaan × (lead time supplier preferred, default `purchasing.default_lead_time_days`) × faktor + permintaan × `purchasing.default_safety_days`, minimal `product_stock_levels.min_qty_base`. Tersedia = stok tersedia jual (tanpa karantina/rusak/ED < batas jual) + PO terbuka belum diterima − reservasi. Saran bila tersedia < titik pesan ulang: qty = (titik pesan ulang + permintaan × `purchasing.order_cover_days`) − tersedia, dibatasi `max_qty_base` bila ada, dibulatkan **ke atas** ke kelipatan satuan beli. Alasan (chip) disimpan. Faktor musim "hitung dari data": rata-rata permintaan bulan m ÷ rata-rata bulanan, dari ≥ 1 tahun data (`computed_from_years`), dibatasi `purchasing.seasonal_factor_min`–`purchasing.seasonal_factor_max` (default 0,2–5); manual menimpa computed. Saran → PO `draft` dikelompokkan per supplier (A, approval PO tetap). Saran tidak pernah membuat PO otomatis |
 | **BR-342** | **Member petani.** Data minimal: nama, nomor HP, desa, tanaman utama (opsional). **Tanpa** NIK/alamat lengkap/foto. Persetujuan keanggotaan wajib (teks versi `consent_text_version` dari setting) dicatat waktu & kasir; persetujuan promosi terpisah & opsional, dapat ditarik kapan saja (kasir/kepala toko) — pesan promosi WA/SMS hanya ke `consent_promo_at IS NOT NULL AND withdrawn IS NULL`. Satu nomor HP = satu member (`MEMBER_PHONE_EXISTS`, pesan tidak menyebut nama pemilik). Riwayat beli = `pos_sales` ber-`farmer_member_id` (tampil di POS: 5 transaksi terakhir tanpa harga pokok). Permintaan hapus → `closed`: nama → "Anonim", HP dihapus (hash & enc dikosongkan → nilai acak), desa tetap untuk statistik; poin hangus; riwayat transaksi tetap (tanpa identitas). Member tidak aktif > `members.inactive_anonymize_months` (default 36) dianonimkan otomatis |
 | **BR-343** | **Poin.** Aturan di setting: `loyalty.earn_amount_per_point` (Rp per 1 poin, dari total bayar setelah diskon, tanpa produk dikecualikan — kategori di `loyalty.excluded_category_ids`, default pestisida terbatas), `loyalty.point_value` (Rp per poin saat tukar), `loyalty.min_redeem_points`, `loyalty.max_redeem_pct` (maks % total struk), `loyalty.expiry_months`. Akrual saat struk tersinkron & valid (offline: poin dihitung ulang di server; bila beda dengan yang dicetak, server menang dan struk berikut menampilkan saldo benar). Tukar: hanya online (cek saldo realtime, `FOR UPDATE` member), menjadi potongan pembayaran struk (`pos_sale_payments` metode `points`, event `pos.shift_closed` memakai peran `loyalty_liability`); pemakaian FIFO dari earn tertua (`remaining_points`). Retur struk → poin earn struk itu dibalik proporsional (`reverse`); bila poin sudah terpakai sehingga saldo < 0 → saldo dibatasi 0 dan selisih dicatat (tidak menagih petani). Kedaluwarsa bulanan (`loyalty:expire`). Penyesuaian manual: alasan + approval bila > ambang; kasir yang melayani transaksi itu tidak boleh menyesuaikan. Akuntansi: liabilitas poin diakui saat akrual sebesar poin × `point_value` (event `loyalty.points_earned`: D `promotion_expense` · K `loyalty_liability`; tukar mengurangi liabilitas; kedaluwarsa: D `loyalty_liability` · K `other_income`) — kebijakan dikonfirmasi akuntan (OQ-156) |
-| **BR-344** | **Jurnal gaji.** Event `payroll.period_approved` & `payroll.paid` (**19** BR-312) diposting dengan dimensi `location_id` dari penempatan pegawai; payload dari E harus **agregat per lokasi × komponen** (tanpa `employee_id`) — T-177 menambahkan test bahwa payload tidak memuat id pegawai/nama dan bahwa baris `journal_lines` gaji tidak berdimensi `employee_id`. Rincian per pegawai tetap hanya di modul payroll (akses `13`). Potongan piutang karyawan/kasbon tetap baris per peran (agregat); sub-buku piutang karyawan (**16**) yang menyimpan rincian per pegawai |
+| **BR-344** | **Jurnal gaji.** Event `payroll.period_approved` & `payroll.paid` (**19** BR-312) diposting dengan dimensi `location_id` dari penempatan pegawai; payload dari E2 sudah **agregat per lokasi × komponen** (tanpa `employee_id`) dan membawa `bank_account_id` di baris `bank` (`payroll.paid`) sejak event pertama — bentuk itu ditetapkan di **19** (task E2 event payroll), F tidak mengubah builder payroll. T-177 menambahkan test sisi konsumen bahwa payload tidak memuat id pegawai/nama dan bahwa baris `journal_lines` gaji tidak berdimensi `employee_id`; bila payload E2 belum agregat, T-177 berhenti dan mencatat blocker (bukan memperbaiki builder di F). Rincian per pegawai tetap hanya di modul payroll (akses `13`). Potongan piutang karyawan/kasbon tetap baris per peran (agregat); sub-buku piutang karyawan (**16**) yang menyimpan rincian per pegawai |
 | **BR-345** | **Saldo awal hutang.** Selama `payables.opening_balance_open = true`: impor per supplier daftar faktur lama yang belum lunas (nomor supplier, tanggal, jatuh tempo, sisa) → `purchase_invoices` `opening_balance` + event `payable.opening_balance` (D `opening_balance_equity` · K `payable`). Total per supplier ditampilkan untuk dicocokkan sebelum konfirmasi; setelah ditutup (Owner, konfirmasi password) impor ditolak `OPENING_BALANCE_CLOSED` |
 
 ## 9. Setting Baru
 
-Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan Pakis.
+Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan Pakis. Tipe mengikuti keputusan PA-19 (`decimal`, `int_list`, `money`, penanda `locked`/`one_way` ditambah T-067). Tipe lain yang dibutuhkan F — `date`, `string[]`, teks berversi (teks + nomor versi yang tersimpan sebagai bukti persetujuan) — **ditambahkan ke registri di T-159** (+ `08` §2 + test registri); `enum`/`string`/`bool`/`int` memakai tipe yang ada. Angka bisnis yang sebelumnya konstanta (batas tingkat CoA, ukuran & baris berkas, kombinasi R3, batas unduhan file pajak, batas faktor musim) kini kunci setting (PF-12).
 
 | Kunci | Tipe | Default | Validasi | Task |
 |---|---|---|---|---|
-| `accounting.go_live_date` | date | kosong | Wajib sebelum backfill; tidak bisa diubah setelah ada jurnal | T-159 |
+| `accounting.go_live_date` | date (tambahan registri T-159) | kosong | Wajib sebelum backfill; tidak bisa diubah setelah ada jurnal | T-159 |
 | `accounting.fiscal_year_start_month` | int | `1` | 1–12; terkunci setelah periode pertama dibuat | T-159 |
 | `accounting.cost_method` | enum | `moving_average` | Terkunci (BR-114); hanya informasi | T-159 |
+| `accounting.coa_max_depth` | int | `5` | 2–10 | T-159 |
 | `accounting.posting_batch_size` | int | `500` | 50–5.000 | T-160 |
 | `accounting.manual_journal_attachment_threshold` | money | `1000000` (contoh) | ≥ 0 | T-161 |
 | `accounting.manual_journal_owner_threshold` | money | `25000000` (contoh) | ≥ 0 | T-161 |
-| `accounting.finance_manual_journal_types` | string[] | `["cash_bank_reclass"]` | Kode `journal_manual_reason` | T-161 |
+| `accounting.finance_manual_journal_types` | string[] (tambahan registri T-159) | `["cash_bank_reclass"]` | Kode `journal_manual_reason`; isi default menunggu OQ-160b | T-161 |
 | `accounting.require_bank_reconciliation` | bool | `false` | — | T-161 |
+| `accounting.attachment_max_kb` | int | `10240` | 512–20480; lampiran F (jurnal, bukti bayar, bukti klaim, berita acara aset) | T-161 |
+| `bank.statement_max_file_kb` | int | `5120` | 512–20480 | T-162 |
+| `bank.statement_max_rows` | int | `10000` | 1.000–50.000 | T-162 |
 | `bank.match_date_window_days` | int | `3` | 0–14 | T-163 |
+| `bank.match_combination_max_docs` | int | `5` | 2–10 | T-163 |
 | `bank.fee_auto_limit` | money | `50000` (contoh) | ≥ 0 | T-163 |
 | `reports.finance_can_view_balance_sheet` | bool | `false` | — | T-164 |
 | `purchasing.invoice_price_tolerance_pct` | decimal | `0.5` | 0–10 | T-166 |
 | `purchasing.invoice_price_tolerance_amount` | money | `10000` (contoh) | ≥ 0 | T-166 |
 | `purchasing.variance_to_inventory` | bool | `false` | — (OQ-116) | T-166 |
-| `payables.opening_balance_open` | bool | `true` | Hanya bisa dimatikan; Owner + password | T-166 |
+| `payables.opening_balance_open` | bool (`one_way`) | `true` | Hanya `true → false` (penanda `one_way`, PA-19); Owner + password | T-166 |
 | `payables.payment_lookahead_days` | int | `7` | 0–60 | T-167 |
 | `principal.claim_followup_days` | int | `30` | 7–180 | T-169 |
 | `principal.claim_requires_internal_approval` | bool | `false` | — | T-169 |
-| `tax.pkp_effective_date` | date | kosong | Wajib bila `tax.is_pkp` (B) = true | T-170 |
+| `tax.pkp_effective_date` | date (tambahan registri T-159) | kosong | Wajib bila `tax.is_pkp` (B) = true | T-170 |
 | `tax.pos_output_mode` | enum | `none` | `per_receipt`/`daily_summary`/`none` (OQ-153) | T-170 |
 | `tax.default_transaction_code` | string | kosong | Diisi sesuai ketentuan (OQ-101) | T-170 |
 | `tax.input_credit_max_months_late` | int | kosong | Diisi setelah verifikasi konsultan | T-170 |
 | `tax.export_file_retention_days` | int | `7` | 1–30 | T-171 |
+| `tax.export_max_downloads` | int | `2` | 1–5 | T-171 |
+| `tax.export_download_window_hours` | int | `24` | 1–72 | T-171 |
 | `tax.export_formatter` | string | kosong | Kode formatter terpasang | T-171 |
 | `accounting.export_target_system` | string | `generic_csv` | Kode adapter terpasang | T-172 |
 | `consignment.count_every_days` | int | `30` | 7–90 | T-173 |
@@ -1616,16 +1642,18 @@ Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan P
 | `purchasing.default_lead_time_days` | int | `7` | 1–90 | T-175 |
 | `purchasing.default_safety_days` | int | `7` | 0–60 | T-175 |
 | `purchasing.order_cover_days` | int | `14` | 0–120 | T-175 |
+| `purchasing.seasonal_factor_min` | decimal | `0.2` | 0–1 | T-175 |
+| `purchasing.seasonal_factor_max` | decimal | `5` | 1–10 (≤ batas CHECK `sf_month_chk`) | T-175 |
 | `members.enabled` | bool | `false` | — | T-176 |
 | `members.cashier_can_register` | bool | `true` | — | T-176 |
-| `members.consent_text` | text (berversi) | contoh teks Bahasa Indonesia sederhana | Perubahan menaikkan `consent_text_version` | T-176 |
+| `members.consent_text` | teks berversi (tambahan registri T-159) | contoh teks Bahasa Indonesia sederhana | Perubahan menaikkan `consent_text_version` | T-176 |
 | `members.inactive_anonymize_months` | int | `36` | 12–120 | T-176 |
 | `loyalty.earn_amount_per_point` | money | `10000` (contoh) | > 0 | T-176 |
 | `loyalty.point_value` | money | `100` (contoh) | > 0 | T-176 |
 | `loyalty.min_redeem_points` | int | `100` | ≥ 1 | T-176 |
 | `loyalty.max_redeem_pct` | decimal | `20` | 0–100 | T-176 |
 | `loyalty.expiry_months` | int | `12` | 1–60 | T-176 |
-| `loyalty.excluded_category_ids` | int[] | kategori pestisida terbatas | id kategori aktif | T-176 |
+| `loyalty.excluded_category_ids` | int_list | kategori pestisida terbatas | id kategori aktif | T-176 |
 | `loyalty.adjust_approval_points` | int | `500` | ≥ 0 | T-176 |
 
 `tax.vat_rate_versioned` di **14** §9 **tidak dibuat**: tarif berversi sudah ada di tabel `tax_rates` (**16**); **14** diperbarui.
@@ -1652,19 +1680,19 @@ Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan P
 
 | ID | Kontrol | Verifikasi |
 |---|---|---|
-| SEC-176 | `GeneralLedger` satu-satunya kelas yang menulis `journal_entries`/`journal_lines`/`account_period_balances` (arch test); trigger append-only `journal_lines`; trigger `journal_entries` hanya mengizinkan kolom yang disebut §4.2; jurnal manual: pembuat ≠ penyetuju (BR-153 (11)); peran sub-buku ditolak di jurnal manual kecuali `adjustment` + Owner | Arch test + test trigger + test approval |
-| SEC-177 | Tutup/buka periode: MFA ulang (tutup) & konfirmasi password + alasan (buka, Owner saja); setiap perubahan → `security_events` + notifikasi semua Owner & ACC; `accounting.lock_date` hanya diubah lewat `FiscalPeriodService` (arch test: tidak ada penulisan setting itu di tempat lain) | Test |
-| SEC-178 | Identitas pajak pembeli (`buyer_id_enc`) dienkripsi kunci aplikasi terpisah `TAX_ID_ENCRYPTION_KEY` (bukan `APP_KEY`), HMAC pencarian dengan `TAX_ID_HASH_KEY`; tampilan masking 4 digit akhir; lihat penuh hanya `customer_tax_profiles.view_full` + tercatat di `audit_logs` (`sensitive_view`); tidak pernah di log/notifikasi/respons API Mitra | Test + log scan |
-| SEC-179 | Perubahan rekening supplier (`suppliers.bank_*`) memakai alur dua orang: pengaju (PUR/FIN) → penyetuju (Owner) + verifikasi panggilan balik dicatat (siapa, nomor yang ditelepon dari data lama/kontrak, waktu); selama menunggu, pembayaran ke supplier itu diblokir (`SUPPLIER_BANK_CHANGE_PENDING`); pengajuan pembayaran menyimpan `beneficiary_snapshot` dan approval batal bila rekening berubah; notifikasi ke semua Owner & FIN | Test |
-| SEC-180 | Faktur beli hanya dari penerimaan `posted` (kecuali `expense`/`opening_balance`); tidak ada route ubah nilai setelah `posted`; pembayaran hanya untuk faktur `posted`; eksekutor ≠ penyetuju; file transfer massal hanya pembayaran `approved` & tercatat `mass_export` | Test |
-| SEC-181 | Unggahan (mutasi bank, lampiran jurnal, bukti pembayaran, bukti klaim, berita acara aset) di storage privat, validasi MIME isi, batas ukuran (5 MB mutasi, 10 MB lampiran), nama acak; akses signed URL 5 menit + cek otorisasi; parser CSV tidak mengevaluasi formula, baris > 10.000 ditolak | Test |
-| SEC-182 | Ekspor faktur pajak & jurnal: `exports.mass` + permission modul; MFA ulang saat unduh file pajak; file kedaluwarsa & dihapus (BR-336); unduhan tercatat (`mass_export`, jumlah baris, hash file) | Test |
+| SEC-176 | `GeneralLedger` satu-satunya kelas yang menulis `journal_entries`/`journal_lines`/`account_period_balances` (arch test); trigger append-only `journal_lines`; trigger `journal_entries` hanya mengizinkan kolom yang disebut §4.2; jurnal manual: pembuat ≠ penyetuju (maker-checker **15** BR-153; rujukan klausul "(11)" salah, perbaikan ikut OQ-160b); peran sub-buku ditolak di jurnal manual kecuali `adjustment` + Owner | Arch test + test trigger + test approval |
+| SEC-177 | Tutup/buka periode: MFA ulang (tutup) & konfirmasi password + alasan (buka, Owner saja); setiap perubahan → `security_events` + notifikasi semua Owner & ACC; `accounting.lock_date` hanya diubah lewat `FiscalPeriodService` (arch test: tidak ada penulisan setting itu di tempat lain) — bertentangan dengan route B `admin.accounting.lock-date` yang masih ada; penyelesaiannya **menunggu OQ-160a** (PF-4) | Test |
+| SEC-178 | Identitas pajak pembeli (`buyer_id_enc`) dienkripsi kunci aplikasi terpisah `TAX_ID_ENCRYPTION_KEY` (bukan `APP_KEY`), HMAC pencarian dengan `TAX_ID_HASH_KEY`; tampilan masking 4 digit akhir; lihat penuh hanya `customer_tax_profiles.view_full` + tercatat sebagai event keamanan `sensitive_data_viewed` (`SecurityLogger`, jenis yang sudah ada di Fase 0); tidak pernah di log/notifikasi/respons API Mitra | Test + log scan |
+| SEC-179 | Perubahan rekening supplier (`suppliers.bank_*`) memakai alur dua orang: pengaju (PUR/FIN; izin pengaju **menunggu OQ-160d**) → penyetuju (Owner) + verifikasi panggilan balik dicatat (siapa, nomor yang ditelepon dari data lama/kontrak, waktu); selama menunggu, pembayaran ke supplier itu diblokir (`SUPPLIER_BANK_CHANGE_PENDING`); pengajuan pembayaran menyimpan `beneficiary_snapshot` dan approval batal bila rekening berubah; notifikasi ke semua Owner & FIN | Test |
+| SEC-180 | Faktur beli hanya dari penerimaan `posted` (kecuali `expense`/`opening_balance`); tidak ada route ubah nilai setelah `posted`; pembayaran hanya untuk faktur `posted`; eksekutor ≠ penyetuju; file transfer massal hanya pembayaran `approved` & tercatat `mass_export`. Eksekutor melihat nomor rekening penuh (SEC-108) & alur verifikasi rekening saat supplier dibuat (`CreateSupplier`, T-072) **menunggu OQ-160d** (PF-8) | Test |
+| SEC-181 | Unggahan (mutasi bank, lampiran jurnal, bukti pembayaran, bukti klaim, berita acara aset) lewat validator unggahan bersama `app/Support/Upload/` (PA-22): storage privat, validasi MIME isi, batas ukuran dari setting (`bank.statement_max_file_kb` mutasi, `accounting.attachment_max_kb` lampiran), nama acak; akses signed URL 5 menit + cek otorisasi; parser CSV tidak mengevaluasi formula, baris > `bank.statement_max_rows` ditolak | Test |
+| SEC-182 | Ekspor faktur pajak & jurnal lewat kerangka ekspor Fase 0 (`ExportableListing`/`StartExport`/`export_files`) dengan permission modul (`tax_exports.generate`, `accounting_exports.generate`); `exports.mass` tidak dipakai (PA-3). MFA ulang saat unduh file pajak; batas unduhan `tax.export_max_downloads` dalam `tax.export_download_window_hours`; file kedaluwarsa & dihapus (BR-336); unduhan tercatat (event keamanan `mass_export` di atas `export.mass_export_alert_rows`, jumlah baris, hash file) | Test |
 | SEC-183 | Klaim: satu sumber satu klaim aktif; foto bukti promosi memakai hash file dari **17** — foto dengan hash sama di dua kegiatan berbeda ditandai (`duplicate_evidence`) dan klaim tidak bisa diajukan sampai ditinjau | Test |
 | SEC-184 | Laporan konsinyasi dari Mitra wajib konfirmasi sisi Pakis (sales/APJ) sebelum posting, dan laporan sales wajib konfirmasi kios; hitung fisik wajib foto dari kamera langsung + lokasi dalam radius kios (**17** BR terkait check-in); kios hanya melihat lokasi titipannya (test IDOR antar kios) | Test IDOR |
 | SEC-185 | Nomor HP member terenkripsi (`MEMBER_PHONE_ENCRYPTION_KEY` terpisah) + HMAC; tampil termasking; tidak ada ekspor daftar kontak member (listing tanpa kolom HP lengkap; ekspor massal member dinonaktifkan); pesan promosi hanya lewat `outbound_messages` ke member ber-consent; kasir tidak dapat menyesuaikan poin transaksi yang ia layani; pendaftaran member dengan nomor HP pegawai (dicocokkan HMAC ke `employees`) ditandai | Test |
 | SEC-186 | Penghapusan aset & write-off klaim: approval Owner, bukti wajib, tercatat; aset `disposed` tidak bisa diaktifkan lagi | Test |
-| SEC-187 | Semua ekspor XLSX/CSV Paket F memakai sanitasi formula (**15** SEC) — nilai diawali `=`,`+`,`-`,`@` di-escape | Test |
-| SEC-188 | Akun `akuntan` konsultan luar: masa berlaku (`users.expires_at`), MFA wajib, tanpa akses modul operasional selain baca dokumen sumber dari drill-down; sesi idle 15 menit | Test |
+| SEC-187 | Semua ekspor XLSX/CSV Paket F memakai kerangka ekspor Fase 0 dan `App\Support\Export\FormulaEscaper` (SEC-051) — nilai diawali `=`,`+`,`-`,`@` di-escape; tidak ada penulis berkas ekspor sendiri | Test |
+| SEC-188 | Akun `akuntan` konsultan luar: masa berlaku, MFA wajib, tanpa akses modul operasional selain baca dokumen sumber dari drill-down. Kolom `users.expires_at` (belum ada di Fase 0) dan sesi idle per role vs `security.session_idle_minutes` global **menunggu OQ-160e** (PF-9); sampai dijawab, idle mengikuti setting global | Test |
 | SEC-189 | Payload event & baris jurnal gaji tanpa identitas pegawai (BR-344); laporan keuangan tidak menampilkan gaji per orang | Test |
 | SEC-190 | Respons API Mitra (konsinyasi) tidak memuat HPP/`unit_cost`; harga hanya harga tagih kios | Test kontrak API |
 
@@ -1677,6 +1705,8 @@ Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan P
 - [ ] Parser mutasi diuji dengan file anonim nyata dari bank Pakis
 - [ ] Formatter faktur pajak diverifikasi konsultan pajak terhadap format resmi yang berlaku (bila PKP)
 - [ ] Alur perubahan rekening supplier diuji (pembayaran terblokir selama menunggu)
+- [ ] Test kontrak kasus tanpa event (§11.2, PF-5) hijau; `PeriodGuardArchTest` mencakup domain F
+- [ ] OQ-160a–OQ-160f, OQ-101, OQ-106 terjawab atau default-nya disetujui tertulis sebelum go-live
 
 ## 11. Job, Event & Kode Galat
 
@@ -1705,9 +1735,9 @@ Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan P
 
 | Kode | Dipancarkan | Baris (peran akun) |
 |---|---|---|
-| `purchase.invoice_posted` | Faktur beli posted (BR-330) | D `goods_received_not_invoiced` = Σ qty × `receipt_unit_cost` · D/K `purchase_price_variance` = selisih · D `vat_input` = PPN dapat dikreditkan (PPN tidak dapat dikreditkan ikut ke GRNI/variance) · K `payable` = `grand_total`. Tipe `expense`: D peran beban baris · D `vat_input` · K `payable` |
+| `purchase.invoice_posted` | Faktur beli posted (BR-330) | D `goods_received_not_invoiced` = Σ qty × `receipt_unit_cost` · D/K `purchase_price_variance` = selisih · D `vat_input` = PPN dapat dikreditkan (PPN tidak dapat dikreditkan ikut ke GRNI/variance) · K `payable` = `grand_total`. Tipe `expense`: D peran baris (beban, atau `fixed_asset` untuk perolehan aset) · D `vat_input` · K `payable`. **Tidak** dipancarkan untuk faktur `expense` yang dibentuk dari perintah servis D (**18**, sudah dijurnal `fleet.maintenance_approved`) |
 | `purchase.invoice_voided` | Void faktur beli | Kebalikan (revision 2) |
-| `purchase.debit_note_issued` | Nota debit retur/koreksi | D `payable` · K `goods_received_not_invoiced` (+ K `vat_input`) |
+| `purchase.debit_note_issued` | Nota debit retur/koreksi (`purchase_return`, `price_correction`) | D `payable` · K `goods_received_not_invoiced` (+ K `vat_input`). **Tidak** dipancarkan untuk nota debit bersumber `principal_claim` (jurnalnya `principal.claim_settled`) |
 | `purchase.payment_made` | Pembayaran supplier `paid` | D `payable` · K `bank` (atau K `outgoing_giro` untuk giro) · D `bank_fee_expense` · K `bank` |
 | `purchase.giro_cleared` | Giro keluar cair | D `outgoing_giro` · K `bank` |
 | `purchase.payment_voided` | Pembayaran dibatalkan setelah `paid` (dana kembali) | Kebalikan |
@@ -1716,7 +1746,7 @@ Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan P
 | `principal.claim_approved` | Keputusan prinsipal (BR-334) | D `principal_receivable` · K `rebate_income`/`promotion_expense`/`warranty_expense` (selisih terhadap akrual) |
 | `principal.claim_settled` | Penyelesaian klaim | D `bank` / `payable` / `goods_received_not_invoiced` · K `principal_receivable` |
 | `principal.claim_written_off` | Hapus klaim | D `other_expense` · K `principal_receivable` |
-| `asset.acquired` | Aset diaktifkan dari perolehan (BR-339) | D `fixed_asset` · K `payable`/`bank`/`goods_received_not_invoiced` |
+| `asset.acquired` | Aset diaktifkan dari perolehan **tanpa** faktur beli (BR-339) | D `fixed_asset` · K `bank` (baris membawa `bank_account_id`) / `goods_received_not_invoiced`. **Tidak** dipancarkan untuk aset dari faktur beli `expense` (jurnalnya `purchase.invoice_posted`), dan tidak pernah K `payable` |
 | `asset.depreciated` | Run penyusutan | D `depreciation_expense` · K `accumulated_depreciation` (per kategori × lokasi) |
 | `asset.disposed` | Pelepasan aset (BR-340) | D `accumulated_depreciation` · D `bank` (hasil) · D `asset_disposal_loss` / K `asset_disposal_gain` · K `fixed_asset` |
 | `bank.fee_recorded` | Biaya/bunga dari rekonsiliasi (BR-327) | D `bank_fee_expense` · K `bank` atau D `bank` · K `interest_income` |
@@ -1724,9 +1754,22 @@ Semua lewat `SettingRegistry` (**15** §9). Nilai uang contoh harus ditetapkan P
 | `loyalty.points_expired` | Kedaluwarsa | D `loyalty_liability` · K `other_income` |
 | `loyalty.points_reversed` | Poin dibalik karena retur | D `loyalty_liability` · K `promotion_expense` |
 
-Perubahan payload event lama (dikerjakan di task F, test kontrak diperbarui): `pos.shift_closed` + D `loyalty_liability` untuk pembayaran poin (T-176); `fleet.maintenance_approved` + `refs.supplier_id` (T-166); `payroll.period_approved` dipastikan agregat per lokasi (T-177). Event penjualan konsinyasi memakai `sales.invoice_issued` (B) tanpa perubahan. Event penjurnalan jurnal manual/pembalik **tidak** lewat outbox (ditulis langsung `GeneralLedger`, `entry_type` manual/reversal).
+Event paket sebelumnya dikonsumsi apa adanya. F **tidak** mengubah atau menambah payload event D maupun E2: `fleet.maintenance_approved` sudah membawa `refs.supplier_id` dan setiap baris `bank` event `fleet.*` sudah membawa `bank_account_id` sejak D (**18** §11.2, T-151; PF-1, PF-2); bentuk agregat `payroll.period_approved`/`payroll.paid` ditetapkan di E2 (**19**). Satu-satunya perluasan builder lama: `pos.shift_closed` + D `loyalty_liability` untuk metode bayar `points` yang baru ada di F (T-176, hanya event sesudahnya; test kontrak **16** diperbarui). Event penjualan konsinyasi memakai `sales.invoice_issued` (B) tanpa perubahan. Event penjurnalan jurnal manual/pembalik **tidak** lewat outbox (ditulis langsung `GeneralLedger`, `entry_type` manual/reversal).
+
+Setiap Action F yang memancarkan event di atas memanggil `PeriodGuard::assertOpen(business_date)` (**16** T-096) di transaksi yang sama; `tests/Arch/PeriodGuardArchTest.php` diperluas ke domain F (PF-3, T-159).
+
+**Kasus yang sengaja tidak memancarkan event (cegah jurnal dobel, PF-5).** Masing-masing punya test kontrak (§12.1):
+
+| Kasus | Satu-satunya event yang dipancarkan | Event yang **tidak** dipancarkan |
+|---|---|---|
+| (a) Aset dari faktur beli `expense` | `purchase.invoice_posted` (baris D `fixed_asset`) | `asset.acquired` |
+| (b) Penyelesaian klaim prinsipal `payable_offset`/`credit_note` | `principal.claim_settled` (D `payable` · K `principal_receivable`) | `purchase.debit_note_issued` untuk nota debit bersumber `principal_claim` |
+| (c) Servis kendaraan D dibayar kas kecil | `cash.petty_expense_approved` dari dokumen kas kecil B (**16**), ditautkan `maintenance_orders.petty_cash_expense_id` | `fleet.maintenance_approved` (D tidak pernah mengkredit `petty_cash`, **18** §11.2) |
+| (d) Servis kendaraan D berhutang | `fleet.maintenance_approved` (K `payable`) | `purchase.invoice_posted` untuk faktur `expense` yang dibentuk F dari perintah servis |
 
 ### 11.3 Kode galat baru
+
+**Kontrak kode galat (PF-11, PA-17).** Setiap task menambah kode yang dipakainya ke `docs/05-API-CONTRACT.md` §2.3 **dan** enum `App\Support\Api\ErrorCode` di commit yang sama (`tests/Contract/ApiErrorFormatTest.php` dua arah). Kode yang hanya muncul di rute web (hampir semua kode di bawah; F tidak punya API mobile selain POS & Mitra) ditulis di **sub-tabel "khusus web"** `05` §2.3 yang tidak diwajibkan di `mobile-pro/lib/core/api/api_error.dart`; kode yang dipakai API POS/Mitra (`MEMBER_PHONE_EXISTS`, `POINTS_INSUFFICIENT`, `CONSIGNMENT_*`) masuk tabel utama dan ikut kontrak Dart. Kode yang artinya sama memakai kode yang ada (mis. `PERIOD_LOCKED` dari **16**, `STATE_CONFLICT`, `VALIDATION_FAILED`, `RATE_LIMITED`), bukan kode baru.
 
 | Kode | HTTP | Arti |
 |---|---|---|
@@ -1736,7 +1779,7 @@ Perubahan payload event lama (dikerjakan di task F, test kontrak diperbarui): `p
 | `JOURNAL_NOT_BALANCED` | 422 | Σ debit ≠ Σ kredit |
 | `JOURNAL_SUBLEDGER_ACCOUNT` | 422 | Akun sub-buku di jurnal manual (BR-324) |
 | `JOURNAL_AUTO_NOT_REVERSIBLE` | 409 | Jurnal otomatis dibalik langsung |
-| `PERIOD_LOCKED` | 409 | (dari **16**) tanggal ≤ lock date |
+| `PERIOD_LOCKED` | 422 | (dari **16**, bukan kode baru) tanggal ≤ lock date |
 | `PERIOD_CLOSE_CHECK_FAILED` | 409 | Ada pemeriksaan `fail` belum di-waive (`details.checks`) |
 | `STATEMENT_TOTAL_MISMATCH` | 422 | Σ mutasi ≠ selisih saldo |
 | `STATEMENT_PARSER_UNKNOWN` | 422 | Format tidak dikenali parser rekening |
@@ -1766,7 +1809,9 @@ Perubahan payload event lama (dikerjakan di task F, test kontrak diperbarui): `p
 
 | Area | Skenario minimal | Task |
 |---|---|---|
-| Kontrak event | Setiap kode event A–F punya fixture payload seimbang & semua perannya ada di `AccountRoleCatalog` (test meng-iterasi katalog **14** §7) | T-159, T-160 |
+| Kontrak event | Setiap kode event A–F punya fixture payload seimbang & semua perannya ada di `AccountRoleCatalog` (test meng-iterasi katalog **14** §7, termasuk `fleet_card_clearing`); setiap baris `bank` di fixture B/D/E2 membawa `bank_account_id`; `fleet.maintenance_approved` K `payable` membawa `refs.supplier_id` (test konsumen, tanpa mengubah builder D/E2) | T-159, T-160 |
+| Kasus tanpa event (PF-5) | (a) aset dari faktur beli `expense` → hanya `purchase.invoice_posted`, tanpa `asset.acquired`; (b) klaim `payable_offset`/`credit_note` → hanya `principal.claim_settled`, tanpa `purchase.debit_note_issued`; (c) servis D kas kecil → hanya `cash.petty_expense_approved`, tanpa `fleet.maintenance_approved`; (d) faktur `expense` dari servis D → tanpa `purchase.invoice_posted`. Tiap kasus: Σ D `payable`/`petty_cash` di GL = sub-buku | T-166, T-169, T-174 |
+| `PeriodGuard` | `PeriodGuardArchTest` mencakup domain F (`Purchasing` hutang, `Principal`, `Asset`, `Consignment`, `Tax`); tanggal ≤ lock date → `PERIOD_LOCKED` (422) | T-159, T-166–T-174 |
 | Posting | Event → tepat satu jurnal; proses ulang tidak menggandakan; peran tanpa pemetaan → `failed`, setelah dipetakan → `posted`; event `lines: []` → `skipped`; event revision 2 membentuk jurnal kebalikan; periode tertutup → tanggal hari pertama periode terbuka | T-160 |
 | Backfill | 1 tahun data sintetis (A–E factory) → `failed = 0`, neraca seimbang tiap bulan, sub-buku piutang/stok/hutang = GL | T-160, T-178 |
 | Imutabilitas | UPDATE/DELETE `journal_lines` ditolak trigger; UPDATE `journal_entries` posted hanya `reversed_by_entry_id` | T-160 |
@@ -1787,7 +1832,9 @@ Perubahan payload event lama (dikerjakan di task F, test kontrak diperbarui): `p
 | Member & poin | Nomor HP unik (hash); tukar offline ditolak; tukar > batas ditolak; retur membalik poin; kedaluwarsa FIFO; anonimisasi; promosi hanya ke ber-consent; kasir tidak bisa menyesuaikan poin transaksinya | T-176 |
 | Jurnal gaji | Payload tanpa `employee_id`; baris jurnal gaji tanpa dimensi pegawai; total = rekap payroll | T-177 |
 | Otorisasi | Matriks §6.4 (`PermissionMatrixTest`), scope SPV/KGD/SLS/KSR, IDOR per resource | T-159, T-178 |
-| Listing | 27 listing baru di `listing_catalog.php` | Semua task |
+| Listing | 32 listing baru di `listing_catalog.php` + `07` §3.4 (27 + 5 yang dilengkapi revisi 16 Nov) | Semua task |
+| Ekspor | Ekspor pajak, jurnal, laporan, file transfer lewat `StartExport`/`export_files` (bukan penulis sendiri); formula di-escape; `mass_export` tercatat di atas ambang | T-164, T-167, T-171, T-172 |
+| Kode galat | Setiap kode §11.3 ada di `05` §2.3 (tabel utama atau sub-tabel "khusus web") + `ErrorCode` (`ApiErrorFormatTest`) | Semua task |
 
 ### 12.2 UAT Paket F
 
@@ -1824,8 +1871,16 @@ Perubahan payload event lama (dikerjakan di task F, test kontrak diperbarui): `p
 | OQ-158 | Perlu penyusutan fiskal terpisah (rekonsiliasi fiskal)? | Di luar lingkup saat ini | — | Konsultan pajak |
 | OQ-159 | Ambang approval pembayaran supplier & jurnal manual (nilai Rupiah) | `approval_rules` seeder | T-161, T-167 | Owner |
 | OQ-160 | Bank yang dipakai Pakis & ketersediaan file mutasi/file transfer massal per bank | Parser & adapter | T-162, T-167 | Finance |
+| OQ-160a | (PF-4) **Dua jalur tanggal kunci.** Route B `admin.accounting.lock-date` (`accounting.lock`, OWN + FIN, maju & mundur) tetap ada, padahal SEC-177 mewajibkan `lock_date` hanya lewat `FiscalPeriodService`. Opsi: (a) saat T-161 route B dicabut/dialihkan ke `FiscalPeriodService`, `lock_date` dimigrasikan ke `fiscal_periods` (periode ≤ lock date = `closed`), tutup periode wajib berurutan, backfill memposting event periode tertutup ke periode terbuka + catatan (tanpa membuka periode); (b) dua jalur tetap, F hanya membaca `lock_date`; (c) backfill boleh membuka periode sementara dengan approval Owner. Dampak: kontrol tutup buku bisa dilewati bila dibiarkan | BR-323, BR-325, SEC-177, route periode | T-160, T-161 (+ **16** T-096) | Mas + penyusun paket |
+| OQ-160b | (PF-6) **Jurnal manual terlalu longgar.** Daftar peran terlarang belum memuat `cash_store`, `cash_in_transit`, `cash_head_office`, `petty_cash`, `trip_advance`, GRNI, `vat_*`; allowlist FIN "reklasifikasi kas & bank" justru memakai `bank` yang terlarang; langkah Owner untuk `adjustment` tidak ada di rantai `manual_journal` (Owner hanya di atas ambang); rujukan "BR-153 (11)" salah (maker-checker = klausul 4). Opsi: (a) perluas daftar terlarang + langkah Owner wajib untuk semua `adjustment` + allowlist FIN tanpa `bank` atau lewat `adjustment`; (b) daftar tetap, kontrol lewat audit & laporan. Dampak: selisih kas bisa dihapus tanpa Owner | BR-324, SEC-176, §6.2, §6.5, setting `accounting.finance_manual_journal_types` | T-161 | Mas + penyusun paket |
+| OQ-160c | (PF-7) **Rekonsiliasi bank & pemisahan tugas.** Dana tak dikenal (`unidentified_payments`, **16** BR-217) tidak berjurnal sehingga saldo buku ≠ saldo bank dan rekonsiliasi tidak bisa `complete`; cek `suspense_zero` tidak punya peran/event; FIN menerima uang, mengeksekusi pembayaran supplier, sekaligus `match`/`ignore` dan membuat jurnal biaya bank ≤ batas tanpa approval. Opsi: (a) peran `suspense` + event dana tak dikenal (B) + aksi `ignore`/`fee` oleh orang ≠ eksekutor pembayaran; (b) rekonsiliasi boleh selesai dengan daftar dana tak dikenal terbuka sebagai pos rekonsiliasi; (c) tetap, kontrol lewat review ACC. Dampak: rekonsiliasi macet / satu orang menguasai alur kas | BR-325 (`suspense_zero`), BR-327, §6.4 | T-162, T-163 (+ **16** T-099) | Mas + penyusun paket |
+| OQ-160d | (PF-8) **Izin tidak tersambung.** (Ekspor pajak/jurnal tanpa pemegang `exports.mass` sudah selesai karena PA-3 menghapus `exports.mass`.) Sisa: ACC tanpa `margin_reports.view`; perubahan rekening supplier "PUR/FIN" tetapi route memakai `suppliers.manage` (PUR saja); eksekutor pembayaran FIN tidak bisa melihat rekening penuh (SEC-108); `CreateSupplier` (A) boleh mengisi rekening tanpa verifikasi. Opsi: (a) matriks F memberi izin B yang diperlukan ke `akuntan`, izin khusus `supplier_bank_changes.request`, eksekutor melihat rekening penuh tercatat, alur verifikasi juga saat supplier dibuat (ubah T-072); (b) sebagian saja. Dampak: fitur tidak bisa dipakai / celah rekening palsu saat buat supplier | §5.1, §6.3–§6.4, SEC-179, SEC-180 | T-072, T-164, T-165, T-167, T-171, T-172 | Mas + penyusun paket |
+| OQ-160e | (PF-9) **Skema Fase 0 dianggap ada.** SEC-188 memakai `users.expires_at` (tidak ada di `04` maupun migration `users`); sesi idle 15 menit per role bentrok dengan `security.session_idle_minutes` global. Opsi: (a) addendum eksplisit T-013/T-020: kolom `users.expires_at` + login ditolak setelah tanggal itu + setting idle per role; (b) tanpa kolom: akun konsultan dinonaktifkan manual/terjadwal, idle tetap global. Dampak: migration & middleware Fase 0 berubah diam-diam bila tidak diputuskan | SEC-188, §6.1 | T-159, T-178 | Mas |
+| OQ-160f | (PF-12) **Dependency F.** Library PDF (ringkasan klaim, label aset, laporan PDF) ikut OQ-109/ADR-114; **pembuat QR** (label aset, kartu member) belum ada di `03` §5; k6 untuk `tests/load/posting.js` ikut PA-4. Opsi per butir: setujui satu library & catat versinya di `03` §5, atau tunda fitur (laporan XLSX saja, label tanpa QR, kartu member dengan nomor saja, uji beban lewat skrip artisan). Agent **tidak memilih** library | §0 S-5, BR-334 (PDF klaim), BR-339 (label), BR-342 (kartu), T-178 | T-164, T-169, T-174, T-176, T-178 | Mas |
+| OQ-101 | (dari **14** §15, belum terjawab) Pakis PKP? Sejak kapan, siapa mengelola faktur pajak? Opsi: PKP → T-170/T-171 P0 dengan format DJP terverifikasi konsultan (OQ-145); non-PKP → modul pajak tersembunyi (`tax.is_pkp = false`). Dampak: cakupan & prioritas pajak | §0 S-2, §4.6, BR-335–BR-336 | T-170, T-171 | Owner Pakis + konsultan pajak |
+| OQ-106 | (dari **14** §15, belum terjawab) Software akuntansi sekarang: tetap dipakai (F = ekspor jurnal) atau diganti modul F (pembukuan utama)? Opsi lihat §0 S-1. Dampak: T-161, T-163, T-164 bisa opsional; T-172 menjadi P0 | §0 S-1, BR-337 | T-161–T-164, T-172 | Owner Pakis + akuntan |
 
-Terkait dari **14**: OQ-101 (PKP & format), OQ-103 (format mutasi bank), OQ-106 (software akuntansi), OQ-116 (landed cost), OQ-145 (konsultan pajak).
+Terkait dari **14**: OQ-103 (format mutasi bank), OQ-109 (library PDF), OQ-116 (landed cost), OQ-145 (konsultan pajak). PF-1, PF-2, PF-3, PF-5, PF-10, PF-11, PF-12 (`12`) sudah diterapkan di dokumen ini (revisi 16 Nov 2026).
 
 ## 14. Traceability
 
@@ -1850,4 +1905,6 @@ Terkait dari **14**: OQ-101 (PKP & format), OQ-103 (format mutasi bank), OQ-106 
 | FR-F23, FR-F24, FR-F25, BR-341 | T-175 | Saran pembelian, UAT-F14 |
 | FR-F26, FR-F27, BR-342, BR-343, SEC-185 | T-176 | Member & poin, UAT-F15 |
 | FR-F28, BR-344, SEC-189 | T-177 | Jurnal gaji, UAT-F16 |
-| SEC-188, §10.3, NFR-F01–F07 | T-178 | Hardening, UAT-F01–F16 |
+| SEC-188, §10.3, NFR-F01–F07 | T-178 | Hardening, UAT-F01–F16 (SEC-188 menunggu OQ-160e) |
+| §11.2 kasus tanpa event (PF-5), konsumsi payload D/E2 (PF-1, PF-2), `PeriodGuard` domain F (PF-3) | T-159, T-160, T-166, T-169, T-174, T-177 | Kontrak event, kasus tanpa event, `PeriodGuard` |
+| §11.3 kontrak kode galat (PF-11), §9 kunci setting & tipe (PF-12), §4.6 kerangka ekspor Fase 0 | Semua task (T-159 untuk tipe registri) | Kode galat, registri setting, ekspor |

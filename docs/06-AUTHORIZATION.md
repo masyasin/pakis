@@ -213,6 +213,8 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 |---|---|---|---|---|---|---|---|---|
 | — | — | Dasbor | `dashboard.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | — | — | Persetujuan (angka = menunggu keputusan saya) | `approvals.view`, atau ada yang menunggu keputusannya (PA-27) | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Distribusi | Master | Lokasi Stok (T-068; role Paket A: `15` §6.4) | `stock_locations.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Distribusi | Master | Kendaraan (T-068; role Paket A: `15` §6.4) | `vehicles.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | HRIS | Unit Kerja | Lokasi | `locations.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | HRIS | Unit Kerja | Departemen | `departments.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | HRIS | Unit Kerja | Jabatan | `positions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |

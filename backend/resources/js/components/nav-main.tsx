@@ -28,6 +28,8 @@ import {
     CircleDot,
     Stamp,
     Tags,
+    Truck,
+    Warehouse,
     Workflow,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -87,6 +89,8 @@ const ICONS: Record<string, LucideIcon> = {
     approval: Stamp,
     approval_rule: Workflow,
     category: Tags,
+    warehouse: Warehouse,
+    vehicle: Truck,
 };
 
 /**

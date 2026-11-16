@@ -45,8 +45,11 @@ final class MenuBuilder
         // penyetuju tanpa izin itu tetap bisa membuka /persetujuan (tautan notifikasi).
         [null, 'Persetujuan', 'approval', 'approvals.view', 'admin.approvals.index'],
         // Seksi Distribusi (Paket A). Grup Penjualan/Persediaan/Pembelian disisipkan SEBELUM Master
-        // oleh task pemiliknya (urutan 15 §6.5); item Master lain menyusul (Produk T-070, Lokasi Stok T-068, …).
+        // oleh task pemiliknya (urutan 15 §6.5); item Master lain menyusul (Produk T-070, Izin Edar T-071, Impor Master T-085).
         ['Master', 'Kategori', 'category', 'products.view', 'admin.product-categories.index'],
+        // T-068: lokasi stok (gudang/toko/canvas/TRANSIT) & kendaraan minimal; daftar ber-scope Stok (15 §6.2).
+        ['Master', 'Lokasi Stok', 'warehouse', 'stock_locations.view', 'admin.stock-locations.index'],
+        ['Master', 'Kendaraan', 'vehicle', 'vehicles.view', 'admin.vehicles.index'],
         ['Unit Kerja', 'Lokasi', 'location', 'locations.view', 'admin.locations.index'],
         ['Unit Kerja', 'Departemen', 'department', 'departments.view', 'admin.departments.index'],
         ['Unit Kerja', 'Jabatan', 'position', 'positions.view', 'admin.positions.index'],

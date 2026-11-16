@@ -75,6 +75,11 @@ const REPRESENTATIVE = [
     // T-067: tab "Menunggu saya" terbuka untuk calon penyetuju (PA-27); tab "Semua" butuh approvals.view.
     'approvals.view' => ['GET', '/persetujuan?filter[tab]=all'],
     'approvals.configure' => ['GET', '/pengaturan/aturan-persetujuan'],
+    // T-068: daftar ber-scope Stok (tanpa pegawai = hanya TRANSIT, tetap 200); form tambah butuh `.manage`.
+    'stock_locations.view' => ['GET', '/lokasi-stok'],
+    'stock_locations.manage' => ['GET', '/lokasi-stok/baru'],
+    'vehicles.view' => ['GET', '/kendaraan'],
+    'vehicles.manage' => ['GET', '/kendaraan/baru'],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
@@ -83,8 +88,6 @@ const PENDING = [
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.approve' => 'T-041',
     'field_trips.request' => 'T-036A bagian 2', 'field_trips.approve' => 'T-036A bagian 2',
     // Paket A: izin dibuat T-067 (15 §6.3), route-nya dibangun task modulnya (TASKS_PAKET_A.md).
-    'stock_locations.view' => 'T-068', 'stock_locations.manage' => 'T-068',
-    'vehicles.view' => 'T-068', 'vehicles.manage' => 'T-068',
     'products.view' => 'T-070', 'products.manage' => 'T-070', 'product_registrations.manage' => 'T-071',
     'suppliers.view' => 'T-072', 'suppliers.manage' => 'T-072',
     'sales_areas.view' => 'T-073', 'sales_areas.manage' => 'T-073',

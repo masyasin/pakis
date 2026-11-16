@@ -115,6 +115,9 @@ Notasi filter: **S** select, **MS** multi select, **B** boolean, **DR** rentang 
 | `approvals` | `admin.approvals.index` | Jenis dokumen, ringkasan (nomor · pihak · nominal), alasan aturan, pengaju, langkah (n/total), umur menunggu, status, penanda eskalasi | ringkasan (nomor dokumen), nama pengaju | tab (S, wajib, default `mine`: Menunggu saya · Saya ajukan · Semua; dua terakhir butuh `approvals.view`, PA-27), jenis dokumen (S), status (MS), diajukan (DR `created_at`, PA-30) | **-created_at**, amount | ❌ |
 | `approval_rules` | `admin.approval-rules.index` | Jenis dokumen, nama, rentang nominal, kondisi, prioritas, rantai langkah, aktif, pernah dipakai | nama | jenis dokumen (S), aktif (B) | **document_type** (lalu prioritas), priority, name | ❌ |
 | `approval_delegations` | `admin.approval-delegations.index` | Pemberi, penerima, mulai–selesai, jenis dokumen (semua/daftar), alasan, status (berlaku/terjadwal/lewat/dicabut) | nama pemberi/penerima | berlaku pada (DR; beririsan dengan `start_date`–`end_date`, PA-30), belum dicabut (B) | **-start_date**, end_date | ❌ |
+| `stock_locations` | `admin.stock-locations.index` | Kode, nama, tipe, lokasi / kendaraan (plat), jumlah rak (tautan ke daftar rak), bisa dijual, status (+ penanda Sistem untuk TRANSIT) | kode, nama | tipe (MS), lokasi (R `locations`), aktif (B) | **code**, name, type | ❌ |
+| `stock_bins` | `admin.stock-bins.index` | Kode (gembok untuk Q-01), nama, zona, status | kode | lokasi stok (R `stock_locations` gudang/toko, **wajib**; default gudang/toko aktif pertama dalam scope), zona (MS), aktif (B) | **code**, zone | ❌ |
+| `vehicles` | `admin.vehicles.index` | Plat, nama, jenis, lokasi asal, canvas (+ kode lokasi stok), status | plat (per kata, tanpa spasi), nama | jenis (MS), canvas (B), lokasi asal (R `locations`), aktif (B) | **plate_no**, name | ❌ |
 
 Halaman non-daftar yang tetap butuh paging/cari/filter: **Kalender Jadwal** (`admin.schedules.calendar`: paging per 25 pegawai, cari nama, filter lokasi/departemen/jabatan, pilih bulan) dan **tab Riwayat** di halaman detail (paging 10, filter event).
 
@@ -179,6 +182,9 @@ Struktur dan gaya mengikuti prototipe (header hijau, kartu, tab bawah). Teks bes
 | Persetujuan `pending`/`approved`/`rejected`/`cancelled` | Menunggu / Disetujui / Ditolak / Dibatalkan | accent / success / danger / muted |
 | Langkah persetujuan `waiting`/`pending`/`approved`/`rejected`/`skipped` | Belum giliran / Menunggu / Disetujui / Ditolak / Dilewati | muted / accent / success / danger / muted |
 | Delegasi `active`/`scheduled`/`expired`/`revoked` | Berlaku / Terjadwal / Berakhir / Dicabut | success / info / muted / danger |
+| Lokasi stok aktif/nonaktif · lokasi sistem (TRANSIT) | Aktif / Nonaktif · Sistem | success / muted · info |
+| Zona rak `general`/`pesticide`/`restricted`/`quarantine` | Umum / Pestisida / Terbatas / Karantina | muted / accent / danger / info |
+| Rak & kendaraan aktif/nonaktif | Aktif / Nonaktif | success / muted |
 
 ## 7. Format & Copy
 

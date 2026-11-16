@@ -33,7 +33,10 @@ use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShiftController;
+use App\Http\Controllers\Admin\StockBinController;
+use App\Http\Controllers\Admin\StockLocationController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\VehicleController;
 use App\Support\Import\ImportRegistry;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
@@ -368,6 +371,32 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
             Route::put('pengaturan/aturan-persetujuan/{rule}', [ApprovalRuleController::class, 'update'])->whereNumber('rule')->name('approval-rules.update');
             Route::delete('pengaturan/aturan-persetujuan/{rule}', [ApprovalRuleController::class, 'destroy'])->whereNumber('rule')->name('approval-rules.destroy');
         });
+    });
+
+    // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).
+    // `baru` & `rak` didaftarkan sebelum `{stockLocation}`; di luar dimensi Stok (15 §6.2) → 404 lewat
+    // route binding ber-scope. Tanpa hapus: lokasi stok & rak dinonaktifkan. TRANSIT → 403 (Policy).
+    Route::middleware('can:stock_locations.view')->group(function () {
+        Route::get('lokasi-stok', [StockLocationController::class, 'index'])->name('stock-locations.index');
+        Route::get('lokasi-stok/rak', [StockBinController::class, 'index'])->name('stock-bins.index');
+    });
+    Route::middleware('can:stock_locations.manage')->group(function () {
+        Route::get('lokasi-stok/baru', [StockLocationController::class, 'create'])->name('stock-locations.create');
+        Route::post('lokasi-stok', [StockLocationController::class, 'store'])->name('stock-locations.store');
+        Route::post('lokasi-stok/rak', [StockBinController::class, 'store'])->name('stock-bins.store');
+        Route::put('lokasi-stok/rak/{bin}', [StockBinController::class, 'update'])->whereNumber('bin')->name('stock-bins.update');
+        Route::get('lokasi-stok/{stockLocation}/ubah', [StockLocationController::class, 'edit'])->whereNumber('stockLocation')->name('stock-locations.edit');
+        Route::put('lokasi-stok/{stockLocation}', [StockLocationController::class, 'update'])->whereNumber('stockLocation')->name('stock-locations.update');
+    });
+
+    // Kendaraan minimal (15 §5 `admin.vehicles.*`, FR-A05, T-068). Centang canvas → lokasi stok
+    // `vehicle` otomatis. Di luar scope lokasi asal → 404.
+    Route::get('kendaraan', [VehicleController::class, 'index'])->middleware('can:vehicles.view')->name('vehicles.index');
+    Route::middleware('can:vehicles.manage')->group(function () {
+        Route::get('kendaraan/baru', [VehicleController::class, 'create'])->name('vehicles.create');
+        Route::post('kendaraan', [VehicleController::class, 'store'])->name('vehicles.store');
+        Route::get('kendaraan/{vehicle}/ubah', [VehicleController::class, 'edit'])->whereNumber('vehicle')->name('vehicles.edit');
+        Route::put('kendaraan/{vehicle}', [VehicleController::class, 'update'])->whereNumber('vehicle')->name('vehicles.update');
     });
 
     // Pengaturan (05 §4.3). Grup sensitif minta konfirmasi password di controller.

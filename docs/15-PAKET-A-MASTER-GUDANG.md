@@ -1168,6 +1168,8 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 
 Satu definisi lokasi untuk semua dimensi (PA-13): staf gudang yang rangkap di dua gudang melihat keduanya, sama seperti scope `location` pegawai Fase 0. Implementasi: `DataScope::forStock()` dan `DataScope::forCustomer()` memakai `OrgStructure` yang sama dengan `DataScope::apply()` Fase 0. Listing, lookup, Policy, dan route-model binding dokumen yang punya `stock_location_id` atau `customer_id` wajib memakai dimensi yang sesuai. Di luar scope → 404.
 
+**Penerapan T-068 (PA-43):** sampai Paket C, scope `team` pada dimensi **Stok** = semua lokasi stok (supervisor ✅ `stock_locations.view`/`vehicles.view` di §6.4 hanya untuk melihat master); scope `location` mendapat lokasi stoknya **+ lokasi sistem TRANSIT**; `self` = tidak ada. Lokasi stok kendaraan memakai `location_id` = lokasi asal kendaraan, jadi ikut terlihat di lokasi itu. Kendaraan (`vehicles.home_location_id`) memakai definisi lokasi yang sama (`DataScope::forStockByLocation()`).
+
 ### 6.3 Permission baru (55)
 
 Katalog di `app/Domain/Access/Support/PermissionCatalog.php`, matriks default di `app/Domain/Access/Support/RoleCatalog.php` (PA-5). Izin ekspor mengikuti pola Fase 0 (PA-3): `.export` hanya untuk data sensitif (`customers.export` = HP pemilik, `stock.export` = HPP/biaya), ekspor master memakai izin `.view` modulnya.

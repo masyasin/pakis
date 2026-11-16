@@ -91,6 +91,18 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'delegation.revoked': { label: 'Dicabut', tone: 'danger' },
     'approval_rule.active': { label: 'Aktif', tone: 'success' },
     'approval_rule.inactive': { label: 'Nonaktif', tone: 'muted' },
+    // Lokasi stok, rak, kendaraan (T-068, 07 §6)
+    'stock_location.active': { label: 'Aktif', tone: 'success' },
+    'stock_location.inactive': { label: 'Nonaktif', tone: 'muted' },
+    'stock_location.system': { label: 'Sistem', tone: 'info' },
+    'stock_bin.active': { label: 'Aktif', tone: 'success' },
+    'stock_bin.inactive': { label: 'Nonaktif', tone: 'muted' },
+    'bin_zone.general': { label: 'Umum', tone: 'muted' },
+    'bin_zone.pesticide': { label: 'Pestisida', tone: 'warning' },
+    'bin_zone.restricted': { label: 'Terbatas', tone: 'danger' },
+    'bin_zone.quarantine': { label: 'Karantina', tone: 'info' },
+    'vehicle.active': { label: 'Aktif', tone: 'success' },
+    'vehicle.inactive': { label: 'Nonaktif', tone: 'muted' },
 };
 
 const TONE_CLASS: Record<StatusTone, string> = {

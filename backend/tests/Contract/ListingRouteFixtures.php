@@ -7,6 +7,9 @@ use App\Domain\Device\Enums\DeviceStatus;
 use App\Domain\Device\Models\Device;
 use App\Domain\Device\Support\DeviceTokens;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Inventory\Actions\SaveStockLocation;
+use App\Domain\Organization\Models\Location;
+use App\Domain\Reference\Models\ReferenceItem;
 use App\Domain\Region\Models\Province;
 use App\Models\User;
 use App\Support\Import\ImportBatch;
@@ -104,6 +107,19 @@ final class ListingRouteFixtures
                 Province::query()->firstOrCreate(['code' => '33'], ['name' => 'Jawa Tengah']);
 
                 return ['province' => '33'];
+            })(),
+            // Filter wajib lokasi stok (T-068): satu gudang dengan rak Q-01 agar contoh pasti valid.
+            'admin.stock-bins.index' => (function () {
+                $location = Location::query()->create([
+                    'code' => 'KONTRAK-GD',
+                    'name' => 'Gudang Kontrak',
+                    'location_type_id' => ReferenceItem::query()->firstOrCreate(['group_code' => 'location_type', 'code' => 'warehouse'], ['name' => 'Gudang'])->id,
+                ]);
+
+                return ['stock_location_id' => app(SaveStockLocation::class)->handle(null, [
+                    'code' => 'KONTRAK-GD', 'name' => 'Gudang Kontrak', 'type' => 'warehouse',
+                    'location_id' => $location->id, 'is_sellable' => true, 'is_active' => true,
+                ], null)->id];
             })(),
             default => [],
         };

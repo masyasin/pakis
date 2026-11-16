@@ -20,6 +20,9 @@ class LocationUsage
         ['holiday_locations', 'location_id'],
         ['attendance_days', 'location_id'],
         ['attendance_logs', 'matched_location_id'],
+        // Paket A (T-068): gudang/toko & kendaraan menunjuk lokasi Fase 0 (FK juga menolak hapus).
+        ['stock_locations', 'location_id'],
+        ['vehicles', 'home_location_id'],
     ];
 
     /**

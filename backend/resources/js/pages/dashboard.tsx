@@ -5,6 +5,7 @@ import {
     ClipboardPen,
     RefreshCw,
     Smartphone,
+    Stamp,
     UserX,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -53,7 +54,7 @@ type Charts = {
 };
 
 type PendingItem = {
-    key: 'corrections' | 'devices' | 'unscheduled' | 'no_account';
+    key: 'approvals' | 'corrections' | 'devices' | 'unscheduled' | 'no_account';
     count: number;
     href: string;
 };
@@ -69,6 +70,12 @@ const PENDING: Record<
     PendingItem['key'],
     { title: string; note: string; icon: LucideIcon }
 > = {
+    // Menunggu persetujuan saya (15 §7.4, T-067).
+    approvals: {
+        title: 'Menunggu persetujuan saya',
+        note: 'Permintaan yang menunggu keputusan Anda',
+        icon: Stamp,
+    },
     corrections: {
         title: 'Koreksi presensi menunggu',
         note: 'Pengajuan pegawai yang perlu diputuskan',

@@ -176,6 +176,9 @@ Struktur dan gaya mengikuti prototipe (header hijau, kartu, tab bawah). Teks bes
 | Tugas luar kota `pending`/`approved`/`rejected`/`cancelled` | Menunggu / Disetujui / Ditolak / Dibatalkan | accent / success / danger / muted |
 | Perangkat `pending`/`active`/`revoked`/`replaced`/`rejected` | Menunggu / Aktif / Dicabut / Diganti / Ditolak | accent / success / danger / muted / danger |
 | Pegawai `active`/`inactive` | Aktif / Nonaktif | success / muted |
+| Persetujuan `pending`/`approved`/`rejected`/`cancelled` | Menunggu / Disetujui / Ditolak / Dibatalkan | accent / success / danger / muted |
+| Langkah persetujuan `waiting`/`pending`/`approved`/`rejected`/`skipped` | Belum giliran / Menunggu / Disetujui / Ditolak / Dilewati | muted / accent / success / danger / muted |
+| Delegasi `active`/`scheduled`/`expired`/`revoked` | Berlaku / Terjadwal / Berakhir / Dicabut | success / info / muted / danger |
 
 ## 7. Format & Copy
 

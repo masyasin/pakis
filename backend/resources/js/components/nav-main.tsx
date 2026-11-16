@@ -26,6 +26,8 @@ import {
     UsersRound,
     BriefcaseBusiness,
     CircleDot,
+    Stamp,
+    Workflow,
 } from 'lucide-react';
 import { useState } from 'react';
 import {
@@ -81,7 +83,28 @@ const ICONS: Record<string, LucideIcon> = {
     reference: ListTree,
     audit: History,
     security: ShieldAlert,
+    approval: Stamp,
+    approval_rule: Workflow,
 };
+
+/**
+ * Angka di ujung kanan item (mis. persetujuan menunggu, 15 §6.5). Nol tidak ditampilkan agar menu
+ * tidak ramai; saat sidebar diciutkan ikut terpotong bersama judul.
+ */
+function MenuCount({ count }: { count?: number }) {
+    if (!count) {
+        return null;
+    }
+
+    return (
+        <span
+            className="ml-auto inline-flex min-w-5 items-center justify-center rounded-full bg-status-warning-bg px-1.5 text-[11px] leading-5 font-bold text-status-warning tabular-nums"
+            aria-label={`${count} menunggu`}
+        >
+            {count > 99 ? '99+' : count}
+        </span>
+    );
+}
 
 /** Ikon grup menu (judul grup 06 §8). Grup lain memakai ikon item pertamanya. */
 const GROUP_ICONS: Record<string, LucideIcon> = {
@@ -221,6 +244,9 @@ export function NavMain() {
                                                 <Link href={item.href} prefetch>
                                                     <Icon />
                                                     <span>{item.title}</span>
+                                                    <MenuCount
+                                                        count={item.badge}
+                                                    />
                                                 </Link>
                                             </SidebarMenuButton>
                                         </SidebarMenuItem>
@@ -302,6 +328,7 @@ function NavGroup({
                                     <Link href={item.href} prefetch>
                                         <Icon className="size-4" />
                                         {item.title}
+                                        <MenuCount count={item.badge} />
                                     </Link>
                                 </DropdownMenuItem>
                             );
@@ -354,6 +381,7 @@ function NavGroup({
                                         <Link href={item.href} prefetch>
                                             <Icon />
                                             <span>{item.title}</span>
+                                            <MenuCount count={item.badge} />
                                         </Link>
                                     </SidebarMenuSubButton>
                                 </SidebarMenuSubItem>

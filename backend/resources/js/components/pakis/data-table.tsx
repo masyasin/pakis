@@ -50,6 +50,16 @@ type Props<Row> = {
     /** Tombol di empty state "Belum ada data" (mis. "Tambah Pegawai", bila berhak). */
     emptyAction?: ReactNode;
     toolbarActions?: ReactNode;
+    /**
+     * Tampilan kartu di SEMUA lebar layar: tiap baris dirender pemanggil (mis. kotak masuk
+     * persetujuan, 15 §7.1). Kolom tetap dipakai untuk skeleton; sort lewat menu Urutkan.
+     */
+    renderItem?: (row: Row) => ReactNode;
+    /**
+     * Kunci filter yang diatur halaman sendiri (mis. `tab` lewat PageTabs): tidak tampil di panel
+     * filter/chip, tetapi nilainya tetap ikut dikirim dan dipertahankan saat reset.
+     */
+    hiddenFilters?: string[];
 };
 
 function sameFilters(
@@ -79,10 +89,46 @@ export function DataTable<Row>({
     rowActions,
     emptyAction,
     toolbarActions,
+    renderItem,
+    hiddenFilters,
 }: Props<Row>) {
-    const { spec, state, pagination } = listing;
-    const controls = useListing(listing);
+    const { spec: fullSpec, state: fullState, pagination } = listing;
+    const listingControls = useListing(listing);
     const isMobile = useIsMobile();
+
+    // Filter tersembunyi dikeluarkan dari tampilan, lalu disisipkan kembali saat filter diterapkan
+    // atau direset agar halaman (mis. tab persetujuan) tidak berpindah diam-diam.
+    const hidden = new Set(hiddenFilters ?? []);
+    const kept = Object.fromEntries(
+        Object.entries(fullState.filters).filter(([k]) => hidden.has(k)),
+    );
+    const spec =
+        hidden.size === 0
+            ? fullSpec
+            : {
+                  ...fullSpec,
+                  filters: fullSpec.filters.filter((f) => !hidden.has(f.key)),
+              };
+    const state =
+        hidden.size === 0
+            ? fullState
+            : {
+                  ...fullState,
+                  filters: Object.fromEntries(
+                      Object.entries(fullState.filters).filter(
+                          ([k]) => !hidden.has(k),
+                      ),
+                  ),
+              };
+    const controls =
+        hidden.size === 0
+            ? listingControls
+            : {
+                  ...listingControls,
+                  applyFilters: (filters: typeof state.filters) =>
+                      listingControls.applyFilters({ ...filters, ...kept }),
+                  reset: () => listingControls.resetKeeping(kept),
+              };
 
     const sortableKeys = new Set(spec.sorts.map((s) => s.key));
     // Label filter relasi (lookup) dimuat dulu agar chip berisi nama, bukan ID.
@@ -119,7 +165,11 @@ export function DataTable<Row>({
 
     const body = (() => {
         if (rows.length === 0 && controls.isLoading) {
-            return <TableSkeleton columns={Math.min(columns.length, 5)} />;
+            return (
+                <TableSkeleton
+                    columns={Math.max(1, Math.min(columns.length, 5))}
+                />
+            );
         }
 
         if (rows.length === 0) {
@@ -127,6 +177,20 @@ export function DataTable<Row>({
                 <EmptyState variant="no-results" onReset={controls.reset} />
             ) : (
                 <EmptyState variant="no-data" action={emptyAction} />
+            );
+        }
+
+        if (renderItem) {
+            return (
+                <ul
+                    className="divide-y"
+                    aria-label={title}
+                    data-testid="item-list"
+                >
+                    {rows.map((row) => (
+                        <li key={rowKey(row)}>{renderItem(row)}</li>
+                    ))}
+                </ul>
             );
         }
 

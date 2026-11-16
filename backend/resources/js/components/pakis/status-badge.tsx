@@ -74,6 +74,23 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
 
     'employee.active': { label: 'Aktif', tone: 'success' },
     'employee.inactive': { label: 'Nonaktif', tone: 'muted' },
+
+    // Mesin persetujuan (T-067, 07 §6)
+    'approval.pending': { label: 'Menunggu', tone: 'warning' },
+    'approval.approved': { label: 'Disetujui', tone: 'success' },
+    'approval.rejected': { label: 'Ditolak', tone: 'danger' },
+    'approval.cancelled': { label: 'Dibatalkan', tone: 'muted' },
+    'approval_step.waiting': { label: 'Belum giliran', tone: 'muted' },
+    'approval_step.pending': { label: 'Menunggu', tone: 'warning' },
+    'approval_step.approved': { label: 'Disetujui', tone: 'success' },
+    'approval_step.rejected': { label: 'Ditolak', tone: 'danger' },
+    'approval_step.skipped': { label: 'Dilewati', tone: 'muted' },
+    'delegation.active': { label: 'Berlaku', tone: 'success' },
+    'delegation.scheduled': { label: 'Terjadwal', tone: 'info' },
+    'delegation.expired': { label: 'Berakhir', tone: 'muted' },
+    'delegation.revoked': { label: 'Dicabut', tone: 'danger' },
+    'approval_rule.active': { label: 'Aktif', tone: 'success' },
+    'approval_rule.inactive': { label: 'Nonaktif', tone: 'muted' },
 };
 
 const TONE_CLASS: Record<StatusTone, string> = {

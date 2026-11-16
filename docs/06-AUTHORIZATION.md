@@ -212,6 +212,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | Seksi | Grup | Menu | Syarat | owner | admin | hrd | kepala_lokasi | supervisor |
 |---|---|---|---|---|---|---|---|---|
 | — | — | Dasbor | `dashboard.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
+| — | — | Persetujuan (angka = menunggu keputusan saya) | `approvals.view` | ✅ | ❌ | ❌ | ✅ | ✅ |
 | HRIS | Unit Kerja | Lokasi | `locations.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | HRIS | Unit Kerja | Departemen | `departments.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | HRIS | Unit Kerja | Jabatan | `positions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
@@ -232,9 +233,12 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | Sistem | Pengaturan | Penomoran | `sequences.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Sistem | Pengaturan | Referensi | `references.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | Sistem | Pengaturan | Wilayah | `regions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
+| Sistem | Pengaturan | Aturan Persetujuan | `approvals.configure` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Sistem | Audit | Audit Log | `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Sistem | Audit | Log Keamanan | `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ |
 | — | Header | Notifikasi, Unduhan, Profil | auth | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+Persetujuan & Aturan Persetujuan (T-067, `15` §6.5): role Paket A pemegang `approvals.view` (admin_penjualan, kepala_gudang, purchasing) juga melihat menu Persetujuan; staf_gudang tidak. Calon penyetuju tanpa `approvals.view` tidak melihat menunya tetapi tetap bisa membuka tab "Menunggu saya" lewat tautan notifikasi (PA-27). Angka menu dihitung `ApprovalVisibility::pendingCountFor`, sama dengan isi tab itu.
 
 Role `pegawai` saja **tidak** bisa masuk web admin. Login web ditolak dengan pesan "Akun Anda hanya untuk aplikasi Pakis Pro" bila pengguna tidak punya satu pun permission yang membuka menu di atas (BR-017).
 

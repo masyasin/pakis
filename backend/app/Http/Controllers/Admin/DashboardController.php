@@ -3,6 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Access\DataScope;
+use App\Domain\Approval\Listings\ApprovalListing;
+use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Approval\Support\ApprovalVisibility;
 use App\Domain\Attendance\Listings\AttendanceCorrectionListing;
 use App\Domain\Attendance\Listings\ScheduleListing;
 use App\Domain\Attendance\Queries\AttendanceInsights;
@@ -29,7 +32,7 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope): Response
+    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope, ApprovalVisibility $approvals): Response
     {
         $user = $request->user();
         abort_unless($user instanceof User, 403);
@@ -49,6 +52,15 @@ class DashboardController extends Controller
             // Jeda muat ulang otomatis (detik, 0 = mati) dibaca dari pengaturan, bukan konstanta.
             'refresh_seconds' => (int) setting('ui.dashboard_refresh_seconds'),
             'pending' => array_values(array_filter([
+                // "Menunggu persetujuan saya" (15 §7.4). Basis sama dengan ApprovalController::index
+                // tab "Menunggu saya" (calon penyetuju dihitung mesin, ApprovalVisibility).
+                $user->can('approvals.view') ? self::item(
+                    'approvals',
+                    $approvals->constrainTab(ApprovalRequest::query(), $user, ApprovalVisibility::TAB_MINE),
+                    new ApprovalListing,
+                    'admin.approvals.index',
+                    ['filter' => ['tab' => ApprovalVisibility::TAB_MINE]],
+                ) : null,
                 $user->can('attendance_corrections.view') ? self::item(
                     'corrections',
                     (new AttendanceCorrectionListing)->exportQuery($user),

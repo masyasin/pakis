@@ -1,12 +1,14 @@
 <?php
 
 use App\Domain\Access\Support\WebAccess;
+use App\Domain\Approval\Support\ApprovalVisibility;
 use App\Models\User;
 use App\Support\Menu\MenuBuilder;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\ApprovalWorld;
 
 /*
  * 06 §8, §10: menu web dibangun server dari permission; hanya modul yang sudah ada route-nya.
@@ -35,12 +37,12 @@ function menuOf(string $role): array
 
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
-        '' => ['Dasbor'],
+        '' => ['Dasbor', 'Persetujuan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
         'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat'],
         'Pengguna & Akses' => ['Pengguna', 'Role & Hak Akses'],
-        'Pengaturan' => ['Pengaturan Umum', 'Penomoran', 'Referensi', 'Wilayah'],
+        'Pengaturan' => ['Pengaturan Umum', 'Penomoran', 'Referensi', 'Wilayah', 'Aturan Persetujuan'],
         'Audit' => ['Audit Log', 'Log Keamanan'],
     ]);
 });
@@ -57,16 +59,39 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan Umum, Penomoran, Audit', funct
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
 });
 
-test('T-067 role Paket A: hanya Dasbor sampai modul Paket A punya route (menu tidak berubah)', function (string $role) {
-    expect(menuOf($role))->toBe(['' => ['Dasbor']]);
-})->with(['admin_penjualan', 'kepala_gudang', 'staf_gudang', 'purchasing']);
+test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) sampai modul Paket A punya route', function (string $role, array $top) {
+    expect(menuOf($role))->toBe(['' => $top]);
+})->with([
+    'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan']],
+    'kepala_gudang' => ['kepala_gudang', ['Dasbor', 'Persetujuan']],
+    'staf_gudang' => ['staf_gudang', ['Dasbor']],
+    'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan']],
+]);
+
+test('15 §6.5 PA-27 menu Persetujuan membawa angka menunggu = tab "Menunggu saya"; item lain tanpa angka', function () {
+    $world = ApprovalWorld::make($this);
+    $world->rule([['permission', 'purchase_orders.approve']]);
+    // purchasing memegang approvals.view (menu tampil) + izin langkah lewat izin langsung.
+    $approver = $world->user(permissions: ['purchase_orders.approve']);
+    $world->submit($world->user());
+    $world->submit($world->user());
+
+    $this->actingAs($approver)->get('/dasbor')->assertOk()
+        ->assertInertia(function (Assert $page) {
+            $items = collect($page->toArray()['props']['auth']['menu'])->flatMap(fn ($g) => $g['items'])->keyBy('title');
+            expect($items['Persetujuan']['badge'])->toBe(2)
+                ->and($items['Persetujuan']['href'])->toBe('/persetujuan')
+                ->and($items['Dasbor'])->not->toHaveKey('badge');
+        });
+    expect(app(ApprovalVisibility::class)->pendingCountFor($approver))->toBe(2);
+});
 
 test('06 §8 setiap grup menu punya seksi sidebar (HRIS / Sistem), Dasbor tanpa seksi', function () {
     $groups = array_values(array_unique(array_filter(array_column(MenuBuilder::ITEMS, 0))));

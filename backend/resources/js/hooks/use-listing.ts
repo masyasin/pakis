@@ -158,6 +158,16 @@ export function useListing(listing: Listing) {
                 page: 1,
             });
         },
+        /** Seperti `reset`, tetapi filter tersembunyi (mis. tab halaman) tetap dipertahankan. */
+        resetKeeping: (keep: Record<string, FilterValue>) => {
+            setSearchInput('');
+            visit({
+                q: '',
+                sort: spec.default_sort,
+                filters: { ...defaultFilters(spec), ...keep },
+                page: 1,
+            });
+        },
         toggleSort: (key: string) =>
             visit({ sort: nextSort(state.sort, key), page: 1 }),
         setSort: (sort: string) => visit({ sort, page: 1 }),

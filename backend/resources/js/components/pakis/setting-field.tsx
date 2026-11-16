@@ -129,18 +129,22 @@ function reformatRupiahInput(text: string): string {
  * Input rupiah berformat id-ID. Teks ketikan disimpan lokal (agar "50.000," tidak hilang saat
  * mengetik), nilai yang dikirim ke induk selalu kanonik ("50000000.5") sesuai validasi server.
  */
-function MoneyInput({
+export function MoneyInput({
     id,
     value,
     onChange,
     disabled,
     describedBy,
+    invalid,
+    placeholder,
 }: {
     id: string;
     value: SettingValue;
     onChange: (value: SettingValue) => void;
     disabled?: boolean;
     describedBy?: string;
+    invalid?: boolean;
+    placeholder?: string;
 }) {
     const canonical = typeof value === 'string' ? value : '';
     const [text, setText] = useState('');
@@ -165,6 +169,8 @@ function MoneyInput({
                 value={display}
                 disabled={disabled}
                 aria-describedby={describedBy}
+                aria-invalid={invalid ? true : undefined}
+                placeholder={placeholder}
                 onChange={(e) => {
                     const next = reformatRupiahInput(e.target.value);
                     setText(next);

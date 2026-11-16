@@ -17,6 +17,8 @@ export type MenuItem = {
     href: string;
     /** Kunci ikon, dipetakan di `nav-main.tsx`. */
     icon: string;
+    /** Angka di samping menu (mis. jumlah persetujuan menunggu, 15 §6.5); tidak ada = tanpa angka. */
+    badge?: number;
 };
 
 export type MenuGroup = {

@@ -2,6 +2,7 @@
 
 namespace App\Support\Menu;
 
+use App\Domain\Approval\Support\ApprovalVisibility;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
@@ -37,6 +38,9 @@ final class MenuBuilder
      */
     public const ITEMS = [
         [null, 'Dasbor', 'dashboard', 'dashboard.view', 'admin.dashboard'],
+        // Persetujuan lintas modul (15 §6.5, PA-27): menu untuk pemegang `approvals.view`. Calon
+        // penyetuju tanpa izin itu tetap bisa membuka /persetujuan (tautan notifikasi).
+        [null, 'Persetujuan', 'approval', 'approvals.view', 'admin.approvals.index'],
         ['Unit Kerja', 'Lokasi', 'location', 'locations.view', 'admin.locations.index'],
         ['Unit Kerja', 'Departemen', 'department', 'departments.view', 'admin.departments.index'],
         ['Unit Kerja', 'Jabatan', 'position', 'positions.view', 'admin.positions.index'],
@@ -58,6 +62,7 @@ final class MenuBuilder
         ['Pengaturan', 'Penomoran', 'sequence', 'sequences.view', 'admin.sequences.index'],
         ['Pengaturan', 'Referensi', 'reference', 'references.view', 'admin.references.index'],
         ['Pengaturan', 'Wilayah', 'region', 'regions.view', 'admin.regions.index'],
+        ['Pengaturan', 'Aturan Persetujuan', 'approval_rule', 'approvals.configure', 'admin.approval-rules.index'],
         ['Audit', 'Audit Log', 'audit', 'audit.view', 'admin.audit.index'],
         ['Audit', 'Log Keamanan', 'security', 'audit.view', 'admin.security-events.index'],
     ];
@@ -69,7 +74,7 @@ final class MenuBuilder
     }
 
     /**
-     * @return list<array{section: string|null, title: string|null, items: list<array{title: string, href: string, icon: string}>}>
+     * @return list<array{section: string|null, title: string|null, items: list<array{title: string, href: string, icon: string, badge?: int}>}>
      */
     public function for(User $user): array
     {
@@ -83,9 +88,26 @@ final class MenuBuilder
             $key = $group ?? '';
             $groups[$key] ??= ['section' => $group === null ? null : self::SECTIONS[$group], 'title' => $group, 'items' => []];
             // Relatif: aman dari perbedaan host APP_URL dan cocok untuk penanda item aktif.
-            $groups[$key]['items'][] = ['title' => $title, 'href' => route($route, absolute: false), 'icon' => $icon];
+            $item = ['title' => $title, 'href' => route($route, absolute: false), 'icon' => $icon];
+            $badge = self::badge($route, $user);
+            if ($badge !== null) {
+                $item['badge'] = $badge;
+            }
+            $groups[$key]['items'][] = $item;
         }
 
         return array_values($groups);
+    }
+
+    /**
+     * Angka di samping menu (15 §6.5 "dengan angka menunggu"). Dihitung ApprovalVisibility yang sama
+     * dengan tab "Menunggu saya", jadi angka menu selalu = isi tab itu.
+     */
+    private static function badge(string $route, User $user): ?int
+    {
+        return match ($route) {
+            'admin.approvals.index' => app(ApprovalVisibility::class)->pendingCountFor($user),
+            default => null,
+        };
     }
 }

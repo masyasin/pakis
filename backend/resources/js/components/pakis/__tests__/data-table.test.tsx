@@ -366,4 +366,41 @@ describe('DataTable', () => {
         expect(screen.getByTestId('card-list')).toBeTruthy();
         expect(screen.queryByRole('table')).toBeNull();
     });
+    it('renderItem: kartu di semua lebar layar (kotak masuk persetujuan)', () => {
+        render(
+            <DataTable
+                rows={rows}
+                listing={makeListing()}
+                columns={columns}
+                title="Uji"
+                renderItem={(r) => <p>Kartu {r.name}</p>}
+            />,
+        );
+
+        expect(screen.getByTestId('item-list')).toBeTruthy();
+        expect(screen.getByText('Kartu Agus')).toBeTruthy();
+        expect(screen.queryByRole('table')).toBeNull();
+    });
+
+    it('hiddenFilters: filter halaman tidak jadi chip, dan tetap dipertahankan saat reset', () => {
+        render(
+            <DataTable
+                rows={rows}
+                listing={makeListing({
+                    q: 'agus',
+                    filters: { status: 'inactive' },
+                })}
+                columns={columns}
+                title="Uji"
+                hiddenFilters={['status']}
+            />,
+        );
+
+        expect(screen.queryByText(/Nonaktif/)).toBeNull();
+        fireEvent.click(screen.getByRole('button', { name: 'Reset' }));
+        expect(lastParams()).not.toHaveProperty('q');
+        expect(lastParams()).toMatchObject({
+            filter: { status: 'inactive' },
+        });
+    });
 });

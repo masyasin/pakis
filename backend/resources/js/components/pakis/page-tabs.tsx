@@ -10,6 +10,8 @@ export type PageTab = {
     label: string;
     href: NonNullable<InertiaLinkProps['href']>;
     icon?: LucideIcon;
+    /** Angka kecil di ujung tab (mis. jumlah "Menunggu saya"); null/undefined = tanpa angka. */
+    count?: number | null;
 };
 
 /**
@@ -117,6 +119,19 @@ export function PageTabs({
                                     />
                                 )}
                                 {tab.label}
+                                {tab.count !== undefined &&
+                                    tab.count !== null && (
+                                        <span
+                                            className={cn(
+                                                'inline-flex min-w-5 items-center justify-center rounded-full px-1.5 text-xs leading-5 font-bold tabular-nums',
+                                                isActive
+                                                    ? 'bg-primary-foreground/20'
+                                                    : 'bg-muted text-muted-foreground',
+                                            )}
+                                        >
+                                            {tab.count}
+                                        </span>
+                                    )}
                             </Link>
                         );
                     })}

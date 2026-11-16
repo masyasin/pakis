@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Domain\Attendance\Actions\RecordAttendance;
 use App\Domain\Attendance\EffectiveSchedule;
+use App\Domain\Attendance\Enums\CorrectionStatus;
+use App\Domain\Attendance\Listings\MyAttendanceDayListing;
+use App\Domain\Attendance\Models\AttendanceCorrection;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Models\AttendanceLog;
 use App\Domain\Attendance\Models\FieldTrip;
@@ -16,6 +19,8 @@ use App\Models\User;
 use App\Support\Api\ApiError;
 use App\Support\Api\ErrorCode;
 use App\Support\Api\RequestId;
+use App\Support\Listing\ListingQuery;
+use App\Support\Listing\UsesListing;
 use App\Support\Time\DisplayTime;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
@@ -62,6 +67,89 @@ class AttendanceController extends Controller
                 'schedule' => self::schedule($current['schedule']),
                 'attendance' => $day === null ? null : self::day($day, $day->checkOutLog ?? $day->checkInLog),
                 'next_action' => $current['next_action'],
+            ],
+            'meta' => ['request_id' => RequestId::current()],
+        ]);
+    }
+
+    /**
+     * GET /api/v1/attendance: riwayat presensi milik sendiri (05 §5.5, listing `my_attendance_days`).
+     * Pegawai selalu dari akun pemilik token; tidak ada ID dari klien (SEC-033).
+     */
+    #[UsesListing(MyAttendanceDayListing::class)]
+    public function index(Request $request): JsonResponse
+    {
+        $employeeId = self::employeeId($request);
+        $query = AttendanceDay::query()->with('shift')->where('attendance_days.employee_id', $employeeId);
+
+        return response()->json(
+            ListingQuery::apply($query, new MyAttendanceDayListing, $request)
+                ->through(fn (AttendanceDay $d) => [
+                    'id' => $d->id,
+                    'work_date' => $d->work_date->toDateString(),
+                    'status' => $d->status->value,
+                    'shift' => self::shift($d->shift),
+                    'check_in_at' => self::time($d->check_in_at),
+                    'check_out_at' => self::time($d->check_out_at),
+                    'late_minutes' => $d->late_minutes,
+                    'early_leave_minutes' => $d->early_leave_minutes,
+                    'is_offline' => $d->is_offline,
+                    'is_corrected' => $d->is_corrected,
+                ])
+                ->toApi(),
+        );
+    }
+
+    /**
+     * GET /api/v1/attendance/summary?month=YYYY-MM (05 §5.6): rekap bulan milik sendiri dengan
+     * definisi BR-072 yang sama dengan rekap web (AttendanceSummaryListing): `present` = hari ada
+     * presensi masuk, `scheduled_days` = hadir + tidak hadir, `late`/`early_leave` = jumlah hari
+     * bermenit > 0. Bulan berjalan hanya menghitung hari yang sudah berstatus.
+     */
+    public function summary(Request $request): JsonResponse
+    {
+        $employeeId = self::employeeId($request);
+        $data = $request->validate(['month' => ['nullable', 'date_format:Y-m']], [
+            'month.date_format' => 'Bulan harus berformat YYYY-MM.',
+        ]);
+        $month = is_string($data['month'] ?? null) ? $data['month'] : DisplayTime::toLocal(now())->format('Y-m');
+        [$from, $to] = MyAttendanceDayListing::monthRange($month);
+
+        // Literal SQL (nilai ENUM status, BR-072) — tanpa interpolasi data.
+        $row = AttendanceDay::query()
+            ->toBase()
+            ->where('employee_id', $employeeId)
+            ->whereBetween('work_date', [$from, $to])
+            ->selectRaw("COALESCE(SUM(status IN ('present','late','early_leave','no_checkout')), 0) AS present")
+            ->selectRaw("COALESCE(SUM(status IN ('present','late','early_leave','no_checkout','absent')), 0) AS scheduled_days")
+            ->selectRaw('COALESCE(SUM(late_minutes > 0), 0) AS late')
+            ->selectRaw('COALESCE(SUM(early_leave_minutes > 0), 0) AS early_leave')
+            ->selectRaw("COALESCE(SUM(status = 'no_checkout'), 0) AS no_checkout")
+            ->selectRaw("COALESCE(SUM(status = 'absent'), 0) AS absent")
+            ->selectRaw("COALESCE(SUM(status = 'holiday'), 0) AS holiday")
+            ->selectRaw("COALESCE(SUM(status = 'off'), 0) AS off")
+            ->selectRaw('COALESCE(SUM(late_minutes), 0) AS late_minutes_total')
+            ->first();
+        // Agregat tanpa GROUP BY selalu mengembalikan satu baris.
+        $count = fn (string $key): int => is_numeric($row->{$key} ?? null) ? (int) $row->{$key} : 0;
+
+        return response()->json([
+            'data' => [
+                'month' => $month,
+                'scheduled_days' => $count('scheduled_days'),
+                'present' => $count('present'),
+                'late' => $count('late'),
+                'early_leave' => $count('early_leave'),
+                'no_checkout' => $count('no_checkout'),
+                'absent' => $count('absent'),
+                'holiday' => $count('holiday'),
+                'off' => $count('off'),
+                'late_minutes_total' => $count('late_minutes_total'),
+                'corrections_pending' => AttendanceCorrection::query()
+                    ->where('employee_id', $employeeId)
+                    ->where('status', CorrectionStatus::Pending)
+                    ->whereBetween('work_date', [$from, $to])
+                    ->count(),
             ],
             'meta' => ['request_id' => RequestId::current()],
         ]);
@@ -133,6 +221,17 @@ class AttendanceController extends Controller
         }
 
         return $user;
+    }
+
+    /** Akun tanpa pegawai tidak punya presensi (sama dengan `today`). */
+    private static function employeeId(Request $request): int
+    {
+        $employeeId = self::user($request)->employee_id;
+        if ($employeeId === null) {
+            throw new ApiError(ErrorCode::FORBIDDEN);
+        }
+
+        return (int) $employeeId;
     }
 
     private static function device(Request $request): Device

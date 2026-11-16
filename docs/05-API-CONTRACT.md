@@ -416,6 +416,7 @@ Spec listing `my_attendance_days`: filter `month` (`YYYY-MM`, default bulan berj
 { "data": { "month": "2026-11", "scheduled_days": 25, "present": 2, "late": 1, "early_leave": 0,
   "no_checkout": 0, "absent": 0, "holiday": 0, "off": 0, "late_minutes_total": 7, "corrections_pending": 0 } }
 ```
+Definisi angka = BR-072 (sama dengan rekap web, T-043): `present` = hari dengan presensi masuk (`present`/`late`/`early_leave`/`no_checkout`), `scheduled_days` = `present` + `absent` (hanya hari yang sudah berstatus; contoh di atas ilustrasi), `late`/`early_leave` = jumlah hari bermenit > 0, sisanya jumlah hari berstatus itu, `corrections_pending` = koreksi `pending` untuk tanggal di bulan itu. `month` tidak berformat `YYYY-MM` → 422 `VALIDATION_FAILED`. Item §5.5: `id`, `work_date`, `status`, `shift` (`code`/`name`/`start`/`end`), `check_in_at`, `check_out_at`, `late_minutes`, `early_leave_minutes`, `is_offline`, `is_corrected` (tanpa koordinat/selfie). Akun tanpa pegawai → 403 `FORBIDDEN`.
 
 ### 5.7 `POST /api/v1/attendance-corrections` (multipart)
 `work_date` (date), `type` (`check_in`/`check_out`/`both`), `proposed_check_in` (HH:mm), `proposed_check_out` (HH:mm), `reason_code` (kode `correction_reason`), `note` (10–500 karakter), `attachment` (opsional, JPEG/PNG/PDF ≤ `attendance.correction_attachment_max_kb`, default 2048 KB; isi berkas diperiksa). `proposed_check_in` wajib untuk `check_in`/`both`, `proposed_check_out` untuk `check_out`/`both`, lainnya diabaikan. Respons 201 `{ data: <koreksi §5.7a>, meta }`.
@@ -437,3 +438,6 @@ Galat: tanggal di masa depan / lebih tua dari `attendance.correction_max_days` �
 
 ### 5.8 Approve / Reject
 `GET /api/v1/approvals/attendance-corrections` = listing `approval_corrections` (07 §3.4): koreksi yang boleh diputuskan pengguna (06 §6), tanpa milik sendiri. `POST .../approve` body `{ "note": "opsional, ≤ 500" }`. `POST .../reject` body `{ "note": "wajib, 5–500 karakter" }`. Respons 200 berisi objek koreksi terbaru (§5.7a). Bila status sudah bukan `pending` → `409 STATE_CONFLICT`. Koreksi di luar wewenang → 404; milik sendiri → 403 `CORRECTION_SELF_APPROVAL`.
+
+### 5.9 Notifikasi
+`GET /api/v1/notifications` = listing `my_notifications` (07 §3.4) milik sendiri; item `{ id (uuid), type, title, body, read, created_at }` tanpa tautan web. Jumlah belum dibaca untuk lonceng = `meta.pagination.total` dengan `filter[read]=unread`. `POST /api/v1/notifications/{id}/read` → 200 `{ data: <notifikasi> }` (idempoten); milik orang lain / tidak ada → 404 `NOT_FOUND`. `POST /api/v1/notifications/read-all` → 200 `{ data: { marked: <jumlah> } }`.

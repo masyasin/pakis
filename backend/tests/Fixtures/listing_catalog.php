@@ -38,4 +38,6 @@ return [
     'attendance_summary', // T-039
     'my_corrections', // T-040 (API)
     'approval_corrections', // T-040 (API)
+    'my_attendance_days', // T-043 (API)
+    'my_notifications', // T-043 (API)
 ];

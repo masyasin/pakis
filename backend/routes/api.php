@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\V1\AttendanceCorrectionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ConfigController;
 use App\Http\Controllers\Api\V1\MeController;
+use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Middleware\EnsureAppVersion;
 use App\Http\Middleware\EnsureDeviceBound;
 use App\Http\Middleware\EnsurePasswordChangedApi;
@@ -38,6 +39,9 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             // Absen (05 §5.4, T-036). Unggah absen dibatasi lebih ketat per pengguna (SEC-068).
             Route::middleware('can:attendance.self')->group(function () {
                 Route::get('attendance/today', [AttendanceController::class, 'today'])->name('attendance.today');
+                // Riwayat & rekap milik sendiri (05 §5.5–5.6, T-043).
+                Route::get('attendance', [AttendanceController::class, 'index'])->name('attendance.index');
+                Route::get('attendance/summary', [AttendanceController::class, 'summary'])->name('attendance.summary');
                 Route::post('attendance', [AttendanceController::class, 'store'])->middleware('throttle:attendance')->name('attendance.store');
             });
 
@@ -52,6 +56,11 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::post('attendance-corrections/{id}/approve', [ApprovalController::class, 'approve'])->whereNumber('id')->name('attendance-corrections.approve');
                 Route::post('attendance-corrections/{id}/reject', [ApprovalController::class, 'reject'])->whereNumber('id')->name('attendance-corrections.reject');
             });
+
+            // Notifikasi milik sendiri (05 §5.1, T-043). `{id}` milik orang lain → 404.
+            Route::get('notifications', [NotificationController::class, 'index'])->name('notifications.index');
+            Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
+            Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->whereUuid('id')->name('notifications.read');
         });
     });
 });

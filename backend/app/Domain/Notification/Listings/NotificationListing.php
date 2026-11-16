@@ -46,7 +46,7 @@ final class NotificationListing implements HasListing
      * @param  Builder<*>  $query
      * @param  'title'|'body'  $field
      */
-    private static function matchJson(Builder $query, string $field, string $word): void
+    public static function matchJson(Builder $query, string $field, string $word): void
     {
         $sql = match ($field) {
             'title' => "LOWER(JSON_UNQUOTE(JSON_EXTRACT(data, '$.title'))) LIKE ?",

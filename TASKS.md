@@ -621,9 +621,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `lib/features/attendance/{home,capture,result}/*`, `lib/core/offline/{queue_db.dart (drift + sqlcipher),sync_service.dart}`, `lib/core/location/location_service.dart`
 - Deskripsi: Beranda absen, kamera depan tanpa galeri, kompresi ≤ 100 KB, GPS dengan batas waktu & pesan akurasi, `isMocked`, kirim. Antrean offline terenkripsi + sinkron otomatis (buka app, konektivitas kembali, tombol), backoff, idempoten. Simpan selisih jam dari header `Date` respons.
 - Kriteria penerimaan:
-  - [ ] Integration test: mode pesawat → absen → online → terkirim 1× walau dikirim ulang
-  - [ ] Foto hasil ≤ 100 KB, sisi terpanjang 720 px
-  - [ ] Antrean tidak bisa dibaca tanpa kunci (DB terenkripsi)
+  - [x] Integration test: mode pesawat → absen → online → terkirim 1× walau dikirim ulang (widget test aplikasi utuh + unit; uji HP Android 8 nyata masih tertunda, 16 Nov 2026)
+  - [x] Foto hasil ≤ 100 KB, sisi terpanjang 720 px
+  - [x] Antrean tidak bisa dibaca tanpa kunci (DB terenkripsi)
 - Verifikasi: `fvm flutter test` + uji di HP Android 8 nyata
 
 ### T-043 — Riwayat, koreksi, persetujuan, notifikasi, profil (Pakis Pro)
@@ -634,9 +634,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - File: `Api/V1/{AttendanceController@index,summary,NotificationController,MeController@update}`, `Listings/{MyAttendanceDayListing,MyNotificationListing}`, `lib/features/{history,corrections,approvals,notifications,profile}/*`
 - Deskripsi: Endpoint daftar & rekap milik sendiri + notifikasi (backend), lalu layar mobile: riwayat (paging, cari, filter bulan/status, chip), rekap bulan, koreksi saya + form, persetujuan (tab hanya bila berhak), notifikasi, profil (ubah HP/foto, ubah password, keluar sesi web lain).
 - Kriteria penerimaan:
-  - [ ] Listing API `my_attendance_days` & `my_notifications` lolos test kontrak
-  - [ ] Semua layar daftar mobile memakai `PagedList` + `FilterSheet` (paging, cari, filter)
-  - [ ] Pegawai tanpa `attendance_corrections.approve` tidak melihat tab Persetujuan
+  - [x] Listing API `my_attendance_days` & `my_notifications` lolos test kontrak
+  - [x] Semua layar daftar mobile memakai `PagedList` + `FilterSheet` (paging, cari, filter)
+  - [x] Pegawai tanpa `attendance_corrections.approve` tidak melihat tab Persetujuan
 - Verifikasi: `php artisan test --filter=Api\\V1` · `fvm flutter test`
 
 ### T-044 — Dasbor web
@@ -657,9 +657,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/09-SECURITY.md` SEC-013, SEC-041, SEC-070, `docs/08-BUSINESS-RULES.md` §2.5
 - File: commands `attendance:purge-selfies`, `retention:purge`, `exports:expire`, `security:scan-alerts`, `integrity:check`, `security:revoke`, `routes/console.php` (jadwal)
 - Kriteria penerimaan:
-  - [ ] Selfie > retensi terhapus dari disk, `selfie_purged_at` terisi, baris log tetap ada
-  - [ ] 20 login gagal dari satu IP dalam 10 menit → email alert (fake)
-  - [ ] Berkas `.php` baru di `storage/` terdeteksi
+  - [x] Selfie > retensi terhapus dari disk, `selfie_purged_at` terisi, baris log tetap ada
+  - [x] 20 login gagal dari satu IP dalam 10 menit → email alert (fake)
+  - [x] Berkas `.php` baru di `storage/` terdeteksi
 - Verifikasi: `php artisan test --filter=Scheduled`
 
 ## Fase H — Hardening, Rilis, Serah Terima

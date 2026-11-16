@@ -56,8 +56,9 @@ beforeEach(function () {
 test('BR-005 isi berkas sama dengan tampilan untuk q, filter, dan sort yang sama', function () {
     User::factory()->create(['name' => 'Agus Dua', 'email_verified_at' => now()]);
     User::factory()->unverified()->create(['name' => 'Agus Tiga']);
-    User::factory()->create(['name' => 'Budi']);
-    User::factory()->create(['name' => UserTestListing::HIDDEN_NAME]);
+    // Email tetap: pencarian `agus` juga mencocokkan email, dan email acak Faker kadang memuatnya.
+    User::factory()->create(['name' => 'Budi', 'email' => 'budi@contoh.test']);
+    User::factory()->create(['name' => UserTestListing::HIDDEN_NAME, 'email' => 'rahasia@contoh.test']);
 
     $query = ['q' => 'agus', 'filter' => ['verified' => '1'], 'sort' => '-name'];
     $expected = collect(runListing($query)->paginator()->items())->pluck('name')->all();

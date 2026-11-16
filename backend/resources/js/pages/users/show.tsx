@@ -53,6 +53,7 @@ import {
     toggle,
 } from '@/routes/admin/users';
 import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
+import { useInitials } from '@/hooks/use-initials';
 
 type Tab = 'profil' | 'role' | 'sesi' | 'perangkat' | 'riwayat';
 
@@ -520,14 +521,6 @@ function ResetPasswordDialog({
     );
 }
 
-function initialsOf(name: string): string {
-    return name
-        .split(/\s+/)
-        .slice(0, 2)
-        .map((w) => w[0]?.toUpperCase() ?? '')
-        .join('');
-}
-
 function mfaLabel(user: UserDetail): string {
     if (user.mfa_enabled) {
         return 'Aktif';
@@ -552,6 +545,8 @@ function UserHero({
     notice: ReactNode;
 }) {
     const roleLabels = user.roles.map((r) => r.label).join(', ');
+    // Inisial sama dengan avatar di header (kata pertama + terakhir).
+    const getInitials = useInitials();
 
     return (
         <section className="overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]">
@@ -578,7 +573,7 @@ function UserHero({
                             aria-hidden="true"
                             className="grid size-20 place-items-center rounded-full bg-sidebar-accent text-2xl font-bold text-primary ring-4 ring-card sm:size-24 sm:text-3xl"
                         >
-                            {initialsOf(user.name)}
+                            {getInitials(user.name)}
                         </span>
                     )}
                     {actions}

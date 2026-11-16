@@ -41,7 +41,7 @@ export default function ProfileSecurity(props: Props) {
     return (
         <>
             <Head title="Keamanan" />
-            <h1 className="sr-only">Keamanan</h1>
+            <h2 className="sr-only">Keamanan</h2>
 
             <ChangePasswordSection {...props} />
 

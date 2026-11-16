@@ -104,6 +104,8 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `notification.on_attendance_mock` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` | ❌ |
 | `notification.on_correction_submitted` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` | ❌ |
 | `notification.on_correction_decided` | multi enum | `["email"]` | subset `email`, `telegram`, `whatsapp` | ❌ |
+| `notification.on_field_trip_submitted` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` | ❌ |
+| `notification.on_field_trip_decided` | multi enum | `["email"]` | subset `email`, `telegram`, `whatsapp` | ❌ |
 | `notification.whatsapp_daily_limit` | int | 300 | 0–10000 | ❌ |
 | `notification.whatsapp_hourly_per_user` | int | 5 | 1–50 | ❌ |
 | `notification.circuit_failures` | int | 5 | 3–20 | ❌ |

@@ -495,6 +495,95 @@ paths:
             image/png: { schema: { type: string, format: binary } }
             application/pdf: { schema: { type: string, format: binary } }
         '404': { $ref: '#/components/responses/Error', description: 'NOT_FOUND (tidak ada, bukan wewenang, atau tanpa lampiran)' }
+  /field-trips:
+    get:
+      tags: [Tugas luar kota]
+      summary: Tugas luar kota milik sendiri (listing my_field_trips, 05 §5.10, T-036A bagian 2)
+      parameters:
+        - { $ref: '#/components/parameters/AppVersion' }
+        - { $ref: '#/components/parameters/DeviceId' }
+        - { name: q, in: query, schema: { type: string }, description: Nomor atau tujuan }
+        - { name: 'filter[status][]', in: query, schema: { type: string, enum: [pending, approved, rejected, cancelled] } }
+        - { name: 'filter[month]', in: query, schema: { type: string, example: '2026-11' }, description: Tugas yang beririsan dengan bulan itu }
+        - { name: sort, in: query, schema: { type: string, enum: [start_date, -start_date], default: -start_date } }
+      responses:
+        '200': { $ref: '#/components/responses/FieldTripPage' }
+        '403': { $ref: '#/components/responses/Error', description: 'FORBIDDEN (tanpa field_trips.request)' }
+    post:
+      tags: [Tugas luar kota]
+      summary: Ajukan tugas luar kota untuk diri sendiri → pending (06 §7.2a)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [start_date, destination, attendance_rule]
+              properties:
+                start_date: { type: string, format: date }
+                end_date: { type: string, format: date, description: Kosong = sama dengan start_date }
+                destination: { type: string, minLength: 2, maxLength: 150 }
+                purpose: { type: string, maxLength: 500, nullable: true }
+                attendance_rule: { type: string, enum: [anywhere, destination, any_location] }
+                destinations:
+                  type: array
+                  minItems: 1
+                  maxItems: 10
+                  description: Wajib bila attendance_rule = destination
+                  items:
+                    type: object
+                    required: [name, latitude, longitude]
+                    properties:
+                      name: { type: string, maxLength: 150 }
+                      latitude: { type: number }
+                      longitude: { type: number }
+                      radius_m: { type: integer, nullable: true, minimum: 20, maximum: 5000 }
+      responses:
+        '201': { $ref: '#/components/responses/FieldTripOne' }
+        '422': { $ref: '#/components/responses/Error', description: 'VALIDATION_FAILED (termasuk tumpang tindih di field start_date)' }
+  /approvals/field-trips:
+    get:
+      tags: [Tugas luar kota]
+      summary: Pengajuan tugas luar kota yang boleh diputuskan pengguna (listing approval_field_trips, 06 §6)
+      parameters:
+        - { $ref: '#/components/parameters/AppVersion' }
+        - { $ref: '#/components/parameters/DeviceId' }
+        - { name: q, in: query, schema: { type: string }, description: Nama/nomor pegawai atau nomor tugas }
+        - { name: 'filter[status][]', in: query, schema: { type: string, enum: [pending, approved, rejected, cancelled], default: pending } }
+        - { name: sort, in: query, schema: { type: string, enum: [start_date, -start_date, created_at, -created_at], default: start_date } }
+      responses:
+        '200': { $ref: '#/components/responses/FieldTripPage' }
+        '403': { $ref: '#/components/responses/Error', description: 'FORBIDDEN (tanpa field_trips.approve)' }
+  /approvals/field-trips/{id}/approve:
+    post:
+      tags: [Tugas luar kota]
+      summary: Setujui pengajuan tugas luar kota; tumpang tindih dicek ulang (BR-071)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }, { name: id, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { note: { type: string, maxLength: 255, nullable: true } } }
+      responses:
+        '200': { $ref: '#/components/responses/FieldTripOne' }
+        '403': { $ref: '#/components/responses/Error', description: 'FORBIDDEN (milik sendiri, SEC-031)' }
+        '404': { $ref: '#/components/responses/Error', description: 'NOT_FOUND (di luar wewenang)' }
+        '409': { $ref: '#/components/responses/Error', description: 'STATE_CONFLICT (sudah diputuskan / bentrok tugas approved lain)' }
+  /approvals/field-trips/{id}/reject:
+    post:
+      tags: [Tugas luar kota]
+      summary: Tolak pengajuan tugas luar kota (alasan wajib)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }, { name: id, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object, required: [note], properties: { note: { type: string, minLength: 5, maxLength: 255 } } }
+      responses:
+        '200': { $ref: '#/components/responses/FieldTripOne' }
+        '403': { $ref: '#/components/responses/Error', description: 'FORBIDDEN (milik sendiri)' }
+        '404': { $ref: '#/components/responses/Error', description: NOT_FOUND }
+        '409': { $ref: '#/components/responses/Error', description: STATE_CONFLICT }
   /approvals/attendance-corrections:
     get:
       tags: [Koreksi]
@@ -562,6 +651,26 @@ components:
       required: true
       schema: { type: integer }
   schemas:
+    FieldTrip:
+      type: object
+      properties:
+        id: { type: integer }
+        number: { type: string, example: DL/2026/11/0001 }
+        status: { type: string, enum: [pending, approved, rejected, cancelled] }
+        start_date: { type: string, format: date }
+        end_date: { type: string, format: date }
+        days: { type: integer }
+        destination: { type: string }
+        purpose: { type: string, nullable: true }
+        attendance_rule: { type: string, enum: [anywhere, destination, any_location] }
+        destinations: { type: array, items: { type: object, properties: { name: { type: string }, radius_m: { type: integer, nullable: true } } } }
+        employees: { type: array, items: { type: object, properties: { id: { type: integer }, employee_number: { type: string }, name: { type: string } } } }
+        requested_by: { type: object, nullable: true, properties: { name: { type: string } } }
+        is_request: { type: boolean }
+        submitted_at: { type: string, format: date-time }
+        decided_at: { type: string, format: date-time, nullable: true }
+        decided_by: { type: object, nullable: true, properties: { name: { type: string } } }
+        decision_note: { type: string, nullable: true }
     Meta:
       type: object
       properties:
@@ -665,6 +774,24 @@ components:
             details: { type: object }
             request_id: { type: string }
   responses:
+    FieldTripOne:
+      description: Satu tugas luar kota (05 §5.10)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { $ref: '#/components/schemas/FieldTrip' }
+              meta: { type: object, properties: { request_id: { type: string } } }
+    FieldTripPage:
+      description: Halaman tugas luar kota (format listing 05 §3.3)
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              data: { type: array, items: { $ref: '#/components/schemas/FieldTrip' } }
+              meta: { type: object }
     CorrectionOne:
       description: Objek koreksi terbaru
       content:

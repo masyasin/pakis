@@ -131,6 +131,11 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('tugas-luar-kota/{trip}', [FieldTripController::class, 'update'])->whereNumber('trip')->name('field-trips.update');
         Route::post('tugas-luar-kota/{trip}/batalkan', [FieldTripController::class, 'cancel'])->whereNumber('trip')->name('field-trips.cancel');
     });
+    // Putuskan pengajuan dari Pakis Pro (T-036A bagian 2, 06 §6 & §7.2a); `{trip}` ber-scope, wewenang dicek Action.
+    Route::middleware('can:field_trips.approve')->group(function () {
+        Route::post('tugas-luar-kota/{trip}/setujui', [FieldTripController::class, 'approve'])->whereNumber('trip')->name('field-trips.approve');
+        Route::post('tugas-luar-kota/{trip}/tolak', [FieldTripController::class, 'reject'])->whereNumber('trip')->name('field-trips.reject');
+    });
 
     // Hari libur (05 §4.9, FR-033, BR-062). Tidak ber-scope data. `baru` & `ekspor` sebelum `{holiday}`.
     Route::middleware('can:holidays.view')->group(function () {

@@ -67,9 +67,26 @@ class AttendanceController extends Controller
                 'schedule' => self::schedule($current['schedule']),
                 'attendance' => $day === null ? null : self::day($day, $day->checkOutLog ?? $day->checkInLog),
                 'next_action' => $current['next_action'],
+                // Tugas luar kota `approved` yang mencakup tanggal kerja (BR-071, kartu beranda T-036A).
+                'field_trip' => self::activeTrip((int) $user->employee_id, (string) $current['work_date']),
             ],
             'meta' => ['request_id' => RequestId::current()],
         ]);
+    }
+
+    /** @return array{number: string, destination: string, end_date: string, attendance_rule: string}|null */
+    private static function activeTrip(int $employeeId, string $date): ?array
+    {
+        $trip = FieldTrip::query()->approvedOn($date)
+            ->whereHas('employees', fn ($q) => $q->where('employees.id', $employeeId))
+            ->orderBy('start_date')->first();
+
+        return $trip === null ? null : [
+            'number' => $trip->number,
+            'destination' => $trip->destination,
+            'end_date' => $trip->end_date->toDateString(),
+            'attendance_rule' => $trip->attendance_rule->value,
+        ];
     }
 
     /**

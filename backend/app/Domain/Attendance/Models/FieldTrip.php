@@ -11,6 +11,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -38,6 +39,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property CarbonImmutable|null $updated_at
  * @property-read Collection<int, Employee> $employees
  * @property-read Collection<int, FieldTripDestination> $destinations
+ * @property-read User|null $requester
+ * @property-read User|null $decider
  */
 class FieldTrip extends Model
 {
@@ -65,6 +68,18 @@ class FieldTrip extends Model
     {
         // Termasuk pegawai yang kemudian dihapus (salah input): riwayat tugas tetap utuh.
         return $this->belongsToMany(Employee::class, 'field_trip_employees')->withTrashed();
+    }
+
+    /** @return BelongsTo<User, $this> pengaju dari Pakis Pro (T-036A bagian 2); null = dibuat admin/atasan */
+    public function requester(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'requested_by');
+    }
+
+    /** @return BelongsTo<User, $this> */
+    public function decider(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'decided_by');
     }
 
     /** @return HasMany<FieldTripDestination, $this> */

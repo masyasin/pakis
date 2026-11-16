@@ -37,6 +37,8 @@ return [
     'attendance_days', // T-038
     'attendance_summary', // T-039
     'attendance_corrections', // T-041
+    'my_field_trips', // T-036A bagian 2 (API)
+    'approval_field_trips', // T-036A bagian 2 (API)
     'my_corrections', // T-040 (API)
     'approval_corrections', // T-040 (API)
     'my_attendance_days', // T-043 (API)

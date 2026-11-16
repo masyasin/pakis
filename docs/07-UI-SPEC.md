@@ -109,6 +109,8 @@ Notasi filter: **S** select, **MS** multi select, **B** boolean, **DR** rentang 
 | `my_attendance_days` | `api.v1.attendance.index` | (mobile) tanggal, shift, masuk, pulang, status | nama shift | bulan (S), status (MS) | **-work_date** | — |
 | `my_corrections` | `api.v1.attendance-corrections.index` | (mobile) nomor, tanggal, jenis, status | nomor | status (MS), bulan (S) | **-created_at** | — |
 | `approval_corrections` | `api.v1.approvals.attendance-corrections.index` | (mobile) pegawai, tanggal, jenis, jam usulan, alasan | nama/no. pegawai, nomor | status (MS, default pending), tanggal kerja (DR) | **created_at** (terlama dulu) | — |
+| `my_field_trips` | `api.v1.field-trips.index` | (mobile) nomor, tanggal, tujuan, aturan, status | nomor, tujuan | status (MS), bulan (S; beririsan) | **-start_date** | — |
+| `approval_field_trips` | `api.v1.approvals.field-trips.index` | (mobile) pegawai, tanggal, tujuan, aturan | nama/no. pegawai, nomor | status (MS, default pending) | **start_date** (terdekat dulu), created_at | — |
 | `my_notifications` | `api.v1.notifications.index` | (mobile) waktu, judul, isi | judul, isi | status baca (S) | **-created_at** | — |
 
 Halaman non-daftar yang tetap butuh paging/cari/filter: **Kalender Jadwal** (`admin.schedules.calendar`: paging per 25 pegawai, cari nama, filter lokasi/departemen/jabatan, pilih bulan) dan **tab Riwayat** di halaman detail (paging 10, filter event).

@@ -176,8 +176,8 @@ stateDiagram-v2
 |---|---|---|---|
 | — | Buat (langsung berlaku) | `field_trips.manage`, semua pegawai tugas dalam scope | `approved` |
 | `approved` | Ubah (belum selesai) / Batalkan | `field_trips.manage`, semua pegawai tugas dalam scope | `approved` / `cancelled` |
-| — | Ajukan dari Pakis Pro | pegawai sendiri (`field_trips.request`) — bagian 2 | `pending` |
-| `pending` | Setujui / Tolak (catatan wajib) | `field_trips.approve` mengikuti §6 — bagian 2 | `approved` / `rejected` |
+| — | Ajukan dari Pakis Pro | pegawai sendiri (`field_trips.request`) — bagian 2 (selesai 16 Nov 2026) | `pending` |
+| `pending` | Setujui / Tolak (alasan wajib saat menolak) | `field_trips.approve` mengikuti §6 (atasan langsung pengaju dihitung saat diputuskan, atau scope `all`/`location`; bukan milik sendiri) — bagian 2 | `approved` / `rejected` |
 | `rejected`/`cancelled` | — | — | final |
 
 Tugas terlihat bila **salah satu** pegawainya dalam scope pelaku (selain itu 404); mengubah/membatalkan butuh **semua** pegawainya dalam scope (selain itu 403), agar atasan tidak mengubah tugas pegawai lokasi lain. **Maker-checker (SEC-031, keputusan Mas 16 Nov 2026):** pelaku tidak bisa membuat tugas yang memuat dirinya sendiri (galat validasi) dan tidak bisa mengubah/membatalkan tugas yang memuat dirinya (403), karena tugas yang dibuat langsung berlaku; tugas untuk diri sendiri dibuat orang lain, atau diajukan dari Pakis Pro dan disetujui orang lain (bagian 2).

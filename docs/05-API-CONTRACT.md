@@ -289,6 +289,7 @@ Semua route `*.export`: bila baris ≤ `export.sync_max_rows` → unduh langsung
 | `admin.field-trips.create`/`store` | GET/POST | `/tugas-luar-kota/baru`, `/tugas-luar-kota` | `field_trips.manage` | Langsung `approved` (T-036A bagian 1); semua pegawai harus dalam scope |
 | `admin.field-trips.edit`/`update` | GET/PUT | `/tugas-luar-kota/{trip}/ubah`, `/tugas-luar-kota/{trip}` | `field_trips.manage` | Hanya `approved` yang belum selesai; semua pegawai tugas dalam scope (selain itu 403); di luar scope → 404 |
 | `admin.field-trips.cancel` | POST | `/tugas-luar-kota/{trip}/batalkan` | `field_trips.manage` | `approved` → `cancelled` |
+| `admin.field-trips.approve`/`reject` | POST | `/tugas-luar-kota/{trip}/setujui`, `/tugas-luar-kota/{trip}/tolak` | `field_trips.approve` | Pengajuan Pakis Pro `pending` → `approved`/`rejected` (06 §6, §7.2a; T-036A bagian 2). `note` opsional ≤ 255 / wajib 5–255. Milik sendiri 403, di luar wewenang 404, sudah diputuskan atau bentrok tugas lain → galat form |
 
 ### 4.10 Absensi & Koreksi
 
@@ -342,6 +343,11 @@ Satu route `admin.lookup.show`, GET `/lookup/<sumber>?q=&parent=&limit=&ids[]=` 
 | `api.v1.notifications.index` | GET | `/api/v1/notifications` | token | ✅ |
 | `api.v1.notifications.read` | POST | `/api/v1/notifications/{id}/read` | token | |
 | `api.v1.notifications.read-all` | POST | `/api/v1/notifications/read-all` | token | |
+| `api.v1.field-trips.index` | GET | `/api/v1/field-trips` | `field_trips.request` | ✅ (milik sendiri) |
+| `api.v1.field-trips.store` | POST | `/api/v1/field-trips` | `field_trips.request` | Ajukan untuk diri sendiri → `pending` (§5.10) |
+| `api.v1.approvals.field-trips.index` | GET | `/api/v1/approvals/field-trips` | `field_trips.approve` | ✅ (scope 06 §6) |
+| `api.v1.approvals.field-trips.approve` | POST | `/api/v1/approvals/field-trips/{id}/approve` | `field_trips.approve` | |
+| `api.v1.approvals.field-trips.reject` | POST | `/api/v1/approvals/field-trips/{id}/reject` | `field_trips.approve` | |
 
 ### 5.2 `GET /api/v1/config`
 ```json
@@ -443,6 +449,15 @@ Galat: tanggal di masa depan / lebih tua dari `attendance.correction_max_days` �
 
 ### 5.8 Approve / Reject
 `GET /api/v1/approvals/attendance-corrections` = listing `approval_corrections` (07 §3.4): koreksi yang boleh diputuskan pengguna (06 §6), tanpa milik sendiri. `POST .../approve` body `{ "note": "opsional, ≤ 500" }`. `POST .../reject` body `{ "note": "wajib, 5–500 karakter" }`. Respons 200 berisi objek koreksi terbaru (§5.7a). Bila status sudah bukan `pending` → `409 STATE_CONFLICT`. Koreksi di luar wewenang → 404; milik sendiri → 403 `CORRECTION_SELF_APPROVAL`.
+
+### 5.10 Tugas luar kota (T-036A bagian 2)
+Objek FieldTrip: `{ id, number, status, start_date, end_date, days, destination, purpose|null, attendance_rule (anywhere|destination|any_location), destinations: [{ name, radius_m|null }] (tanpa koordinat), employees: [{ id, employee_number, name }], requested_by: { name }|null, is_request (diajukan dari HP), submitted_at, decided_at|null, decided_by: { name }|null, decision_note|null }`.
+
+`GET /api/v1/field-trips` = listing `my_field_trips` (07 §3.4): tugas yang memuat pegawai pemilik token, buatan atasan maupun pengajuan sendiri. `POST /api/v1/field-trips` JSON `{ start_date, end_date (opsional = start_date), destination (2–150), purpose (≤ 500, opsional), attendance_rule, destinations: [{ name, latitude, longitude, radius_m|null }] (1–10, wajib bila `destination`) }` → 201 FieldTrip `pending`; pegawai = pemilik token (`employee_ids` dari klien diabaikan). Validasi sama dengan form web (batas `attendance.field_trip_max_days`, tanggal selesai belum lewat); tumpang tindih dengan tugas `approved` → 422 di field `start_date`. Pengajuan `pending` tidak membuka lokasi tambahan (BR-071) dan tidak bisa dibatalkan pengaju (06 §7.2a).
+
+`GET /api/v1/approvals/field-trips` = listing `approval_field_trips`: pengajuan dari HP yang boleh diputuskan pengguna (06 §6: atasan langsung pengaju saat ini, atau scope `all`/`location`), tanpa yang memuat dirinya. `POST .../approve` `{ note? ≤ 255 }`, `POST .../reject` `{ note 5–255 }` → 200 FieldTrip. Milik sendiri 403 `FORBIDDEN` (SEC-031), di luar wewenang 404 `NOT_FOUND`, sudah diputuskan atau bentrok tugas `approved` lain → 409 `STATE_CONFLICT` (pesan menyebut tugas yang bentrok). Notifikasi `field_trip_submitted` ke penyetuju (pola BR-070), `field_trip_decided` ke pengaju.
+
+`GET /api/v1/attendance/today` memuat `field_trip: { number, destination, end_date, attendance_rule } | null` = tugas `approved` yang mencakup tanggal kerja (kartu beranda).
 
 ### 5.9 Notifikasi
 `GET /api/v1/notifications` = listing `my_notifications` (07 §3.4) milik sendiri; item `{ id (uuid), type, title, body, read, created_at }` tanpa tautan web. Jumlah belum dibaca untuk lonceng = `meta.pagination.total` dengan `filter[read]=unread`. `POST /api/v1/notifications/{id}/read` → 200 `{ data: <notifikasi> }` (idempoten); milik orang lain / tidak ada → 404 `NOT_FOUND`. `POST /api/v1/notifications/read-all` → 200 `{ data: { marked: <jumlah> } }`.

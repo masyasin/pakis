@@ -48,10 +48,14 @@ final class CorrectionAuthority
         return $user->employee_id !== null && (int) $user->employee_id === $employeeId;
     }
 
-    /** Syarat 2 + 4 terhadap pegawai (tanpa syarat 3 & status, lihat kelas). */
-    public function mayDecideFor(User $user, int $employeeId, ?int $approverEmployeeId): bool
+    /**
+     * Syarat 2 + 4 terhadap pegawai (tanpa syarat 3 & status, lihat kelas). `$permission` = izin
+     * memutuskan modulnya: koreksi (default) atau tugas luar kota (`field_trips.approve`, T-036A
+     * bagian 2) — aturan 06 §6 sama, jadi satu pintu.
+     */
+    public function mayDecideFor(User $user, int $employeeId, ?int $approverEmployeeId, string $permission = 'attendance_corrections.approve'): bool
     {
-        if (! $user->can('attendance_corrections.approve')) {
+        if (! $user->can($permission)) {
             return false;
         }
 
@@ -129,22 +133,33 @@ final class CorrectionAuthority
      */
     public function recipientsFor(AttendanceCorrection $correction): Collection
     {
-        if ($correction->approver_employee_id !== null) {
-            $users = User::query()->where('employee_id', $correction->approver_employee_id)->where('is_active', true)->get();
+        return $this->recipientsForEmployee($correction->employee_id, $correction->approver_employee_id, $correction->submitted_by);
+    }
+
+    /**
+     * Penerima pengajuan untuk pegawai (koreksi BR-070, tugas luar kota T-036A): akun atasan
+     * langsung; tanpa atasan aktif → kepala lokasi pegawai + HRD, tanpa pegawai itu sendiri.
+     *
+     * @return Collection<int, User>
+     */
+    public function recipientsForEmployee(int $employeeId, ?int $approverEmployeeId, ?int $submittedBy): Collection
+    {
+        if ($approverEmployeeId !== null) {
+            $users = User::query()->where('employee_id', $approverEmployeeId)->where('is_active', true)->get();
             if ($users->isNotEmpty()) {
                 return $users;
             }
         }
 
         $today = DisplayTime::toLocal(now())->toDateString();
-        $location = DaySnapshot::primaryAssignmentOn($correction->employee_id, $today)?->location;
+        $location = DaySnapshot::primaryAssignmentOn($employeeId, $today)?->location;
 
-        return LocationOverseers::for($location, $correction->submitted_by)
-            ->filter(fn (User $u) => ! self::isOwn($u, $correction->employee_id))
+        return LocationOverseers::for($location, $submittedBy)
+            ->filter(fn (User $u) => ! self::isOwn($u, $employeeId))
             ->values();
     }
 
-    private function hasBroadScope(User $user): bool
+    public function hasBroadScope(User $user): bool
     {
         return in_array(ScopeResolver::for($user), [Scope::All, Scope::Location], true);
     }

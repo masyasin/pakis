@@ -4,19 +4,24 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Attendance\Actions\CancelFieldTrip;
 use App\Domain\Attendance\Actions\CreateFieldTrip;
+use App\Domain\Attendance\Actions\DecideFieldTrip;
 use App\Domain\Attendance\Actions\UpdateFieldTrip;
 use App\Domain\Attendance\Enums\FieldTripRule;
 use App\Domain\Attendance\Listings\FieldTripListing;
 use App\Domain\Attendance\Models\FieldTrip;
+use App\Domain\Attendance\Support\FieldTripApprovals;
 use App\Domain\Employee\Models\Employee;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attendance\FieldTripRequest;
 use App\Models\User;
+use App\Support\Api\ApiError;
+use App\Support\Api\ErrorCode;
 use App\Support\Listing\ListingQuery;
 use App\Support\Listing\UsesListing;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -28,7 +33,7 @@ use Inertia\Response;
 class FieldTripController extends Controller
 {
     #[UsesListing(FieldTripListing::class)]
-    public function index(Request $request): Response
+    public function index(Request $request, FieldTripApprovals $approvals): Response
     {
         $user = self::user($request);
         $query = FieldTrip::query()->with('employees:id,full_name,employee_number');
@@ -40,12 +45,15 @@ class FieldTripController extends Controller
                 'can' => [
                     'update' => Gate::forUser($user)->allows('update', $t),
                     'cancel' => Gate::forUser($user)->allows('cancel', $t),
+                    // Pengajuan dari Pakis Pro yang boleh diputuskan pengguna (06 §6, T-036A bagian 2).
+                    'decide' => FieldTripApprovals::decidable($t) && ! FieldTripApprovals::isOwn($user, $t) && $approvals->mayDecide($user, $t),
                 ],
+                'is_request' => $t->requested_by !== null,
             ]);
 
         return Inertia::render('field-trips/index', [
             ...$result->toInertia(),
-            'can' => ['manage' => $user->can('field_trips.manage')],
+            'can' => ['manage' => $user->can('field_trips.manage'), 'approve' => $user->can('field_trips.approve')],
         ]);
     }
 
@@ -111,6 +119,41 @@ class FieldTripController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => "Tugas {$trip->number} dibatalkan."]);
 
         return back(fallback: route('admin.field-trips.index'));
+    }
+
+    /** Setujui pengajuan dari Pakis Pro (06 §7.2a). Logika & galat = DecideFieldTrip (sama dengan API). */
+    public function approve(Request $request, FieldTrip $trip, DecideFieldTrip $action): RedirectResponse
+    {
+        $data = $request->validate(['note' => ['nullable', 'string', 'max:255']]);
+        $note = is_string($data['note'] ?? null) ? $data['note'] : null;
+        self::decide(fn () => $action->approve(self::user($request), $trip->id, $note));
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Tugas {$trip->number} disetujui dan langsung berlaku."]);
+
+        return back(fallback: route('admin.field-trips.index'));
+    }
+
+    public function reject(Request $request, FieldTrip $trip, DecideFieldTrip $action): RedirectResponse
+    {
+        $data = $request->validate(['note' => ['required', 'string', 'min:5', 'max:255']], [
+            'note.required' => 'Alasan penolakan wajib diisi.',
+            'note.min' => 'Alasan penolakan minimal 5 karakter.',
+        ]);
+        self::decide(fn () => $action->reject(self::user($request), $trip->id, trim((string) $data['note'])));
+        Inertia::flash('toast', ['type' => 'success', 'message' => "Pengajuan {$trip->number} ditolak."]);
+
+        return back(fallback: route('admin.field-trips.index'));
+    }
+
+    /** ApiError dari Action → web: 404/403 apa adanya, konflik (sudah diputuskan / bentrok) → galat form. */
+    private static function decide(\Closure $call): void
+    {
+        try {
+            $call();
+        } catch (ApiError $e) {
+            abort_if($e->errorCode === ErrorCode::NOT_FOUND, 404);
+            abort_if($e->errorCode === ErrorCode::FORBIDDEN, 403, $e->publicMessage());
+            throw ValidationException::withMessages(['trip' => $e->publicMessage()]);
+        }
     }
 
     /** @return array{rules: list<array{value: string, label: string}>, maxDays: int, defaultRadius: int, maxDestinations: int} */

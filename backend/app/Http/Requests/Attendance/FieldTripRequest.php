@@ -120,11 +120,20 @@ class FieldTripRequest extends FormRequest
                 // Maker-checker (06 §1 butir 4, SEC-031): tugas langsung `approved`, jadi tugas untuk
                 // diri sendiri sama dengan menyetujui milik sendiri (mis. memberi diri aturan `anywhere`).
                 $self = $this->user()?->employee_id;
-                if ($self !== null && in_array((int) $self, array_map('intval', (array) $this->input('employee_ids')), true)) {
+                if ($this->forbidsOwnTrip() && $self !== null && in_array((int) $self, array_map('intval', (array) $this->input('employee_ids')), true)) {
                     $validator->errors()->add('employee_ids', 'Tugas luar kota untuk diri sendiri harus dibuat atau disetujui orang lain.');
                 }
             },
         ];
+    }
+
+    /**
+     * Tugas dari form web langsung `approved`, jadi tidak boleh memuat diri sendiri. Pengajuan dari
+     * Pakis Pro (StoreFieldTripRequest) justru untuk diri sendiri dan menunggu persetujuan orang lain.
+     */
+    protected function forbidsOwnTrip(): bool
+    {
+        return true;
     }
 
     /** @return array<string, mixed> kunci = FieldTrip::AUDITED */

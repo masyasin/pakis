@@ -17,6 +17,8 @@ enum NotificationKind: string
     case AttendanceMock = 'attendance_mock';
     case CorrectionSubmitted = 'correction_submitted';
     case CorrectionDecided = 'correction_decided';
+    case FieldTripSubmitted = 'field_trip_submitted';
+    case FieldTripDecided = 'field_trip_decided';
 
     public function label(): string
     {
@@ -30,6 +32,8 @@ enum NotificationKind: string
             self::AttendanceMock => 'Lokasi palsu terdeteksi',
             self::CorrectionSubmitted => 'Koreksi presensi diajukan',
             self::CorrectionDecided => 'Koreksi presensi diputuskan',
+            self::FieldTripSubmitted => 'Tugas luar kota diajukan',
+            self::FieldTripDecided => 'Tugas luar kota diputuskan',
         };
     }
 

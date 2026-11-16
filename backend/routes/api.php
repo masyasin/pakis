@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AttendanceCorrectionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ConfigController;
+use App\Http\Controllers\Api\V1\FieldTripController;
 use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\NotificationController;
@@ -62,6 +63,17 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('attendance-corrections', [ApprovalController::class, 'corrections'])->name('attendance-corrections.index');
                 Route::post('attendance-corrections/{id}/approve', [ApprovalController::class, 'approve'])->whereNumber('id')->name('attendance-corrections.approve');
                 Route::post('attendance-corrections/{id}/reject', [ApprovalController::class, 'reject'])->whereNumber('id')->name('attendance-corrections.reject');
+            });
+
+            // Tugas luar kota (05 §5.10, T-036A bagian 2): ajukan milik sendiri + persetujuan (06 §6, §7.2a).
+            Route::middleware('can:field_trips.request')->group(function () {
+                Route::get('field-trips', [FieldTripController::class, 'index'])->name('field-trips.index');
+                Route::post('field-trips', [FieldTripController::class, 'store'])->middleware('throttle:30,1')->name('field-trips.store');
+            });
+            Route::middleware('can:field_trips.approve')->prefix('approvals')->name('approvals.')->group(function () {
+                Route::get('field-trips', [FieldTripController::class, 'approvals'])->name('field-trips.index');
+                Route::post('field-trips/{id}/approve', [FieldTripController::class, 'approve'])->whereNumber('id')->name('field-trips.approve');
+                Route::post('field-trips/{id}/reject', [FieldTripController::class, 'reject'])->whereNumber('id')->name('field-trips.reject');
             });
 
             // Notifikasi milik sendiri (05 §5.1, T-043). `{id}` milik orang lain → 404.

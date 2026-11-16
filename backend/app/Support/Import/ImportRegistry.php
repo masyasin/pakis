@@ -48,12 +48,29 @@ final class ImportRegistry
         return $types;
     }
 
-    /** Tipe untuk segmen rute `/impor/{slug}`, atau null bila tidak ada. */
+    /**
+     * Kelas tipe terdaftar TANPA membuat objeknya (aman dipanggil saat rute dimuat).
+     *
+     * @return array<string, class-string<ImportType>> kunci tipe => kelas
+     */
+    public static function classes(): array
+    {
+        $classes = [];
+        foreach ((array) config('pakis.imports', []) as $key => $class) {
+            if (is_string($key) && is_string($class) && is_subclass_of($class, ImportType::class)) {
+                $classes[$key] = $class;
+            }
+        }
+
+        return $classes;
+    }
+
+    /** Tipe untuk segmen rute `/impor/{slug}`, atau null bila tidak ada. Hanya tipe itu yang dibuat. */
     public static function forSlug(string $slug): ?ImportType
     {
-        foreach (self::all() as $type) {
-            if ($type->routeSlug() === $slug) {
-                return $type;
+        foreach (self::classes() as $key => $class) {
+            if ($class::routeSlug() === $slug) {
+                return self::resolve($key);
             }
         }
 
@@ -67,7 +84,8 @@ final class ImportRegistry
      */
     public static function routePattern(): string
     {
-        $slugs = array_values(array_filter(array_map(fn (ImportType $t) => $t->routeSlug(), self::all())));
+        // Dipanggil dari routes/admin.php: hanya method statis, tidak ada objek tipe yang dibuat.
+        $slugs = array_values(array_filter(array_map(fn (string $class) => $class::routeSlug(), self::classes())));
 
         return $slugs === [] ? '(?!)' : implode('|', array_map(fn (string $s) => preg_quote($s, '/'), $slugs));
     }

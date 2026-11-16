@@ -31,8 +31,6 @@ final class EmployeeImportType implements ImportType
         'employment_status_id' => 'employment_status', 'start_date' => 'join_date',
     ];
 
-    public function __construct(private readonly ApplyImportRow $apply) {}
-
     public function key(): string
     {
         return self::KEY;
@@ -43,7 +41,7 @@ final class EmployeeImportType implements ImportType
         return 'Pegawai';
     }
 
-    public function routeSlug(): ?string
+    public static function routeSlug(): ?string
     {
         return null; // rute sendiri sejak Fase 0: `impor/pegawai…` (admin.imports.*)
     }
@@ -165,7 +163,9 @@ final class EmployeeImportType implements ImportType
 
     public function apply(User $actor, ValidatedRow $row, array $raw, bool $updateExisting, object $context): AppliedRow
     {
-        $result = $this->apply->handle($actor, $row, RowValidator::key($row), $raw, $updateExisting, self::own($context)->resolved);
+        // Diambil saat dipakai, bukan lewat konstruktor: tipe juga dibuat untuk label/izin (notifikasi,
+        // policy), dan ApplyImportRow menarik DataScope yang tidak boleh terikat terlalu dini.
+        $result = app(ApplyImportRow::class)->handle($actor, $row, RowValidator::key($row), $raw, $updateExisting, self::own($context)->resolved);
 
         return new AppliedRow($result['status'], ['employee_id' => $result['employee_id'], 'warnings' => $result['warnings']]);
     }

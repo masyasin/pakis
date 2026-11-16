@@ -24,8 +24,11 @@ interface ImportType
     /**
      * Segmen rute `/impor/{slug}` (`admin.master-imports.*`). `null` = tipe punya rute sendiri
      * (impor pegawai memakai `impor/pegawai…` sejak Fase 0).
+     *
+     * STATIS dengan sengaja: dibaca saat berkas rute dimuat, ketika objek tipe belum boleh dibuat
+     * (konstruktor bisa menarik DataScope/OrgStructure terlalu dini dan mengunci binding-nya).
      */
-    public function routeSlug(): ?string;
+    public static function routeSlug(): ?string;
 
     /** Izin untuk mengunggah, melihat, dan memproses batch tipe ini. */
     public function permission(): string;

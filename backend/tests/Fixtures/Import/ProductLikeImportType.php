@@ -42,7 +42,7 @@ final class ProductLikeImportType implements ImportType
         return 'Produk Uji';
     }
 
-    public function routeSlug(): string
+    public static function routeSlug(): string
     {
         return 'uji-produk';
     }

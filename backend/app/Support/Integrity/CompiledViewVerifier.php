@@ -52,7 +52,7 @@ final class CompiledViewVerifier
 
         // Komponen inline (Component::createBladeViewFromString): nama = hash isi + isi aman.
         if (str_ends_with($name, '.blade.php')) {
-            return hash('xxh128', $contents).'.blade.php' === $name && InlineComponent::isSafe($contents) ? self::OK : self::BAD;
+            return hash('xxh128', $contents).'.blade.php' === $name && InlineComponent::isSafe($contents, $this->compiler) ? self::OK : self::BAD;
         }
 
         if (preg_match(self::FOOTER, $contents, $m) !== 1) {
@@ -104,7 +104,7 @@ final class CompiledViewVerifier
         if (str_starts_with($relative, self::INLINE_DIR)) {
             $inline = (string) file_get_contents($source);
 
-            return substr_count($relative, '/') === 3 && hash('xxh128', $inline).'.blade.php' === basename($relative) && InlineComponent::isSafe($inline)
+            return substr_count($relative, '/') === 3 && hash('xxh128', $inline).'.blade.php' === basename($relative) && InlineComponent::isSafe($inline, $this->compiler)
                 ? self::OK
                 : self::BAD;
         }

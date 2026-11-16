@@ -12,6 +12,7 @@ use App\Domain\Employee\Models\ImportRow;
 use App\Models\User;
 use App\Support\Export\ExportFile;
 use App\Support\Export\ExportStatus;
+use App\Support\Integrity\InlineComponent;
 use Carbon\CarbonImmutable;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
@@ -351,6 +352,26 @@ describe('SEC-070 Scheduled integritas berkas', function () {
             ->not->toContain(basename($okCompiled));
     });
 
+    test('SEC-070 komponen inline: tag komponen + binding, @include, panggilan method dilaporkan', function () {
+        $views = $this->base.'/storage/framework/views/';
+        $sources = [
+            '<x-foo :a="system(\'id\')"/>',
+            "<div>@include('lain')</div>",
+            '<p>{{ $a->b() }}</p>',
+        ];
+        // Hanya sumbernya (tag `<x-foo>` tidak bisa dikompilasi tanpa kelas komponen).
+        foreach ($sources as $blade) {
+            file_put_contents($views.hash('xxh128', $blade).'.blade.php', $blade);
+        }
+
+        $this->artisan('integrity:check')->assertFailed();
+
+        $text = sjIntegrityText();
+        foreach ($sources as $blade) {
+            expect($text)->toContain(hash('xxh128', $blade).'.blade.php');
+        }
+    });
+
     test('SEC-070 tanpa manifest (local): view hanya dicek isinya → peringatan, bukan lolos diam-diam', function () {
         unlink($this->base.'/.integrity-manifest.json');
 
@@ -480,3 +501,22 @@ test('T-045 Scheduled: semua job terdaftar di scheduler dengan jadwalnya', funct
         ->and($events->get('security:scan-alerts')?->expression)->toBe('*/5 * * * *')
         ->and($events->get('integrity:check')?->expression)->toBe('15 3 * * *');
 });
+
+dataset('sj_inline_blade', [
+    'Inertia head' => ["@if(\$response)\n{!! \$response->head !!}\n@else\n{!! \$slot !!}\n@endif", true],
+    'Inertia body' => ["@if(\$response)\n{!! \$response->body !!}\n@else\n<script data-page=\"{{ \$id }}\" type=\"application/json\">{!! \$pageJson !!}</script><div id=\"{{ \$id }}\"></div>\n@endif", true],
+    'indeks & isset' => ["@isset(\$a['k'])\n{{ \$a['k'][0] }}\n@endisset\n@unless(\$b)x@endunless", true],
+    'komponen + binding' => ['<x-foo :a="system(\'id\')"/>', false],
+    'x-slot' => ['<x-slot name="a">{{ $a }}</x-slot>', false],
+    '@include' => ["@include('lain')", false],
+    '@props' => ["@props(['a'])", false],
+    'panggilan method' => ['{{ $a->b() }}', false],
+    'panggilan fungsi di @if' => ['@if(system($a))x@endif', false],
+    'variabel variabel' => ['{{ $$a }}', false],
+    'static' => ['{{ Foo::$a }}', false],
+    'tag php' => ['<?php echo 1; ?>', false],
+]);
+
+test('SEC-070 Scheduled InlineComponent: daftar izin lewat PHP hasil kompilasi', function (string $blade, bool $safe) {
+    expect(InlineComponent::isSafe($blade, app('blade.compiler')))->toBe($safe);
+})->with('sj_inline_blade');

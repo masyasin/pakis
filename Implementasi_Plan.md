@@ -119,10 +119,11 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | **Total** | **197** | **45** | **1** | **0** |
 
 ### 6.2 Sedang dikerjakan
+- **T-067 bagian 1 (fondasi Paket A)**: 55 izin + allowlist ADM/HRD + 4 role baru + migrasi data + MFA + tipe/penanda setting + galat Inertia + kode galat web (`05` §2.4a). Bagian 2 (mesin approval, delegasi, eskalasi, UI) menyusul. Keputusan perencanaan PA-26–PA-33 di `12`.
 - **Exit gate Fase 0,5 tinggal uji HP** (keputusan Mas 16 Nov 2026, `12` f43d749): T-036A bagian 2, cakupan BR-060–BR-070, dan retensi lewat scheduler selesai. **Uji HP MOB-01–MOB-09 + satu HP Android 8 nyata DITUNDA**, dijalankan Mas belakangan dalam satu putaran untuk semua alur mobile (presensi, riwayat, koreksi, persetujuan, notifikasi, profil, tugas luar kota). T-042 tetap "sedang" sampai uji itu.
 
 ### 6.3 Blocker aktif
-- (kosong)
+- (kosong). **Pengecualian gerbang (16 Nov 2026, Mas, `12`):** Paket A (T-067) dimulai sebelum uji HP Fase 0,5 (MOB-01–MOB-09 + Android 8); uji HP tetap wajib sebelum rilis/pilot.
 
 ### 6.4 Log
 

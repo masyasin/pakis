@@ -1,21 +1,23 @@
 # 15 — Paket A: Master & Gudang (siap eksekusi)
 
-**Rentang:** T-067–T-087 · FR-A01–FR-A30 · BR-150–BR-170 · SEC-101–SEC-110
+Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10–PA-24 dari `12`.
+
+**Rentang:** T-067–T-087 (+ T-085A) · FR-A01–FR-A30 · BR-150–BR-170 · SEC-101–SEC-110
 **Kontrak lintas modul:** `14-ROADMAP-LENGKAP.md` (ADR-101–ADR-115, nama tabel §5–§6, event §7, penomoran §8, role §10, status §11).
 **Modul konsep v1.4:** CORE-02, CORE-03, CORE-06, MST-01..05, PRC-01, INV-01..05, GAR-01 (terima).
 
 ## 0. Penyelarasan dengan Repo (cek sebelum T-067)
 
-Paket ini ditulis dari docs v1.0 ditambah perubahan yang terlihat di `TASKS.md` per 16 Nov 2026. Task pertama (T-067) **wajib** mencocokkan butir ini dengan repo dan mencatat selisihnya di `12` (log keputusan) sebelum menulis kode:
+Paket ini ditulis dari docs v1.0 ditambah perubahan yang terlihat di `TASKS.md` per 16 Nov 2026. Pemeriksaan butir di bawah sudah dilakukan 16 Nov 2026 (`12` "Penyelarasan Paket A–B", hasil di kolom terakhir) dan keputusannya sudah diterapkan ke dokumen ini serta `TASKS_PAKET_A.md`. Task pertama (T-067) tetap **wajib** mengecek ulang butir yang berubah terhadap repo dan mencatat selisih baru di `12` (log keputusan) sebelum menulis kode:
 
-| # | Asumsi di paket ini | Cek di repo |
-|---|---|---|
-| S-1 | Tabel `locations`, `employees`, `assignments`, `users`, `reference_items`, `document_sequences`, `settings`, `audit_logs`, `notifications` seperti `04` v1.0 | Nama kolom & tipe |
-| S-2 | `ReferenceGroup` enum, `SettingRegistry`, `PermissionCatalog`/`RoleCatalog`, `NotificationRouter`, `DataScope`, `ListingSpec`, `#[UsesListing]` | Nama kelas & namespace |
-| S-3 | **Nama berkas mengikuti konvensi repo**, bukan paket ini. `TASKS.md` repo memakai huruf kecil kebab-case (`pages/employees/show.tsx`, `components/pakis/history-list.tsx`). Path halaman/komponen PascalCase di paket A–G bersifat indikatif dan diterjemahkan ke konvensi repo (mis. `Sales/Orders/Form.tsx` → `pages/sales/orders/form.tsx`). **Folder `pages/settings/` milik pengaturan pengguna starter kit**: halaman yang di paket ini ditulis `Settings/…` (aturan approval, rekening resmi, tarif pajak, template pesan, tanggal kunci) ditempatkan di bawah `pages/site-settings/…` mengikuti T-008 | `TASKS.md` (catatan T-006, T-007, T-008) |
-| S-4 | Nomor BR/SEC/FR/OQ dalam rentang paket ini belum terpakai (mis. oleh `13-FASE-HR.md`) | Bila terpakai, geser seluruh rentang paket dan catat |
-| S-5 | `stancl`/paket tenancy tidak dipakai, tidak ada `tenant_id` | ADR-001 |
-| S-6 | Dependency baru di paket ini **hanya dua**, dicatat di `03` §5 oleh task yang menambahkannya: `brick/math` sebagai dependency langsung composer (sudah terpasang tidak langsung lewat `laravel/framework`; T-069) dan `leaflet` 1.9.x di npm tanpa wrapper React (T-073). OpenSpout sudah ada | `03` §5, `composer.lock`, `package-lock.json` |
+| # | Asumsi di paket ini | Cek di repo | Hasil 16 Nov 2026 |
+|---|---|---|---|
+| S-1 | Tabel `locations`, `employees`, `assignments`, `users`, `reference_items`, `document_sequences`, `settings`, `audit_logs`, `notifications` seperti `04` v1.0 | Nama kolom & tipe | Cocok. Catatan: kabupaten = `regencies` (bukan `cities`); kode wilayah **bertitik** (`districts.code` CHAR(8) `33.19.04`, `villages.code` CHAR(13)); `users.phone` belum dinormalisasi (PA-23, dibereskan T-073) |
+| S-2 | `App\Domain\Reference\Enums\ReferenceGroup`, `App\Domain\Settings\{SettingRegistry,SettingType}`, `App\Domain\Access\Support\{PermissionCatalog,RoleCatalog}`, `App\Domain\Notification\NotificationRouter`, `App\Domain\Access\DataScope`, `App\Support\Listing\{ListingSpec,HasListing,UsesListing}`, `App\Support\Export\{ExportableListing,StartExport}`, `App\Support\Lookup\{LookupSource,LookupRegistry}` | Nama kelas & namespace | Cocok sebagian. `DataScope::forStock()`/`forCustomer()` dibuat T-068/T-073. Kerangka impor Fase 0 khusus pegawai → diekstrak ke `app/Support/Import` di **T-085A** (PA-15). Validator unggahan tersebar per modul → diekstrak ke `app/Support/Upload/` di T-070 (PA-22). Konfirmasi password = `RequirePassword` (`password.confirm`) untuk rute statis atau `App\Support\Auth\PasswordConfirmation::isRecent()` untuk yang bersyarat (PA-24b) |
+| S-3 | **Nama berkas mengikuti konvensi repo**, bukan paket ini. `TASKS.md` repo memakai huruf kecil kebab-case (`pages/employees/show.tsx`, `components/pakis/history-list.tsx`). Path halaman/komponen PascalCase di paket A–G bersifat indikatif dan diterjemahkan ke konvensi repo (mis. `Sales/Orders/Form.tsx` → `pages/sales/orders/form.tsx`). **Folder `pages/settings/` milik pengaturan pengguna starter kit**: halaman yang di paket ini ditulis `Settings/…` (aturan approval, rekening resmi, tarif pajak, template pesan, tanggal kunci) ditempatkan di bawah `pages/site-settings/…` mengikuti T-008 | `TASKS.md` (catatan T-006, T-007, T-008) | Cocok. Komponen yang sudah ada di `components/pakis/` dipakai ulang, bukan dibuat baru (§7.2) |
+| S-4 | Nomor BR/SEC/FR/OQ dalam rentang paket ini belum terpakai (mis. oleh `13-FASE-HR.md`) | Bila terpakai, geser seluruh rentang paket dan catat | Cocok. Tertinggi di repo: T-066 (+T-036A), BR-072, SEC-070. Task sisipan **T-085A** memakai pola sufiks seperti T-036A |
+| S-5 | `stancl`/paket tenancy tidak dipakai, tidak ada `tenant_id` | ADR-001 | Cocok |
+| S-6 | Dependency baru di paket ini **hanya satu**: `brick/math` `^1.0` sebagai dependency langsung composer (sudah terpasang 1.0.0 tidak langsung lewat `laravel/framework`; API 1.x memakai enum `RoundingMode`), dicatat di `03` §5 oleh T-069. **Tanpa `leaflet`/tile peta** (PA-20). OpenSpout sudah ada | `03` §5, `composer.lock`, `package-lock.json` | Cocok setelah keputusan PA-20 |
 
 ## 1. Ruang Lingkup
 
@@ -123,7 +125,7 @@ CREATE TABLE approval_rule_steps (
   step_order TINYINT UNSIGNED NOT NULL,
   approver_type ENUM('permission','direct_supervisor','location_head') NOT NULL,
   permission_name VARCHAR(120) NULL,         -- wajib bila approver_type = permission
-  escalate_after_hours SMALLINT UNSIGNED NULL,   -- NULL = setting approval.default_escalation_hours
+  escalate_after_hours SMALLINT UNSIGNED NULL,   -- jam kalender; NULL = setting approval.default_escalation_hours
   escalation_permission VARCHAR(120) NULL,   -- pemegang izin ini boleh memutuskan setelah eskalasi
   [audit],
   UNIQUE KEY ars_rule_order_unique (approval_rule_id, step_order),
@@ -1065,9 +1067,9 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 |---|---|---|---|---|
 | `admin.approvals.index` | GET | `/persetujuan` | `approvals.view` | Tab: Menunggu saya · Saya ajukan · Semua (sesuai scope) |
 | `admin.approvals.show` | GET | `/persetujuan/{request}` | `approvals.view` + berhak melihat dokumen | Ringkasan, konteks, riwayat langkah, tautan dokumen |
-| `admin.approvals.approve` / `reject` | POST | `/persetujuan/{request}/setujui` · `/tolak` | sesuai langkah aktif (BR-153) | Tolak wajib catatan ≥ 5 karakter. Konfirmasi password bila nominal ≥ `approval.reauth_amount` |
+| `admin.approvals.approve` / `reject` | POST | `/persetujuan/{request}/setujui` · `/tolak` | sesuai langkah aktif (BR-153) | Tolak wajib catatan ≥ 5 karakter. Konfirmasi password bila nominal ≥ `approval.reauth_amount`: bersyarat, jadi **bukan** middleware, melainkan `App\Support\Auth\PasswordConfirmation::isRecent()` di Action + `confirm-password-dialog.tsx` (pola `SettingController`) |
 | `admin.approval-rules.index` | GET | `/pengaturan/aturan-persetujuan` | `approvals.configure` | |
-| `admin.approval-rules.store`/`update`/`destroy` | | `/pengaturan/aturan-persetujuan/...` | `approvals.configure` | Konfirmasi password. Aturan yang pernah dipakai hanya bisa dinonaktifkan |
+| `admin.approval-rules.store`/`update`/`destroy` | | `/pengaturan/aturan-persetujuan/...` | `approvals.configure` | Konfirmasi password (rute statis: middleware `password.confirm` / `RequirePassword`). Aturan yang pernah dipakai hanya bisa dinonaktifkan |
 | `admin.approval-rules.preview` | POST | `/pengaturan/aturan-persetujuan/pratinjau` | `approvals.configure` | Input jenis dokumen + nominal → rantai penyetuju |
 | `admin.approval-delegations.index`/`store`/`destroy` | | `/persetujuan/delegasi` | auth (milik sendiri), `approvals.configure` (semua) | |
 | `admin.stock-locations.index`/`create`/`store`/`edit`/`update` | | `/lokasi-stok/...` | `stock_locations.view` / `.manage` | `TRANSIT` tidak bisa diubah |
@@ -1077,7 +1079,7 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.products.index`/`create`/`store`/`show`/`edit`/`update` | | `/produk/...` | `products.view` / `.manage` | Detail bertab: data, satuan & barcode, izin edar, harga (berlaku), stok per lokasi, riwayat |
 | `admin.products.units.store`/`update` | | `/produk/{product}/satuan` | `products.manage` | |
 | `admin.products.barcodes.store`/`destroy` | | `/produk/{product}/barcode` | `products.manage` | |
-| `admin.products.export` | GET | `/produk/ekspor` | `products.view` | |
+| `admin.products.export` | GET | `/produk/ekspor` | `products.view` | Listing `products` (master, izin `.view` seperti Fase 0) |
 | `admin.product-registrations.index` | GET | `/izin-edar` | `products.view` | Default filter "berakhir ≤ 60 hari" |
 | `admin.product-registrations.store`/`update` | | `/produk/{product}/izin-edar` | `product_registrations.manage` | Unggah berkas PDF/JPG |
 | `admin.principals.index`/`store`/`update` | | `/prinsipal/...` | `suppliers.view` / `.manage` | |
@@ -1085,37 +1087,40 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.suppliers.reveal-account` | POST | `/supplier/{supplier}/rekening` | `suppliers.manage` | `sensitive_data_viewed` |
 | `admin.sales-areas.index`/`store`/`update` | | `/area-penjualan/...` | `sales_areas.view` / `.manage` | |
 | `admin.customers.index`/`create`/`store`/`show`/`edit`/`update` | | `/pelanggan/...` | `customers.view` / `.manage` | Scope `customer`. Detail bertab: profil, kontak, verifikasi, riwayat area/sales, limit, riwayat |
-| `admin.customers.duplicates` | POST | `/pelanggan/cek-duplikat` | `customers.manage` | JSON kandidat duplikat (BR-166) |
+| `admin.customers.duplicates` | POST | `/pelanggan/cek-duplikat` | `customers.manage` | JSON kandidat duplikat (BR-166). Galat memakai format JSON `05` §2.2 (§11.3) |
 | `admin.customers.verify` | POST | `/pelanggan/{customer}/verifikasi` | `customers.manage` | Kirim verifikasi (foto, titik, OTP/telepon kantor) → approval `customer_activation` |
-| `admin.customers.otp.send` / `admin.customers.otp.check` | POST | `/pelanggan/{customer}/otp` · `/otp/cek` | `customers.manage` | Lewat `CustomerOtpService` → `WhatsAppChannel` (template OTP). 503 `CHANNEL_UNAVAILABLE` bila `customer.otp_enabled=false` atau driver `log` di produksi |
+| `admin.customers.otp.send` / `admin.customers.otp.check` | POST | `/pelanggan/{customer}/otp` · `/otp/cek` | `customers.manage` | Lewat `CustomerOtpService`: **pengiriman** memakai kanal OTP Fase 0 (`App\Domain\Notification\Otp\{OtpManager,OtpChannel}`, `config/otp.php`), **kanal `whatsapp` saja** ke `owner_phone` (BR-165); **penyimpanan kode (hash), masa berlaku, dan batas percobaan** di tabel `customer_otp_codes` + setting `customer.otp_*`. `OtpService` Fase 0 tidak dipakai karena menyimpan kode di cache per `User` dan khusus lupa password, sedangkan kios bukan `User`. 503 `CHANNEL_UNAVAILABLE` bila `customer.otp_enabled=false` atau kanal WhatsApp tidak tersedia (`OtpManager::available('whatsapp')` = false: driver `none`, atau `log` di produksi) → jalur telepon kantor |
 | `admin.customers.change-phone` | POST | `/pelanggan/{customer}/ganti-hp` | `customers.change_phone` | → approval `customer_phone_change` |
 | `admin.customers.credit-limit` | POST | `/pelanggan/{customer}/limit` | `customers.manage` | → approval `customer_credit_limit` |
 | `admin.customers.reassign` | POST | `/pelanggan/alihkan` | `customers.manage` | Massal: `customer_ids[]`, area, sales, tanggal, alasan |
 | `admin.customers.merge` | POST | `/pelanggan/{customer}/gabung` | `customers.manage` | → approval `customer_merge` |
-| `admin.customers.export` | GET | `/pelanggan/ekspor` | `customers.view` | Nomor HP termasking |
+| `admin.customers.export` | GET | `/pelanggan/ekspor` | `customers.export` | Data sensitif (HP pemilik), izin `.export` seperti Fase 0. Nomor HP termasking (SEC-108) |
 | `admin.customer-verifications.index` | GET | `/pelanggan/verifikasi` | `customers.verify` | Antrean verifikasi |
 | `admin.price-lists.index`/`store`/`update` | | `/daftar-harga/...` | `prices.view` / `.manage` | |
 | `admin.price-lists.show` | GET | `/daftar-harga/{list}` | `prices.view` | Daftar versi + versi berlaku |
 | `admin.price-lists.versions.store` | POST | `/daftar-harga/{list}/versi` | `prices.manage` | Versi baru (kosong / salin versi lain / persen naik-turun) |
 | `admin.price-lists.items.index` | GET | `/daftar-harga/versi/{version}/item` | `prices.view` | Daftar item versi |
+| `admin.price-lists.items.export` | GET | `/daftar-harga/versi/{version}/item/ekspor` | `prices.view` | Listing `price_list_items` |
 | `admin.price-lists.items.upsert` | PUT | `/daftar-harga/versi/{version}/item` | `prices.manage` | Hanya versi `draft` |
 | `admin.price-lists.versions.submit` | POST | `/daftar-harga/versi/{version}/ajukan` | `prices.manage` | → `price_list_publish` (langsung terbit bila pelaku punya `prices.publish`) |
 | `admin.promotions.index`/`create`/`store`/`edit`/`update` | | `/promo/...` | `promotions.view` / `.manage` | |
 | `admin.promotions.submit` / `end` | POST | `/promo/{promo}/ajukan` · `/akhiri` | `promotions.manage` | |
 | `admin.promotions.simulate` | POST | `/promo/simulasi` | `promotions.view` | Hitung harga & promo untuk kios + produk + jumlah |
 | `admin.purchase-orders.index`/`create`/`store`/`show`/`edit`/`update` | | `/pembelian/po/...` | `purchase_orders.view` / `.create` | Ubah hanya saat `draft` |
+| `admin.purchase-orders.export` | GET | `/pembelian/po/ekspor` | `purchase_orders.view` | Listing `purchase_orders`; didaftarkan sebelum `{po}` |
 | `admin.purchase-orders.submit`/`cancel`/`close` | POST | `/pembelian/po/{po}/ajukan` · `/batal` · `/tutup` | `purchase_orders.create` | Tutup wajib alasan |
 | `admin.purchase-orders.pdf` | GET | `/pembelian/po/{po}/pdf` | `purchase_orders.view` | Menunggu ADR-114. Sementara halaman cetak HTML |
 | `admin.goods-receipts.index`/`create`/`store`/`show`/`edit`/`update` | | `/penerimaan/...` | `goods_receipts.view` / `.create` | Scope lokasi stok |
+| `admin.goods-receipts.export` | GET | `/penerimaan/ekspor` | `goods_receipts.view` | Listing `goods_receipts`; didaftarkan sebelum `{gr}`. Harga beli mengikuti SEC-107 |
 | `admin.goods-receipts.check` / `post` | POST | `/penerimaan/{gr}/periksa` · `/posting` | `goods_receipts.create` | Posting: pengirim ≠ pemeriksa bila setting `purchasing.receipt_two_person` |
 | `admin.goods-receipts.serials` | PUT | `/penerimaan/{gr}/baris/{line}/seri` | `goods_receipts.create` | Input/scan nomor seri |
 | `admin.purchase-returns.index`/`create`/`store`/`show` | | `/pembelian/retur/...` | `purchase_returns.manage` | |
 | `admin.purchase-returns.submit`/`ship`/`close` | POST | `/pembelian/retur/{ret}/...` | `purchase_returns.manage` | |
 | `admin.stock.index` | GET | `/stok` | `stock.view` | Posisi stok. Mode tampilan `per_product` / `per_batch` (filter) |
-| `admin.stock.export` | GET | `/stok/ekspor` | `stock.view` | Kolom HPP hanya bila `stock.view_cost` |
+| `admin.stock.export` | GET | `/stok/ekspor` | `stock.export` | Data sensitif (HPP/biaya), izin `.export` seperti Fase 0. Kolom HPP hanya bila `stock.view_cost` (SEC-107) |
 | `admin.stock-levels.index`/`upsert` | GET/PUT | `/stok/minimum` | `stock.view` / `stock_locations.manage` | Stok min/maks per produk per lokasi stok. Impor via `master_imports` tipe `stock_levels` |
 | `admin.stock-movements.index` | GET | `/stok/kartu` | `stock.view` | Kartu stok |
-| `admin.stock-movements.export` | GET | `/stok/kartu/ekspor` | `stock.view` | |
+| `admin.stock-movements.export` | GET | `/stok/kartu/ekspor` | `stock.export` | Kolom biaya hanya bila `stock.view_cost` (SEC-107) |
 | `admin.stock.trace` | GET | `/stok/telusur` | `stock.view` | Input produk + batch → lokasi tersisa, mutasi, (Paket B: kios penerima) |
 | `admin.stock.quarantine` / `release` | POST | `/stok/karantina` · `/stok/karantina/{batch}/lepas` | `stock_quarantine.manage` | Lepas → approval `stock_quarantine_release` |
 | `admin.stock.bin-move` | POST | `/stok/pindah-rak` | `stock_quarantine.manage` | Pindah antar rak dalam lokasi yang sama |
@@ -1128,10 +1133,13 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.disposal-reports.index`/`create`/`store`/`show` | | `/pemusnahan/...` | `stock_disposals.manage` | |
 | `admin.disposal-reports.submit`/`execute` | POST | `/pemusnahan/{report}/ajukan` · `/laksanakan` | `stock_disposals.manage` | Laksanakan wajib unggah berita acara + foto |
 | `admin.serials.index` | GET | `/nomor-seri` | `stock.view` | |
+| `admin.serials.export` | GET | `/nomor-seri/ekspor` | `stock.view` | Listing `serial_numbers`; didaftarkan sebelum `{serial}` |
 | `admin.serials.swap` | POST | `/nomor-seri/{serial}/tukar` | `serials.manage` | → approval `serial_swap` |
-| `admin.master-imports.*` | | `/impor/{type}` | `master_imports.manage` + izin modul | Memakai kerangka impor Fase 0 (`admin.imports.*`) dengan `type` baru: `products`, `customers`, `price_items`, `opening_stock`, `stock_levels` |
+| `admin.master-imports.*` | | `/impor/{type}` | `master_imports.manage` + izin modul | Memakai kerangka impor generik `app/Support/Import` yang diekstrak dari impor pegawai Fase 0 di **T-085A**, dengan `type` baru: `products`, `customers`, `price_items`, `opening_stock`, `stock_levels`. Parameter `{type}` dibatasi `whereIn` daftar tipe terdaftar agar tidak bentrok dengan `impor/pegawai…`, `impor/profil`, dan `impor/{batch}` (`whereNumber`) milik `admin.imports.*` |
 
-**Lookup baru** (`admin.lookup.<sumber>`, `05` §4.11): `products`, `product_units` (`parent` = produk), `product_categories`, `principals`, `suppliers`, `sales_areas`, `customers` (scope `customer`), `stock_locations` (scope stok), `stock_bins` (`parent` = lokasi stok), `price_lists`, `available_batches` (`parent` = produk + lokasi stok, hanya `available`, urut FEFO, menampilkan ED & qty tersedia).
+**Ekspor.** Semua rute `*.export` di atas memakai pola Fase 0 (`backend/CLAUDE.md` "Ekspor (T-006)"): kelas listing `implements ExportableListing` + kunci di `config/pakis.php` `exports` + `StartExport` (antrean, batas, escape formula, unduhan). Tidak ada kelas `*Export` sendiri. Izin mengikuti pola Fase 0 (PA-3): `.export` untuk data sensitif (`customers.export`, `stock.export`), `.view` modul untuk master (`products.view`, `prices.view`, `purchase_orders.view`, `goods_receipts.view`, `stock.view`). Kolom biaya tetap mengikuti SEC-107.
+
+**Lookup baru** (satu rute `admin.lookup.show` `/lookup/{source}` + `LookupRegistry`, `05` §4.11; tiap sumber = `LookupSource` yang didaftarkan di `AppServiceProvider`): `products`, `product_units` (`parent` = produk), `product_categories`, `principals`, `suppliers`, `sales_areas`, `customers` (scope `customer`), `stock_locations` (scope stok), `stock_bins` (`parent` = lokasi stok), `price_lists`, `available_batches` (dua parameter produk + lokasi stok lewat `LookupSource::rules()`, hanya `available`, urut FEFO, menampilkan ED & qty tersedia).
 
 ## 6. Otorisasi
 
@@ -1139,21 +1147,25 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 
 | Kode | Nama | `data_scope` | `mfa_required` | `is_system` | Pemegang contoh |
 |---|---|---|---|---|---|
-| `admin_penjualan` | Admin Penjualan | `all` | ❌ | ❌ | Staf admin penjualan kantor |
+| `admin_penjualan` | Admin Penjualan | `all` | ✅ | ❌ | Staf admin penjualan kantor |
 | `kepala_gudang` | Kepala Gudang | `location` | ✅ | ❌ | Kepala Gudang Undaan |
 | `staf_gudang` | Staf Gudang | `location` | ❌ | ❌ | Staf penerimaan & picking |
 | `purchasing` | Purchasing | `all` | ✅ | ❌ | Staf pembelian |
+
+**MFA penyetuju (PA-12).** Role yang memutuskan approval Paket A wajib MFA sejak T-067: `admin_penjualan` (`customers.verify`, `master_imports.manage`) dan role Fase 0 `supervisor` (`customers.verify`, `credit_limits.set`, `prices.manage`, `promotions.manage`) menjadi `mfa_required = true`. Karena `RoleSeeder` tidak mengubah `mfa_required` role yang sudah ada, T-067 menyertakan migrasi data yang menyalakan `mfa_required` untuk role `supervisor` yang sudah ada. Deskripsi role Fase 0 `kepala_lokasi` di `RoleCatalog` ("Kepala gudang / toko…") diperbarui di T-067 agar tidak tumpang tindih dengan `kepala_gudang` (PA-24f).
 
 ### 6.2 Dimensi scope (ADR-106)
 
 | Dimensi | `all` | `location` | `team` | `self` |
 |---|---|---|---|---|
-| **Stok** (`stock_location_id`) | Semua lokasi stok | Lokasi stok yang `location_id`-nya = lokasi penugasan utama pengguna atau lokasi yang dikepalai pengguna | Tidak ada (Paket C: lokasi stok kendaraan anggota tim) | Tidak ada (Paket C: lokasi stok kendaraan yang dipegang) |
-| **Pelanggan** (`customer_id`) | Semua kios | Kios yang `home_stock_location_id` (atau gudang asal area) ada di lokasi stok pengguna | Kios di area yang `supervisor_employee_id` = pengguna, **atau** `assigned_sales_employee_id` ∈ tim pengguna | Kios dengan `assigned_sales_employee_id` = pengguna |
+| **Stok** (`stock_location_id`) | Semua lokasi stok | Lokasi stok yang `location_id`-nya termasuk **lokasi pengguna menurut definisi Fase 0** (`06` §5, `OrgStructure`): lokasi penugasan utama **+ penugasan tambahan/rangkap** + lokasi yang dikepalai pengguna (`assignedLocationsOf` + `locationsHeadedBy`) | Tidak ada (Paket C: lokasi stok kendaraan anggota tim) | Tidak ada (Paket C: lokasi stok kendaraan yang dipegang) |
+| **Pelanggan** (`customer_id`) | Semua kios | Kios yang `home_stock_location_id` (atau gudang asal area) ada di lokasi stok pengguna (definisi lokasi sama dengan baris Stok) | Kios di area yang `supervisor_employee_id` = pengguna, **atau** `assigned_sales_employee_id` ∈ tim pengguna | Kios dengan `assigned_sales_employee_id` = pengguna |
 
-Implementasi: `DataScope::forStock()` dan `DataScope::forCustomer()`. Listing, lookup, Policy, dan route-model binding dokumen yang punya `stock_location_id` atau `customer_id` wajib memakai dimensi yang sesuai. Di luar scope → 404.
+Satu definisi lokasi untuk semua dimensi (PA-13): staf gudang yang rangkap di dua gudang melihat keduanya, sama seperti scope `location` pegawai Fase 0. Implementasi: `DataScope::forStock()` dan `DataScope::forCustomer()` memakai `OrgStructure` yang sama dengan `DataScope::apply()` Fase 0. Listing, lookup, Policy, dan route-model binding dokumen yang punya `stock_location_id` atau `customer_id` wajib memakai dimensi yang sesuai. Di luar scope → 404.
 
-### 6.3 Permission baru (53)
+### 6.3 Permission baru (55)
+
+Katalog di `app/Domain/Access/Support/PermissionCatalog.php`, matriks default di `app/Domain/Access/Support/RoleCatalog.php` (PA-5). Izin ekspor mengikuti pola Fase 0 (PA-3): `.export` hanya untuk data sensitif (`customers.export` = HP pemilik, `stock.export` = HPP/biaya), ekspor master memakai izin `.view` modulnya.
 
 | Modul | Permission |
 |---|---|
@@ -1161,10 +1173,10 @@ Implementasi: `DataScope::forStock()` dan `DataScope::forCustomer()`. Listing, l
 | Lokasi stok & kendaraan | `stock_locations.view`, `stock_locations.manage`, `vehicles.view`, `vehicles.manage` |
 | Produk | `products.view`, `products.manage`, `product_registrations.manage` |
 | Prinsipal & supplier | `suppliers.view`, `suppliers.manage` |
-| Area & pelanggan | `sales_areas.view`, `sales_areas.manage`, `customers.view`, `customers.manage`, `customers.verify`, `customers.merge`, `customers.change_phone`, `customers.change_phone_approve`, `credit_limits.set`, `credit_limits.set_high` |
+| Area & pelanggan | `sales_areas.view`, `sales_areas.manage`, `customers.view`, `customers.export`, `customers.manage`, `customers.verify`, `customers.merge`, `customers.change_phone`, `customers.change_phone_approve`, `credit_limits.set`, `credit_limits.set_high` |
 | Harga & promo | `prices.view`, `prices.manage`, `prices.publish`, `promotions.view`, `promotions.manage`, `promotions.approve` |
 | Pembelian | `purchase_orders.view`, `purchase_orders.create`, `purchase_orders.approve`, `purchase_orders.approve_high`, `goods_receipts.view`, `goods_receipts.create`, `goods_receipts.approve_short_shelf_life`, `purchase_returns.manage`, `purchase_returns.approve` |
-| Stok | `stock.view`, `stock.view_cost`, `stock_transfers.view`, `stock_transfers.create`, `stock_transfers.receive`, `stock_transfers.approve_variance`, `stock_opnames.view`, `stock_opnames.manage`, `stock_opnames.approve_variance`, `stock_opnames.approve_variance_high`, `stock_quarantine.manage`, `stock_quarantine.release`, `stock_disposals.manage`, `stock_disposals.approve`, `serials.manage`, `serials.approve_swap` |
+| Stok | `stock.view`, `stock.view_cost`, `stock.export`, `stock_transfers.view`, `stock_transfers.create`, `stock_transfers.receive`, `stock_transfers.approve_variance`, `stock_opnames.view`, `stock_opnames.manage`, `stock_opnames.approve_variance`, `stock_opnames.approve_variance_high`, `stock_quarantine.manage`, `stock_quarantine.release`, `stock_disposals.manage`, `stock_disposals.approve`, `serials.manage`, `serials.approve_swap` |
 | Impor master | `master_imports.manage` |
 
 ### 6.4 Matriks kewenangan (default seeder)
@@ -1180,17 +1192,18 @@ Implementasi: `DataScope::forStock()` dan `DataScope::forCustomer()`. Listing, l
 | `vehicles.view` | ✅ | ✅ | ✅ | 🔸 | ❌ | ❌ | ✅ | 🔸 | ❌ | ❌ |
 | `vehicles.manage` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `products.view` | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| `products.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
-| `product_registrations.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `products.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `product_registrations.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ✅ |
-| `suppliers.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `suppliers.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `sales_areas.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `sales_areas.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `customers.view` | ✅ | ❌ | 🔸 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `customers.export` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `customers.manage` | ✅ | ❌ | 🔸 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `customers.verify` | ✅ | ❌ | 🔸 | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `customers.merge` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `customers.change_phone` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
+| `customers.change_phone` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ❌ |
 | `customers.change_phone_approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `credit_limits.set` | ✅ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `credit_limits.set_high` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
@@ -1201,36 +1214,38 @@ Implementasi: `DataScope::forStock()` dan `DataScope::forCustomer()`. Listing, l
 | `promotions.manage` | ✅ | ❌ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 |
 | `promotions.approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `purchase_orders.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ✅ |
-| `purchase_orders.create` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `purchase_orders.create` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `purchase_orders.approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `purchase_orders.approve_high` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `goods_receipts.view` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ✅ |
-| `goods_receipts.create` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
+| `goods_receipts.create` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
 | `goods_receipts.approve_short_shelf_life` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
-| `purchase_returns.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ✅ |
+| `purchase_returns.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ✅ |
 | `purchase_returns.approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `stock.view` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ | ✅ | 🔸 | 🔸 | ✅ |
 | `stock.view_cost` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
+| `stock.export` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ✅ |
 | `stock_transfers.view` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ | ✅ | 🔸 | 🔸 | ✅ |
-| `stock_transfers.create` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
-| `stock_transfers.receive` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
+| `stock_transfers.create` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
+| `stock_transfers.receive` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
 | `stock_transfers.approve_variance` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
 | `stock_opnames.view` | ✅ | ❌ | ❌ | 🔸 | ❌ | ❌ | ❌ | 🔸 | 🔸 | ✅ |
-| `stock_opnames.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
+| `stock_opnames.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
 | `stock_opnames.approve_variance` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
 | `stock_opnames.approve_variance_high` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `stock_quarantine.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
+| `stock_quarantine.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
 | `stock_quarantine.release` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
-| `stock_disposals.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
+| `stock_disposals.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
 | `stock_disposals.approve` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `serials.manage` | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
+| `serials.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
 | `serials.approve_swap` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ❌ |
 | `master_imports.manage` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ | ✅ |
 
 Catatan penting:
-- **Owner tidak bisa mengubah produk** (konsep §15.2: `produk.manage` Owner = baca saja). Owner bisa memberi izin itu ke dirinya lewat role kustom bila diinginkan, dan perubahan role tercatat.
+- **Owner memegang semua izin Paket A dan terkunci** (BR-031, `06` §2; `RoleCatalog::LOCKED`), sama seperti Fase 0 (PA-10). Pemisahan tugas tidak ditegakkan dengan mencabut izin Owner, melainkan oleh **maker-checker mesin approval** (BR-153(4): pembuat/pengaju tidak pernah memutuskan dokumennya sendiri, **termasuk Owner**) + audit (SEC-110).
 - `administrator` tidak melihat stok, harga, atau pelanggan. Perannya mengurus sistem, bukan transaksi.
 - Maker-checker berlaku walau pemegang punya izin: pembuat dokumen tidak bisa menyetujui dokumennya sendiri (BR-153).
+- **Matriks eksplisit & jalur upgrade (PA-11).** T-067 mengubah `administrator` dan `hrd` di `RoleCatalog` dari pola "semua izin kecuali daftar" menjadi **daftar izin eksplisit** (isi Fase 0 tidak berubah), agar izin baru tidak otomatis jatuh ke kedua role itu. Test: setiap izin baru default ❌ untuk semua role selain `owner`/`super_admin` kecuali tercantum di matriks (berlaku juga untuk Paket B–G). Instalasi yang sudah berjalan mendapat matriks ini lewat **migrasi data idempoten** yang hanya **menambah** sel ✅/🔸 tabel di atas ke role bawaan yang sudah ada (4 role baru dibuat bila belum ada), tanpa mencabut izin yang sudah diatur pengguna.
 
 ### 6.5 Menu (tambahan `06` §8)
 
@@ -1319,7 +1334,7 @@ sequenceDiagram
   participant L as StockLedger
   participant H as CostCalculator
   participant O as AccountingOutbox
-  participant DB as MySQL
+  participant DB as MariaDB
   SG->>C: POST /penerimaan/{gr}/posting
   C->>A: handle(gr, user) [Policy + SEC-104]
   A->>DB: BEGIN, lock goods_receipts & PO (FOR UPDATE)
@@ -1336,7 +1351,7 @@ sequenceDiagram
   A->>DB: COMMIT
   A-->>C: GoodsReceiptPosted
   C-->>SG: 200 + dokumen terbaru
-  Note over A,DB: Deadlock → retry ≤ 3, lalu 409 STOCK_CONFLICT
+  Note over A,DB: Deadlock → retry ≤ 3, lalu 409 STATE_CONFLICT
 ```
 
 **Mutasi antar lokasi lewat TRANSIT.**
@@ -1383,7 +1398,20 @@ flowchart LR
 
 ### 7.2 Komponen baru
 
-`QtyInput` (desimal id-ID, pilih satuan, tampilkan konversi ke satuan dasar) · `MoneyInput` · `BatchPicker` (lookup `available_batches`, urut FEFO, peringatan bila memilih bukan batch FEFO pertama) · `ExpiryBadge` (merah < 0 hari, oranye ≤ `inventory.near_expiry_days`, abu lainnya) · `StockStatusBadge` · `ApprovalTimeline` · `ScanField` · `MapPointPicker` (Leaflet + tile OSM; tile URL dari setting, tanpa API key) · `PhotoCapture` (kompres di klien ke ≤ 1600 px, JPEG 80%).
+**Pakai ulang komponen yang sudah ada** di `resources/js/components/pakis/` (S-3), jangan membuat salinan kedua:
+
+| Kebutuhan Paket A | Komponen yang ada |
+|---|---|
+| `StockStatusBadge`, `ExpiryBadge` (merah < 0 hari, oranye ≤ `inventory.near_expiry_days`, abu lainnya) | `status-badge.tsx` — petanya diperluas, bukan badge baru |
+| HP pemilik & rekening supplier termasking | `masked-value.tsx` |
+| Lookup (produk, kios, lokasi stok) dan dasar `BatchPicker` | `async-select.tsx` |
+| OTP kios | `otp-code-input.tsx` |
+| Konfirmasi password bersyarat (approval ≥ `approval.reauth_amount`, impor kios terverifikasi, tutup saldo awal) | `confirm-password-dialog.tsx` |
+| Tombol ekspor | `export-button.tsx` |
+| Detail bertab `?tab=` (produk, pelanggan, supplier) | `page-tabs.tsx` |
+| Tampilan titik kios | `location-diagram.tsx` (`LocationDiagram`, `07`:38) |
+
+**Komponen baru** (boleh dibuat): `QtyInput` (desimal id-ID, pilih satuan, tampilkan konversi ke satuan dasar) · `MoneyInput` · `BatchPicker` (di atas `async-select.tsx`; lookup `available_batches`, urut FEFO, peringatan bila memilih bukan batch FEFO pertama) · `ApprovalTimeline` · `ScanField` · `LocationPointInput` (input titik kios **tanpa library peta, tanpa tile, CSP tidak berubah** (PA-20): diisi dari tautan Google Maps yang ditempel (pola T-021) **atau** tombol "Ambil lokasi HP" lewat Geolocation API browser (koordinat + akurasi), lalu ditampilkan dengan `LocationDiagram`) · `PhotoCapture` (kompres di klien ke ≤ 1600 px, JPEG 80%) · `DocumentHeader`/`DocumentLines`. Peta interaktif baru dipertimbangkan bila ada server tile sendiri (OQ-120).
 
 ### 7.3 Katalog listing baru (`ListingContractTest` wajib)
 
@@ -1419,7 +1447,7 @@ flowchart LR
 | `stock_levels` | `admin.stock-levels.index` | SKU, nama | `stock_location_id` (wajib), `category_id`, `below_min` (ya) | `product.name` | Stok |
 | `stock_batches_trace` | `admin.stock.trace` | — | `product_id` + `batch_no` (wajib) | `stock_location.code` | Stok (`all` untuk Owner) |
 
-Total listing setelah Paket A: 29 (Fase 0) + 29 = **58**. Ekspor (`.xlsx` via OpenSpout, di-queue bila > `listing.export_sync_max_rows`) tersedia untuk `products`, `customers`, `price_list_items`, `stock_positions`, `stock_movements`, `purchase_orders`, `goods_receipts`, `serial_numbers` — dengan escape formula (SEC-051) dan masking sesuai izin.
+Total listing setelah Paket A: listing Fase 0 + 29 listing baru (jumlah Fase 0 bisa masih bertambah oleh T-041–T-045, jadi test tidak memakai angka total tetap). Ekspor (`.xlsx` via OpenSpout, di-queue bila > `export.sync_max_rows`) tersedia untuk `products`, `customers`, `price_list_items`, `stock_positions`, `stock_movements`, `purchase_orders`, `goods_receipts`, `serial_numbers` — semuanya lewat pola Fase 0 (listing `implements ExportableListing` + kunci `config/pakis.php` `exports` + `StartExport`, rute & izin di §5), dengan escape formula (SEC-051) dan masking sesuai izin.
 
 ### 7.4 Dashboard widget baru
 
@@ -1438,7 +1466,7 @@ Total listing setelah Paket A: 29 (Fase 0) + 29 = **58**. Ekspor (`.xlsx` via Op
 
 | ID | Aturan (konsep v1.4) | Implementasi wajib |
 |---|---|---|
-| BR-101 | Stok tidak boleh minus, reservasi atomik | Semua perubahan `qty_on_hand`/`qty_reserved` hanya lewat `StockLedger` di dalam transaksi DB dengan `SELECT … FOR UPDATE` pada baris `stock_batches` yang disentuh, dikunci **urut `id` naik** agar tidak deadlock. CHECK constraint DB sebagai lapis kedua. Deadlock (SQLSTATE 40001/1213) di-retry maks 3 kali dengan jeda acak 50–200 ms, lalu gagal `409 STOCK_CONFLICT` |
+| BR-101 | Stok tidak boleh minus, reservasi atomik | Semua perubahan `qty_on_hand`/`qty_reserved` hanya lewat `StockLedger` di dalam transaksi DB dengan `SELECT … FOR UPDATE` pada baris `stock_batches` yang disentuh, dikunci **urut `id` naik** agar tidak deadlock. CHECK constraint DB sebagai lapis kedua. Deadlock (SQLSTATE 40001/1213) di-retry maks 3 kali dengan jeda acak 50–200 ms, lalu gagal `409 STATE_CONFLICT` |
 | BR-102 | FEFO; batch karantina/ED/izin habis tidak dialokasikan | `FefoAllocator::allocate(product, stockLocation, qtyBase, asOf)` mengembalikan daftar `(batch, qty)` dari batch `status='available'`, `expiry_date IS NULL OR expiry_date > asOf + inventory.min_sell_days_before_expiry`, urut `expiry_date` asc (NULL terakhir), `received_date` asc, `id` asc. Bila produk `requires_registration` dan tidak ada izin `active` pada `asOf` → `422 PRODUCT_REGISTRATION_INACTIVE`. Stok kurang → `422 INSUFFICIENT_STOCK` berisi qty tersedia |
 | BR-103 | Sisa umur simpan < batas butuh persetujuan Kepala Gudang | Batas = `products.min_shelf_life_months` ?? setting `inventory.min_shelf_life_months`. Sisa umur = bulan antara `received_at` dan `expiry_date` (1 desimal). Baris di bawah batas → `line_status='short_shelf_life'` → approval `goods_receipt_short_shelf_life`. Batch ED ≤ tanggal terima **selalu ditolak**, tidak bisa disetujui |
 | BR-112 | Pestisida terbatas hanya ke pembeli memenuhi syarat | Paket A menyediakan penanda `products.is_restricted` dan kelayakan kios (`restricted_buyer_eligible` + dokumen + masa berlaku). Penegakan di dokumen jual ada di Paket B/C. Katalog Pakis Mitra (Paket G) wajib mengecualikan produk `is_restricted` |
@@ -1454,7 +1482,7 @@ Total listing setelah Paket A: 29 (Fase 0) + 29 = **58**. Ekspor (`.xlsx` via Op
 | **BR-150** | **Satuan & konversi.** Setiap produk punya tepat satu satuan dasar (`product_units.is_base`, faktor 1). Faktor satuan lain > 0, maks 3 desimal, dinyatakan "1 satuan ini = N satuan dasar". Setiap qty dokumen disimpan dua kali: dalam satuan baris (`qty`) dan dalam satuan dasar (`qty_base = qty × factor`, dibulatkan 3 desimal half-up). Satuan dengan referensi `integer_only` (pcs, botol, sak, dus) menolak qty pecahan → `422 QTY_NOT_INTEGER`. Faktor satuan yang sudah dipakai dokumen apa pun **tidak bisa diubah**; buat satuan baru dan nonaktifkan yang lama |
 | **BR-151** | **Perilaku kategori.** Penanda kategori (`requires_batch`, `requires_expiry`, `requires_serial`, `requires_registration`) disalin ke produk saat dibuat dan boleh diperketat per produk, tidak boleh dilonggarkan kecuali oleh `products.manage` dengan alasan tercatat. Produk yang sudah punya stok tidak bisa mengubah `tracks_batch`/`tracks_serial` |
 | **BR-152** | **Izin edar.** Job harian 00:30 mengubah izin `active` dengan `valid_until < hari ini` menjadi `expired`. `revoked` hanya manual dengan alasan. Label tampilan "akan habis" (filter `registration_status=expiring`) dihitung: `active` dan `valid_until ≤ hari ini + inventory.registration_reminder_days` (default 60). Satu produk boleh punya beberapa izin (perpanjangan); izin berlaku = `active` dengan `valid_until` terjauh. Pengingat in-app ke pemegang `product_registrations.manage` pada H-60, H-30, H-7, H-0. Produk wajib izin tanpa izin berlaku: tidak bisa dialokasikan untuk jual/mutasi ke toko, tetap bisa diterima ke karantina, diretur, dimusnahkan |
-| **BR-153** | **Approval.** (1) Aturan dipilih: `is_active`, `document_type` cocok, `min_amount ≤ amount < max_amount`, `conditions` cocok, `priority` terkecil. Tidak ada aturan cocok → dokumen langsung disetujui **hanya** bila setting `approval.auto_approve_when_no_rule=true` (default `false` → `422 APPROVAL_RULE_MISSING`). (2) Aturan & langkah disalin ke `rule_snapshot`; perubahan aturan tidak memengaruhi permintaan berjalan. (3) Langkah diproses berurutan. Penyetuju langkah: `permission` = pengguna aktif yang punya izin itu **dan** dokumen dalam scope-nya; `direct_supervisor` = atasan langsung `scope_employee_id` per penugasan aktif; `location_head` = kepala `scope_location_id`. (4) **Maker-checker:** pengaju dan pembuat dokumen tidak pernah boleh memutuskan langkah apa pun pada permintaan itu, termasuk sebagai delegasi. Bila satu-satunya calon penyetuju adalah pengaju, langkah langsung tereskalasi. (5) Langkah dengan resolusi kosong (atasan/kepala tidak ada) langsung tereskalasi. (6) Eskalasi: setelah `escalate_after_hours` jam kerja (kalender Fase 0), pemegang `escalation_permission` juga boleh memutuskan; notifikasi ke keduanya. (7) Delegasi: pengguna yang aktif menjadi delegasi boleh memutuskan atas nama pemberi untuk `document_types` tercantum; tercatat `acting_for_user_id`. (8) Penolakan di langkah mana pun → seluruh permintaan `rejected`, dokumen kembali ke state yang ditentukan dokumen (tabel §6.6). (9) Pengaju boleh membatalkan permintaan `pending` selama belum ada langkah yang diputuskan. (10) Dokumen yang berubah setelah diajukan otomatis membatalkan permintaan (dokumen yang diajukan terkunci, jadi ini hanya terjadi lewat aksi "tarik kembali"). (11) Satu pengguna hanya boleh memutuskan **satu langkah** dalam satu permintaan; bila calon penyetuju langkah berikutnya hanya pengguna yang sudah memutuskan, langkah itu tereskalasi |
+| **BR-153** | **Approval.** (1) Aturan dipilih: `is_active`, `document_type` cocok, `min_amount ≤ amount < max_amount`, `conditions` cocok, `priority` terkecil. Tidak ada aturan cocok → dokumen langsung disetujui **hanya** bila setting `approval.auto_approve_when_no_rule=true` (default `false` → `422 APPROVAL_RULE_MISSING`). (2) Aturan & langkah disalin ke `rule_snapshot`; perubahan aturan tidak memengaruhi permintaan berjalan. (3) Langkah diproses berurutan. Penyetuju langkah: `permission` = pengguna aktif yang punya izin itu **dan** dokumen dalam scope-nya; `direct_supervisor` = atasan langsung `scope_employee_id` pada **penugasan utama** yang aktif (`assignments.is_primary`; atasan di penugasan tambahan/rangkap tidak dipakai); `location_head` = kepala `scope_location_id`. (4) **Maker-checker:** pengaju dan pembuat dokumen tidak pernah boleh memutuskan langkah apa pun pada permintaan itu, termasuk sebagai delegasi. Bila satu-satunya calon penyetuju adalah pengaju, langkah langsung tereskalasi. (5) Langkah dengan resolusi kosong (atasan/kepala tidak ada) langsung tereskalasi. (6) Eskalasi: setelah `escalate_after_hours` **jam kalender** (bukan jam kerja; Fase 0 tidak punya kalender jam kerja perusahaan) sejak langkah aktif, nilai dari langkah atau `approval.default_escalation_hours` (keduanya bisa diatur), pemegang `escalation_permission` juga boleh memutuskan; notifikasi ke keduanya. Eskalasi hanya **menambah** penyetuju, tidak pernah menyetujui otomatis. (7) Delegasi: pengguna yang aktif menjadi delegasi boleh memutuskan atas nama pemberi untuk `document_types` tercantum; tercatat `acting_for_user_id`. (8) Penolakan di langkah mana pun → seluruh permintaan `rejected`, dokumen kembali ke state yang ditentukan dokumen (tabel §6.6). (9) Pengaju boleh membatalkan permintaan `pending` selama belum ada langkah yang diputuskan. (10) Dokumen yang berubah setelah diajukan otomatis membatalkan permintaan (dokumen yang diajukan terkunci, jadi ini hanya terjadi lewat aksi "tarik kembali"). (11) Satu pengguna hanya boleh memutuskan **satu langkah** dalam satu permintaan; bila calon penyetuju langkah berikutnya hanya pengguna yang sudah memutuskan, langkah itu tereskalasi |
 | **BR-154** | **Buku stok.** Setiap perubahan saldo menulis tepat satu baris `stock_movements` per batch yang terdampak, dengan `qty_after` = saldo setelahnya. Mutasi tidak pernah diubah/dihapus; koreksi = mutasi lawan (`adjustment_in/out`) dengan `source` dokumen koreksi. Rekonsiliasi harian (job 01:00): `SUM(qty) per batch = qty_on_hand`; selisih → alert ke Owner & `super_admin`, tidak dikoreksi otomatis |
 | **BR-155** | **Reservasi.** Reservasi menaikkan `qty_reserved`, tidak mengurangi `qty_on_hand`. Qty tersedia = `qty_on_hand − qty_reserved`. Reservasi `active` yang lewat `expires_at` dilepas job tiap 15 menit. Konsumsi reservasi dan pengurangan stok terjadi di satu transaksi. Paket A memakai reservasi untuk mutasi `draft` yang sudah memilih batch dan retur ke prinsipal `approved` |
 | **BR-156** | **Pilihan batch manual.** Pengguna boleh memilih batch selain FEFO pertama (mis. permintaan kios atau batch lebih tua dalam bin yang sama) bila punya `stock_transfers.create`/izin dokumen terkait. UI memperingatkan; sistem mencatat `fefo_override=true` di baris dokumen. Laporan pelanggaran FEFO tersedia untuk Owner |
@@ -1466,16 +1494,23 @@ Total listing setelah Paket A: 29 (Fase 0) + 29 = **58**. Ekspor (`.xlsx` via Op
 | **BR-162** | **Stock opname.** (1) Mulai = snapshot `qty_system_base` per batch dalam scope pada `frozen_at`. (2) Selama `counting`, mutasi tetap boleh terjadi; selisih dihitung `qty_counted − (qty_system + Σ mutasi batch itu setelah frozen_at)` sehingga transaksi berjalan tidak dianggap selisih. (3) Blind count: kolom sistem & selisih disembunyikan dari penghitung sampai `review`. (4) Baris dengan selisih ≥ `inventory.opname_recount_threshold_pct` (default 5%) atau nilai ≥ `inventory.opname_recount_threshold_amount` wajib hitung ulang oleh pengguna berbeda sebelum `review`. (5) Setiap baris selisih wajib alasan (`opname_variance_reason`). (6) Posting: mutasi `adjustment_in/out` per baris selisih dengan `unit_cost = avg_cost`, outbox `inventory.adjusted`. (7) Batch ditemukan saat hitung (tidak ada di sistem) dibuat sebagai batch baru dengan `adjustment_in` saat posting, biaya = `avg_cost`. (8) Satu batch hanya boleh ada di satu opname `counting`/`review` sekaligus |
 | **BR-163** | **Pemusnahan & serah.** Berita acara memuat batch dari status `quarantine`/`expired` saja. Metode `return_to_principal` membuat retur ke prinsipal, bukan mutasi `disposal`. Eksekusi wajib: unggah scan berita acara bertanda tangan, minimal 1 foto, minimal 2 saksi (nama + jabatan + instansi, **tanpa NIK**), tanggal & tempat pelaksanaan. Eksekusi menulis mutasi `disposal` (qty batch → 0, status `disposed`) dan outbox `inventory.written_off`. Template berita acara dicetak dari sistem berisi daftar batch, jumlah, nilai |
 | **BR-164** | **Karantina.** Karantina manual = pindah sebagian/seluruh qty batch ke bin zona `quarantine` (mutasi `bin_move_out`/`bin_move_in`, batch tujuan berstatus `quarantine`) dengan alasan `quarantine_reason`. Batch di bin karantina tidak pernah `available`. Lepas karantina = approval `stock_quarantine_release` lalu pindah ke bin non-karantina pilihan. Batch `expired` tidak bisa dilepas, hanya dimusnahkan/diretur |
-| **BR-165** | **Aktivasi kios.** Kios baru berstatus `prospect` (boleh dikunjungi, boleh order tunai di Paket B, tanpa tempo). Kirim verifikasi butuh: foto toko, titik lokasi (akurasi ≤ `customer.verify_max_accuracy_m`, default 50 m), dan **salah satu** (a) OTP 6 digit ke `owner_phone` lewat `WhatsAppChannel` (berlaku 5 menit, maks 5 percobaan, maks 3 kirim/jam per nomor), atau (b) bila `customer.otp_enabled=false` atau pengiriman gagal: catatan telepon kantor oleh pengguna yang **bukan** pengaju, berisi waktu & ringkasan. Persetujuan `customer_activation` mengisi `verified_at`, status `active`, dan limit yang diminta (bila limit ≥ ambang, rantai `customer_credit_limit` berlaku di dalam aturan yang sama) |
-| **BR-166** | **Duplikat & nomor HP kios.** (1) Nomor HP dinormalisasi ke `62…` (hapus spasi/tanda, `08` → `628`, validasi 10–15 digit). (2) Saat simpan, kandidat duplikat = HP sama, **atau** kemiripan nama toko ≥ 0,8 (trigram/`similar_text` setelah normalisasi huruf kecil, hapus kata umum "toko", "tani", "ud", "cv") dalam radius `customer.duplicate_radius_m` (default 300 m) atau desa sama. HP sama dengan kios aktif lain → blokir (`422 CUSTOMER_PHONE_DUPLICATE`); kemiripan → peringatan, simpan butuh centang "bukan duplikat" + alasan, tercatat. (3) HP kios tidak boleh sama dengan `phone` pegawai aktif mana pun (`422 PHONE_BELONGS_TO_EMPLOYEE`) — mitigasi sales memakai nomornya sendiri. (4) Ganti HP: hanya `customers.change_phone`, verifikasi OTP ke **nomor lama** atau telepon kantor, approval `customer_phone_change`, notifikasi ke Owner berisi nomor lama/baru termasking. (5) Gabung kios: kios sumber `merged`, `merged_into_id` terisi; Paket A memindahkan kontak, verifikasi, dan penugasan historis tetap di sumber. Paket B memindahkan piutang/dokumen terbuka (atau memblokir gabung bila ada piutang terbuka, OQ-117) |
+| **BR-165** | **Aktivasi kios.** Kios baru berstatus `prospect` (boleh dikunjungi, boleh order tunai di Paket B, tanpa tempo). Kirim verifikasi butuh: foto toko, titik lokasi (akurasi ≤ `customer.verify_max_accuracy_m`, default 50 m), dan **salah satu** (a) OTP ke `owner_phone` dikirim lewat kanal OTP Fase 0 (`OtpManager`/`OtpChannel`, `config/otp.php`; kode & percobaan disimpan di `customer_otp_codes`, bukan `OtpService` yang per-`User`) **kanal WhatsApp saja** — tujuannya membuktikan kepemilikan nomor itu (dipakai konfirmasi saldo & kwitansi), sehingga Telegram dan email tidak dipakai untuk aktivasi/ganti HP kios; panjang `auth.otp_length`, berlaku `customer.otp_minutes` (default 5), maks `customer.otp_max_attempts` percobaan (default 5), maks `customer.otp_send_per_phone_hour` kirim/jam per nomor (default 3) dan `customer.otp_send_per_user_hour` per pengguna (default 20); atau (b) bila `customer.otp_enabled=false` (wajib selama driver WhatsApp nyata belum ada, OQ-004), kanal WhatsApp tidak tersedia, atau pengiriman gagal: catatan telepon kantor oleh pengguna yang **bukan** pengaju, berisi waktu & ringkasan. Persetujuan `customer_activation` mengisi `verified_at`, status `active`, dan limit yang diminta (bila limit ≥ ambang, rantai `customer_credit_limit` berlaku di dalam aturan yang sama) |
+| **BR-166** | **Duplikat & nomor HP kios.** (1) Nomor HP dinormalisasi ke `62…` (hapus spasi/tanda, `08` → `628`, validasi 10–15 digit) oleh **satu** normalizer bersama `App\Support\Phone\PhoneNormalizer` (dipindah dari `app/Domain/Employee/Support/` di T-073, dipakai Employee, akun, & Customer, perilaku sama) agar perbandingan (3) identik. (2) Saat simpan, kandidat duplikat = HP sama, **atau** kemiripan nama toko ≥ 0,8 (trigram/`similar_text` setelah normalisasi huruf kecil, hapus kata umum "toko", "tani", "ud", "cv") dalam radius `customer.duplicate_radius_m` (default 300 m) atau desa sama. HP sama dengan kios aktif lain → blokir (`422 CUSTOMER_PHONE_DUPLICATE`); kemiripan → peringatan, simpan butuh centang "bukan duplikat" + alasan, tercatat. (3) HP kios tidak boleh sama dengan `employees.phone` pegawai aktif mana pun **maupun** `users.phone` akun aktif mana pun, keduanya dibandingkan setelah normalisasi (1) (`422 PHONE_BELONGS_TO_EMPLOYEE`) — mitigasi sales memakai nomornya sendiri, termasuk nomor WA yang hanya tercatat di akun. `users.phone` dinormalisasi lewat addendum T-020 + migrasi data kecil (T-073). (4) Ganti HP: hanya `customers.change_phone`, verifikasi OTP ke **nomor lama** (kanal WhatsApp, sama dengan BR-165) atau telepon kantor, approval `customer_phone_change`, notifikasi ke Owner berisi nomor lama/baru termasking (jenis `customer_phone_changed`, §9.1). (5) Gabung kios: kios sumber `merged`, `merged_into_id` terisi; Paket A memindahkan kontak, verifikasi, dan penugasan historis tetap di sumber. Paket B memindahkan piutang/dokumen terbuka (atau memblokir gabung bila ada piutang terbuka, OQ-117) |
 | **BR-167** | **Penugasan kios.** Tepat satu penugasan aktif per kios (unik DB). Pengalihan = tutup penugasan lama (`end_date = tanggal efektif − 1`) dan buat baru dalam satu transaksi, perbarui cache di `customers`. Tanggal efektif boleh hari ini atau masa depan (job harian 00:05 menerapkan yang jatuh tempo). Pengalihan massal maks 500 kios per aksi. Pegawai yang dinonaktifkan/dimutasi (Fase 0) memicu daftar "kios tanpa sales aktif" di dashboard Admin Penjualan, tidak dialihkan otomatis |
 | **BR-168** | **Penentuan harga.** `PriceResolver::resolve(customer, product, unit, qty, at, channel)`: urutan price list = (1) `store` bila channel `pos` (Paket B), (2) price list kios (`customers.price_list_id`), (3) price list `area` untuk area kios, (4) `default`. Di tiap list dipakai versi `published` dengan `effective_from ≤ at < effective_to`. Item dipilih: satuan sama, `min_qty` terbesar ≤ qty. Tidak ada item di list → lanjut ke list berikutnya. Tidak ada sama sekali → `422 PRICE_NOT_FOUND`. Hasil membawa `price_list_version_id` untuk disnapshot di baris dokumen (ADR-108). Versi `published` tidak bisa diubah; koreksi = versi baru. `effective_from` versi baru ≥ sekarang (tidak berlaku surut) kecuali `prices.publish` dengan alasan |
 | **BR-169** | **Promo.** `PromotionEngine::apply(lines, customer, channel, at)`: kandidat = promo `active`, periode cocok, kanal cocok, scope cocok, target cocok. Urut `priority` asc. Promo `is_stackable=false` yang terpilih mengunci baris yang terkena dari promo lain. Diskon dihitung dari harga setelah promo sebelumnya (stacking berurutan). Diskon tidak membuat harga baris < 0. `buy_x_get_y` menambah baris bonus (harga 0) yang stoknya ikut dialokasikan FEFO (mutasi `promo_issue`, Paket B). Anggaran: `budget_used` ditambah saat dokumen jual diposting (Paket B) dengan kunci baris; melewati anggaran → promo berhenti berlaku untuk dokumen baru dan status `ended` saat habis. Simulasi (`admin.promotions.simulate`) memakai mesin yang sama tanpa menulis data |
-| **BR-170** | **Impor master & saldo awal.** Memakai kerangka impor Fase 0 (staging, pemetaan kolom tersimpan, validasi per baris, idempoten dengan hash baris). Kunci idempoten: produk = SKU; kios = HP ternormalisasi (atau kode); harga = versi + satuan + `min_qty`; saldo awal = lokasi stok + SKU + batch + bin. Saldo awal: hanya bila setting `inventory.opening_balance_open=true`, hanya ke lokasi tanpa mutasi selain `opening_balance`, menulis mutasi `opening_balance` dengan biaya dari file, lalu `product_costs` = rata-rata tertimbang biaya file; outbox `inventory.opening_balance`. Setelah Owner menutup saldo awal (`opening_balance_open=false`, konfirmasi password), impor saldo awal ditolak |
+| **BR-170** | **Impor master & saldo awal.** Memakai kerangka impor generik `app/Support/Import` yang diekstrak dari impor pegawai Fase 0 di T-085A (staging `import_batches`/`import_rows`, pemetaan kolom tersimpan, validasi per baris; kontrak per tipe: `fields`, `normalize`, `validate`, `rowKey`, `apply`). Idempoten lewat `import_rows.row_key` = **sha256 kunci gabungan** (bukan kunci alami mentah, karena kunci gabungan bisa > 100 karakter) + `file_hash`. Batas baris per tipe impor diatur lewat setting (`import.max_rows` Fase 0 maks 10.000 tidak cukup untuk saldo awal 30.000 batch, NFR-A01). Kunci idempoten: produk = SKU; kios = HP ternormalisasi (atau kode); harga = versi + satuan + `min_qty`; saldo awal = lokasi stok + SKU + batch + bin. Saldo awal: hanya bila setting `inventory.opening_balance_open=true`, hanya ke lokasi tanpa mutasi selain `opening_balance`, menulis mutasi `opening_balance` dengan biaya dari file, lalu `product_costs` = rata-rata tertimbang biaya file; outbox `inventory.opening_balance`. Setelah Owner menutup saldo awal (`opening_balance_open=false`, konfirmasi password), impor saldo awal ditolak |
 
 ## 9. Setting Baru (SettingRegistry)
 
-Ditambahkan ke registri `08` §2 oleh task yang tercantum. Semua bisa diubah dari layar Pengaturan oleh `settings.manage` kecuali ditandai **terkunci** (hanya `super_admin`, lewat konfirmasi password, tercatat). Tidak ada yang `is_public` kecuali disebut.
+Ditambahkan ke registri `08` §2 oleh task yang tercantum (+ test registri). Semua bisa diubah dari layar Pengaturan oleh pemegang `settings.update` (nama izin di repo) kecuali ditandai **terkunci**. Tidak ada yang `is_public` kecuali disebut. Grup baru (`approval`, `inventory`, `purchasing`, `customer`, `product`, `pricing`, `upload`) ditambahkan ke `SettingRegistry::GROUPS` oleh task pertama yang memakai grup itu. Tidak ada grup `map` (PA-20).
+
+**Tipe & penanda baru (PA-19, dibuat T-067 di `SettingType`/`SettingDefinition` + `08` §2 + test registri):**
+- Tipe `decimal` (string desimal, tanpa float), `int_list` (daftar bilangan bulat; `multi_enum` Fase 0 berisi string), dan `money` (rupiah, `DECIMAL(18,2)` sebagai string).
+- Penanda `locked`: hanya `super_admin` yang bisa mengubah, wajib konfirmasi password, perubahan tercatat audit (selain grup `SENSITIVE_GROUPS` Fase 0 yang hanya butuh konfirmasi password).
+- Penanda `one_way`: nilai bool hanya boleh berubah `true → false`; `false → true` ditolak.
+
+Nama kunci Fase 0 yang dipakai ulang, bukan dibuat ulang: `export.sync_max_rows` (batas ekspor langsung), `export.mass_export_alert_rows` (ambang event keamanan `mass_export`, SEC-110), `auth.otp_length` (panjang kode OTP kios, artinya sama), `import.max_rows`/`import.max_file_mb` (batas impor pegawai & default tipe lain).
 
 | Kunci | Tipe | Default | Validasi | Task |
 |---|---|---|---|---|
@@ -1483,21 +1518,25 @@ Ditambahkan ke registri `08` §2 oleh task yang tercantum. Semua bisa diubah dar
 | `approval.default_escalation_hours` | int | `24` | 1–168 | T-067 |
 | `approval.reauth_amount` | money | `50000000` (contoh) | ≥ 0 | T-067 |
 | `inventory.min_shelf_life_months` | int | `6` | 0–60 | T-080 |
-| `inventory.near_expiry_days` | int[] | `[90,60,30]` | 1–3 nilai, 1–365, menurun | T-078 |
+| `inventory.near_expiry_days` | int_list | `[90,60,30]` | 1–3 nilai, 1–365, menurun | T-078 |
 | `inventory.min_sell_days_before_expiry` | int | `0` | 0–365 | T-078 |
 | `inventory.registration_reminder_days` | int | `60` | 7–365 | T-071 |
 | `inventory.transfer_receive_reminder_hours` | int | `24` | 1–168 | T-082 |
 | `inventory.opname_blind_count_default` | bool | `true` | — | T-083 |
 | `inventory.opname_recount_threshold_pct` | decimal | `5` | 0–100 | T-083 |
 | `inventory.opname_recount_threshold_amount` | money | `500000` (contoh) | ≥ 0 | T-083 |
-| `inventory.opening_balance_open` | bool | `true` | Hanya bisa `true → false` | T-086 |
-| `inventory.negative_stock_allowed` | bool | `false` | **Terkunci**, hanya boleh `false` (test) | T-077 |
+| `inventory.opening_balance_open` | bool | `true` | Penanda `one_way` (hanya `true → false`), konfirmasi password | T-086 |
+| `inventory.negative_stock_allowed` | bool | `false` | Penanda `locked`; hanya boleh `false` (test) | T-077 |
 | `inventory.reservation_ttl_hours` | int | `72` | 1–720 | T-077 |
 | `purchasing.allow_receipt_without_po` | bool | `false` | — | T-080 |
 | `purchasing.over_receipt_tolerance_pct` | decimal | `0` | 0–20 | T-080 |
 | `purchasing.receipt_two_person` | bool | `true` | — | T-080 |
 | `purchasing.default_payment_term_days` | int | `30` | 0–365 | T-079 |
-| `customer.otp_enabled` | bool | `false` | `true` hanya bila driver `WhatsAppChannel` ≠ `log` di produksi | T-074 |
+| `customer.otp_enabled` | bool | `false` | `true` hanya bila kanal OTP WhatsApp tersedia (`OtpManager::available('whatsapp')`: driver bukan `none`, bukan `log` di produksi). Tetap `false` sampai driver WhatsApp nyata ada (OQ-004) | T-074 |
+| `customer.otp_minutes` | int | `5` | 3–30 (berbeda dari `auth.otp_minutes` lupa password, default 10) | T-074 |
+| `customer.otp_max_attempts` | int | `5` | 3–10 | T-074 |
+| `customer.otp_send_per_phone_hour` | int | `3` | 1–10 | T-074 |
+| `customer.otp_send_per_user_hour` | int | `20` | 5–100 | T-074 |
 | `customer.verify_max_accuracy_m` | int | `50` | 5–500 | T-074 |
 | `customer.duplicate_radius_m` | int | `300` | 0–5000 | T-074 |
 | `customer.duplicate_name_similarity` | decimal | `0.8` | 0.5–1 | T-074 |
@@ -1506,10 +1545,27 @@ Ditambahkan ke registri `08` §2 oleh task yang tercantum. Semua bisa diubah dar
 | `product.sku_mode` | enum | `manual` | `auto`/`manual` | T-070 |
 | `pricing.rounding` | enum | `none` | `none`/`100`/`500`/`1000` (pembulatan harga hasil promo, ke atas) | T-075 |
 | `pricing.allow_backdated_publish` | bool | `false` | — | T-075 |
-| `map.tile_url` | string | `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | URL https dengan `{z}{x}{y}`; **publik** | T-073 |
-| `map.attribution` | string | `© OpenStreetMap contributors` | ≤ 200; **publik** | T-073 |
+| `upload.max_image_kb` | int | `5120` | 512–10240 (foto JPG/PNG/WEBP, SEC-109) | T-070 |
+| `upload.max_pdf_kb` | int | `10240` | 512–20480 (dokumen PDF, SEC-109) | T-070 |
+| `import.max_rows_opening_stock` | int | `30000` | 1000–50000 (NFR-A01; tipe lain memakai `import.max_rows` bila tidak punya kunci `import.max_rows_<type>` sendiri) | T-085A (mekanisme) / T-086 |
 
-Catatan: tile OSM publik punya kebijakan pemakaian wajar. Untuk distributor dengan banyak pengguna, ganti `map.tile_url` ke penyedia tile berbayar atau server tile sendiri (diputuskan per instalasi).
+Peta tidak memakai tile maupun library (PA-20), jadi tidak ada kunci `map.*`.
+
+### 9.1 Jenis notifikasi Paket A (PA-18)
+
+Pola Fase 0 (catatan T-029): tiap jenis = case `NotificationKind` + kunci `notification.on_<jenis>` (tipe `multi_enum`, pilihan `DeliveryChannel`) di registri & `08` §2.5, diuji dua arah. Default `[]` = **lonceng in-app saja** (lonceng selalu dikirim). Task pemilik menambah case, kunci, dan baris `08` §2.5. Penanda "sekali per ambang" memakai `reminder_logs` (§4.1).
+
+| Jenis (`NotificationKind`) | Kunci | Pemicu | Penerima | Task |
+|---|---|---|---|---|
+| `approval_requested` | `notification.on_approval_requested` | `ApprovalStepActivated` (BR-153) | Calon penyetuju langkah aktif (termasuk delegasi) | T-067 |
+| `approval_decided` | `notification.on_approval_decided` | `ApprovalDecided` | Pengaju | T-067 |
+| `approval_escalated` | `notification.on_approval_escalated` | `EscalateApprovals` (BR-153(6)) | Penyetuju langkah + pemegang `escalation_permission` | T-067 |
+| `registration_expiring` | `notification.on_registration_expiring` | H-60/30/7/0 (BR-152) | Pemegang `product_registrations.manage` | T-071 |
+| `customer_phone_changed` | `notification.on_customer_phone_changed` | Ganti HP kios disetujui (BR-166(4)) | Owner (nomor termasking) | T-074 |
+| `stock_reconcile_mismatch` | `notification.on_stock_reconcile_mismatch` | `ReconcileStockLedger` menemukan selisih (BR-154) | Owner & `super_admin` | T-077 |
+| `batch_near_expiry` | `notification.on_batch_near_expiry` | Per ambang `inventory.near_expiry_days` (BR-157) | Kepala gudang lokasi terkait | T-078 |
+| `batch_expired` | `notification.on_batch_expired` | `ExpireBatches` (BR-157) | Kepala gudang lokasi terkait | T-078 |
+| `transfer_not_received` | `notification.on_transfer_not_received` | `TransferReceiveReminders` (BR-161) | Penerima di lokasi tujuan | T-082 |
 
 ## 10. Keamanan Tambahan
 
@@ -1526,28 +1582,30 @@ Catatan: tile OSM publik punya kebijakan pemakaian wajar. Untuk distributor deng
 | TA-07 | Race condition menghabiskan stok terakhir dua kali | Pengguna bersamaan | Row lock + CHECK + retry (SEC-102) |
 | TA-08 | Melihat HPP / margin oleh role yang tidak berhak | Orang dalam | `stock.view_cost` diperiksa di resource/ekspor, bukan hanya UI (SEC-107) |
 | TA-09 | Kebocoran rekening supplier / data pemilik kios | Orang dalam / penyerang | Enkripsi rekening, masking HP di ekspor & daftar, `sensitive_data_viewed` (SEC-108) |
-| TA-10 | Unggahan berita acara/izin berisi skrip | Pengguna login | Kontrol unggahan Fase 0 (SEC-050, SEC-052) berlaku untuk semua berkas baru (SEC-109) |
+| TA-10 | Unggahan berita acara/izin berisi skrip | Pengguna login | Satu komponen unggahan `app/Support/Upload/` (diekstrak T-070 dari kontrol Fase 0 SEC-050, SEC-052) untuk semua berkas baru (SEC-109) |
 
 ### 10.2 Kontrol
 
 | ID | Kontrol | Verifikasi |
 |---|---|---|
-| SEC-101 | Mesin approval menegakkan maker-checker (pengaju & pembuat dokumen tidak bisa memutuskan, termasuk via delegasi), keputusan hanya oleh calon penyetuju langkah aktif yang di-resolve server, delegasi tidak ke diri sendiri dan tidak berantai. Endpoint approve/reject memeriksa ulang di dalam transaksi dengan kunci baris `approval_requests`. Nominal ≥ `approval.reauth_amount` butuh konfirmasi password (Fase 0 `password.confirm`). | Test `APPROVAL_SELF_DECISION`, delegasi, eskalasi, keputusan ganda bersamaan |
+| SEC-101 | Mesin approval menegakkan maker-checker (pengaju & pembuat dokumen tidak bisa memutuskan, termasuk via delegasi), keputusan hanya oleh calon penyetuju langkah aktif yang di-resolve server, delegasi tidak ke diri sendiri dan tidak berantai. Endpoint approve/reject memeriksa ulang di dalam transaksi dengan kunci baris `approval_requests`. Nominal ≥ `approval.reauth_amount` butuh konfirmasi password; karena bersyarat nominal, diperiksa di Action lewat `App\Support\Auth\PasswordConfirmation::isRecent()` + `confirm-password-dialog.tsx`, bukan middleware `password.confirm`. Maker-checker berlaku juga untuk Owner (BR-031 tetap: Owner memegang semua izin). | Test `APPROVAL_SELF_DECISION`, delegasi, eskalasi, keputusan ganda bersamaan |
 | SEC-102 | Stok hanya diubah lewat `StockLedger`. Arsitektur test (Pest arch): tidak ada kode di luar `App\Domain\Inventory\Ledger` yang menulis `stock_batches.qty_*` atau `stock_movements`. Trigger append-only `stock_movements`. CHECK `qty_on_hand ≥ 0`. | Arch test, trigger test, uji konkurensi NFR-A03 |
 | SEC-103 | Opname: kolom sistem tidak dikirim ke klien saat blind & `counting` (bukan hanya disembunyikan di UI). Hitung ulang wajib pengguna berbeda. Laporan selisih per penghitung untuk Owner. | Test respons JSON tidak memuat `qty_system_base` |
 | SEC-104 | Penerimaan: posting memeriksa `checked_by ≠ user` (bila setting aktif), qty ≤ sisa PO + toleransi, PO `approved`. Biaya baris berasal dari PO, tidak bisa diubah di penerimaan kecuali `purchase_orders.create` dengan alasan. | Test |
-| SEC-105 | Verifikasi kios: OTP disimpan hash, berlaku 5 menit, maks 5 percobaan, rate limit kirim 3/jam per nomor dan 20/jam per pengguna. Catatan telepon kantor hanya oleh pengguna ≠ pengaju. HP kios dicek terhadap HP pegawai aktif. Ganti HP memicu notifikasi Owner. | Test throttling, maker-checker, `PHONE_BELONGS_TO_EMPLOYEE` |
+| SEC-105 | Verifikasi kios: OTP lewat kerangka OTP Fase 0, **kanal WhatsApp saja** ke `owner_phone`; kode disimpan hash, berlaku `customer.otp_minutes`, maks `customer.otp_max_attempts` percobaan, rate limit kirim `customer.otp_send_per_phone_hour` per nomor dan `customer.otp_send_per_user_hour` per pengguna (default 5 menit, 5, 3/jam, 20/jam). Catatan telepon kantor hanya oleh pengguna ≠ pengaju. HP kios dicek terhadap `employees.phone` pegawai aktif **dan** `users.phone` akun aktif setelah normalisasi bersama `App\Support\Phone\PhoneNormalizer`. Ganti HP memicu notifikasi Owner. | Test throttling (`RATE_LIMITED`), maker-checker, `PHONE_BELONGS_TO_EMPLOYEE` untuk HP pegawai dan HP akun, kanal Telegram/email tidak ditawarkan |
 | SEC-106 | `price_list_items` versi selain `draft` tidak bisa diubah (Policy + trigger `BEFORE UPDATE` yang menolak bila versi bukan `draft`). | Trigger test |
 | SEC-107 | Kolom biaya (`unit_cost`, `avg_cost`, `receipt_unit_cost`, `variance_value`, `total_cost`) dikeluarkan resource **hanya** bila pengguna punya `stock.view_cost` (atau `purchase_orders.view` untuk harga beli di PO/penerimaan). Ekspor mengikuti aturan yang sama. | Test resource & ekspor per role |
 | SEC-108 | `suppliers.bank_account_no_enc` terenkripsi (Crypt), ditampilkan termasking (`••••1234`), lihat lengkap hanya `suppliers.manage` + `sensitive_data_viewed`. HP pemilik kios termasking di ekspor (`6281•••••789`) kecuali `customers.manage`. Foto toko & dokumen izin di disk privat via signed URL 5 menit. | Test |
-| SEC-109 | Unggahan baru (foto toko, dokumen izin edar, dokumen kelayakan pembeli terbatas, berita acara, foto pemusnahan, foto label nomor seri, foto opname) memakai validator unggahan Fase 0: allowlist JPG/PNG/WEBP/PDF, MIME isi, ≤ 5 MB (gambar) / 10 MB (PDF), nama acak, disk privat, metadata EXIF lokasi dihapus dari foto yang dibagikan ulang. | Test per endpoint |
-| SEC-110 | Aksi sensitif dicatat di `audit_logs` dengan nilai lama/baru: perubahan aturan approval, delegasi, limit kredit, HP kios, penggabungan kios, terbit harga, aktivasi promo, posting opname, pemusnahan, lepas karantina, tutup saldo awal, ubah penanda produk. Ekspor master/stok masuk `mass_export` bila > 1.000 baris. | Test audit per aksi |
+| SEC-109 | Unggahan baru (foto toko, dokumen izin edar, dokumen kelayakan pembeli terbatas, berita acara, foto pemusnahan, foto label nomor seri, foto opname) memakai satu komponen `app/Support/Upload/` yang diekstrak T-070 dari `CorrectionAttachment`/`AvatarStore` (dipakai T-070, T-071, T-074, T-080, T-083, T-084): deteksi jenis dari isi berkas (bukan ekstensi/MIME klien), allowlist JPG/PNG/WEBP/PDF, batas `upload.max_image_kb` (gambar) / `upload.max_pdf_kb` (PDF) (default 5 MB / 10 MB), nama acak, disk privat, metadata (EXIF/lokasi) dibuang dari foto. | Test komponen + test per endpoint |
+| SEC-110 | Aksi sensitif dicatat di `audit_logs` dengan nilai lama/baru: perubahan aturan approval, delegasi, limit kredit, HP kios, penggabungan kios, terbit harga, aktivasi promo, posting opname, pemusnahan, lepas karantina, tutup saldo awal, ubah penanda produk. Ekspor master/stok/pelanggan tercatat event keamanan `mass_export` bila melebihi setting Fase 0 `export.mass_export_alert_rows` (default 1.000), otomatis lewat `RecordExportCreated`. | Test audit per aksi |
 
 Checklist rilis Paket A (tambahan `09` §6): arch test StockLedger hijau · uji konkurensi stok lulus · rekonsiliasi saldo vs mutasi = 0 pada data UAT · semua listing baru lulus `ListingContractTest` · test IDOR untuk setiap resource ber-scope stok/pelanggan · OTP rate limit aktif · trigger append-only terpasang di produksi (cek `SHOW TRIGGERS`).
 
 ## 11. Job, Event & Kode Galat
 
-### 11.1 Job terjadwal (scheduler Fase 0, zona `Asia/Jakarta`)
+### 11.1 Job terjadwal (scheduler Fase 0, zona `general.timezone`)
+
+Jam di tabel = waktu lokal: tiap jadwal memakai `->timezone(DisplayTime::timezone())` seperti `audit:purge` (`routes/console.php`), bukan zona tetap.
 
 | Job | Jadwal | Isi | Idempoten |
 |---|---|---|---|
@@ -1562,22 +1620,33 @@ Checklist rilis Paket A (tambahan `09` §6): arch test StockLedger hijau · uji 
 | `EndPromotions` | tiap 15 menit | Promo lewat `ends_at` → `ended` | Ya |
 | `ActivatePriceVersions` | tiap 5 menit | Isi `effective_to` versi lama & `superseded` saat `effective_from` versi baru tiba | Ya |
 
-Semua job memakai `withoutOverlapping()` dan mencatat ringkasan ke log JSON. Pada shared hosting dijalankan lewat `schedule:run` per menit (`03` target deployment).
+Semua job memakai `onOneServer()` + `withoutOverlapping()` (pola Fase 0) dan mencatat ringkasan ke log JSON. Dijalankan sesuai target deployment `03` (VPS): cron `schedule:run` per menit, antrean lewat Supervisor.
 
 ### 11.2 Event domain (in-process, untuk notifikasi & modul lain)
 
-`ApprovalRequested`, `ApprovalStepActivated`, `ApprovalDecided`, `GoodsReceiptPosted`, `StockTransferShipped`, `StockTransferReceived`, `StockOpnamePosted`, `BatchStatusChanged`, `CustomerActivated`, `CustomerPhoneChanged`, `CustomerReassigned`, `PriceListVersionPublished`, `PromotionActivated`, `ProductRegistrationExpiring`. Listener notifikasi memakai kanal in-app Fase 0. Event akuntansi ditulis ke `accounting_events` **di dalam transaksi yang sama** dengan dokumen (bukan lewat listener).
+`ApprovalRequested`, `ApprovalStepActivated`, `ApprovalDecided`, `GoodsReceiptPosted`, `StockTransferShipped`, `StockTransferReceived`, `StockOpnamePosted`, `BatchStatusChanged`, `CustomerActivated`, `CustomerPhoneChanged`, `CustomerReassigned`, `PriceListVersionPublished`, `PromotionActivated`, `ProductRegistrationExpiring`. Listener notifikasi memakai kanal in-app Fase 0 (`NotificationRouter`), jenis & kunci kanal di §9.1. Event akuntansi ditulis ke `accounting_events` **di dalam transaksi yang sama** dengan dokumen (bukan lewat listener).
 
-### 11.3 Kode galat baru (`05` §2.3)
+### 11.3 Kode galat (`05` §2.3)
+
+**Jalur galat domain di rute web (PA-16, ditetapkan T-067).** Paket A hanya punya rute web Inertia (§5), sedangkan `ApiError` Fase 0 hanya dirender sebagai JSON untuk `api/*`/`expectsJson()`. T-067 menetapkan satu jalur untuk semua task Paket A: `ApiError` pada request Inertia → `back()->withErrors()` / toast berisi **pesan dari kode galat** (bukan pesan exception), + test. Endpoint yang memang JSON (mis. `admin.customers.duplicates`) memakai format `05` §2.2. Task tidak membuat penanganan galat sendiri per controller.
+
+**Kode yang dipakai bersama (sudah ada di `05` §2.3, tidak ditambah ulang).** Kode dengan arti sama memakai kode yang ada (PA-17):
+
+| Kode | HTTP | Dipakai di Paket A untuk |
+|---|---|---|
+| `STATE_CONFLICT` | 409 | Langkah approval sudah diputuskan / bukan giliran pengguna (dua keputusan bersamaan); gagal mengunci stok setelah retry deadlock (BR-101); posting ganda |
+| `RATE_LIMITED` | 429 | OTP kios: kirim melebihi batas per nomor/pengguna, atau percobaan melebihi `customer.otp_max_attempts` |
+| `CHANNEL_UNAVAILABLE` | 503 | Kanal OTP WhatsApp tidak aktif → pakai telepon kantor |
+| `VALIDATION_FAILED` / `FORBIDDEN` / `NOT_FOUND` | 422/403/404 | Validasi field, tanpa izin, di luar scope (SEC-033) |
+
+**Sub-tabel "khusus web" (baru).** Ditulis di sub-tabel tersendiri `05` §2.3 yang **tidak** diwajibkan di `mobile-pro/lib/core/api/api_error.dart`, karena Paket A tidak punya API mobile. Test kontrak Dart (`api_error_contract_test.dart`) diubah **sekali** oleh sesi mobile agar melewati sub-tabel itu; `tests/Contract/ApiErrorFormatTest.php` tetap mencocokkan seluruh tabel dua arah dengan enum `ErrorCode`. Tiap task menambah kodenya sendiri ke sub-tabel `05` + `ErrorCode` saat kode itu pertama dipakai:
 
 | Kode | HTTP | Arti |
 |---|---|---|
 | `APPROVAL_RULE_MISSING` | 422 | Tidak ada aturan approval yang cocok |
 | `APPROVAL_SELF_DECISION` | 403 | Pengaju/pembuat mencoba memutuskan |
-| `APPROVAL_NOT_ACTIONABLE` | 409 | Langkah sudah diputuskan / bukan giliran pengguna |
 | `APPROVAL_ALREADY_PENDING` | 409 | Dokumen sudah punya permintaan aktif |
 | `INSUFFICIENT_STOCK` | 422 | Stok tersedia kurang (`details.available_base`) |
-| `STOCK_CONFLICT` | 409 | Gagal mengunci stok setelah retry |
 | `BATCH_NOT_AVAILABLE` | 422 | Batch karantina/ED/disposed |
 | `BATCH_EXPIRED_ON_RECEIPT` | 422 | ED ≤ tanggal terima |
 | `PRODUCT_REGISTRATION_INACTIVE` | 422 | Produk wajib izin tanpa izin berlaku |
@@ -1596,8 +1665,7 @@ Semua job memakai `withoutOverlapping()` dan mencatat ringkasan ke log JSON. Pad
 | `CUSTOMER_PHONE_DUPLICATE` | 422 | HP dipakai kios aktif lain |
 | `PHONE_BELONGS_TO_EMPLOYEE` | 422 | HP kios = HP pegawai aktif |
 | `CUSTOMER_NOT_VERIFIED` | 422 | Limit diminta untuk kios belum terverifikasi |
-| `OTP_INVALID` / `OTP_EXPIRED` / `OTP_TOO_MANY_ATTEMPTS` | 422/422/429 | Verifikasi OTP |
-| `CHANNEL_UNAVAILABLE` | 503 | Kanal OTP tidak aktif → pakai telepon kantor |
+| `OTP_INVALID` / `OTP_EXPIRED` | 422/422 | Verifikasi OTP kios (bukan `MFA_INVALID` 401, yang berarti login) |
 | `PRICE_NOT_FOUND` | 422 | Tidak ada harga berlaku |
 | `PRICE_VERSION_LOCKED` | 409 | Ubah item versi non-draft |
 | `OPENING_BALANCE_CLOSED` | 409 | Impor saldo awal setelah ditutup |
@@ -1612,17 +1680,20 @@ Semua job memakai `withoutOverlapping()` dan mencatat ringkasan ke log JSON. Pad
 | Unit `Qty`/`Money` | Konversi satuan & pembulatan half-up, `integer_only`, operasi brick/math tanpa float (arch test: tidak ada `float` di `App\Domain\Inventory`) | T-069, T-077 |
 | Approval engine | Pemilihan aturan (rentang inklusif/eksklusif, prioritas, kondisi), snapshot, rantai 2 langkah, direct_supervisor & location_head, resolusi kosong → eskalasi, maker-checker (pengaju, pembuat, delegasi), delegasi kedaluwarsa, tolak di langkah 2, batal oleh pengaju, dua penyetuju memutuskan bersamaan (hanya satu menang) | T-067 |
 | StockLedger | Masuk/keluar/reservasi/konsumsi/lepas, saldo tidak minus, trigger append-only, `qty_after` benar, rollback bila outbox gagal | T-077 |
-| Konkurensi | 20 proses paralel (Pest `--parallel` atau skrip artisan `inventory:stress` di CI MariaDB) mengambil 1 unit terakhir: tepat 1 sukses, 19 `INSUFFICIENT_STOCK`, saldo 0 | T-077 |
+| Konkurensi | 20 proses paralel lewat skrip artisan `inventory:stress` di CI MariaDB (bukan Pest `--parallel`, yang rusak di Pest 5.3.5, `backend/CLAUDE.md`) mengambil 1 unit terakhir: tepat 1 sukses, 19 `INSUFFICIENT_STOCK`, saldo 0 | T-077 |
 | HPP | Kasus: stok 0 → biaya terima; stok 10 @1.000 + terima 10 @1.200 = 1.100; terima saat stok minus (tidak mungkin, dites ditolak); presisi 4 desimal | T-077 |
 | FEFO | Urutan ED, NULL terakhir, tie-break `received_date`, lewati karantina/ED/izin habis, `min_sell_days_before_expiry`, alokasi lintas beberapa batch | T-078 |
 | Penerimaan | Over-receipt, dua orang, ED ≤ tanggal terima, sisa umur pendek → approval, nomor pendaftaran tidak cocok → karantina, nomor seri jumlah & duplikat, posting idempoten (klik ganda) | T-080 |
 | Mutasi | TRANSIT, selisih + approval, terima > kirim ditolak, penerima = pengirim ditolak | T-082 |
 | Opname | Snapshot + mutasi saat counting tidak jadi selisih, blind (respons JSON), hitung ulang wajib, batch baru, posting | T-083 |
-| Kios | Normalisasi HP, duplikat (HP, nama+radius), HP pegawai, OTP throttle, limit tanpa verifikasi ditolak (DB & Policy), ganti HP, gabung | T-074 |
+| Kios | `PhoneNormalizer` bersama (test Employee lama hijau), normalisasi `users.phone`, duplikat (HP, nama+radius), HP pegawai & HP akun, OTP kanal WhatsApp saja + throttle dari setting, limit tanpa verifikasi ditolak (DB & Policy), ganti HP, gabung | T-074 |
 | Harga & promo | Resolusi 4 tingkat list, versi berlaku pada waktu T, harga bertingkat `min_qty`, versi terbit terkunci (trigger), promo stackable/non, anggaran, harga tidak negatif, simulasi = mesin yang sama | T-075, T-076 |
-| Otorisasi | Matriks §6.4 per role (data-driven dari seeder), IDOR untuk setiap resource ber-scope stok & pelanggan, `stock.view_cost` di resource & ekspor | T-067, T-087 |
+| Otorisasi | Matriks §6.4 per role (data-driven dari seeder), Owner = semua izin & terkunci, izin baru default ❌ untuk semua role selain `owner`/`super_admin`, migrasi data penambah sel Paket A idempoten (tidak mencabut izin buatan pengguna), MFA `supervisor`/`admin_penjualan`, scope `location` mencakup penugasan rangkap, IDOR untuk setiap resource ber-scope stok & pelanggan, `stock.view_cost` di resource & ekspor, `customers.export`/`stock.export` | T-067, T-087 |
+| Galat web | `ApiError` pada request Inertia → `back()->withErrors()`/toast berisi pesan kode, bukan pesan exception; endpoint JSON memakai format `05` §2.2 | T-067 |
+| Setting | Tipe `decimal`/`int_list`/`money`, penanda `locked` & `one_way`, kunci baru dua arah dengan `08` §2 | T-067 + task pemilik kunci |
+| Unggahan | `app/Support/Upload/`: deteksi isi, allowlist JPG/PNG/WEBP/PDF, metadata dibuang, batas dari setting | T-070 (+ endpoint T-071, T-074, T-080, T-083, T-084) |
 | Listing | `ListingContractTest` untuk 29 listing baru | per task |
-| Impor | Idempoten (impor ulang file sama = 0 baris baru), pemetaan kolom tersimpan, error per sel, saldo awal ditutup | T-085, T-086 |
+| Impor | Kerangka `app/Support/Import`: test impor pegawai lama hijau tanpa perubahan perilaku, `row_key` sha256, rute `/impor/{type}` tidak bentrok dengan `impor/pegawai`/`impor/profil`/`impor/{batch}` (T-085A). Idempoten (impor ulang file sama = 0 baris baru), pemetaan kolom tersimpan, error per sel, saldo awal ditutup | T-085A, T-085, T-086 |
 
 ### 12.2 Skenario UAT Paket A
 
@@ -1634,7 +1705,7 @@ Semua job memakai `withoutOverlapping()` dan mencatat ringkasan ke log JSON. Pad
 | UAT-A04 | Izin edar | Izin habis | Ubah `valid_until` kemarin, jalankan job | 1 produk + stok | Produk tidak bisa dialokasikan, dashboard menampilkan izin habis |
 | UAT-A05 | Kios | Kios baru oleh sales | Admin Penjualan buat kios, verifikasi telepon kantor oleh pengguna lain | Foto & titik dummy | Status `active`, limit aktif setelah approval |
 | UAT-A06 | Kios | Kios duplikat | Buat kios dengan HP yang sama | — | Ditolak `CUSTOMER_PHONE_DUPLICATE` |
-| UAT-A07 | Kios | HP kios = HP sales | Isi HP pegawai sales | — | Ditolak `PHONE_BELONGS_TO_EMPLOYEE` |
+| UAT-A07 | Kios | HP kios = HP sales | Isi HP pegawai sales, lalu HP yang hanya tercatat di akun pengguna sales (format `08…`) | — | Keduanya ditolak `PHONE_BELONGS_TO_EMPLOYEE` |
 | UAT-A08 | Harga | Versi harga baru | Buat versi naik 3% berlaku besok, Owner terbitkan | Price list default | Simulasi hari ini = harga lama, besok = harga baru |
 | UAT-A09 | Promo | Beli 10 gratis 1 | Buat promo, simulasi kios tier A qty 10 dan 9 | — | Qty 10 dapat bonus 1, qty 9 tidak |
 | UAT-A10 | Penerimaan | Terima sebagian + batch berbeda | PO 100 dus, terima 60 (2 batch), lalu 40 | — | PO `partially_received` lalu `received`, 2–3 batch tercatat, HPP terhitung |
@@ -1648,7 +1719,7 @@ Semua job memakai `withoutOverlapping()` dan mencatat ringkasan ke log JSON. Pad
 | UAT-A18 | Impor | Impor produk & kios dari Excel Pakis | Unggah file asli (disamarkan), petakan kolom | File dari OQ-112 | Baris valid masuk, baris salah tampil per sel, impor ulang tidak menggandakan |
 | UAT-A19 | Saldo awal | Cutover | Impor saldo awal per batch, cek total nilai, tutup saldo awal | File stok fisik | Total nilai = file, impor ulang ditolak setelah ditutup |
 | UAT-A20 | Akses | Staf gudang lokasi lain | Login staf gudang Undaan, buka URL penerimaan gudang lain | — | 404 |
-| UAT-A21 | Akses | HPP tersembunyi | Login Admin Penjualan, buka posisi stok & ekspor | — | Kolom HPP tidak ada di layar maupun file |
+| UAT-A21 | Akses | HPP tersembunyi | Login Admin Penjualan, buka posisi stok; login Kepala Gudang (punya `stock.export`, tanpa `stock.view_cost`), ekspor posisi stok | — | Admin Penjualan: kolom HPP tidak ada di layar dan tombol ekspor tidak tampil (`stock.export` ❌). Kepala Gudang: kolom HPP tidak ada di file |
 
 Kolom UAT lengkap (Hasil Aktual, Status, tanda tangan penguji) mengikuti template `10` §4.
 
@@ -1663,7 +1734,7 @@ Kolom UAT lengkap (Hasil Aktual, Status, tanda tangan penguji) mengikuti templat
 | OQ-117 | Gabung kios yang punya piutang terbuka: pindahkan piutang atau blokir? | BR-166 (Paket B) | Blokir sampai lunas |
 | OQ-118 | Tier harga yang dipakai Pakis (jumlah tier, nama, aturan per area) | Seed price list | 1 default + 3 tier contoh |
 | OQ-119 | Gudang/toko/kendaraan canvas yang ada saat go-live + kode rak | Seed lokasi stok & bin | Dummy |
-| OQ-120 | Penyedia tile peta untuk produksi | `map.tile_url` | OSM publik (beban rendah) |
+| OQ-120 | Peta interaktif (titik kios, sebaran pelanggan) bila Pakis punya **server tile sendiri** | `LocationPointInput`, `LocationDiagram` | Tanpa peta interaktif & tanpa tile (PA-20): titik dari tautan Google Maps / Geolocation API, tampilan `LocationDiagram`, CSP tidak berubah |
 
 OQ-101 (PKP) memengaruhi BR-159 (biaya terima tanpa PPN masukan). Sampai dijawab, harga PO dianggap **tanpa PPN** dan kolom `tax_total` = 0.
 
@@ -1671,13 +1742,13 @@ OQ-101 (PKP) memengaruhi BR-159 (biaya terima tanpa PPN masukan). Sampai dijawab
 
 | Kebutuhan | Task | Test / UAT |
 |---|---|---|
-| FR-A01, FR-A02, BR-153, SEC-101 | T-067 | Approval engine, UAT-A01, UAT-A02 |
+| FR-A01, FR-A02, BR-153, SEC-101 | T-067 | Approval engine, galat web, matriks & setting, UAT-A01, UAT-A02 |
 | FR-A03–FR-A05 | T-068 | Listing, IDOR stok |
 | FR-A06, FR-A07, BR-150, BR-151 | T-069 | Unit `Qty`, UAT-A03 |
-| FR-A08, FR-A09, BR-112 | T-070 | Produk, UAT-A03 |
+| FR-A08, FR-A09, BR-112, SEC-109 (komponen `app/Support/Upload/`) | T-070 | Produk, unggahan, UAT-A03 |
 | FR-A10, BR-152 | T-071 | Job izin, UAT-A04 |
 | FR-A11, SEC-108 | T-072 | Masking rekening |
-| FR-A12, FR-A17, BR-167 | T-073 | Penugasan, IDOR pelanggan |
+| FR-A12, FR-A17, BR-166(1), BR-167 | T-073 | Penugasan, `PhoneNormalizer` bersama, IDOR pelanggan |
 | FR-A13–FR-A16, FR-A18, BR-125, BR-126, BR-165, BR-166, SEC-105 | T-074 | Kios, UAT-A05–A07 |
 | FR-A19, BR-168, SEC-106 | T-075 | Harga, UAT-A08 |
 | FR-A20, BR-169 | T-076 | Promo, UAT-A09 |
@@ -1689,6 +1760,7 @@ OQ-101 (PKP) memengaruhi BR-159 (biaya terima tanpa PPN masukan). Sampai dijawab
 | FR-A27, BR-161 | T-082 | Mutasi, UAT-A13 |
 | FR-A28, BR-162, SEC-103 | T-083 | Opname, UAT-A14 |
 | FR-A29, BR-163, BR-164 | T-084 | Karantina & pemusnahan, UAT-A15, UAT-A16 |
+| BR-170 (kerangka impor generik) | T-085A | Impor pegawai lama hijau, kontrak `app/Support/Import` |
 | FR-A30 (impor master), BR-170 | T-085 | Impor, UAT-A18 |
 | FR-A30 (saldo awal), BR-170 | T-086 | Saldo awal, UAT-A19 |
 | FR-A30 (laporan), NFR-A04, SEC-107, SEC-109, SEC-110 | T-087 | Laporan, UAT-A17, UAT-A20, UAT-A21, checklist rilis §10.2 |

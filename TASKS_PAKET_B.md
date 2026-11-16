@@ -470,7 +470,7 @@ Jalur kritis: T-088 → T-089 → T-090 → T-091 → T-092 → T-093 → T-097 
   - [ ] Checklist **16** §10.2 & **15** §10.2 dicentang di `Implementasi_Plan.md`
   - [ ] UAT-B01–B30 lulus; temuan P0/P1 selesai
   - [ ] Pilot 2 minggu: `inventory:reconcile` & `receivables:reconcile` = 0 selisih setiap hari, tidak ada insiden P0
-- Verifikasi: `php artisan test` · `./vendor/bin/phpstan` · `npm run lint && npm run typecheck && npm run test` · `npx playwright test` · `k6 run tests/load/*.js`
+- Verifikasi: `php artisan test` · `./vendor/bin/phpstan` · `npm run lint && npm run types && npm run test` · `npx playwright test` · `k6 run tests/load/*.js`
 - Di luar lingkup: aplikasi mobile (Paket C)
 
 ---

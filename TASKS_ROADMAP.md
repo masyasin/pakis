@@ -14,7 +14,7 @@ Sumber kebenaran kerangka: `docs/14-ROADMAP-LENGKAP.md`. Kode modul = konsep v1.
 
 | Paket | Rentang | Jumlah | Estimasi | Status |
 |---|---|---|---|---|
-| A — Master & Gudang | T-067–T-087 | 21 | ±160 jam | Outline. Dirinci berikutnya (Lapis 2) |
+| A — Master & Gudang | T-067–T-087 + T-085A | 22 | ±170 jam | Dirinci: `TASKS_PAKET_A.md` (revisi 16 Nov 2026: + T-085A, T-070 10 jam) |
 | B — Penjualan & Uang Aman | T-088–T-113 | 26 | ±197 jam | Outline. Dirinci berikutnya (Lapis 2) |
 | C — Lapangan & Mitra | T-114–T-140 | 27 | ±244 jam | Outline |
 | D — Armada & BBM | T-141–T-153 | 13 | ±101 jam | Outline |
@@ -37,10 +37,10 @@ Exit gate: stok tidak pernah minus pada uji konkurensi, FEFO teruji, kartu stok 
 | T-067 | Mesin approval generik (aturan per jenis dokumen + ambang + rantai role, maker-checker, delegasi, eskalasi) + role & permission Paket A | CORE-03 | ADR-105 | 10 | Fase 0 |
 | T-068 | Lokasi stok & rak: `stock_locations` (gudang, toko, kendaraan, in_transit), `stock_bins`, zona pestisida, kendaraan minimal | CORE-02, INV-01 | ADR-107 | 6 | T-021 |
 | T-069 | Kategori produk, satuan & konversi satuan | MST-01 | ADR-102 | 5 | T-010 |
-| T-070 | Produk: data, bahan aktif, foto, barcode, penanda produk terbatas & produk bernomor seri | MST-01 | BR-112 | 8 | T-069 |
+| T-070 | Produk: data, bahan aktif, foto, barcode, penanda produk terbatas & produk bernomor seri + komponen unggahan bersama `app/Support/Upload/` | MST-01 | BR-112, SEC-109 | 10 | T-069 |
 | T-071 | Izin edar produk: nomor pendaftaran, masa berlaku, blokir jual otomatis, pengingat | MST-02 | BR-102 | 5 | T-070 |
 | T-072 | Prinsipal & supplier, syarat bayar, produk yang dipasok | MST-03 | — | 5 | T-070 |
-| T-073 | Area penjualan & penugasan sales ke kios (dimensi scope `customer`) | MST-04 | ADR-106 | 6 | T-019 |
+| T-073 | Area penjualan & penugasan sales ke kios (dimensi scope `customer`) | MST-04 | ADR-106 | 6 | T-025, T-067 |
 | T-074 | Pelanggan/kios: data, titik peta, verifikasi (foto, lokasi, OTP pemilik), deteksi duplikat & gabung, ubah nomor HP terkontrol, limit & tempo | MST-04 | BR-125, BR-126 | 10 | T-073, T-067 |
 | T-075 | Price list berversi per tier/area, tanggal berlaku | MST-05 | ADR-108 | 8 | T-070, T-073 |
 | T-076 | Promo & diskon bertingkat, bundling, promo musiman | MST-05 | — | 8 | T-075 |
@@ -52,8 +52,9 @@ Exit gate: stok tidak pernah minus pada uji konkurensi, FEFO teruji, kartu stok 
 | T-082 | Mutasi stok antar lokasi (kirim–terima, in_transit, selisih) | INV-03 | — | 7 | T-077 |
 | T-083 | Stock opname hitung buta + persetujuan selisih | INV-04 | — | 8 | T-077, T-067 |
 | T-084 | Barang rusak, karantina manual, pemusnahan & berita acara | INV-05 | OQ-115 | 6 | T-078 |
-| T-085 | Import master: produk, kios, harga (pemetaan kolom, validasi, idempoten) | CORE-06 | — | 8 | T-070, T-074, T-075 |
-| T-086 | Saldo awal stok per batch & prosedur cutover | CORE-06 | — | 6 | T-077, T-085 |
+| T-085A | Ekstrak kerangka impor generik `app/Support/Import` dari impor pegawai Fase 0 (tanpa ubah perilaku, `row_key` sha256, batas baris per tipe, `/impor/{type}` dengan `whereIn`) | CORE-06 | BR-170 (kerangka) | 8 | T-028 |
+| T-085 | Import master: produk, kios, harga (pemetaan kolom, validasi, idempoten) | CORE-06 | — | 8 | T-085A, T-070, T-074, T-075 |
+| T-086 | Saldo awal stok per batch & prosedur cutover | CORE-06 | — | 6 | T-077, T-085A, T-085 |
 | T-087 | Laporan stok (kartu stok, posisi per lokasi, ED, telusur batch & recall) + hardening & UAT Paket A | INV, BI-01 | — | 13 | T-078–T-086 |
 
 ## Paket B — Penjualan & Uang Aman (T-088–T-113)

@@ -109,50 +109,53 @@ Status per 16 Nov 2026 berdasarkan `TASKS.md` repo: ✅ selesai · 🟡 sebagian
 | Paket | Nama | Modul utama | Outline task | Estimasi kasar* | Status |
 |---|---|---|---|---|---|
 | Fase 0 + 0,5 | Fondasi & Absensi | CORE-01/05, HR-01..03 | T-001–T-048 | ±270 jam | Berjalan (T-039 dst.) |
-| HR | Riwayat Kepegawaian | HR-01 (lanjut), HR-04..06 | T-049–T-066 | ±132 jam | **Ditunda**, kecuali T-049 + T-060 (§3.2) |
-| **A** | Master & Gudang | CORE-02/03/06, MST-01..05, PRC-01, INV-01..05, GAR-01 (terima) | T-067–T-087 | ±160 jam | ✅ Dirinci: `15` + `TASKS_PAKET_A.md` |
+| HR | Riwayat Kepegawaian | HR-01 (lanjut), HR-04..06 | T-049–T-066 | ±132 jam | Dikerjakan **setelah Paket A** (PA-8, keputusan 16 Nov 2026), bersama Paket E1 |
+| **A** | Master & Gudang | CORE-02/03/06, MST-01..05, PRC-01, INV-01..05, GAR-01 (terima) | T-067–T-087 + T-085A | ±170 jam | ✅ Dirinci: `15` + `TASKS_PAKET_A.md` (22 task) |
 | **B** | Penjualan & Uang Aman | SAL-01..03/05, DLV-01 (web), FIN-01/04, FLD-03 (web), AUD-01, POS-01, GAR-01 (jual), WEB-01, BI-01 | T-088–T-113 | ±211 jam | ✅ Dirinci: `16` + `TASKS_PAKET_B.md` |
 | **C** | Lapangan & Mitra | MOB-01 (mode lapangan), MOB-02, FLD-01..04, DLV-01 (driver), SAL-04, MKT-01, GAR-02, AUD-02, CORE-04 (WA & push) | T-114–T-140 | ±251 jam | ✅ Dirinci: `17` + `TASKS_PAKET_C.md` |
 | **D** | Armada & BBM | FLT-01..05 | T-141–T-153 | ±107 jam | ✅ Dirinci: `18` + `TASKS_PAKET_D.md` |
-| **E** | SDM Lanjut & Payroll | HR-04..06, HR-08 (lanjut) + Fase HR yang ditunda | T-049–T-066 + T-154–T-158 (+ T-063A, T-064A bersyarat) | ±132 + ±55 jam | ✅ Dirinci: `19` + `TASKS_PAKET_E.md` (HR inti tetap `13`) |
+| **E** | SDM Lanjut & Payroll | HR-04..06, HR-08 (lanjut) + Fase HR; dipecah **E1** (ikut Fase HR setelah A) dan **E2** (setelah D), PE-1 | T-049–T-066 + T-154–T-158 (+ T-063A, T-064A bersyarat) | ±132 + ±55 jam | ✅ Dirinci: `19` + `TASKS_PAKET_E.md` (HR inti tetap `13`) |
 | **F** | Keuangan & Prinsipal | FIN-02/03/05, PRC-02/03, SAL-06, INV-06, POS-02 | T-159–T-178 | ±182 jam | ✅ Dirinci: `20` + `TASKS_PAKET_F.md` |
 | **G** | Cerdas & Kinerja | AI-01..03, HR-07, WEB-02/03, FLT-06, BI-01 lanjut | T-179–T-192 | ±146 jam | ✅ Dirinci: `21` + `TASKS_PAKET_G.md`. Butuh data operasional ±6 bulan |
 
-*Jam efektif developer + Claude Code. Setelah semua paket dirinci: task baru A–G = 160 + 211 + 251 + 107 + 55 + 182 + 146 = **±1.112 jam**, ditambah ±132 jam Fase HR (`13`) yang ditunda. Rentang per paket ada di header tiap `TASKS_PAKET_*.md`.
+*Jam efektif developer + Claude Code. Setelah semua paket dirinci: task baru A–G = 170 + 211 + 251 + 107 + 55 + 182 + 146 = **±1.122 jam**, ditambah ±132 jam Fase HR (`13`) yang dikerjakan setelah Paket A. Rentang per paket ada di header tiap `TASKS_PAKET_*.md`.
 
 ### 3.2 Urutan yang disarankan
 
+Keputusan 16 Nov 2026 (PA-8, `12`): urutan **Fase 0,5 → Paket A → Fase HR**. Gerbang Paket A = exit gate Fase 0 + 0,5 (T-041–T-045) + checklist `15` §0.
+
 1. Selesaikan Fase 0,5 (T-036A bagian 2, T-039–T-045).
-2. **Opsional:** T-049 + T-060 (cuti & izin) agar rekap absensi tidak menghitung cuti sebagai alpa.
-3. Fase H (T-046–T-048): pilot absensi di Pakis.
-4. Paket **A → B**. Go-live pilot penjualan & kontrol uang di satu gudang, satu toko, dan satu area sales.
-5. Paket **C**. Sesudahnya **D** dan **E** boleh berurutan sesuai prioritas Pakis.
+2. Paket **A**. Fase H (T-046–T-048, pilot absensi di Pakis) **tidak** menahan Paket A dan boleh berjalan paralel.
+3. **Fase HR** (T-049–T-066, `13`) bersama **Paket E1** (T-063A, T-064A tanpa event akuntansi, T-155, T-157, validasi & UAT payroll dari T-158; PE-1).
+4. Paket **B**. Go-live pilot penjualan & kontrol uang di satu gudang, satu toko, dan satu area sales. Posisi B terhadap Fase HR belum ditetapkan (PA-8).
+5. Paket **C**, lalu **D**. Sesudah D: **Paket E2** (T-154, T-156, event `payroll.*`, sisa T-158, addendum lintas modul; PE-1).
 6. Paket **F**, lalu **G**.
 
 Alternatif percepatan anti-penggelapan: **B-ringan** (T-096–T-104 dengan saldo piutang hasil impor T-112) boleh dikerjakan setelah bagian kios dari Paket A (T-067, T-073, T-074, T-085) tanpa menunggu produk, harga, dan gudang selesai. Pesanan dan faktur tetap di sistem lama Pakis, sementara kwitansi, setoran, VA, dan konfirmasi saldo sudah memakai PAKIS ONE. Keputusan: OQ-110.
 
 ```mermaid
 flowchart LR
-  F0(["Fase 0 + 0,5"]) --> H0["Fase H - pilot absensi"]
+  F0(["Fase 0 + 0,5"]) --> H0["Fase H - pilot absensi (paralel dengan A)"]
   F0 --> A["A - Master & Gudang"]
+  A --> HR["Fase HR + E1 - SDM inti & payroll"]
   A --> B["B - Penjualan & Uang Aman"]
   B --> C["C - Lapangan & Mitra"]
   C --> D["D - Armada & BBM"]
-  F0 --> E["E - SDM Lanjut & Payroll"]
-  C -.->|"insentif sales & driver"| E
-  D -.->|"insentif driver"| E
+  HR --> E2["E2 - Payroll lintas modul"]
+  D --> E2
+  C -.->|"insentif sales & driver"| E2
   B --> F["F - Keuangan & Prinsipal"]
-  E -.->|"jurnal gaji"| F
+  E2 -.->|"jurnal gaji"| F
   F --> G["G - Cerdas & Kinerja"]
   C --> G
   D --> G
   classDef done fill:#E2EFE4,stroke:#2F6B3B,color:#16241B
   classDef next fill:#FBEFDC,stroke:#A9661A,color:#3a2a10
   class F0 done
-  class A,B next
+  class A next
 ```
 
-Garis putus-putus = data yang mengalir, bukan prasyarat keras. Payroll (E) bisa jalan sebelum C/D dengan insentif diinput manual.
+Garis putus-putus = data yang mengalir, bukan prasyarat keras. Payroll E1 (bersama Fase HR) berjalan sebelum C/D dengan insentif diinput manual; E2 menyusul setelah D (PE-1).
 
 ## 4. Keputusan Arsitektur Baru (ADR-101 dst.)
 
@@ -463,8 +466,8 @@ Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B di `16` §9, P
 |---|---|---|
 | `inventory` | `min_shelf_life_months` (6), `near_expiry_alert_days` (90), `auto_quarantine_expired` (true), `opname_blind_count` (true), `negative_stock_allowed` (false, terkunci) | A |
 | `purchasing` | `po_approval_threshold` (contoh Rp 25.000.000), `receipt_tolerance_pct` (0) | A |
-| `customer` | `require_otp_verification` (true), `duplicate_detection` (true), `default_term_days` (30) | A |
-| `pricing` | `price_list_default_id`, `rounding` (`none`/`100`/`500`) | A |
+| `customer` | `otp_enabled` (false sampai driver WhatsApp nyata, OQ-004; OTP kios lewat kerangka OTP Fase 0, kanal WhatsApp saja), `otp_*` (menit, percobaan, throttle), `duplicate_radius_m` (300), `default_term_days` (30) — final `15` §9 | A |
+| `pricing` | `rounding` (`none`/`100`/`500`/`1000`), `allow_backdated_publish` (false) — final `15` §9. Paket A **tidak** membuat grup `map` (tanpa tile/Leaflet, PA-20) | A |
 | `sales` | `offline_price_lock_hours` (24), `overdue_block_days` (contoh 14), `allow_partial_delivery` (true), `backorder_enabled` (true) | B |
 | `credit` | `harvest_term_max_days` (contoh 120), `over_limit_approval_chain` (supervisor → finance → owner) | B |
 | `collection` | `cash_on_hand_limit_default` (contoh Rp 15.000.000), `deposit_deadline_days` (1), `receipt_void_requires_approval` (true), `official_bank_accounts` (daftar), `official_whatsapp` | B |
@@ -488,9 +491,9 @@ Kunci di bawah **tentatif**. **Paket A final di `15` §9, Paket B di `16` §9, P
 |---|---|---|---|---|---|
 | `owner` | OWN | Owner | all | ✅ | sudah ada |
 | `administrator` | ADM | Administrator | all (sistem, bukan penyetuju transaksi) | ✅ | sudah ada |
-| `supervisor` | SPV | Supervisor / Manajer Area | team + area pelanggan | ✅ (menyetujui transaksi) | sudah ada, MFA diubah di B |
+| `supervisor` | SPV | Supervisor / Manajer Area | team + area pelanggan | ✅ (menyetujui transaksi) | sudah ada, MFA diwajibkan sejak A (T-067, + migrasi data role yang ada; PA-12) |
 | `sales` | SLS | Sales (taking order, penagih, canvas di C) | self + kios yang ditugaskan + stok kendaraannya (C) | ❌ | B |
-| `admin_penjualan` | APJ | Admin Penjualan | all area (master kios & harga di A; pesanan, faktur, retur di B) | ❌ | A |
+| `admin_penjualan` | APJ | Admin Penjualan | all area (master kios & harga di A; pesanan, faktur, retur di B) | ✅ (memverifikasi kios & impor master; PA-12) | A |
 | `kepala_gudang` | KGD | Kepala Gudang | lokasi stok yang ditugaskan | ✅ | A |
 | `staf_gudang` | KGD | Staf Gudang | lokasi stok yang ditugaskan | ❌ | A |
 | `driver` | DRV | Driver | pengiriman/trip yang ditugaskan | ❌ | B (bukti terima web, penagih) / C |
@@ -514,7 +517,7 @@ Nama final, matriks per role, dan jumlah total ditulis di `06` §3–§4 oleh ta
 
 | Paket | Namespace (contoh aksi) | Konsep v1.4 |
 |---|---|---|
-| A | **Final: `15` §6.3 (53 permission).** Ringkas: `approvals.*`, `stock_locations.*`, `vehicles.view/manage`, `products.*`, `product_registrations.manage`, `suppliers.*`, `sales_areas.*`, `customers.*`, `credit_limits.set/set_high`, `prices.*`, `promotions.*`, `purchase_orders.*`, `goods_receipts.*`, `purchase_returns.*`, `stock.view/view_cost`, `stock_transfers.*`, `stock_opnames.*`, `stock_quarantine.*`, `stock_disposals.*`, `serials.*`, `master_imports.manage` | `produk.manage`, `harga.manage`, `pelanggan.manage`, `limit_kredit.set`, `po.create`, `po.approve`, `penerimaan.create`, `stok.view`, `mutasi.create`, `opname.selisih.approve` |
+| A | **Final: `15` §6.3 (55 permission).** Ringkas: `approvals.*`, `stock_locations.*`, `vehicles.view/manage`, `products.*`, `product_registrations.manage`, `suppliers.*`, `sales_areas.*`, `customers.*` (termasuk `customers.export`), `credit_limits.set/set_high`, `prices.*`, `promotions.*`, `purchase_orders.*`, `goods_receipts.*`, `purchase_returns.*`, `stock.view/view_cost/export`, `stock_transfers.*`, `stock_opnames.*`, `stock_quarantine.*`, `stock_disposals.*`, `serials.*`, `master_imports.manage` | `produk.manage`, `harga.manage`, `pelanggan.manage`, `limit_kredit.set`, `po.create`, `po.approve`, `penerimaan.create`, `stok.view`, `mutasi.create`, `opname.selisih.approve` |
 | B | **Final: `16` §6.3 (74 permission).** Ringkas: `sales_orders.*`, `credit.*`, `lost_sales.*`, `deliveries.*`, `invoices.*`, `sales_returns.*`, `payments.*`, `giros.*`, `virtual_accounts.manage`, `unidentified_payments.*`, `receivables.*`, `receipts.*`, `deposits.*`, `cash_limits.manage`, `employee_receivables.*`, `balance_confirmations.*`, `customer_inquiries.*`, `petty_cash.*`, `pos.*`, `warranty.*`, `sales_reports.view`, `margin_reports.view`, `cash_control_reports.view`, `exports.mass`, `bank_accounts.manage`, `tax.manage`, `message_templates.manage`, `catalog_public.manage`, `accounting.lock` | `so.create`, `so.approve_exception`, `pengiriman.pod`, `pos.sell`, `pembayaran.terima`, `setoran.verify`, `retur.approve`, `piutang.view`, `laporan.margin.view`, `export.massal`, `kwitansi.terbit`, `kwitansi.batal.approve`, `pembayaran.alokasi.ubah`, `kas_kecil.*` |
 | C | **Final: `17` §6.3 (27 permission).** `visits.*`, `competitor_prices.*`, `canvas.*`, `red_flags.*`, `investigations.manage`, `incentives.*`, `promo_activities.*`, `service_tickets.*`, `rotations.manage`, `mitra_users.manage`, `customer_points.manage`. Pengguna Mitra memakai guard `mitra` (bukan Spatie) | `investigasi.manage`, `garansi.klaim.manage`, `promosi.manage` |
 | D | **Final: `18` §6.3 (25 permission) + role `koordinator_armada`.** `vehicle_documents.*`, `vehicle_checks.*`, `trips.*`, `trip_allowances.*`, `fuel_logs.*`, `fuel_prices.manage`, `gps.*`, `geofences.manage`, `fleet_alerts.handle`, `maintenance.*`, `fleet_reports.view` (+ `vehicles.view/manage` dari A) | `kendaraan.manage`, `trip.manage`, `trip.execute`, `bbm.input`, `bbm.verify`, `tracking.view`, `servis.approve`, `uang_jalan.settle` |
@@ -559,12 +562,12 @@ Kode bahasa Inggris (P-4). Siapa boleh melakukan aksi ditetapkan di matriks tran
 
 | Adapter | Kegunaan | Driver awal | Paket | Keputusan |
 |---|---|---|---|---|
-| `WhatsAppChannel` | OTP verifikasi kios, kwitansi, konfirmasi saldo, kartu garansi, status kiriman | `log` | A (kontrak + OTP kios) / C (driver nyata) | OQ-004 (penyedia WhatsApp Business API, akun atas nama distributor) |
+| `WhatsAppChannel` | OTP verifikasi kios, kwitansi, konfirmasi saldo, kartu garansi, status kiriman | `log` | A: **tanpa kontrak baru** (PA-6) — OTP kios lewat kerangka OTP Fase 0 (`App\Domain\Notification\Otp\{OtpService,OtpManager,OtpChannel}`, `config/otp.php`) kanal WhatsApp saja; pesan kios lain lewat `WhatsAppSender` + `ChannelGuard` (T-029) / C (driver nyata) | OQ-004 (penyedia WhatsApp Business API, akun atas nama distributor). Selama belum ada, `customer.otp_enabled=false` + telepon kantor (BR-165b) |
 | `PaymentGateway` | VA per kios, QRIS, webhook pembayaran | `fake` | B (VA) / C (QRIS) | OQ-102 |
 | `BankStatementParser` | Impor mutasi rekening (CSV per bank) untuk rekonsiliasi & pembayaran tanpa berita | per bank | B (identifikasi) / F (rekonsiliasi) | OQ-103 |
 | `PushChannel` | Notifikasi Pakis Pro & Pakis Mitra | `log` | C | OQ-005 |
 | `GpsProvider` | Posisi kendaraan dari tracker | `phone` (dari Pakis Pro) | D | OQ-105 (vendor API atau Traccar) |
-| `MapProvider` | Peta & geocoding | OpenStreetMap | A | Tile perlu internet |
+| `MapProvider` | Peta & geocoding | — (Paket A tanpa peta interaktif: titik dari tautan Google Maps / Geolocation API + `LocationDiagram`, tanpa tile, CSP tidak berubah; PA-20) | A (input titik) | Peta interaktif hanya bila ada server tile sendiri (OQ-120) |
 | `ThermalPrinter` | Nota canvas & struk (ESC/POS Bluetooth) | — | C | Model printer diuji lapangan |
 | `TaxExport` | Data faktur pajak untuk sistem DJP | file | F | OQ-101. Format diverifikasi saat F |
 | `AccountingExport` | Ekspor jurnal ke software akuntansi luar | file | F | OQ-106 |
@@ -651,7 +654,7 @@ Threat model lengkap ditulis per paket. Fokus yang wajib muncul:
 | OQ-117 | Gabung kios yang punya piutang terbuka | BR-166 | B |
 | OQ-118 | Tier harga yang dipakai Pakis | Seed price list | A |
 | OQ-119 | Daftar gudang/toko/kendaraan canvas & kode rak saat go-live | Seed lokasi stok | A |
-| OQ-120 | Penyedia tile peta produksi | `map.tile_url` | A |
+| OQ-120 | Peta interaktif hanya bila ada server tile sendiri (Paket A tanpa tile, PA-20) | Peta kios | A |
 | OQ-121 | Driver boleh menerima tunai/giro? | Role driver | B |
 | OQ-122 | Toko melayani kios kredit atau hanya tunai? | POS | B |
 | OQ-123 | Kertas struk & printer toko | POS PWA | B |
@@ -709,5 +712,5 @@ Saat paket ini digabung:
 1. Salin dokumen ini ke `docs/14-ROADMAP-LENGKAP.md` dan `TASKS_ROADMAP.md` ke root.
 2. Tambah ke tabel sumber kebenaran di `CLAUDE.md`: "Kontrak lintas modul Paket A–G → `docs/14-ROADMAP-LENGKAP.md`".
 3. Tambah aturan di `CLAUDE.md` §5: "Jangan mengerjakan task dari `TASKS_ROADMAP.md`. Hanya task dari `TASKS.md` atau `TASKS_PAKET_*.md` yang berstatus siap eksekusi."
-4. Tambah bagian "Paket A–G" di `Implementasi_Plan.md` dengan status dari §3.1, dan tandai Fase HR **Ditunda** (kecuali T-049 + T-060 bila disetujui).
+4. Tambah bagian "Paket A–G" di `Implementasi_Plan.md` dengan status dari §3.1. Fase HR dikerjakan **setelah Paket A** bersama Paket E1 (PA-8, PE-1; §3.2), tidak lagi ditandai "Ditunda".
 5. Rentang nomor yang dicadangkan: task **T-067–T-199**, BR **BR-101–BR-399** (BR-101–148 = konsep; blok aturan baru per paket: A 150–199, B 200–239, C 240–279, D 280–299, E 300–319, F 320–359, G 360–379), SEC **SEC-101–SEC-199** (A 101–110, B 111–140, C 141–160, D 161–170, E 171–175, F 176–190, G 191–199), ADR **ADR-101–ADR-199**, OQ **OQ-101–OQ-199**, dokumen **`15-`** dst. Bila salah satu sudah terpakai di repo, nomor di paket ini digeser dan dicatat di log keputusan `12`.

@@ -94,6 +94,7 @@ class AttendanceToday {
     this.holiday,
     this.attendance,
     this.nextAction,
+    this.fieldTrip,
   });
 
   static AttendanceToday? fromJson(Object? json) {
@@ -109,6 +110,7 @@ class AttendanceToday {
       holiday: schedule is Map ? schedule['holiday'] as String? : null,
       attendance: AttendanceRecord.fromJson(json['attendance']),
       nextAction: next == 'in' || next == 'out' ? next as String : null,
+      fieldTrip: ActiveFieldTrip.fromJson(json['field_trip']),
     );
   }
 
@@ -128,6 +130,9 @@ class AttendanceToday {
   /// `in` / `out` / null (tidak ada jadwal, atau jendela pulang sudah lewat).
   final String? nextAction;
 
+  /// Tugas luar kota `approved` yang mencakup hari ini (T-036A bagian 2), atau null.
+  final ActiveFieldTrip? fieldTrip;
+
   AttendanceToday copyWith({AttendanceRecord? attendance, String? nextAction, bool clearNextAction = false}) =>
       AttendanceToday(
         workDate: workDate,
@@ -136,6 +141,7 @@ class AttendanceToday {
         holiday: holiday,
         attendance: attendance ?? this.attendance,
         nextAction: clearNextAction ? null : (nextAction ?? this.nextAction),
+        fieldTrip: fieldTrip,
       );
 
   Map<String, Object?> toJson() => {
@@ -143,5 +149,40 @@ class AttendanceToday {
     'schedule': {'kind': scheduleKind, 'shift': shift?.toJson(), 'holiday': holiday},
     'attendance': attendance?.toJson(),
     'next_action': nextAction,
+    'field_trip': fieldTrip?.toJson(),
+  };
+}
+
+/// `attendance/today` → `field_trip`: `{number, destination, end_date, attendance_rule}`.
+class ActiveFieldTrip {
+  const ActiveFieldTrip({
+    required this.number,
+    required this.destination,
+    required this.endDate,
+    required this.attendanceRule,
+  });
+
+  static ActiveFieldTrip? fromJson(Object? json) {
+    if (json is! Map) {
+      return null;
+    }
+    return ActiveFieldTrip(
+      number: json['number'] as String? ?? '',
+      destination: json['destination'] as String? ?? '',
+      endDate: json['end_date'] as String? ?? '',
+      attendanceRule: json['attendance_rule'] as String? ?? '',
+    );
+  }
+
+  final String number;
+  final String destination;
+  final String endDate;
+  final String attendanceRule;
+
+  Map<String, Object?> toJson() => {
+    'number': number,
+    'destination': destination,
+    'end_date': endDate,
+    'attendance_rule': attendanceRule,
   };
 }

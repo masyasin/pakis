@@ -8,6 +8,9 @@ import '../../../core/offline/sync_service.dart';
 import '../../../core/providers.dart';
 import '../../../core/theme/pakis_tokens.dart';
 import '../../../shared/widgets/status_badge.dart';
+import '../../auth/session.dart';
+import '../../field_trips/field_trip.dart';
+import '../../field_trips/my_field_trips_screen.dart';
 import '../../startup/startup_controller.dart';
 import '../attendance_models.dart';
 import '../attendance_providers.dart';
@@ -109,6 +112,7 @@ class _AttendanceHomeState extends ConsumerState<AttendanceHome> {
         children: [
           if (data.isStale) _StaleBanner(data: data),
           _ShiftCard(today: today),
+          _FieldTripCard(trip: today?.fieldTrip),
           const SizedBox(height: 24),
           Center(
             child: _AttendanceButton(
@@ -542,6 +546,81 @@ class _ClockCard extends ConsumerWidget {
       tone: offset != null && offset.abs() >= 60 ? StatusTone.warning : StatusTone.muted,
       title: 'Acuan waktu',
       message: message,
+    );
+  }
+}
+
+/// Kartu "Tugas luar kota aktif" (tugas `approved` hari ini) atau pintu masuk "Ajukan /
+/// lihat pengajuan" bagi pemegang `field_trips.request` (T-036A bagian 2).
+class _FieldTripCard extends ConsumerWidget {
+  const _FieldTripCard({required this.trip});
+
+  final ActiveFieldTrip? trip;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final session = ref.watch(sessionProvider).value;
+    final canRequest = session is SignedIn && session.user.can('field_trips.request');
+    final trip = this.trip;
+    if (trip == null && !canRequest) {
+      return const SizedBox.shrink();
+    }
+    final tokens = context.tokens;
+    final text = Theme.of(context).textTheme;
+    final tone = trip == null ? StatusTone.muted : StatusTone.info;
+
+    Future<void> open() async {
+      await MyFieldTripsScreen.open(context);
+      // Pengajuan bisa baru disetujui: aturan lokasi presensi hari ini ikut berubah.
+      await ref.read(attendanceHomeProvider.notifier).refresh();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        color: trip == null ? tokens.surface : tokens.statusBg[StatusTone.info],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: BorderSide(color: trip == null ? tokens.border : tokens.status[StatusTone.info]!),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: canRequest ? open : null,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                Icon(Icons.luggage_outlined, color: tokens.status[tone]),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        trip == null ? 'Tugas luar kota' : 'Tugas luar kota aktif',
+                        style: text.titleSmall?.copyWith(fontWeight: FontWeight.w700),
+                      ),
+                      Text(
+                        trip == null
+                            ? 'Ajukan tugas atau lihat status pengajuan.'
+                            : [
+                                '${trip.number} · ${trip.destination}',
+                                [
+                                  if (trip.endDate.isNotEmpty) 's.d. ${Fmt.isoDate(trip.endDate)}',
+                                  'presensi: ${(fieldTripRuleLabels[trip.attendanceRule] ?? trip.attendanceRule).toLowerCase()}',
+                                ].join(' · '),
+                              ].join('\n'),
+                        style: text.bodyMedium?.copyWith(color: tokens.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                if (canRequest) Icon(Icons.chevron_right, color: tokens.muted),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

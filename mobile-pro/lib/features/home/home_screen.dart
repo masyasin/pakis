@@ -24,8 +24,9 @@ class HomeTab {
 }
 
 /// Tab menurut permission token (05 §5.3): Persetujuan hanya untuk pemegang
-/// `attendance_corrections.approve`. Notifikasi = lonceng di header (layar penuh), agar tab
-/// bawah tetap ≤ 5 di layar 360 dp.
+/// `attendance_corrections.approve` dan/atau `field_trips.approve`. Notifikasi = lonceng di
+/// header (layar penuh), agar tab bawah tetap ≤ 5 di layar 360 dp. Tugas luar kota milik
+/// sendiri dibuka dari kartu di tab Presensi (bukan tab).
 List<HomeTab> homeTabsFor(MobileUser? user) => [
   if (user?.can('attendance.self') ?? false) ...[
     HomeTab('Presensi', Icons.fingerprint, Icons.fingerprint, (_) => const AttendanceHome()),
@@ -33,7 +34,7 @@ List<HomeTab> homeTabsFor(MobileUser? user) => [
   ],
   if (user?.can('attendance_corrections.create') ?? false)
     HomeTab('Koreksi', Icons.edit_calendar_outlined, Icons.edit_calendar, (_) => const MyCorrectionsScreen()),
-  if (user?.can('attendance_corrections.approve') ?? false)
+  if (user != null && approvalKindsFor(user.can).isNotEmpty)
     HomeTab('Persetujuan', Icons.fact_check_outlined, Icons.fact_check, (_) => const ApprovalsScreen()),
   HomeTab('Profil', Icons.person_outline, Icons.person, (_) => const ProfileScreen()),
 ];

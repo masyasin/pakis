@@ -48,7 +48,7 @@ lib/
 │   ├── theme/             # token 07 §1.1, BrandColor (port BrandTheme.php), AppTheme
 │   ├── format.dart        # tanggal/jam/angka Indonesia (07 §7)
 │   └── providers.dart     # provider inti (override di main() & test)
-├── features/<fitur>/      # startup, auth (T-032), attendance (T-042), home (shell tab), history, corrections, approvals, notifications, profile (T-043)
+├── features/<fitur>/      # startup, auth (T-032), attendance (T-042), home (shell tab), history, corrections, approvals, notifications, profile (T-043), field_trips (T-036A)
 └── shared/widgets/        # PagedList, FilterSheet, EmptyState, StatusBadge, ListItemCard
 ```
 
@@ -106,6 +106,13 @@ Bila prototipe berbeda dari spesifikasi, **dokumen spesifikasi yang berlaku**:
 - **Unduhan biner:** `ApiClient.getBytes()` (respons bytes; galat JSON 05 §2.2 tetap diurai dan melewati penanganan sesi/426 yang sama). Test: `FakeReply.bytes(...)`.
 - **Profil** (`features/profile`): foto dari `GET /api/v1/me/avatar` bila `has_avatar` (`avatarProvider` + `UserAvatar`, juga di header beranda), selain itu inisial; `ref.invalidate(avatarProvider)` setelah ganti foto. Ubah HP (JSON `PUT /me` + `current_password`), ganti foto (kamera depan → **`POST /me` multipart + `_method=PUT`**: PHP tidak mengurai multipart pada `PUT`), ubah password (`ProfilePasswordScreen` → `sessionProvider.changePassword`), keluar dari sesi web lain, info perangkat, Keluar.
 - **Test:** `test/features/home_tabs_test.dart` (server palsu per "METHOD path-akhir", helper `listing()` untuk meta 05 §3).
+
+## Tugas luar kota (T-036A bagian 2)
+
+- **Milik sendiri** (`features/field_trips`, izin `field_trips.request`): **bukan tab** (tab sudah 5 untuk penyetuju di 360 dp) tetapi kartu di tab Presensi → `MyFieldTripsScreen` (`my_field_trips`, `PagedList`) → `FieldTripFormScreen` (tanggal rentang, tujuan, keperluan, aturan presensi `anywhere`/`destination`/`any_location`, titik tujuan 1–10 bila `destination`). Detail milik sendiri hanya lihat: tidak ada pembatalan oleh pengaju (06 §7.2a). Kartu "Tugas luar kota aktif" = `attendance/today` → `field_trip`; beranda disegarkan saat kembali dari daftar.
+- **Titik tujuan:** tempel tautan Google Maps lengkap atau "lat, lng" → `parseMapsLink()` (`!3d…!4d…` didahulukan, lalu `@lat,lng`, `q=`/`ll=`). Tautan pendek `maps.app.goo.gl` tidak bisa diurai tanpa jaringan ke Google → minta tautan lengkap. Batas lama tugas & tumpang tindih = validasi server (`attendance.field_trip_max_days` tidak ada di `/config`).
+- **Persetujuan:** tab Persetujuan tampil bila `attendance_corrections.approve` **atau** `field_trips.approve` (`approvalKindsFor`); segmen Koreksi | Tugas luar kota hanya bila berhak keduanya. `FieldTripDetailScreen(decide: true)`: Setujui (catatan ≤ 255 opsional) / Tolak (5–255 wajib); 409 → **pesan server** (tumpang tindih lebih jelas dari pesan umum) lalu kembali ke daftar.
+- **Test:** `test/features/field_trips_test.dart` (memakai helper `server`/`listing`/`signedIn` dari `home_tabs_test.dart`; route `GET /field-trips` juga cocok dengan `/approvals/field-trips`, daftarkan yang lebih spesifik lebih dulu).
 
 ## Rilis APK (persiapan T-047, SEC-067)
 

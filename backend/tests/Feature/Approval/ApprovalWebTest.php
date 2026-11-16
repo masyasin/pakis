@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Access\Models\Role;
 use App\Domain\Approval\Enums\ApprovalStatus;
 use App\Domain\Approval\Models\ApprovalDelegation;
 use App\Domain\Approval\Models\ApprovalRequest;
@@ -290,4 +291,25 @@ test('PA-38 props can.cancel & cancel_requires_note; pembatalan admin lewat HTTP
     $this->actingAs($owner)->from("/persetujuan/{$request->id}")->post("/persetujuan/{$request->id}/batalkan", ['note' => 'Langkah buntu, ajukan ulang'])
         ->assertSessionHasNoErrors();
     expect($request->refresh()->status)->toBe(ApprovalStatus::Cancelled);
+});
+
+test('PA-38 SEC-033 pembatal admin dibatasi scope: role kustom ber-scope lokasi dengan approvals.configure → permintaan lokasi lain 404 (show/batalkan)', function () {
+    $org = $this->a->org;
+    $this->a->rule([['permission', 'purchase_orders.approve']]);
+    $this->a->user(permissions: ['purchase_orders.approve']);
+    $atGudang = $this->a->submit($this->a->user(), attributes: ['scope_employee_id' => $org->employee()->id]);
+    $atToko = $this->a->submit($this->a->user(), attributes: ['scope_employee_id' => $org->employee($org->toko)->id]);
+
+    Role::create(['name' => 'admin_toko_uji', 'guard_name' => 'web', 'label' => 'Admin Toko Uji', 'data_scope' => 'location']);
+    $admin = $this->a->user('admin_toko_uji', ['approvals.configure', 'dashboard.view'], $org->employee($org->toko));
+
+    $this->assertOutOfScope404($admin, 'GET', "/persetujuan/{$atGudang->id}");
+    $this->assertOutOfScope404($admin, 'POST', "/persetujuan/{$atGudang->id}/batalkan", ['note' => 'Bukan wewenang saya']);
+    expect($atGudang->refresh()->status)->toBe(ApprovalStatus::Pending);
+
+    $this->actingAs($admin)->get("/persetujuan/{$atToko->id}")->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('approval.can.cancel', true)->where('approval.cancel_requires_note', true));
+    $this->actingAs($admin)->from('/persetujuan')->post("/persetujuan/{$atToko->id}/batalkan", ['note' => 'Dokumen dobel'])
+        ->assertSessionHasNoErrors();
+    expect($atToko->refresh()->status)->toBe(ApprovalStatus::Cancelled);
 });

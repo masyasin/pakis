@@ -70,8 +70,9 @@ final class ApprovalVisibility
         if ($this->canDecideNow($user, $request)) {
             return true;
         }
-        if (self::isCancelAdmin($user)) {
-            // Pemegang approvals.configure perlu melihat permintaan agar bisa membatalkan (PA-38).
+        if ($this->canCancelAsAdmin($user, $request)) {
+            // Pemegang approvals.configure perlu melihat permintaan yang bisa ia batalkan (PA-38),
+            // tetap dibatasi scope-nya: role kustom ber-scope sempit tidak melihat lokasi lain.
             return true;
         }
 
@@ -92,7 +93,15 @@ final class ApprovalVisibility
             return self::CANCEL_REQUESTER;
         }
 
-        return self::isCancelAdmin($user) ? self::CANCEL_ADMIN : null;
+        return $this->canCancelAsAdmin($user, $request) ? self::CANCEL_ADMIN : null;
+    }
+
+    /** Pembatalan admin (PA-38): pending, pemegang configure, dan dokumen dalam scope (seperti penyetuju eskalasi). */
+    private function canCancelAsAdmin(User $user, ApprovalRequest $request): bool
+    {
+        return $request->status === ApprovalStatus::Pending
+            && self::isCancelAdmin($user)
+            && $this->resolver->inScope($user, $request);
     }
 
     /** Pemegang `approvals.configure` dari role (bukan Gate), aktif, bukan Super Admin (PA-37, PA-38). */

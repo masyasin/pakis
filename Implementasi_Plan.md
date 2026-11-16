@@ -109,17 +109,17 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | 0,5 | 14 | 13 | 1 | 0 |
 | H | 3 | 0 | 0 | 0 |
 | HR | 18 | 0 | 0 | 0 |
-| A | 22 | 7 | 2 | 0 |
+| A | 22 | 8 | 2 | 0 |
 | B | 26 | 0 | 0 | 0 |
 | C | 27 | 0 | 0 | 0 |
 | D | 13 | 0 | 0 | 0 |
 | E (pelengkap) | 8 | 0 | 0 | 0 |
 | F | 20 | 0 | 0 | 0 |
 | G | 14 | 0 | 0 | 0 |
-| **Total** | **197** | **52** | **3** | **0** |
+| **Total** | **197** | **53** | **3** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- **Paket A per 17 Nov 2026.** Selesai: T-067, T-085A, T-068, T-069, T-070, T-071, T-072. Sedang: T-073 (backend selesai 008e291, UI berjalan — pakis-eb), T-074 bagian 1 backend (pakis-eb). Berikutnya jalur 2: T-075 (pakis-28). T-075 sudah boleh mulai (T-073 backend di origin).
+- **Paket A per 17 Nov 2026.** Selesai: T-067, T-085A, T-068, T-069, T-070, T-071, T-072, T-073 (008e291 + 872112b + b209d4b + data demo d91a13c). Sedang: T-074 (bagian 1 backend selesai 230d768; bagian 2 backend B + bagian 3 UI — pakis-eb), T-075 (pakis-28).
 - **Pembagian sisa Paket A dua jalur paralel (disetujui Mas 16 Nov 2026):**
   - **Jalur 1 Gudang & Stok (sesi pakis-eb, ±63 jam):** T-068 → T-073 → T-074 → T-077 → T-078 → T-082 → T-083 → T-084.
   - **Jalur 2 Produk & Komersial (sesi pakis-28, ±78 jam):** T-069 → T-070 → T-071 → T-072 → T-075 → T-076 → T-079 → T-080 → T-081 → T-085 → T-086.

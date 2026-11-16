@@ -18,9 +18,11 @@ import {
     Luggage,
     Map,
     MapPin,
+    MapPinned,
     Network,
     Settings,
     ShieldAlert,
+    ShoppingCart,
     Smartphone,
     UserRound,
     UsersRound,
@@ -29,6 +31,7 @@ import {
     FileBadge,
     Package,
     Stamp,
+    Store,
     Tags,
     Truck,
     Warehouse,
@@ -95,6 +98,8 @@ const ICONS: Record<string, LucideIcon> = {
     registration: FileBadge,
     warehouse: Warehouse,
     vehicle: Truck,
+    customer: Store,
+    sales_area: MapPinned,
 };
 
 /**
@@ -118,6 +123,8 @@ function MenuCount({ count }: { count?: number }) {
 
 /** Ikon grup menu (judul grup 06 §8). Grup lain memakai ikon item pertamanya. */
 const GROUP_ICONS: Record<string, LucideIcon> = {
+    // Ikon grup sendiri agar tidak sama dengan item pertamanya (Pelanggan = Store).
+    Penjualan: ShoppingCart,
     'Unit Kerja': Building2,
     Kepegawaian: UsersRound,
     Presensi: ClipboardCheck,

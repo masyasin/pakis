@@ -38,6 +38,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
+        'Penjualan' => ['Pelanggan', 'Area Penjualan'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
@@ -64,17 +65,23 @@ test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Penjualan' => ['Pelanggan', 'Area Penjualan'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
 });
 
-test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Master › Produk (T-070), Izin Edar (T-071), Kategori (T-069), Lokasi Stok & Kendaraan (T-068)', function (string $role, array $top, array $master) {
-    expect(menuOf($role))->toBe(['' => $top, 'Master' => $master]);
+test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › Pelanggan & Area Penjualan (T-073) + Master › Produk (T-070), Izin Edar (T-071), Kategori (T-069), Lokasi Stok & Kendaraan (T-068)', function (string $role, array $top, array $sales, array $master) {
+    expect(menuOf($role))->toBe(array_filter(['' => $top, 'Penjualan' => $sales, 'Master' => $master]));
 })->with([
-    'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
-    'kepala_gudang' => ['kepala_gudang', ['Dasbor', 'Persetujuan'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
-    'staf_gudang' => ['staf_gudang', ['Dasbor'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
-    'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
+    'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan'], ['Pelanggan', 'Area Penjualan'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
+    'kepala_gudang' => ['kepala_gudang', ['Dasbor', 'Persetujuan'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
+    'staf_gudang' => ['staf_gudang', ['Dasbor'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
+    'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
 ]);
+
+test('T-073 administrator melihat Area Penjualan (sales_areas.view) tanpa Pelanggan', function () {
+    $menu = menuOf('administrator');
+    expect($menu)->toHaveKey('Penjualan')
+        ->and($menu['Penjualan'])->toBe(['Area Penjualan']);
+});
 
 test('15 §6.5 PA-27 menu Persetujuan membawa angka menunggu = tab "Menunggu saya"; item lain tanpa angka', function () {
     $world = ApprovalWorld::make($this);
@@ -102,7 +109,7 @@ test('06 §8 setiap grup menu punya seksi sidebar (Distribusi / HRIS / Sistem), 
         ->assertInertia(function (Assert $page) {
             $sections = array_column($page->toArray()['props']['auth']['menu'], 'section', 'title');
             expect($sections)->toMatchArray([
-                '' => null, 'Master' => 'Distribusi', 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
+                '' => null, 'Penjualan' => 'Distribusi', 'Master' => 'Distribusi', 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
                 'Pengguna & Akses' => 'Sistem', 'Pengaturan' => 'Sistem', 'Audit' => 'Sistem',
             ]);
         });
@@ -120,6 +127,18 @@ test('auth.permissions: super_admin = 109 permission; tamu tanpa menu', function
 test('BR-017 izin web diturunkan dari menu 06 §8 (satu daftar)', function () {
     expect(WebAccess::menuPermissions())->toContain('dashboard.view', 'roles.view', 'audit.view', 'employees.import')
         ->and(WebAccess::menuPermissions())->not->toContain('attendance.self');
+});
+
+test('BR-017 T-073 pemegang customers.view saja boleh masuk web (menu Pelanggan)', function () {
+    expect(WebAccess::menuPermissions())->toContain('customers.view', 'sales_areas.view');
+
+    User::factory()->create(['username' => 'sari.penjualan'])->givePermissionTo('customers.view');
+    // TestCase memberi dashboard.view ke semua pengguna uji; cabut agar hanya customers.view yang membuka web.
+    Gate::define('dashboard.view', fn () => false);
+
+    $this->post('/login', ['login' => 'sari.penjualan', 'password' => 'password'])
+        ->assertSessionHasNoErrors();
+    $this->assertAuthenticated();
 });
 
 test('BR-017 pengguna dengan role pegawai saja ditolak masuk web', function () {

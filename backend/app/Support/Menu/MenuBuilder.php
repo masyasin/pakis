@@ -24,6 +24,7 @@ final class MenuBuilder
      * @var array<string, string>
      */
     public const SECTIONS = [
+        'Penjualan' => 'Distribusi',
         'Master' => 'Distribusi',
         'Unit Kerja' => 'HRIS',
         'Kepegawaian' => 'HRIS',
@@ -46,6 +47,10 @@ final class MenuBuilder
         [null, 'Persetujuan', 'approval', 'approvals.view', 'admin.approvals.index'],
         // Seksi Distribusi (Paket A). Grup Penjualan/Persediaan/Pembelian disisipkan SEBELUM Master
         // oleh task pemiliknya (urutan 15 §6.5); item Master lain menyusul (Produk T-070, Izin Edar T-071, Impor Master T-085).
+        // T-073: Pelanggan & Area Penjualan (Verifikasi Kios T-074, Daftar Harga T-075, Promo T-076 menyusul
+        // di antaranya sesuai urutan 15 §6.5). Menu ini juga membuka login web pemegang `customers.view` (BR-017).
+        ['Penjualan', 'Pelanggan', 'customer', 'customers.view', 'admin.customers.index'],
+        ['Penjualan', 'Area Penjualan', 'sales_area', 'sales_areas.view', 'admin.sales-areas.index'],
         ['Master', 'Produk', 'product', 'products.view', 'admin.products.index'],
         ['Master', 'Izin Edar', 'registration', 'products.view', 'admin.product-registrations.index'],
         ['Master', 'Kategori', 'category', 'products.view', 'admin.product-categories.index'],

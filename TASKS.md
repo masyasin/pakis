@@ -608,9 +608,9 @@ Ringkasan: Fase 0A (T-001–T-007) 37 jam · Fase 0B (T-008–T-012) 24 jam · F
 - Konteks wajib: `docs/07-UI-SPEC.md` §3.4 (`attendance_corrections`), §4 (Koreksi)
 - File: `Listings/AttendanceCorrectionListing`, `Admin/AttendanceCorrectionController`, `pages/AttendanceCorrections/{Index,Show}.tsx`
 - Kriteria penerimaan:
-  - [ ] Default filter `pending`. Scope `kepala_lokasi`/`supervisor` teruji
-  - [ ] Listing + ekspor lolos test kontrak. IDOR approve teruji
-  - [ ] Form **"Isi presensi manual"** (keputusan Mas 16 Nov 2026) dari daftar koreksi & detail presensi: pilih pegawai (lookup ber-scope), tanggal, jam masuk/pulang, alasan, catatan
+  - [x] Default filter `pending`. Scope `kepala_lokasi`/`supervisor` teruji
+  - [x] Listing + ekspor lolos test kontrak. IDOR approve teruji
+  - [x] Form **"Isi presensi manual"** (keputusan Mas 16 Nov 2026) dari daftar koreksi & detail presensi: pilih pegawai (lookup ber-scope), tanggal, jam masuk/pulang, alasan, catatan
 - Verifikasi: `php artisan test --filter=CorrectionWeb`
 
 ### T-042 — Absen di Pakis Pro (kamera, GPS, offline)

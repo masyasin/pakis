@@ -1,6 +1,7 @@
 <?php
 
 use App\Domain\Access\Listings\UserListing;
+use App\Domain\Attendance\Listings\AttendanceCorrectionListing;
 use App\Domain\Attendance\Listings\AttendanceDayListing;
 use App\Domain\Attendance\Listings\AttendanceSummaryListing;
 use App\Domain\Attendance\Listings\HolidayListing;
@@ -58,6 +59,7 @@ return [
         'schedule_overrides' => ScheduleOverrideListing::class,
         'attendance_days' => AttendanceDayListing::class,
         'attendance_summary' => AttendanceSummaryListing::class,
+        'attendance_corrections' => AttendanceCorrectionListing::class,
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

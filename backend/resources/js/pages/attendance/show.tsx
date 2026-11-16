@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import {
     ArrowLeft,
+    ClipboardPen,
     CloudOff,
     ImageOff,
     LogIn,
@@ -9,14 +10,18 @@ import {
     PencilLine,
     TriangleAlert,
 } from 'lucide-react';
+import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { LocationDiagram } from '@/components/pakis/location-diagram';
+import { ManualAttendanceDialog } from '@/components/pakis/manual-attendance-dialog';
+import type { ManualAttendanceOptions } from '@/components/pakis/manual-attendance-dialog';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 import { formatDate } from '@/lib/employee-format';
 import type { DiagramArea, LatLng } from '@/lib/location-diagram';
 import { index, show } from '@/routes/admin/attendance';
+import { show as showCorrection } from '@/routes/admin/attendance-corrections';
 import { show as showEmployee } from '@/routes/admin/employees';
 
 type LogCard = {
@@ -63,11 +68,29 @@ type Day = {
     resolved_at: string | null;
 };
 
+type CorrectionItem = {
+    id: number;
+    number: string;
+    type_label: string;
+    proposed_check_in: string | null;
+    proposed_check_out: string | null;
+    reason: string;
+    status: string;
+    status_label: string;
+    submitted_at: string | null;
+};
+
 type Props = {
     day: Day;
     logs: { in: LogCard | null; out: LogCard | null };
-    corrections: unknown[];
-    can: { view_photo: boolean; view_employee: boolean };
+    corrections: CorrectionItem[];
+    manual: ManualAttendanceOptions | null;
+    can: {
+        view_photo: boolean;
+        view_employee: boolean;
+        view_corrections: boolean;
+        manual: boolean;
+    };
 };
 
 const minutes = (m: number) =>
@@ -240,8 +263,15 @@ function LogPanel({
 }
 
 /** Detail absensi satu pegawai pada satu tanggal (05 §4.10, 07 §4 "Absensi harian (detail)"). */
-export default function AttendanceShow({ day, logs, can }: Props) {
+export default function AttendanceShow({
+    day,
+    logs,
+    corrections,
+    manual,
+    can,
+}: Props) {
     const name = day.employee.name ?? 'Pegawai';
+    const [manualOpen, setManualOpen] = useState(false);
     useBreadcrumbTail([
         { title: name, href: show(day.id).url },
         { title: formatDate(day.work_date), href: '#' },
@@ -308,17 +338,28 @@ export default function AttendanceShow({ day, logs, can }: Props) {
                             </p>
                         )}
                     </div>
-                    {can.view_employee && (
-                        <Button variant="outline" asChild>
-                            <Link
-                                href={showEmployee(day.employee.id, {
-                                    query: { tab: 'presensi' },
-                                })}
+                    <div className="flex flex-wrap gap-2">
+                        {can.manual && manual && (
+                            <Button
+                                variant="outline"
+                                onClick={() => setManualOpen(true)}
                             >
-                                Lihat pegawai
-                            </Link>
-                        </Button>
-                    )}
+                                <ClipboardPen aria-hidden="true" />
+                                Isi presensi manual
+                            </Button>
+                        )}
+                        {can.view_employee && (
+                            <Button variant="outline" asChild>
+                                <Link
+                                    href={showEmployee(day.employee.id, {
+                                        query: { tab: 'presensi' },
+                                    })}
+                                >
+                                    Lihat pegawai
+                                </Link>
+                            </Button>
+                        )}
+                    </div>
                 </div>
 
                 <div className="grid gap-4 md:grid-cols-2">
@@ -422,11 +463,63 @@ export default function AttendanceShow({ day, logs, can }: Props) {
                         />
                     }
                 >
-                    <p className="text-sm text-muted-foreground">
-                        Belum ada koreksi.
-                    </p>
+                    {corrections.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                            Belum ada koreksi.
+                        </p>
+                    ) : (
+                        <ul className="divide-y">
+                            {corrections.map((c) => (
+                                <li
+                                    key={c.id}
+                                    className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm"
+                                >
+                                    <span className="grid">
+                                        {can.view_corrections ? (
+                                            <Link
+                                                href={showCorrection(c.id)}
+                                                className="font-mono text-xs underline-offset-4 hover:underline"
+                                            >
+                                                {c.number}
+                                            </Link>
+                                        ) : (
+                                            <span className="font-mono text-xs">
+                                                {c.number}
+                                            </span>
+                                        )}
+                                        <span>
+                                            {c.type_label}:{' '}
+                                            <span className="tabular-nums">
+                                                {c.proposed_check_in ?? '–'} →{' '}
+                                                {c.proposed_check_out ?? '–'}
+                                            </span>{' '}
+                                            · {c.reason}
+                                        </span>
+                                    </span>
+                                    <StatusBadge
+                                        status={`correction.${c.status}`}
+                                        label={c.status_label}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </Card>
             </div>
+            {can.manual && manual && (
+                <ManualAttendanceDialog
+                    open={manualOpen}
+                    onOpenChange={setManualOpen}
+                    options={manual}
+                    preset={{
+                        employee: {
+                            id: day.employee.id,
+                            label: `${name} (${day.employee.number ?? ''})`,
+                        },
+                        work_date: day.work_date,
+                    }}
+                />
+            )}
         </>
     );
 }

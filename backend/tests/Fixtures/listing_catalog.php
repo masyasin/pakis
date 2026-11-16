@@ -36,6 +36,7 @@ return [
     'import_profiles', // T-027
     'attendance_days', // T-038
     'attendance_summary', // T-039
+    'attendance_corrections', // T-041
     'my_corrections', // T-040 (API)
     'approval_corrections', // T-040 (API)
     'my_attendance_days', // T-043 (API)

@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Attendance\Enums\FieldTripRule;
 use App\Domain\Attendance\Listings\AttendanceDayListing;
+use App\Domain\Attendance\Models\AttendanceCorrection;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Models\AttendanceLog;
 use App\Domain\Attendance\Support\AttendanceDayScope;
+use App\Domain\Attendance\Support\CorrectionAuthority;
 use App\Domain\Attendance\Support\SelfieStore;
 use App\Http\Controllers\Controller;
 use App\Models\User;
@@ -115,11 +117,30 @@ class AttendanceController extends Controller
                 'in' => self::log($day->checkInLog, $canPhoto),
                 'out' => self::log($day->checkOutLog, $canPhoto),
             ],
-            // Koreksi (riwayat) datang di T-040/T-041.
-            'corrections' => [],
+            // Riwayat koreksi hari ini (T-041), hanya yang terlihat pengguna.
+            'corrections' => app(CorrectionAuthority::class)->constrainVisible(AttendanceCorrection::query(), $actor)
+                ->with('reason:id,name')
+                ->where('employee_id', $day->employee_id)->where('work_date', $date)
+                ->latest('id')->limit(20)->get()
+                ->map(fn (AttendanceCorrection $c) => [
+                    'id' => $c->id,
+                    'number' => $c->number,
+                    'type_label' => $c->type->label(),
+                    'proposed_check_in' => AttendanceCorrection::hm($c->proposed_check_in),
+                    'proposed_check_out' => AttendanceCorrection::hm($c->proposed_check_out),
+                    'reason' => $c->reason->name,
+                    'status' => $c->status->value,
+                    'status_label' => $c->status->label(),
+                    'submitted_at' => self::localTime($c->created_at),
+                ])->all(),
+            ...AttendanceCorrectionController::manualProps($actor),
             'can' => [
                 'view_photo' => $canPhoto,
                 'view_employee' => $actor->can('employees.view'),
+                'view_corrections' => $actor->can('attendance_corrections.view'),
+                // Presensi manual hanya untuk pegawai lain yang boleh diputuskan pengguna (06 §6).
+                'manual' => ! CorrectionAuthority::isOwn($actor, $day->employee_id)
+                    && app(CorrectionAuthority::class)->mayDecideFor($actor, $day->employee_id, app(CorrectionAuthority::class)->approverFor($day->employee_id)),
             ],
         ]);
     }

@@ -3,6 +3,7 @@
 use App\Domain\Settings\SettingRegistry;
 use App\Http\Controllers\Admin\AssignmentController;
 use App\Http\Controllers\Admin\AttendanceController;
+use App\Http\Controllers\Admin\AttendanceCorrectionController;
 use App\Http\Controllers\Admin\AttendanceSummaryController;
 use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\DepartmentController;
@@ -154,6 +155,22 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     Route::get('absensi/foto/{log}', [AttendanceController::class, 'selfie'])->whereNumber('log')
         ->middleware(['can:attendance.view_photo', 'signed', 'throttle:120,1'])->name('attendance.selfie');
     Route::get('absensi/{day}', [AttendanceController::class, 'show'])->whereNumber('day')->middleware('can:attendance.view')->name('attendance.show');
+
+    // Koreksi presensi (05 §4.10, FR-038, BR-069, T-041). `{correction}` ber-scope (06 §5 + atasan
+    // langsung); Setujui/Tolak juga memeriksa 06 §6 di Action. Presensi manual = koreksi langsung
+    // disetujui yang diisi admin/atasan (keputusan Mas 16 Nov 2026).
+    Route::middleware('can:attendance_corrections.view')->group(function () {
+        Route::get('koreksi-absen', [AttendanceCorrectionController::class, 'index'])->name('attendance-corrections.index');
+        Route::get('koreksi-absen/ekspor', [AttendanceCorrectionController::class, 'export'])->name('attendance-corrections.export');
+        Route::get('koreksi-absen/{correction}', [AttendanceCorrectionController::class, 'show'])->whereNumber('correction')->name('attendance-corrections.show');
+        Route::get('koreksi-absen/{correction}/lampiran', [AttendanceCorrectionController::class, 'attachment'])->whereNumber('correction')
+            ->middleware('throttle:60,1')->name('attendance-corrections.attachment');
+    });
+    Route::middleware('can:attendance_corrections.approve')->group(function () {
+        Route::post('koreksi-absen/manual', [AttendanceCorrectionController::class, 'manual'])->name('attendance-corrections.manual');
+        Route::post('koreksi-absen/{correction}/setujui', [AttendanceCorrectionController::class, 'approve'])->whereNumber('correction')->name('attendance-corrections.approve');
+        Route::post('koreksi-absen/{correction}/tolak', [AttendanceCorrectionController::class, 'reject'])->whereNumber('correction')->name('attendance-corrections.reject');
+    });
 
     // Perangkat Pakis Pro (05 §4.8, BR-040, 06 §7.2). `{device}` ber-scope lewat pegawai pemilik akun.
     Route::middleware('can:devices.view')->group(function () {

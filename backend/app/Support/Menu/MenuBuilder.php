@@ -45,7 +45,7 @@ final class MenuBuilder
         ['Kepegawaian', 'Impor Pegawai', 'import', 'employees.import', 'admin.imports.index'],
         ['Presensi', 'Presensi Harian', 'attendance', 'attendance.view', 'admin.attendance.index'],
         ['Presensi', 'Rekap Bulanan', 'recap', 'attendance.view', 'admin.attendance-summary.index'],
-        ['Presensi', 'Koreksi Presensi', 'correction', 'attendance_corrections.view', 'admin.corrections.index'],
+        ['Presensi', 'Koreksi Presensi', 'correction', 'attendance_corrections.view', 'admin.attendance-corrections.index'],
         ['Presensi', 'Jadwal', 'schedule', 'schedules.view', 'admin.schedules.index'],
         ['Presensi', 'Shift', 'shift', 'shifts.view', 'admin.shifts.index'],
         ['Presensi', 'Hari Libur', 'holiday', 'holidays.view', 'admin.holidays.index'],

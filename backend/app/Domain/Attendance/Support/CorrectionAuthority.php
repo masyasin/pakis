@@ -97,6 +97,31 @@ final class CorrectionAuthority
     }
 
     /**
+     * Koreksi yang TERLIHAT di web (`admin.attendance-corrections.*`, 06 §5): pegawai dalam scope
+     * data pengguna, DITAMBAH koreksi yang ia putuskan sebagai atasan langsung (syarat 4a) — atasan
+     * ber-scope sempit (mis. `self`) tetap melihat yang harus ia putuskan. Di luar ini → 404.
+     *
+     * @param  Builder<AttendanceCorrection>  $query
+     * @return Builder<AttendanceCorrection>
+     */
+    public function constrainVisible(Builder $query, User $user): Builder
+    {
+        $ids = $this->scope->visibleEmployeeIds($user);
+        if ($ids === null) {
+            return $query;
+        }
+
+        $self = $user->employee_id === null || ! $user->can('attendance_corrections.approve') ? null : (int) $user->employee_id;
+
+        return $query->where(function (Builder $q) use ($ids, $self) {
+            $ids === [] ? $q->whereRaw('1 = 0') : $q->whereIn('attendance_corrections.employee_id', $ids);
+            if ($self !== null) {
+                $q->orWhere('attendance_corrections.approver_employee_id', $self);
+            }
+        });
+    }
+
+    /**
      * Penerima notifikasi koreksi diajukan (BR-070): akun penyetuju; tanpa atasan aktif → kepala
      * lokasi pegawai + HRD.
      *

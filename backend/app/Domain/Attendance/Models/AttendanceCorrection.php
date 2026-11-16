@@ -4,6 +4,7 @@ namespace App\Domain\Attendance\Models;
 
 use App\Domain\Attendance\Enums\CorrectionStatus;
 use App\Domain\Attendance\Enums\CorrectionType;
+use App\Domain\Attendance\Support\CorrectionAuthority;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Models\User;
@@ -101,5 +102,21 @@ class AttendanceCorrection extends Model
     public function isManual(): bool
     {
         return $this->submitter->employee_id !== $this->employee_id;
+    }
+
+    /**
+     * Binding `{correction}` web hanya dalam koreksi yang terlihat pengguna (SEC-033): di luar →
+     * 404. API memakai `{id}` + CorrectionAuthority sendiri (05 §5.7–§5.8).
+     */
+    public function resolveRouteBinding($value, $field = null): ?Model
+    {
+        $user = request()->user();
+        if (! $user instanceof User) {
+            return null;
+        }
+
+        $query = self::query()->where($this->qualifyColumn($field ?? $this->getRouteKeyName()), $value);
+
+        return app(CorrectionAuthority::class)->constrainVisible($query, $user)->first();
     }
 }

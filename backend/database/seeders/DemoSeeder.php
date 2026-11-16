@@ -205,6 +205,8 @@ class DemoSeeder extends Seeder
      * masuk lewat layar atau impor T-085). Barcode berawalan 200 (rentang GS1 untuk pemakaian internal
      * toko) agar tidak pernah bentrok dengan barcode pabrik sungguhan.
      * SKU => [nama, kategori, bahan aktif, formulasi, kemasan, satuan dasar, kemasan besar [satuan, faktor] | null, terbatas?].
+     *
+     * @var array<string, array{0: string, 1: string, 2: string|null, 3: string|null, 4: string|null, 5: string, 6: array{0: string, 1: string}|null, 7: bool}>
      */
     private const PRODUCTS = [
         'DM-INS-001' => ['Insektisida Demo Abamektin 500 ml', 'INSEKTISIDA', 'Abamektin 18 g/l', 'ec', '500 ml', 'bottle', ['box', '24'], false],
@@ -236,7 +238,8 @@ class DemoSeeder extends Seeder
         $categories = ProductCategory::withTrashed()->get()->keyBy('code');
         $seq = 0;
 
-        foreach (self::PRODUCTS as $sku => [$name, $categoryCode, $ingredient, $form, $package, $baseUnit, $bulk, $restricted]) {
+        foreach (self::PRODUCTS as $sku => $spec) {
+            [$name, $categoryCode, $ingredient, $form, $package, $baseUnit, $bulk, $restricted] = $spec;
             $seq++;
             $category = $categories[$categoryCode] ?? null;
             if ($category === null || Product::withTrashed()->where('sku', $sku)->exists()) {

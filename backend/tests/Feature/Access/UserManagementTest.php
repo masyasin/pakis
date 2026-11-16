@@ -59,7 +59,8 @@ test('FR-016 BR-014 buat akun: password sementara tampil sekali, wajib ganti, ro
     expect($temporary)->toMatch('/^['.TemporaryPassword::ALPHABET.']{12}$/')
         ->and(Hash::check($temporary, $user->password))->toBeTrue()
         ->and($user->must_change_password)->toBeTrue()
-        ->and($user->phone)->toBe('081234567890')
+        // T-073 (BR-166(1)): HP akun disimpan 62… lewat normalizer bersama.
+        ->and($user->phone)->toBe('6281234567890')
         ->and($user->hasRole('supervisor'))->toBeTrue()
         ->and($user->created_by)->toBe($owner->id)
         ->and($response->json('show_url'))->toBe(route('admin.users.show', $user));

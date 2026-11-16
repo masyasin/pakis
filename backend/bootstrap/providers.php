@@ -4,6 +4,7 @@ use App\Providers\ApprovalServiceProvider;
 use App\Providers\AppServiceProvider;
 use App\Providers\AttendanceServiceProvider;
 use App\Providers\CatalogServiceProvider;
+use App\Providers\CustomerServiceProvider;
 use App\Providers\DeviceServiceProvider;
 use App\Providers\EmployeeServiceProvider;
 use App\Providers\FortifyServiceProvider;
@@ -22,4 +23,5 @@ return [
     ApprovalServiceProvider::class,
     CatalogServiceProvider::class,
     InventoryServiceProvider::class,
+    CustomerServiceProvider::class,
 ];

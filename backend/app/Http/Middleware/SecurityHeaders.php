@@ -28,8 +28,10 @@ class SecurityHeaders
         $headers->set('X-Content-Type-Options', 'nosniff');
         $headers->set('X-Frame-Options', 'DENY');
         $headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
-        // Web admin tidak butuh kamera/GPS/mikrofon; Pakis Pro (Flutter) tidak terpengaruh header ini.
-        $headers->set('Permissions-Policy', 'camera=(), geolocation=(), microphone=()');
+        // Kamera & mikrofon tetap diblok. Geolocation hanya untuk origin sendiri: tombol "Ambil lokasi
+        // HP" titik kios (T-073, 15 §7.2 LocationPointInput; keputusan Mas). Pakis Pro (Flutter) tidak
+        // terpengaruh header ini.
+        $headers->set('Permissions-Policy', 'camera=(), geolocation=(self), microphone=()');
 
         // PHP menambah X-Powered-By di luar objek Response; hapus di keduanya.
         $headers->remove('X-Powered-By');

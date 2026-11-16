@@ -20,6 +20,8 @@ class SequenceSeeder extends Seeder
             ['code' => 'field_trip', 'name' => 'Nomor tugas luar kota', 'pattern' => 'DL/{YYYY}/{MM}/{SEQ:4}', 'reset_period' => ResetPeriod::Monthly],
             // Paket A (14 §8): SKU otomatis bila `product.sku_mode = auto` (T-070).
             ['code' => 'product', 'name' => 'Kode produk (SKU otomatis)', 'pattern' => 'PRD-{SEQ:5}', 'reset_period' => ResetPeriod::Never],
+            // Paket A (14 §8): kode kios bila `customer.code_mode = auto` (T-073).
+            ['code' => 'customer', 'name' => 'Kode pelanggan (kios)', 'pattern' => 'KIO-{SEQ:5}', 'reset_period' => ResetPeriod::Never],
         ];
 
         foreach ($sequences as $sequence) {

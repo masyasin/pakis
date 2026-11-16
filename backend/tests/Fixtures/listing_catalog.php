@@ -52,4 +52,6 @@ return [
     'stock_locations', // T-068
     'stock_bins', // T-068
     'vehicles', // T-068
+    'sales_areas', // T-073
+    'customers', // T-073
 ];

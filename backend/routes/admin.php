@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\AttendanceCorrectionController;
 use App\Http\Controllers\Admin\AttendanceSummaryController;
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DeviceController;
 use App\Http\Controllers\Admin\EmployeeController;
@@ -32,6 +33,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\RoleController;
+use App\Http\Controllers\Admin\SalesAreaController;
 use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\ScheduleOverrideController;
 use App\Http\Controllers\Admin\SecurityEventController;
@@ -415,6 +417,28 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('produk/{product}/izin-edar/{registration}', [ProductRegistrationController::class, 'update'])->whereNumber(['product', 'registration'])->name('product-registrations.update');
         Route::post('produk/{product}/izin-edar/{registration}/cabut', [ProductRegistrationController::class, 'revoke'])->whereNumber(['product', 'registration'])->name('product-registrations.revoke');
     });
+
+    // Area penjualan (15 §5 `admin.sales-areas.*`, FR-A12, T-073): tambah/ubah lewat dialog di halaman
+    // daftar. Tanpa hapus: area dinonaktifkan.
+    Route::get('area-penjualan', [SalesAreaController::class, 'index'])->middleware('can:sales_areas.view')->name('sales-areas.index');
+    Route::middleware('can:sales_areas.manage')->group(function () {
+        Route::post('area-penjualan', [SalesAreaController::class, 'store'])->name('sales-areas.store');
+        Route::put('area-penjualan/{salesArea}', [SalesAreaController::class, 'update'])->whereNumber('salesArea')->name('sales-areas.update');
+    });
+
+    // Pelanggan / kios (15 §5 `admin.customers.*`, FR-A13/A17, BR-167, T-073). `baru`, `ekspor`, dan
+    // `alihkan` didaftarkan sebelum `{customer}`; kios di luar scope pelanggan (15 §6.2) → 404 lewat
+    // binding ber-scope. Tanpa hapus (kios digabung/dinonaktifkan di T-074).
+    Route::get('pelanggan', [CustomerController::class, 'index'])->middleware('can:customers.view')->name('customers.index');
+    Route::get('pelanggan/ekspor', [CustomerController::class, 'export'])->middleware('can:customers.export')->name('customers.export');
+    Route::middleware('can:customers.manage')->group(function () {
+        Route::get('pelanggan/baru', [CustomerController::class, 'create'])->name('customers.create');
+        Route::post('pelanggan', [CustomerController::class, 'store'])->name('customers.store');
+        Route::post('pelanggan/alihkan', [CustomerController::class, 'reassign'])->middleware('throttle:30,1')->name('customers.reassign');
+        Route::get('pelanggan/{customer}/ubah', [CustomerController::class, 'edit'])->whereNumber('customer')->name('customers.edit');
+        Route::put('pelanggan/{customer}', [CustomerController::class, 'update'])->whereNumber('customer')->name('customers.update');
+    });
+    Route::get('pelanggan/{customer}', [CustomerController::class, 'show'])->whereNumber('customer')->middleware('can:customers.view')->name('customers.show');
 
     // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).
     // `baru` & `rak` didaftarkan sebelum `{stockLocation}`; di luar dimensi Stok (15 §6.2) → 404 lewat

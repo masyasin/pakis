@@ -33,6 +33,7 @@ final class SettingRegistry
         'approval' => 'Persetujuan',
         'product' => 'Produk',
         'upload' => 'Unggahan berkas',
+        'customer' => 'Pelanggan',
         'inventory' => 'Gudang & stok',
     ];
 
@@ -227,6 +228,10 @@ final class SettingRegistry
             // 2.8 Unggahan berkas (T-070, SEC-109)
             $t('upload.max_image_kb', SettingType::Int, 5120, 'Ukuran foto maksimal (KB)', 'Berlaku untuk foto JPG/PNG/WebP di semua unggahan Paket A.', min: 512, max: 10240),
             $t('upload.max_pdf_kb', SettingType::Int, 10240, 'Ukuran PDF maksimal (KB)', 'Berlaku untuk dokumen PDF (izin edar, berita acara, dll.).', min: 512, max: 20480),
+
+            // 2.9 Pelanggan (T-073, 15 §9). Kunci verifikasi/OTP/duplikat `customer.*` ditambah T-074.
+            $t('customer.default_term_days', SettingType::Int, 30, 'Termin bawaan kios baru (hari)', 'Diisi otomatis di form kios baru; bisa diubah per kios.', min: 0, max: 365),
+            $t('customer.code_mode', SettingType::Enum, 'auto', 'Cara mengisi kode kios', 'Otomatis = nomor dari Penomoran (pola `customer`, mis. KIO-00001). Manual = diketik admin (huruf besar, angka, strip).', options: ['auto', 'manual']),
 
             // 2.10 Gudang & stok (15 §9). T-071: pengingat izin edar; kunci inventory.* lain ditambah T-077+.
             $t('inventory.registration_reminder_days', SettingType::Int, 60, 'Ambang "izin edar akan habis" (hari)', 'Izin yang habis dalam jumlah hari ini ditandai akan habis dan memicu pengingat pertama. Pengingat berikutnya H-30, H-7, dan H-0.', min: 7, max: 365),

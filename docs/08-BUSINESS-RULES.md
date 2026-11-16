@@ -164,6 +164,17 @@ Grup `upload` (tab "Unggahan berkas"), dipakai komponen unggahan bersama `app/Su
 | `upload.max_image_kb` | int | 5120 | 512–10240 (foto JPG/PNG/WebP) | ❌ |
 | `upload.max_pdf_kb` | int | 10240 | 512–20480 (dokumen PDF) | ❌ |
 
+### 2.9 Pelanggan
+
+Grup `customer` (tab "Pelanggan"), dipakai data kios (T-073, `15` §9). Kunci verifikasi, OTP, dan duplikat `customer.*` lainnya ditambah T-074.
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `customer.default_term_days` | int | 30 | 0–365 | ❌ |
+| `customer.code_mode` | enum | `auto` | `auto`, `manual` | ❌ |
+
+Catatan: mode otomatis memakai `NumberGenerator` pola `customer` (`KIO-{SEQ:5}`); mode manual menerima huruf besar, angka, dan strip (3–20 karakter, unik termasuk kios terhapus).
+
 ### 2.10 Gudang & stok
 
 Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok (`15` §9; kunci `inventory.*` lain ditambah T-077 dan seterusnya).
@@ -182,6 +193,7 @@ Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan
 | `employment_status` | `employees.employment_status_id` | `permanent`, `contract`, `probation`, `daily` |
 | `correction_reason` | `attendance_corrections.reason_id` | `forgot`, `gps_error`, `field_duty`, `system_error`, `phone_broken`, `phone_lost`, `phone_left`, `other` |
 | `offboarding_reason` | `employees.exit_reason_id` | `resign`, `contract_end`, `terminated`, `retired`, `deceased`, `other` |
+| `customer_type` | `customers.customer_type_id` | `kiosk`, `retail`, `farmer_group`, `project`, `other` (T-073) |
 
 ## 4. Autentikasi & Akun
 

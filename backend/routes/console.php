@@ -67,3 +67,11 @@ Schedule::command('catalog:refresh-registrations')
     ->timezone(DisplayTime::timezone())
     ->onOneServer()
     ->withoutOverlapping();
+
+// Penugasan kios bertanggal (BR-167, 15 §11.1 ApplyScheduledAssignments): 00.05 waktu LOKAL menyalin
+// penugasan yang mulai hari ini ke cache `customers`. Idempoten, aman diulang/terlewat sehari.
+Schedule::command('customers:apply-assignments')
+    ->dailyAt('00:05')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();

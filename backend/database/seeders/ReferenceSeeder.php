@@ -71,6 +71,14 @@ class ReferenceSeeder extends Seeder
             'cs' => 'CS',
             'other' => 'Lainnya',
         ],
+        // Paket A (15 §4.1, T-073).
+        'customer_type' => [
+            'kiosk' => 'Kios',
+            'retail' => 'Toko eceran',
+            'farmer_group' => 'Kelompok tani',
+            'project' => 'Proyek/instansi',
+            'other' => 'Lainnya',
+        ],
     ];
 
     /**

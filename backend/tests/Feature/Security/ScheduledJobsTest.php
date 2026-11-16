@@ -560,7 +560,12 @@ test('T-045 Scheduled: semua job terdaftar di scheduler dengan jadwalnya', funct
         ->and($events->get('approvals:escalate')?->expression)->toBe('*/15 * * * *')
         ->and($events->get('approvals:escalate')?->timezone)->toBe('Asia/Jakarta')
         ->and($events->get('approvals:escalate')?->withoutOverlapping)->toBeTrue()
-        ->and($events->get('approvals:escalate')?->onOneServer)->toBeTrue();
+        ->and($events->get('approvals:escalate')?->onOneServer)->toBeTrue()
+        // T-073 (BR-167, 15 §11.1 ApplyScheduledAssignments): 00.05 waktu lokal.
+        ->and($events->get('customers:apply-assignments')?->expression)->toBe('5 0 * * *')
+        ->and($events->get('customers:apply-assignments')?->timezone)->toBe('Asia/Jakarta')
+        ->and($events->get('customers:apply-assignments')?->withoutOverlapping)->toBeTrue()
+        ->and($events->get('customers:apply-assignments')?->onOneServer)->toBeTrue();
 });
 
 dataset('sj_inline_blade', [

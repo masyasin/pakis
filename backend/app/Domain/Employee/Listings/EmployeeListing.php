@@ -4,7 +4,6 @@ namespace App\Domain\Employee\Listings;
 
 use App\Domain\Access\DataScope;
 use App\Domain\Employee\Models\Employee;
-use App\Domain\Employee\Support\PhoneNormalizer;
 use App\Domain\Organization\Models\Department;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Organization\Models\Position;
@@ -22,6 +21,7 @@ use App\Support\Listing\Filters\SelectFilter;
 use App\Support\Listing\ListingSpec;
 use App\Support\Listing\Search\TextSearch;
 use App\Support\Listing\Sort;
+use App\Support\Phone\PhoneNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 
 /**

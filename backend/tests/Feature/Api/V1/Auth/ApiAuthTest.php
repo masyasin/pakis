@@ -325,7 +325,21 @@ test('FR-010 ubah nomor HP lewat API wajib password saat ini', function () {
 
     app('auth')->forgetGuards();
     $this->putJson('/api/v1/me', ['phone' => '0812 3456 7890', 'current_password' => 'kopi pagi di gudang'], mobileHeaders($uid, token: $token))
-        ->assertOk()->assertJsonPath('data.phone', '081234567890');
+        ->assertOk()->assertJsonPath('data.phone', '6281234567890'); // T-073: disimpan 62…
+});
+
+test('BR-166(1) PUT /me: HP lama 08… tanpa diubah tidak meminta password dan tersimpan 62…; HP tak sah ditolak', function () {
+    $this->pegawai->forceFill(['phone' => '081234567890'])->save();
+    [$token, $uid] = loggedInPhone('a');
+
+    app('auth')->forgetGuards();
+    $this->putJson('/api/v1/me', ['phone' => '0812-3456-7890'], mobileHeaders($uid, token: $token))
+        ->assertOk()->assertJsonPath('data.phone', '6281234567890');
+
+    app('auth')->forgetGuards();
+    $this->putJson('/api/v1/me', ['phone' => '+1 555 123 4567', 'current_password' => 'kopi pagi di gudang'], mobileHeaders($uid, token: $token))
+        ->assertStatus(422)->assertJsonPath('error.code', 'VALIDATION_FAILED');
+    expect($this->pegawai->refresh()->phone)->toBe('6281234567890');
 });
 
 test('05 §5.1 keluar mencabut token; cabut sesi web milik sendiri tidak menyentuh token HP', function () {

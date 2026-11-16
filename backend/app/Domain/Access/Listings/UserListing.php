@@ -13,6 +13,7 @@ use App\Support\Listing\Filters\MultiSelectFilter;
 use App\Support\Listing\ListingSpec;
 use App\Support\Listing\Search\TextSearch;
 use App\Support\Listing\Sort;
+use App\Support\Phone\PhoneNormalizer;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -29,7 +30,10 @@ final class UserListing implements ExportableListing
                 ->contains('name')
                 ->prefix('username')
                 ->prefix('email')
-                ->prefix('phone'))
+                // HP tersimpan `62…` (T-073): "0812…" dan "+62812…" diubah ke format simpan dulu.
+                ->using(function (Builder $q, string $word): void {
+                    $q->orWhere('users.phone', 'like', TextSearch::escapeLike(PhoneNormalizer::forSearch($word)).'%');
+                }))
             ->filters([
                 MultiSelectFilter::make('role', 'Role')
                     ->options(Role::query()->where('guard_name', 'web')->orderBy('sort_order')->pluck('label', 'name')->all())

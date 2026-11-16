@@ -7,6 +7,7 @@ use App\Domain\Access\Support\OrgStructure;
 use App\Domain\Access\Support\ScopeResolver;
 use App\Models\User;
 use Illuminate\Contracts\Database\Query\Builder as QueryBuilder;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
@@ -25,7 +26,8 @@ use InvalidArgumentException;
  * Hasil di-memo per pengguna (instance scoped per request).
  *
  * Dimensi **stok** (15 §6.2, ADR-106, T-068) memakai definisi lokasi yang sama (PA-13) tetapi pada
- * ID LOKASI, bukan ID pegawai: lihat `forStock()` dan `forStockByLocation()`.
+ * ID LOKASI, bukan ID pegawai: lihat `forStock()` dan `forStockByLocation()`. Dimensi **pelanggan**
+ * (T-073) memakai definisi yang sama untuk lokasi & tim: lihat `forCustomer()`.
  */
 final class DataScope
 {
@@ -180,6 +182,143 @@ final class DataScope
         $ids = $this->stockLocationIds($user);
 
         return $ids === null || ($locationId !== null && in_array($locationId, $ids, true));
+    }
+
+    /**
+     * Batasi query ke kios dalam scope pengguna (dimensi Pelanggan, 15 §6.2, ADR-106, T-073).
+     * `$customerColumn` = kolom ID kios dari KODE, mis. `customers.id` atau `x.customer_id`.
+     *
+     * - `all`: semua kios.
+     * - `location`: kios yang `home_stock_location_id`-nya, atau (bila kosong) gudang asal area-nya,
+     *   adalah lokasi stok dalam dimensi Stok pengguna (definisi lokasi Fase 0 yang sama, PA-13).
+     * - `team`: kios di area yang disupervisi pengguna **termasuk sub-area** (keputusan Mas), atau
+     *   yang `assigned_sales_employee_id`-nya anggota tim (diri + bawahan, `visibleEmployeeIds`).
+     * - `self`: kios dengan `assigned_sales_employee_id` = pengguna.
+     *
+     * Kolom cache `customers.sales_area_id`/`assigned_sales_employee_id` (BR-167) yang dipakai, jadi
+     * pengalihan bertanggal baru mengubah scope saat berlaku (job `customers:apply-assignments`).
+     *
+     * @template TBuilder of QueryBuilder
+     *
+     * @param  TBuilder  $query
+     * @return TBuilder
+     */
+    public function forCustomer(QueryBuilder $query, User $user, string $customerColumn): QueryBuilder
+    {
+        self::assertColumn($customerColumn);
+        $scope = ScopeResolver::for($user);
+
+        if ($scope === Scope::All) {
+            return $query;
+        }
+
+        $self = $user->employee_id;
+        if ($self === null) {
+            $query->whereRaw('1 = 0');
+
+            return $query;
+        }
+
+        if ($scope === Scope::Location) {
+            [, $locations] = $this->stockBase($user);
+            if ($locations === null) {
+                return $query;
+            }
+            if ($locations === []) {
+                $query->whereRaw('1 = 0');
+
+                return $query;
+            }
+
+            $stock = fn ($sub) => $sub->select('id')->from('stock_locations')->whereIn('location_id', $locations);
+            $query->whereIn($customerColumn, fn ($sub) => $sub->select('id')->from('customers')
+                ->where(fn ($w) => $w->whereIn('home_stock_location_id', $stock)
+                    ->orWhere(fn ($o) => $o->whereNull('home_stock_location_id')
+                        ->whereIn('sales_area_id', fn ($a) => $a->select('id')->from('sales_areas')->whereIn('home_stock_location_id', $stock)))));
+
+            return $query;
+        }
+
+        if ($scope === Scope::Self) {
+            $query->whereIn($customerColumn, fn ($sub) => $sub->select('id')->from('customers')->where('assigned_sales_employee_id', $self));
+
+            return $query;
+        }
+
+        $areas = $this->supervisedAreaIds($self);
+        $team = $this->visibleEmployeeIds($user) ?? [$self];
+        $query->whereIn($customerColumn, fn ($sub) => $sub->select('id')->from('customers')
+            ->where(fn ($w) => $w->whereIn('assigned_sales_employee_id', $team)
+                ->when($areas !== [], fn ($o) => $o->orWhereIn('sales_area_id', $areas))));
+
+        return $query;
+    }
+
+    /** Untuk Policy: apakah kios ini dalam scope Pelanggan pengguna? */
+    public function allowsCustomer(User $user, int $customerId): bool
+    {
+        return $this->forCustomer(DB::table('customers')->where('id', $customerId), $user, 'customers.id')->exists();
+    }
+
+    /**
+     * Area penjualan yang boleh dipakai pengguna saat membuat/mengalihkan kios (keputusan T-073):
+     * null = semua. `team` = area yang ia supervisi + sub-area; `location` = area yang gudang asalnya
+     * dalam dimensi Stok; `self` & tanpa pegawai = tidak ada (sales lapangan menyusul Paket B).
+     * Hasilnya selalu terlihat lagi oleh pengguna lewat forCustomer() (kios tidak "hilang").
+     *
+     * @return list<int>|null
+     */
+    public function assignableSalesAreaIds(User $user): ?array
+    {
+        $scope = ScopeResolver::for($user);
+        $self = $user->employee_id;
+
+        return match (true) {
+            $scope === Scope::All => null,
+            $self === null, $scope === Scope::Self => [],
+            $scope === Scope::Team => $this->supervisedAreaIds($self),
+            default => $this->locationAreaIds($user),
+        };
+    }
+
+    /** @return list<int> */
+    private function locationAreaIds(User $user): array
+    {
+        [, $locations] = $this->stockBase($user);
+        if ($locations === []) {
+            return [];
+        }
+
+        return array_values(DB::table('sales_areas')->whereNull('deleted_at')
+            ->when($locations !== null, fn ($q) => $q->whereIn('home_stock_location_id', fn ($sub) => $sub->select('id')->from('stock_locations')->whereIn('location_id', $locations)))
+            ->pluck('id')->map(fn ($id) => (int) $id)->all());
+    }
+
+    /**
+     * Area yang `supervisor_employee_id` = pegawai ini beserta semua sub-areanya (kedalaman area
+     * dibatasi 3 tingkat oleh SaveSalesArea; batas loop di sini hanya pengaman data melingkar).
+     *
+     * @return list<int>
+     */
+    private function supervisedAreaIds(int $employeeId): array
+    {
+        $level = DB::table('sales_areas')->whereNull('deleted_at')->where('supervisor_employee_id', $employeeId)
+            ->pluck('id')->map(fn ($id) => (int) $id)->all();
+        $seen = array_fill_keys($level, true);
+
+        for ($depth = 0; $depth < self::TEAM_MAX_DEPTH && $level !== []; $depth++) {
+            $next = [];
+            foreach (DB::table('sales_areas')->whereNull('deleted_at')->whereIn('parent_id', $level)->pluck('id') as $id) {
+                if (! isset($seen[(int) $id])) {
+                    $seen[(int) $id] = true;
+                    $next[] = (int) $id;
+                }
+            }
+            $level = $next;
+        }
+
+        // Tanpa memo: area baru di request yang sama langsung ikut (pola subquery forStock).
+        return array_keys($seen);
     }
 
     /** @return array{0: Scope, 1: list<int>|null} */

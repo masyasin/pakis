@@ -15,6 +15,8 @@ enum ReferenceGroup: string
     // Paket A (15 §4.1, T-069): satuan (meta `integer_only`) & formulasi pestisida.
     case Unit = 'unit';
     case Formulation = 'formulation';
+    // Paket A (15 §4.1, T-073): jenis pelanggan (kios, toko eceran, kelompok tani, ...).
+    case CustomerType = 'customer_type';
 
     public function label(): string
     {
@@ -25,6 +27,7 @@ enum ReferenceGroup: string
             self::OffboardingReason => 'Alasan keluar',
             self::Unit => 'Satuan',
             self::Formulation => 'Formulasi',
+            self::CustomerType => 'Jenis pelanggan',
         };
     }
 
@@ -43,6 +46,7 @@ enum ReferenceGroup: string
             // T-070: satuan dipakai satuan produk & satuan dasar; formulasi dipakai produk.
             self::Unit => [['product_units', 'unit_id'], ['products', 'base_unit_id']],
             self::Formulation => [['products', 'formulation_id']],
+            self::CustomerType => [['customers', 'customer_type_id']],
         };
     }
 }

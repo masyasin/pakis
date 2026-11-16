@@ -18,7 +18,7 @@ beforeEach(function () {
         'name' => 'Siti Aminah',
         'username' => 'siti.aminah',
         'email' => 'siti@contoh.test',
-        'phone' => '081200000001',
+        'phone' => '6281200000001', // T-073: HP akun tersimpan 62…
     ]);
 });
 
@@ -27,7 +27,7 @@ function updateProfile(array $data)
     return test()->from('/profil')->put('/profil', [
         'name' => 'Siti Aminah',
         'email' => 'siti@contoh.test',
-        'phone' => '081200000001',
+        'phone' => '6281200000001', // T-073: HP akun tersimpan 62…
         ...$data,
     ]);
 }
@@ -62,7 +62,7 @@ test('FR-010 ganti email/HP wajib password saat ini yang benar', function (strin
     expect($this->user->refresh()->{$field})->toBe($value);
 })->with([
     'email' => ['email', 'siti.baru@contoh.test'],
-    'HP' => ['phone', '081299999999'],
+    'HP' => ['phone', '6281299999999'],
 ]);
 
 test('FR-010 ganti email → email_verified_at null, verifikasi ke alamat baru, pemberitahuan ke alamat lama', function () {

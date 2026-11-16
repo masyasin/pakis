@@ -14,10 +14,12 @@ use App\Models\User;
 use App\Support\Api\ApiError;
 use App\Support\Api\ErrorCode;
 use App\Support\Api\RequestId;
+use App\Support\Phone\PhoneNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -42,21 +44,24 @@ class MeController extends Controller
         $user = self::user($request);
         $phone = $request->input('phone', $user->phone);
         $request->merge([
-            'phone' => is_string($phone) && trim($phone) !== '' ? (string) preg_replace('/[\s.\-()]/', '', $phone) : null,
+            // Disimpan `62…` lewat normalizer bersama (BR-166(1), T-073), sama dengan Profil web.
+            'phone' => PhoneNormalizer::forInput($phone),
         ]);
 
         $data = $request->validate([
-            'phone' => ['nullable', 'string', 'regex:/^\+?[0-9]{8,20}$/'],
+            // HP lama tak sah yang tidak diubah tetap diterima (lihat UserRequest).
+            'phone' => ['nullable', 'string', Rule::when($request->input('phone') !== $user->phone, ['regex:'.PhoneNormalizer::STORED_PATTERN])],
             // Isi berkas diperiksa lagi oleh AvatarStore (getimagesize + encode ulang).
             'avatar' => ['nullable', 'file', 'max:'.AvatarStore::MAX_KB, 'mimes:png,jpg,jpeg,webp'],
             'current_password' => ['nullable', 'string'],
         ], [
-            'phone.regex' => 'Nomor HP hanya angka (boleh diawali +), 8–20 digit.',
+            'phone.regex' => PhoneNormalizer::INVALID_MESSAGE,
             'avatar.max' => 'Ukuran foto maksimal 2 MB.',
             'avatar.mimes' => 'Foto harus PNG, JPG, atau WebP.',
         ]);
 
-        if ($data['phone'] !== $user->phone) {
+        // HP lama `08…` yang belum ternormalisasi tidak dianggap berubah hanya karena formatnya.
+        if ($data['phone'] !== (PhoneNormalizer::normalize($user->phone) ?? $user->phone)) {
             $password = $data['current_password'] ?? null;
             if (! is_string($password) || $password === '' || ! Hash::check($password, $user->password)) {
                 throw ValidationException::withMessages(['current_password' => 'Masukkan password saat ini yang benar untuk mengganti nomor HP.']);

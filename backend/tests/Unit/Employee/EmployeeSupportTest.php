@@ -2,7 +2,7 @@
 
 use App\Domain\Employee\Support\NikCipher;
 use App\Domain\Employee\Support\PersonName;
-use App\Domain\Employee\Support\PhoneNormalizer;
+use App\Support\Phone\PhoneNormalizer;
 
 test('BR-050 PhoneNormalizer: 08… / +62… / 62… / 8… → 62…; selain itu null', function (?string $input, ?string $expected) {
     expect(PhoneNormalizer::normalize($input))->toBe($expected);

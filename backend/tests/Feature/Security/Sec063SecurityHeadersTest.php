@@ -14,7 +14,8 @@ test('SEC-063 semua header keamanan ada di respons web', function () {
         ->assertHeader('X-Content-Type-Options', 'nosniff')
         ->assertHeader('X-Frame-Options', 'DENY')
         ->assertHeader('Referrer-Policy', 'strict-origin-when-cross-origin')
-        ->assertHeader('Permissions-Policy', 'camera=(), geolocation=(), microphone=()')
+        // T-073: geolocation hanya origin sendiri (titik kios); kamera & mikrofon tetap diblok.
+        ->assertHeader('Permissions-Policy', 'camera=(), geolocation=(self), microphone=()')
         ->assertHeaderMissing('X-Powered-By');
 
     $csp = $response->headers->get('Content-Security-Policy');

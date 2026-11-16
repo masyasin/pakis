@@ -7,6 +7,7 @@ use App\Domain\Access\Enums\DataScope as Scope;
 use App\Domain\Access\Support\ScopeResolver;
 use App\Domain\Employee\Models\Employee;
 use App\Models\User;
+use App\Support\Phone\PhoneNormalizer;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -34,8 +35,9 @@ class UserRequest extends FormRequest
             // Username disimpan huruf kecil (04 §2.2); spasi di tepi bukan bagian username.
             'username' => is_string($username) ? mb_strtolower(trim($username)) : $username,
             'email' => is_string($email) && trim($email) !== '' ? mb_strtolower(trim($email)) : null,
-            // Spasi, titik, tanda hubung, kurung hanya pemisah tampilan nomor HP (sama dengan Profil).
-            'phone' => is_string($phone) && trim($phone) !== '' ? (string) preg_replace('/[\s.\-()]/', '', $phone) : null,
+            // Disimpan `62…` lewat normalizer bersama (BR-166(1), addendum T-020 di T-073): HP akun
+            // dibandingkan dengan HP kios (T-074), jadi formatnya harus identik dengan Employee/Customer.
+            'phone' => PhoneNormalizer::forInput($phone),
             'roles' => is_array($this->input('roles')) ? array_values(array_unique(array_filter($this->input('roles'), 'is_string'))) : [],
             'is_active' => $this->has('is_active') ? $this->boolean('is_active') : true,
         ]);
@@ -61,7 +63,9 @@ class UserRequest extends FormRequest
             'name' => ['required', 'string', 'min:2', 'max:150'],
             'username' => ['required', 'string', 'regex:/^[a-z0-9._-]{3,50}$/', Rule::unique(User::class)->ignore($ignore)->withoutTrashed()],
             'email' => ['nullable', 'string', 'email', 'max:150', Rule::unique(User::class)->ignore($ignore)->withoutTrashed()],
-            'phone' => ['nullable', 'string', 'regex:/^\+?[0-9]{8,20}$/'],
+            // HP lama tak sah (dibiarkan migrasi normalisasi) tetap diterima selama tidak diubah, agar
+            // mengubah role tidak terhalang data HP lama.
+            'phone' => ['nullable', 'string', Rule::when($this->input('phone') !== ($target instanceof User ? $target->phone : null), ['regex:'.PhoneNormalizer::STORED_PATTERN])],
             'roles' => ['array', 'max:20'],
             'roles.*' => ['string', Rule::exists('roles', 'name')->where('guard_name', 'web')],
             // Pegawai terkait (T-024): pegawai aktif yang belum punya akun lain. Tautan yang sudah ada
@@ -89,7 +93,7 @@ class UserRequest extends FormRequest
             'username.regex' => 'Username 3–50 karakter: huruf kecil, angka, titik, garis bawah, atau tanda hubung.',
             'username.unique' => 'Username ini sudah dipakai akun lain.',
             'email.unique' => 'Email ini sudah dipakai akun lain.',
-            'phone.regex' => 'Nomor HP hanya angka (boleh diawali +), 8–20 digit.',
+            'phone.regex' => PhoneNormalizer::INVALID_MESSAGE,
             'roles.*.exists' => 'Role yang dipilih tidak ditemukan.',
             'employee_id.exists' => 'Pegawai tidak ditemukan atau sudah nonaktif.',
             'employee_id.unique' => 'Pegawai ini sudah punya akun lain.',

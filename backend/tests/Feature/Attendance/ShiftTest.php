@@ -229,7 +229,7 @@ test('05 §4.11 lookup shifts hanya shift aktif dan butuh izin shift/jadwal', fu
     $admin = User::factory()->withTwoFactor()->create()->assignRole('administrator');
     $this->actingAs($admin)->getJson('/lookup/shifts')->assertOk(); // administrator: shifts.view ✅
 
-    $supervisor = User::factory()->create()->assignRole('supervisor');
+    $supervisor = User::factory()->withTwoFactor()->create()->assignRole('supervisor'); // wajib MFA sejak T-067 (PA-12)
     $this->actingAs($supervisor)->getJson('/lookup/shifts')->assertOk(); // supervisor: schedules.view 🔸
 });
 

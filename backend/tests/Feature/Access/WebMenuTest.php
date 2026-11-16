@@ -64,6 +64,10 @@ test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai mod
     expect(menuOf('supervisor'))->toBe(['' => ['Dasbor'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
 });
 
+test('T-067 role Paket A: hanya Dasbor sampai modul Paket A punya route (menu tidak berubah)', function (string $role) {
+    expect(menuOf($role))->toBe(['' => ['Dasbor']]);
+})->with(['admin_penjualan', 'kepala_gudang', 'staf_gudang', 'purchasing']);
+
 test('06 §8 setiap grup menu punya seksi sidebar (HRIS / Sistem), Dasbor tanpa seksi', function () {
     $groups = array_values(array_unique(array_filter(array_column(MenuBuilder::ITEMS, 0))));
     expect(array_keys(MenuBuilder::SECTIONS))->toEqualCanonicalizing($groups);
@@ -78,9 +82,9 @@ test('06 §8 setiap grup menu punya seksi sidebar (HRIS / Sistem), Dasbor tanpa 
         });
 });
 
-test('auth.permissions: super_admin = 54 permission; tamu tanpa menu', function () {
+test('auth.permissions: super_admin = 109 permission; tamu tanpa menu', function () {
     $this->actingAs(User::factory()->withTwoFactor()->create()->assignRole('super_admin'))->get('/dasbor')
-        ->assertInertia(fn (Assert $page) => $page->has('auth.permissions', 54)->has('auth.menu'));
+        ->assertInertia(fn (Assert $page) => $page->has('auth.permissions', 109)->has('auth.menu'));
 
     app('auth')->forgetGuards();
     $this->post('/logout');

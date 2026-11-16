@@ -19,13 +19,19 @@ Model: **RBAC dinamis** (Spatie) + **scope data per role** + **Policy per resour
 | `owner` | Owner | `all` | ✅ | ✅ | Pemilik CV |
 | `administrator` | Administrator | `all` | ✅ | ❌ | Admin kantor / IT internal |
 | `hrd` | HRD | `all` | ✅ | ❌ | Staf HRD |
-| `kepala_lokasi` | Kepala Lokasi | `location` | ❌ | ❌ | Kepala Gudang, Kepala Toko |
-| `supervisor` | Supervisor | `team` | ❌ | ❌ | Supervisor Sales |
+| `kepala_lokasi` | Kepala Lokasi | `location` | ❌ | ❌ | Pimpinan unit kerja (kantor/toko/gudang) untuk SDM & presensi lokasinya |
+| `supervisor` | Supervisor | `team` | ✅ | ❌ | Supervisor Sales |
 | `pegawai` | Pegawai | `self` | ❌ | ✅ | Sales, driver, staf gudang, kasir |
+| `admin_penjualan` | Admin Penjualan | `all` | ✅ | ❌ | Staf admin penjualan kantor (Paket A) |
+| `kepala_gudang` | Kepala Gudang | `location` | ✅ | ❌ | Kepala Gudang Undaan (Paket A) |
+| `staf_gudang` | Staf Gudang | `location` | ❌ | ❌ | Staf penerimaan & picking (Paket A) |
+| `purchasing` | Purchasing | `all` | ✅ | ❌ | Staf pembelian (Paket A) |
+
+Empat role terakhir ditambah Paket A (T-067, `15` §6.1). `supervisor` wajib MFA sejak T-067 karena memutuskan approval Paket A (PA-12); `kepala_lokasi` tetap tanpa MFA (PA-33). Instalasi yang sudah berjalan mendapat perubahan ini lewat migrasi data `add_paket_a_permissions_to_builtin_roles` (hanya menambah, tidak mencabut ubahan pengguna; PA-11). Karena aturan hak target ⊆ pelaku (§10) dan batas delegasi role (BR-031) tetap berlaku, akun `supervisor`, `kepala_lokasi`, dan keempat role Paket A hanya bisa dikelola Owner/super_admin; HRD dan Administrator tidak memegang izin Paket A mereka (PA-35, keputusan Mas 16 Nov 2026).
 
 `super_admin` otomatis lolos semua permission lewat `Gate::before`, **kecuali** satu hal: Super Admin tidak bisa mengubah role/permission akun Owner. Role `is_system` tidak bisa dihapus atau diganti kodenya, tetapi permission-nya tetap bisa diubah, kecuali `super_admin` dan `owner` yang terkunci penuh. Satu pengguna bisa memegang beberapa role. Scope efektif = scope **terluas** dari role-role itu, dan MFA wajib bila salah satu role mewajibkan.
 
-## 3. Daftar Permission (54)
+## 3. Daftar Permission (109)
 
 | Modul | Permission | Arti |
 |---|---|---|
@@ -49,61 +55,72 @@ Model: **RBAC dinamis** (Spatie) + **scope data per role** + **Policy per resour
 | Presensi | `attendance.view`, `attendance.view_photo`, `attendance.export`, `attendance.self` | `self` = presensi & lihat milik sendiri via mobile. `view_photo` juga membuka koordinat presisi & diagram lokasi di detail presensi (T-038, keputusan Mas 15 Nov 2026) |
 | Koreksi presensi | `attendance_corrections.view`, `attendance_corrections.create`, `attendance_corrections.approve` | `create` = mengajukan milik sendiri |
 | Tugas luar kota | `field_trips.view`, `field_trips.manage`, `field_trips.request`, `field_trips.approve` | `manage` = buat/ubah/batalkan langsung berlaku; `request` = ajukan milik sendiri dari Pakis Pro (T-036A bagian 2); `approve` = putuskan pengajuan (bagian 2) |
+| Persetujuan (Paket A) | `approvals.view`, `approvals.configure` | `view` = menu & tab "Saya ajukan"/"Semua"; calon penyetuju langkah aktif tetap bisa memutuskan tanpa izin ini (PA-27) |
+| Lokasi stok & kendaraan (Paket A) | `stock_locations.view`, `stock_locations.manage`, `vehicles.view`, `vehicles.manage` | |
+| Produk (Paket A) | `products.view`, `products.manage`, `product_registrations.manage` | `product_registrations` = izin edar |
+| Prinsipal & supplier (Paket A) | `suppliers.view`, `suppliers.manage` | |
+| Area & pelanggan (Paket A) | `sales_areas.view`, `sales_areas.manage`, `customers.view`, `customers.export`, `customers.manage`, `customers.verify`, `customers.merge`, `customers.change_phone`, `customers.change_phone_approve`, `credit_limits.set`, `credit_limits.set_high` | `export` = data sensitif (HP pemilik, PA-3) |
+| Harga & promo (Paket A) | `prices.view`, `prices.manage`, `prices.publish`, `promotions.view`, `promotions.manage`, `promotions.approve` | |
+| Pembelian (Paket A) | `purchase_orders.view`, `purchase_orders.create`, `purchase_orders.approve`, `purchase_orders.approve_high`, `goods_receipts.view`, `goods_receipts.create`, `goods_receipts.approve_short_shelf_life`, `purchase_returns.manage`, `purchase_returns.approve` | |
+| Stok (Paket A) | `stock.view`, `stock.view_cost`, `stock.export`, `stock_transfers.view`, `stock_transfers.create`, `stock_transfers.receive`, `stock_transfers.approve_variance`, `stock_opnames.view`, `stock_opnames.manage`, `stock_opnames.approve_variance`, `stock_opnames.approve_variance_high`, `stock_quarantine.manage`, `stock_quarantine.release`, `stock_disposals.manage`, `stock_disposals.approve`, `serials.manage`, `serials.approve_swap` | `view_cost` = kolom HPP (SEC-107); `export` = dengan HPP/biaya |
+| Impor master (Paket A) | `master_imports.manage` | |
+
+54 izin pertama = Fase 0 + 0,5; 55 izin bertanda Paket A = `15` §6.3 (T-067). Izin baru tidak pernah otomatis jatuh ke role selain `owner`/`super_admin`: matriks role lain adalah daftar eksplisit di `RoleCatalog` (PA-11).
 
 ## 4. Matriks Kewenangan (default seeder)
 
-✅ penuh · 🔸 terbatas oleh scope role · ❌ tidak. `super_admin` = semua ✅ (tidak ditampilkan).
+✅ penuh · 🔸 terbatas oleh scope role · ❌ tidak. `super_admin` = semua ✅ (tidak ditampilkan). Tabel ini hanya memuat **izin Fase 0 + 0,5**; sel izin Paket A untuk 10 role yang sama ada di `15` §6.4 (sumber kebenaran, dibaca langsung oleh `PaketAMatrixTest`). Owner memegang semua izin Paket A dan terkunci (PA-10). Dari izin Fase 0, empat role Paket A hanya mendapat `dashboard.view` (PA-25).
 
-| Permission | owner | administrator | hrd | kepala_lokasi | supervisor | pegawai |
-|---|---|---|---|---|---|---|
-| `dashboard.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
-| `settings.view` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `settings.update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `sequences.view` / `sequences.update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `references.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `references.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `users.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `users.create` / `users.update` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `users.deactivate` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `users.reset_password` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `users.reset_mfa` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `users.export` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `roles.view` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `roles.manage` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
-| `audit.export` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
-| `regions.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `locations.view` | ✅ | ✅ | ✅ | 🔸 | ❌ | ❌ |
-| `locations.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `departments.view` / `positions.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `departments.manage` / `positions.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `employees.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
-| `employees.create` / `employees.update` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `employees.delete` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `employees.view_sensitive` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `employees.offboard` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `employees.import` / `employees.export` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `assignments.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
-| `assignments.manage` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `devices.view` | ✅ | ✅ | ✅ | 🔸 | ❌ | ❌ |
-| `devices.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
-| `shifts.view` | ✅ | ✅ | ✅ | 🔸 | ❌ | ❌ |
-| `shifts.manage` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `schedules.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
-| `schedules.manage` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ |
-| `holidays.view` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ |
-| `holidays.manage` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ |
-| `attendance.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
-| `attendance.view_photo` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ |
-| `attendance.export` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ |
-| `attendance.self` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `attendance_corrections.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
-| `attendance_corrections.create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `attendance_corrections.approve` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ |
-| `field_trips.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ |
-| `field_trips.manage` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ |
-| `field_trips.request` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `field_trips.approve` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ |
+| Permission | owner | administrator | hrd | kepala_lokasi | supervisor | pegawai | admin_penjualan | kepala_gudang | staf_gudang | purchasing |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `dashboard.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ | ✅ | ✅ | ✅ | ✅ |
+| `settings.view` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `settings.update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `sequences.view` / `sequences.update` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `references.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `references.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `users.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `users.create` / `users.update` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `users.deactivate` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `users.reset_password` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `users.reset_mfa` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `users.export` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `roles.view` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `roles.manage` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `audit.view` | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `audit.export` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `regions.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `locations.view` | ✅ | ✅ | ✅ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `locations.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `departments.view` / `positions.view` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `departments.manage` / `positions.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `employees.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `employees.create` / `employees.update` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `employees.delete` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `employees.view_sensitive` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `employees.offboard` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `employees.import` / `employees.export` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `assignments.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `assignments.manage` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `devices.view` | ✅ | ✅ | ✅ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `devices.manage` | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `shifts.view` | ✅ | ✅ | ✅ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `shifts.manage` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `schedules.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `schedules.manage` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `holidays.view` | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `holidays.manage` | ✅ | ❌ | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `attendance.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `attendance.view_photo` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `attendance.export` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `attendance.self` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `attendance_corrections.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `attendance_corrections.create` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `attendance_corrections.approve` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `field_trips.view` | ✅ | ✅ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `field_trips.manage` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
+| `field_trips.request` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ | ❌ |
+| `field_trips.approve` | ✅ | ❌ | ✅ | 🔸 | 🔸 | ❌ | ❌ | ❌ | ❌ | ❌ |
 
 Catatan: `administrator` sengaja **tidak** bisa membuka NIK, mengubah data pegawai, atau melihat foto. Peran ini mengurus sistem, bukan data SDM. Pemisahan ini mengurangi risiko orang dalam (threat T-05, `09` §2).
 
@@ -236,7 +253,7 @@ Role `pegawai` saja **tidak** bisa masuk web admin. Login web ditolak dengan pes
 
 - Permission dicek lewat Policy (`EmployeePolicy`, `AttendanceDayPolicy`, `AttendanceCorrectionPolicy`, dst.). Controller memakai atribut `#[Authorize]` (Laravel 13) atau `$this->authorize()`.
 - Route-model binding untuk resource ber-scope memakai trait `App\Support\Authorization\ScopedRouteBinding` (model menyebut `scopedEmployeeColumn()`), sehingga ID di luar scope menghasilkan 404. Lookup ber-scope cukup mengisi `LookupSource::scopeColumn()`.
-- Super Admin lolos semua permission lewat `Gate::before`, **kecuali** ability akun yang dilindungi Owner (`users.manage-account`, `users.assign-roles`, `users.reset-password-of`, `users.reset-mfa-of`, `UserPolicy`): bukan akun sendiri, akun Owner hanya oleh Owner (SEC-009), dan **hak target ⊆ hak pelaku** — semua permission & scope akun target harus dimiliki pelaku (T-020, keputusan Mas 15 Nov 2026). Akibatnya dengan matriks default: Administrator hanya bisa mengelola akun ber-role Pegawai (dan Administrator lain), HRD mengelola Kepala Lokasi/Supervisor/Pegawai, akun HRD & Administrator dikelola Owner.
+- Super Admin lolos semua permission lewat `Gate::before`, **kecuali** ability akun yang dilindungi Owner (`users.manage-account`, `users.assign-roles`, `users.reset-password-of`, `users.reset-mfa-of`, `UserPolicy`): bukan akun sendiri, akun Owner hanya oleh Owner (SEC-009), dan **hak target ⊆ hak pelaku** — semua permission & scope akun target harus dimiliki pelaku (T-020, keputusan Mas 15 Nov 2026). Akibatnya dengan matriks default: Administrator hanya bisa mengelola akun ber-role Pegawai (dan Administrator lain), HRD mengelola Pegawai, akun HRD & Administrator dikelola Owner. Sejak T-067 Kepala Lokasi, Supervisor, dan keempat role Paket A memegang izin Paket A yang tidak dimiliki HRD/Administrator, sehingga akun mereka hanya dikelola Owner/super_admin (PA-35, keputusan Mas 16 Nov 2026; aturan tidak dilonggarkan).
 - Penetapan role (T-020, `AssignUserRoles`): role yang ditambahkan/dilepas harus seluruh permission-nya dimiliki pelaku dan scope-nya tidak lebih luas; role `owner`/`super_admin` hanya oleh Owner.
 - Gerbang web BR-017 (`RequireWebMenuAccess`) berjalan sebelum route binding ber-scope (prioritas middleware), sehingga akun tanpa menu web selalu dikeluarkan, bukan menerima 404.
 - Test: `tests/Feature/Authorization/PermissionMatrixTest` (role × permission, route perwakilan per modul) dan trait `Tests\Support\AssertsIdor` + `FakeOrgStructure` untuk test IDOR modul.

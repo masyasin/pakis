@@ -3,13 +3,15 @@
 use App\Domain\Access\Enums\DataScope;
 use App\Domain\Access\Models\Role;
 use App\Domain\Access\Support\PermissionCatalog;
+use App\Domain\Access\Support\RoleCatalog;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\RoleSeeder;
 use Spatie\Permission\Models\Permission;
 
 /*
  * ADR-011, BR-030, FR-017: permission & role bawaan identik dengan 06 §2–§4. Dokumen, katalog
- * kode, fixture matriks, dan hasil seeder dibandingkan dua arah.
+ * kode, fixture matriks, dan hasil seeder dibandingkan dua arah. 06 §4 hanya memuat izin Fase 0;
+ * sel izin Paket A diuji PaketAMatrixTest terhadap 15 §6.4 (T-067).
  */
 
 function authorizationDoc(): string
@@ -41,9 +43,16 @@ function docMatrix(): array
     $doc = authorizationDoc();
     $start = strpos($doc, '## 4. Matriks');
     $section = substr($doc, $start, strpos($doc, '## 5. Scope Data') - $start);
-    $roles = ['owner', 'administrator', 'hrd', 'kepala_lokasi', 'supervisor', 'pegawai'];
-    $matrix = array_fill_keys($roles, []);
+    // Kolom role dibaca dari baris judul tabel, bukan ditulis ulang di sini (T-067: 10 role).
+    $roles = [];
+    $matrix = [];
     foreach (explode("\n", $section) as $line) {
+        if (str_starts_with($line, '| Permission |')) {
+            $roles = array_slice(array_map('trim', explode('|', trim($line, '| '))), 1);
+            $matrix = array_fill_keys($roles, []);
+
+            continue;
+        }
         if (! str_starts_with($line, '| `')) {
             continue;
         }
@@ -59,45 +68,71 @@ function docMatrix(): array
     return $matrix;
 }
 
-test('ADR-011 katalog permission identik dengan 06 §3 (54 permission, urutan & nama sama)', function () {
-    expect(docPermissions())->toHaveCount(54)
+test('ADR-011 katalog permission identik dengan 06 §3 (109 permission, urutan & nama sama)', function () {
+    expect(docPermissions())->toHaveCount(109)
         ->and(PermissionCatalog::names())->toBe(docPermissions());
 });
 
-test('BR-030 fixture permission_matrix identik dengan matriks 06 §4', function () {
+test('BR-030 fixture permission_matrix identik dengan matriks 06 §4 (10 role, hanya izin Fase 0)', function () {
     $fixture = require base_path('tests/Fixtures/permission_matrix.php');
 
-    expect($fixture)->toBe(docMatrix());
+    expect($fixture)->toBe(docMatrix())
+        ->and(array_keys($fixture))->toBe(array_values(array_diff(array_column(RoleCatalog::roles(), 'name'), [RoleCatalog::SUPER_ADMIN])))
+        ->and(array_intersect(array_merge(...array_values($fixture)), PermissionCatalog::paketANames()))->toBe([]);
 });
 
-test('ADR-011 PermissionSeeder: 54 permission di DB, nama identik 06 §3, idempoten & membuang yang asing', function () {
+test('ADR-011 PermissionSeeder: 109 permission di DB, nama identik 06 §3, idempoten & membuang yang asing', function () {
     Permission::findOrCreate('lama.tidak_dipakai', 'web');
 
     $this->seed(PermissionSeeder::class);
     $this->seed(PermissionSeeder::class);
 
-    expect(Permission::query()->count())->toBe(54)
+    expect(Permission::query()->count())->toBe(109)
         ->and(Permission::query()->orderBy('id')->pluck('name')->sort()->values()->all())
         ->toBe(collect(docPermissions())->sort()->values()->all());
 });
 
-test('FR-017 RoleSeeder: 7 role bawaan + matriks identik fixture 06 §4', function () {
+test('FR-017 RoleSeeder: 11 role bawaan + matriks izin Fase 0 identik fixture 06 §4', function () {
     $this->seed([PermissionSeeder::class, RoleSeeder::class]);
     $fixture = require base_path('tests/Fixtures/permission_matrix.php');
+    $paketA = PermissionCatalog::paketANames();
 
     foreach ($fixture as $roleName => $permissions) {
         $role = Role::findByName($roleName, 'web');
-        expect($role->permissions->pluck('name')->sort()->values()->all())
+        // Sel Paket A diuji PaketAMatrixTest (15 §6.4); di sini hanya izin Fase 0.
+        expect($role->permissions->pluck('name')->reject(fn (string $p) => in_array($p, $paketA, true))->sort()->values()->all())
             ->toBe(collect($permissions)->sort()->values()->all(), "Matriks role {$roleName}");
     }
 
-    expect(Role::query()->count())->toBe(7)
-        ->and(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(54)
+    expect(Role::query()->count())->toBe(11)
+        ->and(Role::findByName('super_admin', 'web')->permissions)->toHaveCount(109)
         ->and(Role::findByName('kepala_lokasi', 'web')->data_scope)->toBe(DataScope::Location)
         ->and(Role::findByName('supervisor', 'web')->data_scope)->toBe(DataScope::Team)
         ->and(Role::findByName('pegawai', 'web')->is_system)->toBeTrue()
         ->and(Role::findByName('administrator', 'web')->is_system)->toBeFalse()
-        ->and(Role::findByName('hrd', 'web')->mfa_required)->toBeTrue();
+        ->and(Role::findByName('hrd', 'web')->mfa_required)->toBeTrue()
+        // PA-12: supervisor wajib MFA sejak T-067; PA-33: kepala_lokasi tetap tidak.
+        ->and(Role::findByName('supervisor', 'web')->mfa_required)->toBeTrue()
+        ->and(Role::findByName('kepala_lokasi', 'web')->mfa_required)->toBeFalse();
+});
+
+test('06 §2 + 15 §6.1 role bawaan di RoleCatalog identik dengan tabel dokumen (nama, scope, MFA, sistem)', function () {
+    $doc = authorizationDoc();
+    $start = strpos($doc, '## 2. Role Bawaan');
+    $section = substr($doc, $start, strpos($doc, '## 3. Daftar Permission') - $start);
+    $documented = [];
+    foreach (explode("\n", $section) as $line) {
+        if (preg_match('/^\| `([a-z_]+)` \| ([^|]+) \| `([a-z]+)` \| (✅|❌) \| (✅|❌) \|/u', $line, $m)) {
+            $documented[$m[1]] = ['label' => trim($m[2]), 'data_scope' => $m[3], 'mfa_required' => $m[4] === '✅', 'is_system' => $m[5] === '✅'];
+        }
+    }
+
+    $catalog = [];
+    foreach (RoleCatalog::roles() as $role) {
+        $catalog[$role['name']] = ['label' => $role['label'], 'data_scope' => $role['data_scope']->value, 'mfa_required' => $role['mfa_required'], 'is_system' => $role['is_system']];
+    }
+
+    expect($documented)->toHaveCount(11)->and($catalog)->toBe($documented);
 });
 
 test('RoleSeeder diulang tidak menimpa matriks yang sudah diubah admin (kecuali owner/super_admin yang terkunci)', function () {

@@ -192,7 +192,8 @@ test('FR-016 tidak bisa menonaktifkan akun sendiri', function () {
 });
 
 test('FR-016 cabut semua sesi akun lain tercatat session_revoked', function () {
-    $target = User::factory()->create()->assignRole('supervisor');
+    // Target pegawai: sejak T-067 supervisor memegang izin Paket A di luar milik HRD (hak target ⊆ pelaku; PA-35, keputusan Mas 16 Nov 2026).
+    $target = User::factory()->create()->assignRole('pegawai');
     uaSession($target, str_repeat('d', 40));
     uaSession($target, str_repeat('e', 40));
 

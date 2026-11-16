@@ -45,7 +45,7 @@ test('daftar role butuh roles.view; administrator boleh, HRD tidak (06 §4)', fu
 
     $this->actingAs(userWithRole('administrator'))->get('/role')
         ->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('roles/index')->has('rows', 7));
+        ->assertInertia(fn (Assert $page) => $page->component('roles/index')->has('rows', 11)); // 7 role Fase 0 + 4 role Paket A (T-067)
 });
 
 test('form role butuh konfirmasi password (06 §1.6)', function () {
@@ -118,7 +118,7 @@ test('BR-031 owner & super_admin terkunci penuh: ubah/hapus ditolak, form baca-s
     confirmed()->delete("/role/{$role->id}")->assertForbidden();
     confirmed()->get("/role/{$role->id}/ubah")->assertOk()->assertInertia(fn (Assert $page) => $page->where('readOnly', 'locked'));
 
-    expect($role->fresh()->permissions)->toHaveCount(54);
+    expect($role->fresh()->permissions)->toHaveCount(109);
 })->with(['owner', 'super_admin']);
 
 test('BR-031 pengguna tidak bisa mengubah role yang sedang ia pegang (cegah naik hak sendiri)', function () {
@@ -164,7 +164,9 @@ test('tanpa roles.manage tidak bisa membuat role', function () {
 test('listing role: cari, filter scope & sistem, sort label', function () {
     $this->actingAs(userWithRole('owner'));
 
-    $this->get('/role?q=kepala')->assertInertia(fn (Assert $page) => $page->has('rows', 1)->where('rows.0.name', 'kepala_lokasi'));
+    // T-067: `kepala_gudang` (Paket A) ikut cocok.
+    $this->get('/role?q=kepala')->assertInertia(fn (Assert $page) => $page->has('rows', 2)
+        ->where('rows', fn ($rows) => collect($rows)->pluck('name')->sort()->values()->all() === ['kepala_gudang', 'kepala_lokasi']));
     $this->get('/role?filter[data_scope][]=team')->assertInertia(fn (Assert $page) => $page->has('rows', 1)->where('rows.0.name', 'supervisor'));
     $this->get('/role?filter[is_system]=1')->assertInertia(fn (Assert $page) => $page->has('rows', 3));
     $this->get('/role?sort=-label')->assertInertia(fn (Assert $page) => $page->where('rows.0.name', 'supervisor'));

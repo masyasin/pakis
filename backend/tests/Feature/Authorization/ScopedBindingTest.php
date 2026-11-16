@@ -30,7 +30,8 @@ beforeEach(function () {
 uses(AssertsIdor::class);
 
 test('SEC-033 supervisor: data bawahan terbuka, data di luar scope 404 (bukan 403)', function () {
-    $supervisor = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('supervisor');
+    // MFA aktif: supervisor wajib MFA sejak T-067 (PA-12); yang diuji di sini scope.
+    $supervisor = User::factory()->withTwoFactor()->create(['employee_id' => employeeRow(1)])->assignRole('supervisor');
 
     $this->actingAs($supervisor)->getJson("/_uji/scope/{$this->insider->id}")->assertOk();
     $this->assertOutOfScope404($supervisor, 'GET', "/_uji/scope/{$this->outsider->id}");
@@ -49,7 +50,8 @@ test('SEC-033 tanpa login: tidak ada data yang ter-resolve', function () {
 
 test('BR-032 lookup ber-scope hanya mengembalikan data dalam scope (termasuk ids[])', function () {
     app(LookupRegistry::class)->register('uji_scope', ScopedUserLookup::class);
-    $supervisor = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole('supervisor');
+    // MFA aktif: supervisor wajib MFA sejak T-067 (PA-12); yang diuji di sini scope.
+    $supervisor = User::factory()->withTwoFactor()->create(['employee_id' => employeeRow(1)])->assignRole('supervisor');
 
     $values = fn (string $query) => collect($this->actingAs($supervisor)->getJson('/lookup/uji_scope'.$query)->assertOk()->json())->pluck('value')->all();
 

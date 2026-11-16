@@ -194,7 +194,8 @@ test('FR-024 lookup: hanya aktif, bisa disaring per departemen & mengecualikan d
 
 test('06 §4 kepala lokasi & supervisor tidak punya akses jabatan', function (string $role) {
     FakeOrgStructure::bind();
-    $user = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole($role);
+    // MFA aktif: supervisor wajib MFA sejak T-067 (PA-12); yang diuji di sini izin jabatan.
+    $user = User::factory()->withTwoFactor()->create(['employee_id' => employeeRow(1)])->assignRole($role);
 
     $this->actingAs($user)->get('/jabatan')->assertForbidden();
     $this->actingAs($user)->post('/jabatan', positionInput())->assertForbidden();

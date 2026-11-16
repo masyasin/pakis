@@ -1,9 +1,10 @@
 <?php
 
 /*
- * Salinan matriks kewenangan default `06` §4 (✅ dan 🔸 = punya permission; batas scope 🔸
- * diatur `data_scope` role, T-019). `super_admin` = semua permission (Gate::before), tidak dicantumkan.
- * RoleSeeder membaca berkas ini; PermissionMatrixTest memastikan isinya identik dengan dokumen.
+ * Salinan matriks kewenangan default `06` §4 = izin Fase 0 + 0,5 saja (✅ dan 🔸 = punya permission;
+ * batas scope 🔸 diatur `data_scope` role, T-019). `super_admin` = semua permission (Gate::before),
+ * tidak dicantumkan. Sel izin Paket A dibaca PaketAMatrixTest langsung dari `15` §6.4.
+ * PermissionMatrixTest memastikan isinya identik dengan dokumen dan dengan RoleSeeder.
  */
 
 return [
@@ -192,4 +193,9 @@ return [
         'attendance_corrections.create',
         'field_trips.request',
     ],
+    // Role Paket A (15 §6.1): dari izin Fase 0 hanya dasbor (PA-25); sel Paket A di 15 §6.4.
+    'admin_penjualan' => ['dashboard.view'],
+    'kepala_gudang' => ['dashboard.view'],
+    'staf_gudang' => ['dashboard.view'],
+    'purchasing' => ['dashboard.view'],
 ];

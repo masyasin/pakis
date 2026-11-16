@@ -49,7 +49,8 @@ test('butuh permission dasar: HRD tanpa users.reset_mfa tidak bisa mereset MFA',
     $pegawai = User::factory()->create()->assignRole('pegawai');
 
     expect(canFor($this->hrd, 'users.reset-mfa-of', $staff))->toBeFalse()   // hrd tanpa users.reset_mfa (06 §4)
-        ->and(canFor($this->hrd, 'users.assign-roles', $staff))->toBeTrue()  // hrd punya users.update
+        ->and(canFor($this->hrd, 'users.reset-mfa-of', $pegawai))->toBeFalse()
+        ->and(canFor($this->hrd, 'users.assign-roles', $pegawai))->toBeTrue()  // hrd punya users.update
         ->and(canFor($this->admin, 'users.reset-mfa-of', $pegawai))->toBeTrue();
 });
 
@@ -62,8 +63,11 @@ test('T-020 batas hak target: akun dengan permission di luar milik pelaku tidak 
         ->and(canFor($this->admin, 'users.manage-account', $staff))->toBeFalse()
         ->and(canFor($this->admin, 'users.reset-password-of', $this->hrd))->toBeFalse()
         ->and(canFor($this->hrd, 'users.manage-account', $this->admin))->toBeFalse()
-        // HRD memegang semua permission Kepala Lokasi → boleh.
-        ->and(canFor($this->hrd, 'users.reset-password-of', $staff))->toBeTrue();
+        // Sejak T-067 Kepala Lokasi memegang izin Paket A (15 §6.4) yang tidak dimiliki HRD → HRD pun
+        // tidak bisa lagi mengelola akun itu (PA-35, keputusan Mas 16 Nov 2026; batas ini tidak dilonggarkan).
+        ->and(canFor($this->hrd, 'users.reset-password-of', $staff))->toBeFalse()
+        // Akun yang seluruh izinnya dimiliki HRD (pegawai) tetap boleh.
+        ->and(canFor($this->hrd, 'users.reset-password-of', User::factory()->create()->assignRole('pegawai')))->toBeTrue();
 });
 
 test('Super Admin tetap lolos permission biasa lewat Gate::before', function () {

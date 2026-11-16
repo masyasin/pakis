@@ -41,7 +41,17 @@ test('BR-015 Owner tanpa MFA dialihkan ke aktivasi dari halaman mana pun', funct
 
 test('BR-015 Owner dengan MFA aktif & role tanpa wajib MFA tidak dipaksa', function () {
     $this->actingAs(mfaUser('owner', withMfa: true))->get('/dasbor')->assertOk();
-    $this->actingAs(mfaUser('supervisor'))->get('/dasbor')->assertOk();
+    // kepala_lokasi tetap tanpa wajib MFA (PA-33).
+    $this->actingAs(mfaUser('kepala_lokasi'))->get('/dasbor')->assertOk();
+});
+
+test('PA-12 supervisor & admin_penjualan wajib MFA sejak T-067: tanpa MFA dialihkan ke aktivasi, dengan MFA lolos', function (string $role) {
+    $this->actingAs(mfaUser($role))->get('/dasbor')->assertRedirect('/aktivasi-mfa');
+    $this->actingAs(mfaUser($role, withMfa: true))->get('/dasbor')->assertOk();
+})->with(['supervisor', 'admin_penjualan', 'kepala_gudang', 'purchasing']);
+
+test('PA-12 staf_gudang tidak wajib MFA (15 §6.1)', function () {
+    $this->actingAs(mfaUser('staf_gudang'))->get('/dasbor')->assertOk();
 });
 
 test('BR-015 halaman aktivasi tampil (butuh konfirmasi password); yang sudah aktif diarahkan ke dasbor', function () {
@@ -86,12 +96,17 @@ test('BR-015 MFA tidak bisa dinonaktifkan selama role mewajibkan; role lain bisa
     confirmedPassword()->delete('/user/two-factor-authentication')->assertForbidden();
     expect($owner->refresh()->two_factor_confirmed_at)->not->toBeNull();
 
+    // Supervisor kini wajib MFA (PA-12) → tidak bisa menonaktifkan.
     $supervisor = mfaUser('supervisor', withMfa: true);
     $this->actingAs($supervisor);
+    confirmedPassword()->delete('/user/two-factor-authentication')->assertForbidden();
+
+    $kepala = mfaUser('kepala_lokasi', withMfa: true);
+    $this->actingAs($kepala);
     confirmedPassword()->delete('/user/two-factor-authentication')->assertRedirect();
 
-    expect($supervisor->refresh()->two_factor_secret)->toBeNull()
-        ->and(SecurityEvent::query()->where('event', 'mfa_disabled')->where('user_id', $supervisor->id)->exists())->toBeTrue();
+    expect($kepala->refresh()->two_factor_secret)->toBeNull()
+        ->and(SecurityEvent::query()->where('event', 'mfa_disabled')->where('user_id', $kepala->id)->exists())->toBeTrue();
 });
 
 test('SEC-007 kode pemulihan tampil sekali setelah dibuat; buat ulang → tampil sekali lagi', function () {
@@ -172,7 +187,7 @@ test('BR-015 ResetMfa ditolak: diri sendiri, Super Admin → Owner, admin → Ow
 
 test('BR-015 login pengguna wajib aktivasi dihitung sebagai konfirmasi password (tidak diminta dua kali)', function () {
     mfaUser('owner', attributes: ['username' => 'pemilik.baru']);
-    mfaUser('supervisor', attributes: ['username' => 'spv.biasa']);
+    mfaUser('kepala_lokasi', attributes: ['username' => 'kepala.biasa']);
 
     $this->post('/login', ['login' => 'pemilik.baru', 'password' => 'password']);
     $this->get('/aktivasi-mfa')->assertOk();
@@ -182,6 +197,6 @@ test('BR-015 login pengguna wajib aktivasi dihitung sebagai konfirmasi password 
     $this->flushSession();
 
     // Pengguna yang tidak wajib aktivasi tetap mengonfirmasi ulang sebelum halaman sensitif.
-    $this->post('/login', ['login' => 'spv.biasa', 'password' => 'password']);
+    $this->post('/login', ['login' => 'kepala.biasa', 'password' => 'password']);
     $this->get('/profil/keamanan')->assertRedirect(route('password.confirm'));
 });

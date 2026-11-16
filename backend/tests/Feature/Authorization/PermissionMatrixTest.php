@@ -78,6 +78,30 @@ const PENDING = [
     // `approve` sudah punya route API (T-040); route web perwakilannya dibuat T-041.
     'attendance_corrections.view' => 'T-041', 'attendance_corrections.approve' => 'T-041',
     'field_trips.request' => 'T-036A bagian 2', 'field_trips.approve' => 'T-036A bagian 2',
+    // Paket A: izin dibuat T-067 (15 §6.3), route-nya dibangun task modulnya (TASKS_PAKET_A.md).
+    'approvals.view' => 'T-067 bagian 2', 'approvals.configure' => 'T-067 bagian 2',
+    'stock_locations.view' => 'T-068', 'stock_locations.manage' => 'T-068',
+    'vehicles.view' => 'T-068', 'vehicles.manage' => 'T-068',
+    'products.view' => 'T-070', 'products.manage' => 'T-070', 'product_registrations.manage' => 'T-071',
+    'suppliers.view' => 'T-072', 'suppliers.manage' => 'T-072',
+    'sales_areas.view' => 'T-073', 'sales_areas.manage' => 'T-073',
+    'customers.view' => 'T-073', 'customers.export' => 'T-073', 'customers.manage' => 'T-073',
+    'customers.verify' => 'T-074', 'customers.merge' => 'T-074', 'customers.change_phone' => 'T-074',
+    'customers.change_phone_approve' => 'T-074', 'credit_limits.set' => 'T-074', 'credit_limits.set_high' => 'T-074',
+    'prices.view' => 'T-075', 'prices.manage' => 'T-075', 'prices.publish' => 'T-075',
+    'promotions.view' => 'T-076', 'promotions.manage' => 'T-076', 'promotions.approve' => 'T-076',
+    'purchase_orders.view' => 'T-079', 'purchase_orders.create' => 'T-079', 'purchase_orders.approve' => 'T-079',
+    'purchase_orders.approve_high' => 'T-079', 'goods_receipts.view' => 'T-080', 'goods_receipts.create' => 'T-080',
+    'goods_receipts.approve_short_shelf_life' => 'T-080', 'purchase_returns.manage' => 'T-081',
+    'purchase_returns.approve' => 'T-081',
+    'stock.view' => 'T-077', 'stock.view_cost' => 'T-077', 'stock.export' => 'T-077',
+    'stock_transfers.view' => 'T-082', 'stock_transfers.create' => 'T-082', 'stock_transfers.receive' => 'T-082',
+    'stock_transfers.approve_variance' => 'T-082', 'stock_opnames.view' => 'T-083', 'stock_opnames.manage' => 'T-083',
+    'stock_opnames.approve_variance' => 'T-083', 'stock_opnames.approve_variance_high' => 'T-083',
+    'stock_quarantine.manage' => 'T-084', 'stock_quarantine.release' => 'T-084',
+    'stock_disposals.manage' => 'T-084', 'stock_disposals.approve' => 'T-084',
+    'serials.manage' => 'T-080', 'serials.approve_swap' => 'T-080',
+    'master_imports.manage' => 'T-085',
 ];
 
 /**

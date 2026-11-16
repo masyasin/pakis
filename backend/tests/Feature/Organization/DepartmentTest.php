@@ -159,7 +159,8 @@ test('FR-023 lookup hanya departemen aktif dan bisa mengecualikan diri sendiri',
 
 test('06 §4 kepala lokasi & supervisor tidak punya akses departemen', function (string $role) {
     FakeOrgStructure::bind();
-    $user = User::factory()->create(['employee_id' => employeeRow(1)])->assignRole($role);
+    // MFA aktif: supervisor wajib MFA sejak T-067 (PA-12); yang diuji di sini izin departemen.
+    $user = User::factory()->withTwoFactor()->create(['employee_id' => employeeRow(1)])->assignRole($role);
 
     $this->actingAs($user)->get('/departemen')->assertForbidden();
     $this->actingAs($user)->post('/departemen', ['code' => 'XX', 'name' => 'XX'])->assertForbidden();

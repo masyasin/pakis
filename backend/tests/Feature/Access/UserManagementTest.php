@@ -215,8 +215,11 @@ test('BR-031 batas delegasi: HRD tidak bisa menetapkan role Administrator atau O
             ->assertUnprocessable()->assertJsonValidationErrors('roles');
     }
 
-    // Role yang permission-nya dimiliki HRD (supervisor) boleh.
-    $this->actingAs($hrd)->postJson('/pengguna', umPayload())->assertCreated();
+    // Role yang permission-nya dimiliki HRD (pegawai) boleh. Sejak T-067 supervisor memegang izin
+    // Paket A yang tidak dimiliki HRD (15 §6.4), sehingga batas delegasi menolaknya (PA-35, keputusan Mas 16 Nov 2026).
+    $this->actingAs($hrd)->postJson('/pengguna', umPayload(['roles' => ['supervisor']]))
+        ->assertUnprocessable()->assertJsonValidationErrors('roles');
+    $this->actingAs($hrd)->postJson('/pengguna', umPayload(['roles' => ['pegawai']]))->assertCreated();
     expect(User::query()->where('username', 'like', 'akun.%')->exists())->toBeFalse();
 });
 

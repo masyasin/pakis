@@ -31,6 +31,8 @@ final class SettingRegistry
         'monitoring' => 'Monitoring',
         'retention' => 'Retensi data',
         'approval' => 'Persetujuan',
+        'product' => 'Produk',
+        'upload' => 'Unggahan berkas',
     ];
 
     /** Grup yang perubahannya butuh konfirmasi ulang password (06 §1.6, 07 §4). */
@@ -216,6 +218,13 @@ final class SettingRegistry
             $t('approval.auto_approve_when_no_rule', SettingType::Bool, false, 'Setujui otomatis bila tidak ada aturan', 'Mati = dokumen tanpa aturan persetujuan yang cocok tidak bisa diajukan. Nyala = dokumen itu langsung disetujui tanpa penyetuju.'),
             $t('approval.default_escalation_hours', SettingType::Int, 24, 'Eskalasi bawaan (jam)', 'Langkah yang belum diputuskan selama ini diteruskan ke penyetuju eskalasi. Jam kalender.', min: 1, max: 168),
             $t('approval.reauth_amount', SettingType::Money, '50000000', 'Nominal wajib konfirmasi password', 'Menyetujui dokumen senilai ini atau lebih meminta password lagi.', min: 0),
+
+            // 2.7 Produk (T-070, 15 §9)
+            $t('product.sku_mode', SettingType::Enum, 'manual', 'Cara mengisi SKU', 'Manual = diketik admin (huruf besar, angka, strip). Otomatis = nomor dari Penomoran (pola `product`).', options: ['manual', 'auto']),
+
+            // 2.8 Unggahan berkas (T-070, SEC-109)
+            $t('upload.max_image_kb', SettingType::Int, 5120, 'Ukuran foto maksimal (KB)', 'Berlaku untuk foto JPG/PNG/WebP di semua unggahan Paket A.', min: 512, max: 10240),
+            $t('upload.max_pdf_kb', SettingType::Int, 10240, 'Ukuran PDF maksimal (KB)', 'Berlaku untuk dokumen PDF (izin edar, berita acara, dll.).', min: 512, max: 20480),
         ];
     }
 

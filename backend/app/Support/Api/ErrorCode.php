@@ -50,6 +50,7 @@ enum ErrorCode: string
     case APPROVAL_ALREADY_PENDING = 'APPROVAL_ALREADY_PENDING';
     // Khusus web (05 §2.4a), satuan & konversi (BR-150, T-069).
     case QTY_NOT_INTEGER = 'QTY_NOT_INTEGER';
+    case UNIT_FACTOR_LOCKED = 'UNIT_FACTOR_LOCKED';
 
     public function status(): int
     {
@@ -72,7 +73,8 @@ enum ErrorCode: string
             self::ATTENDANCE_ALREADY_CHECKED_IN,
             self::ATTENDANCE_NOT_CHECKED_IN,
             self::CORRECTION_DUPLICATE_PENDING,
-            self::APPROVAL_ALREADY_PENDING => 409,
+            self::APPROVAL_ALREADY_PENDING,
+            self::UNIT_FACTOR_LOCKED => 409,
             self::PAYLOAD_TOO_LARGE => 413,
             self::VALIDATION_FAILED,
             self::ATTENDANCE_NO_SCHEDULE,
@@ -134,6 +136,7 @@ enum ErrorCode: string
             self::APPROVAL_SELF_DECISION => 'Anda tidak boleh memutuskan persetujuan atas dokumen yang Anda ajukan atau buat sendiri.',
             self::APPROVAL_ALREADY_PENDING => 'Dokumen ini sudah punya permintaan persetujuan yang masih berjalan.',
             self::QTY_NOT_INTEGER => 'Jumlah untuk satuan ini harus bilangan bulat.',
+            self::UNIT_FACTOR_LOCKED => 'Faktor satuan ini sudah dipakai dokumen sehingga tidak bisa diubah.',
         };
     }
 }

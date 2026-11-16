@@ -1,5 +1,8 @@
 <?php
 
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductBarcode;
+use App\Domain\Catalog\Models\ProductUnit;
 use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Employee\Support\NikCipher;
@@ -78,6 +81,26 @@ test('04 §4.2 data demo: 3 lokasi, 15 pegawai fiktif dengan penugasan, kepala l
         expect($nik)->toMatch('/^99\d{14}$/')
             ->and($dump)->not->toContain($nik);
     }
+});
+
+test('T-070 data demo: 14 produk fiktif dengan satuan dasar, kemasan besar, dan barcode unik; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    Product::query()->where('sku', 'DM-INS-001')->update(['name' => 'Diubah dari layar']);
+    $this->seed(DemoSeeder::class);
+
+    expect(Product::query()->count())->toBe(14)
+        ->and(Product::query()->where('sku', 'DM-INS-001')->value('name'))->toBe('Diubah dari layar')
+        ->and(ProductUnit::query()->where('is_base', true)->count())->toBe(14)
+        ->and(ProductUnit::query()->where('is_default_sales', true)->count())->toBe(14)
+        ->and(ProductUnit::query()->where('is_default_purchase', true)->count())->toBe(14)
+        ->and(ProductBarcode::query()->count())->toBe(ProductUnit::query()->count())
+        ->and(ProductBarcode::query()->pluck('barcode')->every(fn (string $b) => str_starts_with($b, '200')))->toBeTrue();
+
+    // BR-151: penanda disalin dari kategori (alat tanpa batch/izin edar, pestisida wajib).
+    $tool = Product::query()->where('sku', 'DM-ALT-001')->sole();
+    $pesticide = Product::query()->where('sku', 'DM-HER-002')->sole();
+    expect($tool->tracks_batch || $tool->requires_registration)->toBeFalse()
+        ->and($pesticide->tracks_batch && $pesticide->tracks_expiry && $pesticide->requires_registration && $pesticide->is_restricted)->toBeTrue();
 });
 
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {

@@ -23,7 +23,10 @@ use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MasterImportController;
 use App\Http\Controllers\Admin\MfaSetupController;
 use App\Http\Controllers\Admin\PositionController;
+use App\Http\Controllers\Admin\ProductBarcodeController;
 use App\Http\Controllers\Admin\ProductCategoryController;
+use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\ProductUnitController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
@@ -382,6 +385,24 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('kategori-produk/{category}', [ProductCategoryController::class, 'update'])->whereNumber('category')->name('product-categories.update');
         Route::delete('kategori-produk/{category}', [ProductCategoryController::class, 'destroy'])->whereNumber('category')->name('product-categories.destroy');
     });
+
+    // Produk, satuan, barcode (15 §5 `admin.products.*`, FR-A07–A09, BR-150/151, T-070). `baru` &
+    // `ekspor` didaftarkan sebelum `{product}`. Tanpa hapus: produk dinonaktifkan/dihentikan (status).
+    Route::middleware('can:products.view')->group(function () {
+        Route::get('produk', [ProductController::class, 'index'])->name('products.index');
+        Route::get('produk/ekspor', [ProductController::class, 'export'])->name('products.export');
+    });
+    Route::middleware('can:products.manage')->group(function () {
+        Route::get('produk/baru', [ProductController::class, 'create'])->name('products.create');
+        Route::post('produk', [ProductController::class, 'store'])->name('products.store');
+        Route::get('produk/{product}/ubah', [ProductController::class, 'edit'])->whereNumber('product')->name('products.edit');
+        Route::put('produk/{product}', [ProductController::class, 'update'])->whereNumber('product')->name('products.update');
+        Route::post('produk/{product}/satuan', [ProductUnitController::class, 'store'])->whereNumber('product')->name('products.units.store');
+        Route::put('produk/{product}/satuan/{unit}', [ProductUnitController::class, 'update'])->whereNumber(['product', 'unit'])->name('products.units.update');
+        Route::post('produk/{product}/barcode', [ProductBarcodeController::class, 'store'])->whereNumber('product')->middleware('throttle:60,1')->name('products.barcodes.store');
+        Route::delete('produk/{product}/barcode/{barcode}', [ProductBarcodeController::class, 'destroy'])->whereNumber(['product', 'barcode'])->name('products.barcodes.destroy');
+    });
+    Route::get('produk/{product}', [ProductController::class, 'show'])->whereNumber('product')->middleware('can:products.view')->name('products.show');
 
     // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).
     // `baru` & `rak` didaftarkan sebelum `{stockLocation}`; di luar dimensi Stok (15 §6.2) → 404 lewat

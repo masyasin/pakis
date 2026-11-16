@@ -9,6 +9,7 @@ use App\Domain\Attendance\Listings\ScheduleOverrideListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Device\Listings\DeviceListing;
+use App\Domain\Catalog\Listings\ProductListing;
 use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Listings\AssignmentListing;
 use App\Domain\Employee\Listings\EmployeeListing;
@@ -61,6 +62,7 @@ return [
         'attendance_days' => AttendanceDayListing::class,
         'attendance_summary' => AttendanceSummaryListing::class,
         'attendance_corrections' => AttendanceCorrectionListing::class,
+        'products' => ProductListing::class, // T-070 (15 §5, izin products.view)
     ],
 
     // Tipe impor (BR-170, T-085A): kunci = ImportType::key() => kelas. Kerangka ada di app/Support/Import.

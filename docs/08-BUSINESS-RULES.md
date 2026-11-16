@@ -144,6 +144,25 @@ Grup `approval` (tab "Persetujuan"), dipakai mesin approval generik (BR-153, `15
 | `approval.default_escalation_hours` | int | 24 | 1–168 | ❌ |
 | `approval.reauth_amount` | money | `50000000` | ≥ 0 | ❌ |
 
+### 2.7 Produk
+
+Grup `product` (tab "Produk"), dipakai master produk (T-070, `15` §9).
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `product.sku_mode` | enum | `manual` | `manual`, `auto` | ❌ |
+
+Catatan: mode otomatis memakai `NumberGenerator` pola `product`; mode manual menerima huruf besar, angka, dan strip (3–30 karakter, unik).
+
+### 2.8 Unggahan berkas
+
+Grup `upload` (tab "Unggahan berkas"), dipakai komponen unggahan bersama `app/Support/Upload/` untuk semua unggahan Paket A (SEC-109, T-070).
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `upload.max_image_kb` | int | 5120 | 512–10240 (foto JPG/PNG/WebP) | ❌ |
+| `upload.max_pdf_kb` | int | 10240 | 512–20480 (dokumen PDF) | ❌ |
+
 ## 3. Grup Referensi
 
 | `group_code` | Dipakai di | Item sistem (kode dipakai logika) |

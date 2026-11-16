@@ -52,15 +52,19 @@ test('daftar menampilkan pola, nomor terakhir, dan contoh nomor berikut', functi
         ->assertOk()
         ->assertInertia(fn (Assert $page) => $page
             ->component('sequences/index')
-            ->has('rows', 3)
+            // Paket A menambah pola baru (product, customer, …): jumlah ikut seeder, baris dicari lewat kode.
+            ->has('rows', DocumentSequence::query()->count())
             ->where('rows.0.code', 'attendance_correction')
             ->where('rows.0.last_number', null)
             ->where('rows.0.next', 'KOR-202611-0001')
-            ->where('rows.1.code', 'employee')
-            ->where('rows.1.pattern', 'PJA-{YY}{SEQ:4}')
-            ->where('rows.1.reset_label', 'Tidak pernah')
-            ->where('rows.1.last_number', 7)
-            ->where('rows.1.next', 'PJA-260008')
+            ->where('rows', function ($rows) {
+                $employee = collect($rows)->firstWhere('code', 'employee');
+                expect($employee)->toMatchArray([
+                    'pattern' => 'PJA-{YY}{SEQ:4}', 'reset_label' => 'Tidak pernah', 'last_number' => 7, 'next' => 'PJA-260008',
+                ]);
+
+                return true;
+            })
             ->has('resetOptions', 4)
             ->where('canUpdate', false));
 });

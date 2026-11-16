@@ -45,7 +45,7 @@ test('setiap grup enum punya item sistem dan pemakai sesuai 08 §3', function ()
         ->and(ReferenceGroup::EmploymentStatus->usages())->toBe([['employees', 'employment_status_id']])
         ->and(ReferenceGroup::CorrectionReason->usages())->toBe([['attendance_corrections', 'reason_id']])
         ->and(ReferenceGroup::OffboardingReason->usages())->toBe([['employees', 'exit_reason_id']])
-        // Pemakai satuan & formulasi (product_units, products) ditambah T-070.
-        ->and(ReferenceGroup::Unit->usages())->toBe([])
-        ->and(ReferenceGroup::Formulation->usages())->toBe([]);
+        // T-070: satuan dipakai satuan produk & satuan dasar; formulasi dipakai produk.
+        ->and(ReferenceGroup::Unit->usages())->toBe([['product_units', 'unit_id'], ['products', 'base_unit_id']])
+        ->and(ReferenceGroup::Formulation->usages())->toBe([['products', 'formulation_id']]);
 });

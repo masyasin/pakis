@@ -7,7 +7,10 @@ use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Attendance\Models\Shift;
 use App\Domain\Attendance\Models\ShiftPattern;
 use App\Domain\Catalog\Enums\CategoryKind;
+use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductBarcode;
 use App\Domain\Catalog\Models\ProductCategory;
+use App\Domain\Catalog\Models\ProductUnit;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Models\Assignment;
@@ -152,6 +155,7 @@ class DemoSeeder extends Seeder
         $this->seedEmployees();
         $this->seedPatterns();
         $this->seedProductCategories();
+        $this->seedProducts();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -193,6 +197,82 @@ class DemoSeeder extends Seeder
             ProductCategory::withTrashed()->firstOrCreate(['code' => $code], [
                 'name' => $name, 'kind' => $kind, 'sort_order' => $order, 'is_active' => true, ...$flags,
             ]);
+        }
+    }
+
+    /**
+     * Produk demo T-070: nama generik fiktif per kategori (bukan produk/merek asli Pakis; data asli
+     * masuk lewat layar atau impor T-085). Barcode berawalan 200 (rentang GS1 untuk pemakaian internal
+     * toko) agar tidak pernah bentrok dengan barcode pabrik sungguhan.
+     * SKU => [nama, kategori, bahan aktif, formulasi, kemasan, satuan dasar, kemasan besar [satuan, faktor] | null, terbatas?].
+     */
+    private const PRODUCTS = [
+        'DM-INS-001' => ['Insektisida Demo Abamektin 500 ml', 'INSEKTISIDA', 'Abamektin 18 g/l', 'ec', '500 ml', 'bottle', ['box', '24'], false],
+        'DM-INS-002' => ['Insektisida Demo Klorpirifos 250 ml', 'INSEKTISIDA', 'Klorpirifos 200 g/l', 'ec', '250 ml', 'bottle', ['box', '40'], true],
+        'DM-FUN-001' => ['Fungisida Demo Mankozeb 1 kg', 'FUNGISIDA', 'Mankozeb 80%', 'wp', '1 kg', 'sachet', ['box', '20'], false],
+        'DM-FUN-002' => ['Fungisida Demo Difenokonazol 100 ml', 'FUNGISIDA', 'Difenokonazol 250 g/l', 'ec', '100 ml', 'bottle', ['box', '48'], false],
+        'DM-HER-001' => ['Herbisida Demo Glifosat 1 L', 'HERBISIDA', 'Glifosat 480 g/l', 'sl', '1 L', 'bottle', ['box', '12'], false],
+        'DM-HER-002' => ['Herbisida Demo Parakuat 5 L', 'HERBISIDA', 'Parakuat diklorida 276 g/l', 'sl', '5 L', 'jerrycan', null, true],
+        'DM-MOL-001' => ['Moluksida Demo Niklosamida 250 g', 'MOLUKSIDA', 'Niklosamida 70%', 'wp', '250 g', 'sachet', ['box', '40'], false],
+        'DM-ROD-001' => ['Rodentisida Demo Brodifakum 100 g', 'RODENTISIDA', 'Brodifakum 0,005%', 'other', '100 g', 'pack', ['box', '50'], false],
+        'DM-PER-001' => ['Perekat Demo Perata 500 ml', 'PEREKAT', 'Alkilaril poliglikol eter 400 g/l', 'sl', '500 ml', 'bottle', ['box', '24'], false],
+        'DM-PUP-001' => ['Pupuk Daun Demo NPK 500 g', 'PUPUK', 'NPK 20-20-20', 'other', '500 g', 'pack', ['sack', '50'], false],
+        'DM-BIB-001' => ['Benih Jagung Demo Hibrida 1 kg', 'BIBIT', null, null, '1 kg', 'pack', ['sack', '20'], false],
+        'DM-BIB-002' => ['Benih Cabai Demo 10 g', 'BIBIT', null, null, '10 g', 'sachet', ['box', '100'], false],
+        'DM-ALT-001' => ['Alat Semprot Demo Elektrik 16 L', 'ALAT', null, null, '16 L', 'unit', null, false],
+        'DM-ALT-002' => ['Nozel Semprot Demo Kuningan', 'ALAT', null, null, null, 'pcs', ['pack', '10'], false],
+    ];
+
+    /**
+     * Produk demo + satuan dasar (faktor 1, default jual) + kemasan besar (default beli) + satu barcode
+     * dummy per satuan. Produk yang sudah ada (SKU sama) dilewati agar ubahan dari layar tidak ditimpa.
+     * Ditulis langsung, bukan lewat CreateProduct, karena seeder tanpa pengguna; penanda tetap disalin
+     * dari kategori (BR-151).
+     */
+    private function seedProducts(): void
+    {
+        $units = ReferenceItem::query()->forGroup(ReferenceGroup::Unit)->pluck('id', 'code');
+        $forms = ReferenceItem::query()->forGroup(ReferenceGroup::Formulation)->pluck('id', 'code');
+        $categories = ProductCategory::withTrashed()->get()->keyBy('code');
+        $seq = 0;
+
+        foreach (self::PRODUCTS as $sku => [$name, $categoryCode, $ingredient, $form, $package, $baseUnit, $bulk, $restricted]) {
+            $seq++;
+            $category = $categories[$categoryCode] ?? null;
+            if ($category === null || Product::withTrashed()->where('sku', $sku)->exists()) {
+                continue;
+            }
+
+            DB::transaction(function () use ($sku, $name, $category, $ingredient, $form, $package, $baseUnit, $bulk, $restricted, $units, $forms, $seq): void {
+                $product = (new Product)->forceFill([
+                    'sku' => $sku, 'name' => $name, 'product_category_id' => $category->id,
+                    'active_ingredient' => $ingredient, 'formulation_id' => $form === null ? null : ($forms[$form] ?? null),
+                    'package_size' => $package, 'base_unit_id' => $units[$baseUnit],
+                    'tracks_batch' => $category->requires_batch, 'tracks_expiry' => $category->requires_expiry,
+                    'tracks_serial' => $category->requires_serial, 'requires_registration' => $category->requires_registration,
+                    'is_restricted' => $restricted, 'restricted_note' => $restricted ? 'Hanya untuk pembeli memenuhi syarat (demo).' : null,
+                    'warranty_months' => $baseUnit === 'unit' ? 12 : null,
+                    'is_sellable' => true, 'is_purchasable' => true, 'status' => 'active',
+                ]);
+                $product->save();
+
+                // [satuan, faktor, satuan dasar?, default jual?, default beli?]
+                $rows = [[$baseUnit, '1', true, true, $bulk === null]];
+                if ($bulk !== null) {
+                    $rows[] = [$bulk[0], $bulk[1], false, false, true];
+                }
+                foreach ($rows as $k => [$unitCode, $factor, $isBase, $sales, $purchase]) {
+                    $unit = (new ProductUnit)->forceFill([
+                        'product_id' => $product->id, 'unit_id' => $units[$unitCode], 'factor' => $factor,
+                        'is_base' => $isBase, 'is_default_sales' => $sales, 'is_default_purchase' => $purchase, 'is_active' => true,
+                    ]);
+                    $unit->save();
+                    (new ProductBarcode)->forceFill([
+                        'product_id' => $product->id, 'product_unit_id' => $unit->id,
+                        'barcode' => sprintf('200%04d%05d', $seq, $k + 1),
+                    ])->save();
+                }
+            });
         }
     }
 

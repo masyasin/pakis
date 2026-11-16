@@ -26,6 +26,7 @@ import {
     UsersRound,
     BriefcaseBusiness,
     CircleDot,
+    Package,
     Stamp,
     Tags,
     Truck,
@@ -89,6 +90,7 @@ const ICONS: Record<string, LucideIcon> = {
     approval: Stamp,
     approval_rule: Workflow,
     category: Tags,
+    product: Package,
     warehouse: Warehouse,
     vehicle: Truck,
 };

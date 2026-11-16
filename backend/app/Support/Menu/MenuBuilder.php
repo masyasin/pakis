@@ -46,6 +46,7 @@ final class MenuBuilder
         [null, 'Persetujuan', 'approval', 'approvals.view', 'admin.approvals.index'],
         // Seksi Distribusi (Paket A). Grup Penjualan/Persediaan/Pembelian disisipkan SEBELUM Master
         // oleh task pemiliknya (urutan 15 §6.5); item Master lain menyusul (Produk T-070, Izin Edar T-071, Impor Master T-085).
+        ['Master', 'Produk', 'product', 'products.view', 'admin.products.index'],
         ['Master', 'Kategori', 'category', 'products.view', 'admin.product-categories.index'],
         // T-068: lokasi stok (gudang/toko/canvas/TRANSIT) & kendaraan minimal; daftar ber-scope Stok (15 §6.2).
         ['Master', 'Lokasi Stok', 'warehouse', 'stock_locations.view', 'admin.stock-locations.index'],

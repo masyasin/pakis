@@ -40,8 +40,9 @@ enum ReferenceGroup: string
             self::EmploymentStatus => [['employees', 'employment_status_id']],
             self::CorrectionReason => [['attendance_corrections', 'reason_id']],
             self::OffboardingReason => [['employees', 'exit_reason_id']],
-            // Pemakai (product_units, products) dibuat T-070, yang menambah daftar ini.
-            self::Unit, self::Formulation => [],
+            // T-070: satuan dipakai satuan produk & satuan dasar; formulasi dipakai produk.
+            self::Unit => [['product_units', 'unit_id'], ['products', 'base_unit_id']],
+            self::Formulation => [['products', 'formulation_id']],
         };
     }
 }

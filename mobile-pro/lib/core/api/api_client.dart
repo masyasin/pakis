@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:dio/dio.dart';
 
@@ -23,6 +25,18 @@ class ApiResponse {
   }
 
   String? get requestId => meta['request_id'] as String?;
+}
+
+/// Berkas biner dari API (lampiran koreksi, foto profil).
+class ApiBytes {
+  const ApiBytes(this.bytes, this.contentType);
+
+  final Uint8List bytes;
+
+  /// Mis. `image/jpeg`, `application/pdf` (tanpa parameter).
+  final String contentType;
+
+  bool get isImage => contentType.startsWith('image/');
 }
 
 typedef TokenReader = Future<String?> Function();
@@ -131,24 +145,62 @@ class ApiClient {
 
   Future<ApiResponse> put(String path, {Object? data}) => _send(() => _dio.put<Object?>(path, data: data));
 
+  /// Unduh berkas biner (`GET`, mis. lampiran koreksi). Galat tetap JSON 05 §2.2 dan melewati
+  /// penanganan sesi/426 yang sama dengan [get]. Bytes hanya di memori: pemanggil tidak
+  /// menyimpannya ke galeri/disk permanen.
+  Future<ApiBytes> getBytes(String path) async {
+    final Response<List<int>> response;
+    try {
+      response = await _dio.get<List<int>>(path, options: Options(responseType: ResponseType.bytes));
+    } on DioException catch (e) {
+      throw _fail(e, body: _jsonOf(e.response?.data));
+    }
+    final type = response.headers.value(Headers.contentTypeHeader) ?? 'application/octet-stream';
+    final data = response.data ?? const <int>[];
+    return ApiBytes(data is Uint8List ? data : Uint8List.fromList(data), type.split(';').first.trim().toLowerCase());
+  }
+
+  /// Body galat dari respons bytes (`responseType.bytes` tidak mengurai JSON).
+  static Object? _jsonOf(Object? data) {
+    if (data is! List<int>) {
+      return data;
+    }
+    try {
+      return jsonDecode(utf8.decode(data));
+    } on FormatException {
+      return null;
+    }
+  }
+
+  ApiError _fail(DioException e, {Object? body}) {
+    var error = e.error is ApiError ? e.error! as ApiError : ApiError.fromDio(e);
+    if (body != null && e.type == DioExceptionType.badResponse) {
+      error = ApiError.fromResponse(
+        e.response?.statusCode,
+        body,
+        requestIdHeader: e.response?.headers.value('x-request-id'),
+      );
+    }
+    final hadToken = e.requestOptions.headers.containsKey('Authorization');
+    switch (error.code) {
+      case ApiErrorCode.appUpdateRequired:
+        onUpdateRequired?.call(error);
+      case ApiErrorCode.unauthenticated || ApiErrorCode.deviceMismatch when hadToken:
+        onSessionInvalid?.call(error);
+      case ApiErrorCode.passwordChangeRequired:
+        onPasswordChangeRequired?.call(error);
+      default:
+        break;
+    }
+    return error;
+  }
+
   Future<ApiResponse> _send(Future<Response<Object?>> Function() call) async {
     final Response<Object?> response;
     try {
       response = await call();
     } on DioException catch (e) {
-      final error = e.error is ApiError ? e.error! as ApiError : ApiError.fromDio(e);
-      final hadToken = e.requestOptions.headers.containsKey('Authorization');
-      switch (error.code) {
-        case ApiErrorCode.appUpdateRequired:
-          onUpdateRequired?.call(error);
-        case ApiErrorCode.unauthenticated || ApiErrorCode.deviceMismatch when hadToken:
-          onSessionInvalid?.call(error);
-        case ApiErrorCode.passwordChangeRequired:
-          onPasswordChangeRequired?.call(error);
-        default:
-          break;
-      }
-      throw error;
+      throw _fail(e);
     }
 
     final body = response.data;

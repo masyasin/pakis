@@ -13,6 +13,7 @@ import '../attendance/attendance_providers.dart';
 import '../auth/mobile_user.dart';
 import '../auth/session.dart';
 import 'profile_password_screen.dart';
+import 'user_avatar.dart';
 
 final deviceInfoProvider = FutureProvider.autoDispose<DeviceInfo?>((ref) async {
   try {
@@ -52,12 +53,7 @@ class ProfileScreen extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: tokens.primary,
-                foregroundColor: tokens.onPrimary,
-                child: Text(_initials(user.name), style: text.titleLarge?.copyWith(color: tokens.onPrimary)),
-              ),
+              UserAvatar(name: user.name, radius: 32, background: tokens.primary, foreground: tokens.onPrimary),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -135,14 +131,6 @@ class ProfileScreen extends ConsumerWidget {
         ),
       ],
     );
-  }
-
-  static String _initials(String name) {
-    final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
-    if (parts.isEmpty) {
-      return '?';
-    }
-    return (parts.first[0] + (parts.length > 1 ? parts.last[0] : '')).toUpperCase();
   }
 
   /// Ganti pesan sebelumnya, bukan mengantre di belakangnya.
@@ -238,6 +226,8 @@ Future<void> uploadAvatar(WidgetRef ref, Uint8List photo) async {
         }),
       );
   await ref.read(sessionProvider.notifier).refresh();
+  // `has_avatar` bisa sudah true sebelumnya: muat ulang foto walau sesi tidak berubah.
+  ref.invalidate(avatarProvider);
 }
 
 class _PhoneDialog extends ConsumerStatefulWidget {

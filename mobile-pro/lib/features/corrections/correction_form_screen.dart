@@ -225,13 +225,7 @@ class _CorrectionFormScreenState extends ConsumerState<CorrectionFormScreen> {
                 onTap: () => _pickTime(checkIn: false),
                 error: _err('proposed_check_out'),
               ),
-            DropdownButtonFormField<String>(
-              initialValue: _reason,
-              isExpanded: true,
-              decoration: InputDecoration(labelText: 'Alasan', errorText: _err('reason_code')),
-              items: [for (final (code, name) in correctionReasons) DropdownMenuItem(value: code, child: Text(name))],
-              onChanged: (v) => setState(() => _reason = v),
-            ),
+            _ReasonField(value: _reason, error: _err('reason_code'), onChanged: (v) => setState(() => _reason = v)),
             const SizedBox(height: 16),
             TextField(
               controller: _note,
@@ -283,5 +277,46 @@ class _CorrectionFormScreenState extends ConsumerState<CorrectionFormScreen> {
         ),
       ),
     );
+  }
+}
+
+/// Pilihan alasan dari API (`correctionReasonsProvider`); galat → pesan + Coba Lagi.
+class _ReasonField extends ConsumerWidget {
+  const _ReasonField({required this.value, required this.error, required this.onChanged});
+
+  final String? value;
+  final String? error;
+  final ValueChanged<String?> onChanged;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reasons = ref.watch(correctionReasonsProvider);
+    return switch (reasons) {
+      AsyncData(value: final items) => DropdownButtonFormField<String>(
+        initialValue: items.any((r) => r.code == value) ? value : null,
+        isExpanded: true,
+        decoration: InputDecoration(labelText: 'Alasan', errorText: error),
+        items: [for (final r in items) DropdownMenuItem(value: r.code, child: Text(r.name))],
+        onChanged: onChanged,
+      ),
+      AsyncError(:final error) => InputDecorator(
+        decoration: InputDecoration(labelText: 'Alasan', errorText: this.error),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                error is ApiError ? 'Daftar alasan gagal dimuat. ${error.message}' : 'Daftar alasan gagal dimuat.',
+                style: TextStyle(color: context.tokens.danger),
+              ),
+            ),
+            TextButton(onPressed: () => ref.invalidate(correctionReasonsProvider), child: const Text('Coba Lagi')),
+          ],
+        ),
+      ),
+      _ => const InputDecorator(
+        decoration: InputDecoration(labelText: 'Alasan'),
+        child: LinearProgressIndicator(),
+      ),
+    };
   }
 }

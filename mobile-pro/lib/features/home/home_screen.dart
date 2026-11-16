@@ -11,6 +11,7 @@ import '../corrections/my_corrections_screen.dart';
 import '../history/history_screen.dart';
 import '../notifications/notifications_screen.dart';
 import '../profile/profile_screen.dart';
+import '../profile/user_avatar.dart';
 
 /// Satu tab bawah (07 §5).
 class HomeTab {
@@ -81,6 +82,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 16, 8, 20),
                   child: Row(
                     children: [
+                      if (user != null) ...[
+                        UserAvatar(
+                          name: user.name,
+                          radius: 22,
+                          background: Colors.white.withValues(alpha: 0.2),
+                          foreground: Colors.white,
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,

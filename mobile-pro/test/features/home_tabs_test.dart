@@ -5,6 +5,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pakis_pro/core/storage/secure_store.dart';
+import 'package:pakis_pro/features/attendance/attendance_providers.dart';
+import 'package:pakis_pro/features/corrections/correction_detail_screen.dart';
 import 'package:pakis_pro/features/corrections/correction_form_screen.dart';
 import 'package:pakis_pro/features/home/home_screen.dart';
 import 'package:pakis_pro/features/notifications/notifications_screen.dart';
@@ -63,33 +65,54 @@ Map<String, Object?> correctionJson({int id = 12, String status = 'pending', Str
 typedef ServerRoute = FakeReply Function(RequestOptions o);
 
 /// Server per "METHOD path-akhir"; `/config`, `/me`, `attendance/today` selalu ada.
-FakeAdapter server(Map<String, ServerRoute> routes, {List<String> permissions = const []}) => FakeAdapter((o) {
-  final user = {
-    ...userJson(),
-    'permissions': ['attendance.self', 'attendance_corrections.create', ...permissions],
-  };
-  if (o.path.endsWith('/api/v1/config')) {
-    return FakeReply(200, configJson());
-  }
-  for (final entry in routes.entries) {
-    final [method, suffix] = entry.key.split(' ');
-    if (o.method == method && o.path.endsWith(suffix)) {
-      return entry.value(o);
-    }
-  }
-  if (o.path.endsWith('/me')) {
-    return FakeReply(200, {'data': user, 'meta': <String, Object?>{}});
-  }
-  if (o.path.endsWith('/notifications')) {
-    return FakeReply(200, listing('my_notifications', const []));
-  }
-  return FakeReply(404, errorJson('NOT_FOUND'));
-});
+/// Alasan aktif dari `GET /lookup/correction-reasons` (sengaja beda dari seeder).
+const reasonsJson = {
+  'data': [
+    {'code': 'forgot', 'name': 'Lupa presensi'},
+    {'code': 'meeting', 'name': 'Rapat di luar kantor'},
+    {'code': 'other', 'name': 'Lainnya'},
+  ],
+  'meta': {'request_id': '01JBX8Q6V7M3T2K9R4N5P6W8YZ'},
+};
 
-MemorySecureStore signedIn({List<String> permissions = const []}) => MemorySecureStore({
+/// PNG 1x1 transparan (foto profil / lampiran palsu yang sah).
+final pngBytes = base64Decode(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+);
+
+FakeAdapter server(Map<String, ServerRoute> routes, {List<String> permissions = const [], bool hasAvatar = false}) =>
+    FakeAdapter((o) {
+      final user = {
+        ...userJson(),
+        'has_avatar': hasAvatar,
+        'permissions': ['attendance.self', 'attendance_corrections.create', ...permissions],
+      };
+      if (o.path.endsWith('/api/v1/config')) {
+        return FakeReply(200, configJson());
+      }
+      for (final entry in routes.entries) {
+        final [method, suffix] = entry.key.split(' ');
+        if (o.method == method && o.path.endsWith(suffix)) {
+          return entry.value(o);
+        }
+      }
+      if (o.path.endsWith('/me')) {
+        return FakeReply(200, {'data': user, 'meta': <String, Object?>{}});
+      }
+      if (o.path.endsWith('/lookup/correction-reasons')) {
+        return const FakeReply(200, reasonsJson);
+      }
+      if (o.path.endsWith('/notifications')) {
+        return FakeReply(200, listing('my_notifications', const []));
+      }
+      return FakeReply(404, errorJson('NOT_FOUND'));
+    });
+
+MemorySecureStore signedIn({List<String> permissions = const [], bool hasAvatar = false}) => MemorySecureStore({
   StoreKeys.authToken: '12|tokenuji',
   StoreKeys.authUser: jsonEncode({
     ...userJson(),
+    'has_avatar': hasAvatar,
     'permissions': ['attendance.self', 'attendance_corrections.create', ...permissions],
   }),
 });
@@ -486,6 +509,139 @@ void main() {
       await tester.tap(find.widgetWithText(FilledButton, 'Keluarkan'));
       await tester.pumpAndSettle();
       expect(find.text('2 sesi web dikeluarkan.'), findsOneWidget);
+    });
+  });
+
+  group('keputusan Mas 16 Nov 2026: lookup alasan, lampiran, foto profil', () {
+    testWidgets('alasan dari GET /lookup/correction-reasons (bukan salinan seeder)', (tester) async {
+      final adapter = server({
+        'GET /attendance-corrections': (_) => FakeReply(200, listing('my_corrections', const [])),
+      });
+      await pumpPakisPro(tester, adapter: adapter, store: signedIn());
+      await openTab(tester, 'Koreksi');
+      await tester.tap(find.text('Ajukan koreksi'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Rapat di luar kantor'), findsWidgets);
+      expect(find.text('HP rusak'), findsNothing, reason: 'tidak ada daftar hardcode');
+      final lookup = adapter.requests.singleWhere((o) => o.path.endsWith('/lookup/correction-reasons'));
+      expect(lookup.headers['Authorization'], 'Bearer 12|tokenuji');
+    });
+
+    testWidgets('lookup alasan gagal → pesan + Coba Lagi (tanpa daftar cadangan) → berhasil', (tester) async {
+      var fail = true;
+      final adapter = server({
+        'GET /attendance-corrections': (_) => FakeReply(200, listing('my_corrections', const [])),
+        'GET /lookup/correction-reasons': (_) => fail ? const FakeReply.offline() : const FakeReply(200, reasonsJson),
+      });
+      await pumpPakisPro(tester, adapter: adapter, store: signedIn());
+      await openTab(tester, 'Koreksi');
+      await tester.tap(find.text('Ajukan koreksi'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Daftar alasan gagal dimuat.'), findsOneWidget);
+      expect(find.byType(DropdownButtonFormField<String>), findsNothing);
+
+      fail = false;
+      await tester.tap(find.widgetWithText(TextButton, 'Coba Lagi'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DropdownButtonFormField<String>), findsOneWidget);
+    });
+
+    testWidgets('detail koreksi: Lihat lampiran → foto layar penuh; PDF → arahan ke web', (tester) async {
+      var pdf = false;
+      final adapter = server({
+        'GET /attendance-corrections': (_) => FakeReply(
+          200,
+          listing('my_corrections', [
+            {...correctionJson(), 'has_attachment': true},
+          ]),
+        ),
+        'GET /12/attachment': (_) => pdf
+            ? FakeReply.bytes(utf8.encode('%PDF-1.4'), contentType: 'application/pdf')
+            : FakeReply.bytes(pngBytes, contentType: 'image/png'),
+      });
+      await pumpPakisPro(tester, adapter: adapter, store: signedIn());
+      await openTab(tester, 'Koreksi');
+      await tester.tap(find.textContaining('Jam masuk').first);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Lihat lampiran'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AttachmentImageScreen), findsOneWidget);
+      expect(find.text('Lampiran KOR-202611-0012'), findsOneWidget);
+      final request = adapter.requests.lastWhere((o) => o.path.endsWith('/attendance-corrections/12/attachment'));
+      expect(request.headers['X-Device-Id'], isNotNull);
+
+      await tester.tap(find.byType(CloseButton)); // layar penuh = tombol tutup
+      await tester.pumpAndSettle();
+      pdf = true;
+      await tester.tap(find.text('Lihat lampiran'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AttachmentImageScreen), findsNothing);
+      expect(find.text('Lampiran PDF — buka di PAKIS ONE web.'), findsOneWidget);
+    });
+
+    testWidgets('lampiran 404 → pesan, tidak membuka layar', (tester) async {
+      final adapter = server({
+        'GET /attendance-corrections': (_) => FakeReply(
+          200,
+          listing('my_corrections', [
+            {...correctionJson(), 'has_attachment': true},
+          ]),
+        ),
+        'GET /12/attachment': (_) => FakeReply(404, errorJson('NOT_FOUND')),
+      });
+      await pumpPakisPro(tester, adapter: adapter, store: signedIn());
+      await openTab(tester, 'Koreksi');
+      await tester.tap(find.textContaining('Jam masuk').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Lihat lampiran'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Lampiran tidak ditemukan.'), findsOneWidget);
+      expect(find.byType(AttachmentImageScreen), findsNothing);
+    });
+
+    testWidgets('has_avatar → foto dari GET /me/avatar di header & profil; ganti foto → dimuat ulang', (tester) async {
+      final adapter = server({
+        'GET /me/avatar': (_) => FakeReply.bytes(pngBytes, contentType: 'image/png'),
+        'POST /me': (_) => FakeReply(200, {'data': userJson()}),
+      }, hasAvatar: true);
+      await pumpPakisPro(
+        tester,
+        adapter: adapter,
+        store: signedIn(hasAvatar: true),
+        overrides: [selfieCaptureProvider.overrideWithValue((context) async => Uint8List.fromList(pngBytes))],
+      );
+
+      bool allPhotos() =>
+          tester.widgetList<CircleAvatar>(find.byType(CircleAvatar)).every((a) => a.backgroundImage != null);
+      expect(find.byType(CircleAvatar), findsOneWidget);
+      expect(allPhotos(), isTrue, reason: 'header');
+      expect(find.text('AS'), findsNothing);
+
+      await openTab(tester, 'Profil');
+      expect(find.byType(CircleAvatar), findsNWidgets(2));
+      expect(allPhotos(), isTrue, reason: 'header + profil');
+      final before = adapter.requests.where((o) => o.path.endsWith('/me/avatar')).length;
+
+      await tester.tap(find.text('Ganti foto profil'));
+      await tester.pumpAndSettle();
+      final upload = adapter.requests.lastWhere((o) => o.method == 'POST' && o.path.endsWith('/api/v1/me'));
+      expect(formFields(upload)['_method'], 'PUT');
+      expect(adapter.requests.where((o) => o.path.endsWith('/me/avatar')).length, greaterThan(before));
+      expect(find.text('Foto profil diperbarui.'), findsOneWidget);
+    });
+
+    testWidgets('tanpa foto → inisial, tanpa request /me/avatar', (tester) async {
+      final adapter = server({});
+      await pumpPakisPro(tester, adapter: adapter, store: signedIn());
+
+      expect(find.text('AS'), findsOneWidget);
+      expect(adapter.requests.where((o) => o.path.endsWith('/me/avatar')), isEmpty);
     });
   });
 }

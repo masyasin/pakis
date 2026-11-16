@@ -1,3 +1,8 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../core/providers.dart';
+import '../auth/session.dart';
+
 /// Objek koreksi presensi (05 §5.7a), dipakai "Koreksi saya" dan "Persetujuan".
 class Correction {
   const Correction({
@@ -87,19 +92,33 @@ class Correction {
 /// Jenis koreksi (05 §5.7 `type`).
 const correctionTypeLabels = {'check_in': 'Jam masuk', 'check_out': 'Jam pulang', 'both': 'Masuk & pulang'};
 
-/// Alasan koreksi (`reference_items` grup `correction_reason`, nilai awal `ReferenceSeeder`).
-///
-/// API v1 belum punya lookup referensi untuk HP (05 §5.1), jadi daftar ini salinan nilai
-/// seeder. Server tetap memvalidasi kode aktif (`reason_code.exists`): kode yang dinonaktifkan
-/// admin ditolak dengan pesan "Alasan koreksi tidak dikenal". Ganti dengan lookup API bila
-/// endpointnya ditambahkan (catatan T-043).
-const correctionReasons = <(String, String)>[
-  ('forgot', 'Lupa presensi'),
-  ('gps_error', 'GPS/HP bermasalah'),
-  ('field_duty', 'Tugas luar'),
-  ('system_error', 'Gangguan sistem'),
-  ('phone_broken', 'HP rusak'),
-  ('phone_lost', 'HP hilang'),
-  ('phone_left', 'HP ketinggalan'),
-  ('other', 'Lainnya'),
-];
+/// Satu alasan koreksi aktif (`reference_items` grup `correction_reason`).
+class CorrectionReason {
+  const CorrectionReason(this.code, this.name);
+
+  final String code;
+  final String name;
+}
+
+/// `GET /api/v1/lookup/correction-reasons` (keputusan Mas 16 Nov 2026): item aktif urut
+/// `sort_order`. Disimpan di memori selama sesi akun yang sama; galat dibiarkan sampai layar
+/// (Coba Lagi = `ref.invalidate`), tidak ada daftar cadangan di HP agar tidak menyimpang dari
+/// referensi yang diatur admin.
+final correctionReasonsProvider = FutureProvider<List<CorrectionReason>>((ref) async {
+  // Akun lain di HP yang sama → muat ulang.
+  ref.watch(
+    sessionProvider.select(
+      (s) => switch (s.value) {
+        SignedIn(:final user) => user.id,
+        _ => null,
+      },
+    ),
+  );
+  final response = await ref.read(apiClientProvider).get('/api/v1/lookup/correction-reasons');
+  final rows = response.data;
+  return [
+    if (rows is List)
+      for (final row in rows)
+        if (row is Map && row['code'] is String) CorrectionReason(row['code']! as String, row['name'] as String? ?? ''),
+  ];
+});

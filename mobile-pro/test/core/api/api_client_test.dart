@@ -103,4 +103,28 @@ void main() {
     await expectLater(api.get('/x'), throwsA(isA<ApiError>()));
     expect(adapter.requests, isEmpty, reason: 'request tanpa X-Device-Id tidak boleh terkirim');
   });
+
+  test('getBytes: berkas biner + Content-Type tanpa parameter, header wajib ikut', () async {
+    adapter.handler = (_) => const FakeReply.bytes([1, 2, 3], contentType: 'image/png');
+
+    final file = await client(token: '12|tokenuji').getBytes('/api/v1/me/avatar');
+
+    expect(file.bytes, [1, 2, 3]);
+    expect(file.contentType, 'image/png');
+    expect(file.isImage, isTrue);
+    expect(adapter.requests.single.headers['Authorization'], 'Bearer 12|tokenuji');
+    expect(adapter.requests.single.headers['X-Device-Id'], 'f' * 64);
+  });
+
+  test('getBytes: galat JSON tetap terbaca (404) dan 426 memicu gerbang update', () async {
+    adapter.handler = (_) => FakeReply(404, errorJson('NOT_FOUND'));
+    await expectLater(
+      client().getBytes('/api/v1/attendance-corrections/9/attachment'),
+      throwsA(isA<ApiError>().having((e) => e.code, 'code', ApiErrorCode.notFound)),
+    );
+
+    adapter.handler = (_) => FakeReply(426, errorJson('APP_UPDATE_REQUIRED'));
+    await expectLater(client().getBytes('/api/v1/me/avatar'), throwsA(isA<ApiError>()));
+    expect(updateRequired?.code, ApiErrorCode.appUpdateRequired);
+  });
 }

@@ -7,13 +7,23 @@ import 'package:pakis_pro/features/auth/session.dart';
 
 /// Jawaban palsu server: status + body JSON (atau [error] untuk galat jaringan).
 class FakeReply {
-  const FakeReply(this.status, [this.body, this.error]);
+  const FakeReply(this.status, [this.body, this.error]) : bytes = null, contentType = null;
 
-  const FakeReply.offline() : status = 0, body = null, error = DioExceptionType.connectionError;
+  const FakeReply.offline()
+    : status = 0,
+      body = null,
+      error = DioExceptionType.connectionError,
+      bytes = null,
+      contentType = null;
+
+  /// Berkas biner (lampiran, foto profil).
+  const FakeReply.bytes(this.bytes, {this.contentType = 'image/jpeg', this.status = 200}) : body = null, error = null;
 
   final int status;
   final Object? body;
   final DioExceptionType? error;
+  final List<int>? bytes;
+  final String? contentType;
 }
 
 /// Adapter Dio palsu: mencatat setiap request dan menjawab lewat [handler].
@@ -33,6 +43,16 @@ class FakeAdapter implements HttpClientAdapter {
     final reply = handler(options);
     if (reply.error != null) {
       throw DioException(requestOptions: options, type: reply.error!);
+    }
+    if (reply.bytes != null) {
+      return ResponseBody.fromBytes(
+        reply.bytes!,
+        reply.status,
+        headers: {
+          Headers.contentTypeHeader: [reply.contentType!],
+          'cache-control': ['no-store'],
+        },
+      );
     }
     return ResponseBody.fromString(
       jsonEncode(reply.body),

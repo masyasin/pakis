@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
 
@@ -42,6 +44,43 @@ class CorrectionDetailScreen extends ConsumerStatefulWidget {
 
 class _CorrectionDetailScreenState extends ConsumerState<CorrectionDetailScreen> {
   bool _busy = false;
+  bool _loadingAttachment = false;
+
+  /// `GET /attendance-corrections/{id}/attachment`: pengaju atau penyetuju yang berwenang.
+  /// Gambar tampil dari memori (tidak disimpan ke galeri/disk); PDF diarahkan ke web karena
+  /// HP tidak punya penampil PDF bawaan tanpa paket baru.
+  Future<void> _viewAttachment() async {
+    setState(() => _loadingAttachment = true);
+    try {
+      final file = await ref
+          .read(apiClientProvider)
+          .getBytes('${MyCorrectionsScreen.path}/${widget.correction.id}/attachment');
+      if (!mounted) {
+        return;
+      }
+      if (file.isImage) {
+        await Navigator.of(context).push(
+          MaterialPageRoute<void>(
+            fullscreenDialog: true,
+            builder: (_) => AttachmentImageScreen(bytes: file.bytes, title: widget.correction.number),
+          ),
+        );
+      } else {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('Lampiran PDF — buka di PAKIS ONE web.')));
+      }
+    } on ApiError catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.code == ApiErrorCode.notFound ? 'Lampiran tidak ditemukan.' : e.message)),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _loadingAttachment = false);
+      }
+    }
+  }
 
   static const approvalsPath = '/api/v1/approvals/attendance-corrections';
 
@@ -136,7 +175,22 @@ class _CorrectionDetailScreenState extends ConsumerState<CorrectionDetailScreen>
               DetailRow(label: 'Jam pulang', value: c.proposedCheckOut!.replaceAll(':', '.')),
             if (c.reasonName != null) DetailRow(label: 'Alasan', value: c.reasonName!),
             if (c.note != null && c.note!.isNotEmpty) DetailRow(label: 'Catatan', value: c.note!),
-            DetailRow(label: 'Lampiran', value: c.hasAttachment ? 'Ada (lihat di PAKIS ONE web)' : 'Tidak ada'),
+            if (c.hasAttachment)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton.icon(
+                    onPressed: _loadingAttachment ? null : _viewAttachment,
+                    icon: _loadingAttachment
+                        ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                        : const Icon(Icons.attach_file),
+                    label: const Text('Lihat lampiran'),
+                  ),
+                ),
+              )
+            else
+              const DetailRow(label: 'Lampiran', value: 'Tidak ada'),
             if (c.isManual) const DetailRow(label: 'Sumber', value: 'Presensi manual oleh admin/atasan'),
             if (c.submittedAt != null) DetailRow(label: 'Diajukan', value: _when(c.submittedAt!)),
             if (c.approverName != null) DetailRow(label: 'Atasan', value: c.approverName!),
@@ -226,5 +280,30 @@ class _DecisionDialogState extends State<_DecisionDialog> {
       TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Batal')),
       FilledButton(onPressed: _submit, child: Text(widget.approve ? 'Setujui' : 'Tolak')),
     ],
+  );
+}
+
+/// Foto lampiran layar penuh, bisa diperbesar. Bytes hanya di memori widget ini.
+class AttachmentImageScreen extends StatelessWidget {
+  const AttachmentImageScreen({required this.bytes, required this.title, super.key});
+
+  final Uint8List bytes;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Colors.black,
+    appBar: AppBar(backgroundColor: Colors.black, foregroundColor: Colors.white, title: Text('Lampiran $title')),
+    body: InteractiveViewer(
+      maxScale: 5,
+      child: Center(
+        child: Image.memory(
+          bytes,
+          semanticLabel: 'Foto lampiran koreksi',
+          errorBuilder: (context, _, _) =>
+              const Text('Foto lampiran tidak bisa ditampilkan.', style: TextStyle(color: Colors.white)),
+        ),
+      ),
+    ),
   );
 }

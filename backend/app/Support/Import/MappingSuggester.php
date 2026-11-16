@@ -1,9 +1,6 @@
 <?php
 
-namespace App\Domain\Employee\Import;
-
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportMappingProfile;
+namespace App\Support\Import;
 
 /**
  * Saran pemetaan kolom (BR-054): profil yang `header_signature`-nya sama dipilih otomatis; bila
@@ -19,28 +16,28 @@ final class MappingSuggester
      */
     public static function signature(array $headers): string
     {
-        return hash('sha256', implode("\x1F", array_map(EmployeeImportFields::normalizeHeader(...), $headers)));
+        return hash('sha256', implode("\x1F", array_map(ImportFields::normalizeHeader(...), $headers)));
     }
 
     /**
      * @param  list<string>  $headers
      * @return array{columns: array<int, string>, profile: ImportMappingProfile|null}
      */
-    public static function suggest(array $headers): array
+    public static function suggest(ImportType $type, array $headers): array
     {
         $profile = ImportMappingProfile::query()
-            ->where('type', ImportBatch::TYPE_EMPLOYEES)
+            ->where('type', $type->key())
             ->where('header_signature', self::signature($headers))
             ->latest('updated_at')
             ->first();
 
         if ($profile !== null) {
-            return ['columns' => self::fromProfile($profile, $headers), 'profile' => $profile];
+            return ['columns' => self::fromProfile($type->fields(), $profile, $headers), 'profile' => $profile];
         }
 
         $columns = [];
         foreach ($headers as $index => $header) {
-            $field = EmployeeImportFields::fieldForHeader($header);
+            $field = $type->fields()->fieldForHeader($header);
             if ($field !== null && ! in_array($field, $columns, true)) {
                 $columns[$index] = $field;
             }
@@ -55,17 +52,17 @@ final class MappingSuggester
      * @param  list<string>  $headers
      * @return array<int, string>
      */
-    public static function fromProfile(ImportMappingProfile $profile, array $headers): array
+    public static function fromProfile(ImportFields $fields, ImportMappingProfile $profile, array $headers): array
     {
         $byHeader = [];
         foreach ($profile->mapping as $header => $field) {
-            $byHeader[EmployeeImportFields::normalizeHeader($header)] = $field;
+            $byHeader[ImportFields::normalizeHeader($header)] = $field;
         }
 
         $columns = [];
         foreach ($headers as $index => $header) {
-            $field = $byHeader[EmployeeImportFields::normalizeHeader($header)] ?? null;
-            if ($field !== null && isset(EmployeeImportFields::FIELDS[$field]) && ! in_array($field, $columns, true)) {
+            $field = $byHeader[ImportFields::normalizeHeader($header)] ?? null;
+            if ($field !== null && $fields->has($field) && ! in_array($field, $columns, true)) {
                 $columns[$index] = $field;
             }
         }

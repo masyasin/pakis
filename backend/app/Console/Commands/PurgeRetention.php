@@ -2,10 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\ImportFile;
-use App\Domain\Employee\Models\ImportBatch;
 use App\Domain\Settings\SettingRegistry;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportFile;
+use App\Support\Import\ImportStatus;
 use Illuminate\Console\Attributes\Description;
 use Illuminate\Console\Attributes\Signature;
 use Illuminate\Console\Command;

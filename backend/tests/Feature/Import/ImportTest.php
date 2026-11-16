@@ -2,17 +2,20 @@
 
 use App\Domain\Access\Enums\DataScope;
 use App\Domain\Access\Models\Role;
-use App\Domain\Employee\Actions\ValidateImportBatch;
-use App\Domain\Employee\Enums\ImportRowStatus;
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\EmployeeImportReader;
-use App\Domain\Employee\Import\HeaderDetector;
-use App\Domain\Employee\Import\MappingSuggester;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportMappingProfile;
-use App\Domain\Employee\Models\ImportRow;
+use App\Domain\Employee\Import\EmployeeImportFields;
+use App\Domain\Employee\Import\EmployeeImportType;
+use App\Domain\Employee\Support\NikCipher;
 use App\Jobs\ValidateImportBatchJob;
 use App\Models\User;
+use App\Support\Import\Actions\ValidateImportBatch;
+use App\Support\Import\HeaderDetector;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportMappingProfile;
+use App\Support\Import\ImportRow;
+use App\Support\Import\ImportRowStatus;
+use App\Support\Import\ImportStatus;
+use App\Support\Import\MappingSuggester;
+use App\Support\Import\SpreadsheetReader;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -64,7 +67,8 @@ test('BR-054 fixture berantakan terbaca benar: header baris 3, tanggal campur, H
             'nik' => substr($this->nik, 0, 4).'********'.substr($this->nik, -4),
         ])
         ->and($andi->data['ids'])->toBe(['employment_status_id' => $this->world->permanent, 'location_id' => $this->world->gudang->id, 'position_id' => $this->world->staff->id])
-        ->and($andi->row_key)->toStartWith('nik:');
+        // T-085A (BR-170): row_key = sha256 kunci gabungan; untuk pegawai ber-NIK kuncinya "nik:<nik_hash>".
+        ->and($andi->row_key)->toBe(hash('sha256', 'nik:'.app(NikCipher::class)->hash($this->nik)));
 
     expect($rows[5]->status)->toBe(ImportRowStatus::Valid)
         ->and($rows[5]->data)->toMatchArray(['gender' => 'P', 'join_date' => '2023-05-10', 'birth_date' => '1993-01-31', 'phone' => '6281234567891', 'location' => 'Toko Uji']);
@@ -242,16 +246,16 @@ test('T-027 templat: xlsx dengan semua field, terbaca kembali sebagai pemetaan l
     $path = $response->baseResponse->getFile()->getPathname();
 
     $top = [];
-    foreach ((new EmployeeImportReader)->rows($path, 'xlsx') as $number => $cells) {
+    foreach ((new SpreadsheetReader)->rows($path, 'xlsx') as $number => $cells) {
         $top[$number] = $cells;
         if ($number >= 2) {
             break;
         }
     }
-    $detected = HeaderDetector::detect($top);
+    $detected = HeaderDetector::detect($top, EmployeeImportFields::definition());
 
     expect($detected['row'])->toBe(1)
-        ->and(MappingSuggester::suggest($detected['headers'])['columns'])->toHaveCount(13);
+        ->and(MappingSuggester::suggest(app(EmployeeImportType::class), $detected['headers'])['columns'])->toHaveCount(13);
 });
 
 test('T-027 profil: daftar & hapus', function () {
@@ -288,7 +292,7 @@ test('SEC-033 templat: contoh lokasi diambil dari lokasi dalam scope pengunduh',
 
     $path = $this->actingAs($local)->get('/impor/pegawai/templat')->assertOk()->baseResponse->getFile()->getPathname();
     $example = null;
-    foreach ((new EmployeeImportReader)->rows($path, 'xlsx') as $number => $cells) {
+    foreach ((new SpreadsheetReader)->rows($path, 'xlsx') as $number => $cells) {
         if ($number === 2) {
             $example = $cells;
             break;

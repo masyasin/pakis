@@ -1,14 +1,15 @@
 <?php
 
-namespace App\Domain\Employee\Actions;
+namespace App\Support\Import\Actions;
 
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\EmployeeImportFields;
-use App\Domain\Employee\Import\MappingSuggester;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportMappingProfile;
-use App\Domain\Employee\Models\ImportRow;
 use App\Models\User;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportMappingProfile;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportRow;
+use App\Support\Import\ImportStatus;
+use App\Support\Import\ImportType;
+use App\Support\Import\MappingSuggester;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -33,27 +34,29 @@ final class SaveImportMapping
                 $fail('columns', 'Impor ini sudah '.mb_strtolower($locked->status->label()).'; pemetaannya tidak bisa diubah.');
             }
 
+            $type = ImportRegistry::forBatch($locked);
+            $fields = $type->fields();
             $headers = $locked->headers();
             $mapping = [];
             foreach ($columns as $index => $field) {
                 if ($field === null || $field === '' || ! array_key_exists($index, $headers)) {
                     continue;
                 }
-                if (! isset(EmployeeImportFields::FIELDS[$field])) {
+                if (! $fields->has($field)) {
                     $fail('columns', 'Field tujuan tidak dikenal.');
                 }
                 if (in_array($field, $mapping, true)) {
-                    $fail('columns', '"'.EmployeeImportFields::label($field).'" dipilih untuk lebih dari satu kolom.');
+                    $fail('columns', '"'.$fields->label($field).'" dipilih untuk lebih dari satu kolom.');
                 }
                 $mapping[$index] = $field;
             }
 
-            $missing = array_diff(EmployeeImportFields::required(), $mapping);
+            $missing = array_diff($fields->required(), $mapping);
             if ($missing !== []) {
-                $fail('columns', 'Field wajib belum dipetakan: '.implode(', ', array_map(EmployeeImportFields::label(...), $missing)).'.');
+                $fail('columns', 'Field wajib belum dipetakan: '.implode(', ', array_map($fields->label(...), $missing)).'.');
             }
 
-            $this->rememberProfile($actor, $headers, $mapping, $profileName);
+            $this->rememberProfile($actor, $type, $headers, $mapping, $profileName);
 
             $data = $locked->mapping ?? [];
             unset($data['failure']);
@@ -83,13 +86,13 @@ final class SaveImportMapping
      * @param  list<string>  $headers
      * @param  array<int, string>  $mapping
      */
-    private function rememberProfile(User $actor, array $headers, array $mapping, ?string $profileName): void
+    private function rememberProfile(User $actor, ImportType $type, array $headers, array $mapping, ?string $profileName): void
     {
         $signature = MappingSuggester::signature($headers);
 
         if ($profileName === null) {
             ImportMappingProfile::query()
-                ->where('type', ImportBatch::TYPE_EMPLOYEES)
+                ->where('type', $type->key())
                 ->where('header_signature', $signature)
                 ->latest('updated_at')
                 ->first()
@@ -107,11 +110,11 @@ final class SaveImportMapping
         }
 
         $profile = ImportMappingProfile::query()
-            ->where('type', ImportBatch::TYPE_EMPLOYEES)
+            ->where('type', $type->key())
             ->where('name', $profileName)
             ->lockForUpdate()
             ->first() ?? (new ImportMappingProfile)->forceFill([
-                'type' => ImportBatch::TYPE_EMPLOYEES,
+                'type' => $type->key(),
                 'name' => $profileName,
                 'created_by' => $actor->id,
             ]);

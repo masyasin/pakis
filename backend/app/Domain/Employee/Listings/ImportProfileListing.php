@@ -2,9 +2,9 @@
 
 namespace App\Domain\Employee\Listings;
 
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportMappingProfile;
 use App\Models\User;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportMappingProfile;
 use App\Support\Listing\Filters\RelationFilter;
 use App\Support\Listing\HasListing;
 use App\Support\Listing\ListingSpec;

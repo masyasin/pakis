@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Domain\Employee\Events;
+namespace App\Support\Import\Events;
 
-use App\Domain\Employee\Models\ImportBatch;
+use App\Support\Import\ImportBatch;
 use Illuminate\Foundation\Events\Dispatchable;
 
 /** Proses impor berakhir (`completed`/`failed`, T-028). Dipakai notifikasi "Impor selesai" (BR-070). */

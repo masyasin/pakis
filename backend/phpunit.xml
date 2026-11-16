@@ -27,6 +27,8 @@
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>
+        <!-- Tipe impor uji (T-085A): mendaftarkan tests/Fixtures/Import/ProductLikeImportType. -->
+        <env name="IMPORT_TEST_TYPE" value="Tests\Fixtures\Import\ProductLikeImportType"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>

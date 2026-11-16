@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Employee\Import;
+namespace App\Support\Import;
 
 use DateTimeInterface;
 use Generator;
@@ -17,7 +17,7 @@ use RuntimeException;
  *
  * Sel formula SELALU dibaca nilai tersimpannya; formula tidak pernah dievaluasi.
  */
-final class EmployeeImportReader
+final class SpreadsheetReader
 {
     /**
      * @return Generator<int, list<mixed>> nomor baris asli (1 = baris pertama berkas) => sel

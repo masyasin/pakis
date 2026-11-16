@@ -3,11 +3,11 @@
 namespace App\Domain\Employee\Actions;
 
 use App\Domain\Access\DataScope;
-use App\Domain\Employee\Enums\ImportRowStatus;
 use App\Domain\Employee\Import\RowNormalizer;
-use App\Domain\Employee\Import\RowValidator;
 use App\Domain\Employee\Models\Employee;
 use App\Models\User;
+use App\Support\Import\ImportRowStatus;
+use App\Support\Import\ValidatedRow;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -36,27 +36,27 @@ final class ApplyImportRow
     ) {}
 
     /**
+     * @param  ?string  $key  kunci baris mentah (RowKey), `null` = baris tanpa NIK/nomor/nama
      * @param  array<string, mixed>  $raw  sel mentah terpetakan (field → nilai)
      * @param  array<string, int>  $resolved  nomor pegawai (huruf kecil) → id, untuk baris di berkas ini yang sudah diproses
      * @return array{status: ImportRowStatus, employee_id: int, warnings: list<string>}
      *
      * @throws ValidationException
      */
-    public function handle(User $actor, RowValidator $validator, array $raw, bool $updateExisting, array $resolved): array
+    public function handle(User $actor, ValidatedRow $row, ?string $key, array $raw, bool $updateExisting, array $resolved): array
     {
-        $result = $validator->validate($raw);
-        if ($result['errors'] !== []) {
-            throw ValidationException::withMessages($result['errors']);
+        if (! $row->isValid()) {
+            throw ValidationException::withMessages($row->errors);
         }
-        if ($result['key'] === null) {
+        if ($key === null) {
             throw ValidationException::withMessages(['_row' => 'Baris tidak punya NIK, no. pegawai, maupun nama.']);
         }
 
-        $data = $result['data'];
+        $data = $row->data;
         // NIK lengkap dari berkas (sudah lolos normalisasi di validate()); `data.nik` hanya mask.
         $nik = array_key_exists('nik', $raw) ? RowNormalizer::nik($raw['nik']) : null;
 
-        $existing = $this->existing($result['key'], $data);
+        $existing = $this->existing($key, $data);
         if ($existing !== null) {
             return $this->existingRow($actor, $existing, $raw, $data, $nik, $updateExisting);
         }

@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Domain\Employee\Models;
+namespace App\Support\Import;
 
-use App\Domain\Employee\Enums\ImportRowStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 

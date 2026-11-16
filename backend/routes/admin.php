@@ -17,6 +17,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ImportProfileController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\LookupController;
+use App\Http\Controllers\Admin\MasterImportController;
 use App\Http\Controllers\Admin\MfaSetupController;
 use App\Http\Controllers\Admin\PositionController;
 use App\Http\Controllers\Admin\ProfileController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\UserController;
+use App\Support\Import\ImportRegistry;
 use Illuminate\Auth\Middleware\RequirePassword;
 use Illuminate\Support\Facades\Route;
 
@@ -293,8 +295,8 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('penugasan/{assignment}/akhiri', [AssignmentController::class, 'end'])->whereNumber('assignment')->name('assignments.end');
     });
 
-    // Impor pegawai langkah 1–3 (05 §4.7, FR-028, BR-054, T-027). Batch di luar visibilitas → 404.
-    // Rute statis (`pegawai/*`, `profil`) didaftarkan sebelum `{batch}`.
+    // Impor pegawai langkah 1 + riwayat & profil (05 §4.7, FR-028, BR-054, T-027). Rute statis
+    // (`pegawai/*`, `profil`) didaftarkan sebelum `{batch}`.
     Route::middleware('can:employees.import')->group(function () {
         Route::get('impor', [ImportController::class, 'index'])->name('imports.index');
         Route::get('impor/pegawai/baru', [ImportController::class, 'create'])->name('imports.create');
@@ -302,6 +304,18 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('impor/pegawai', [ImportController::class, 'store'])->middleware('throttle:20,1')->name('imports.store');
         Route::get('impor/profil', [ImportProfileController::class, 'index'])->name('import-profiles.index');
         Route::delete('impor/profil/{profile}', [ImportProfileController::class, 'destroy'])->whereNumber('profile')->name('import-profiles.destroy');
+    });
+
+    // Impor tipe lain langkah 1 (BR-170, T-085A, 15 §5 `admin.master-imports.*`). `{type}` hanya slug
+    // tipe terdaftar (ImportRegistry) agar tidak bentrok dengan `impor/pegawai…`, `impor/profil`, dan
+    // `impor/{batch}`; izin = izin tipe itu (dicek controller).
+    Route::get('impor/{type}/baru', [MasterImportController::class, 'create'])->where('type', ImportRegistry::routePattern())->name('master-imports.create');
+    Route::get('impor/{type}/templat', [MasterImportController::class, 'template'])->where('type', ImportRegistry::routePattern())->name('master-imports.template');
+    Route::post('impor/{type}', [MasterImportController::class, 'store'])->where('type', ImportRegistry::routePattern())->middleware('throttle:20,1')->name('master-imports.store');
+
+    // Langkah per batch untuk SEMUA tipe impor (T-027/T-028, T-085A): izin tipe batch lewat
+    // ImportBatchPolicy; batch di luar visibilitas → 404 di route binding (SEC-033).
+    Route::middleware('can:manage,batch')->group(function () {
         Route::get('impor/{batch}', [ImportController::class, 'show'])->whereNumber('batch')->name('imports.show');
         Route::get('impor/{batch}/pemetaan', [ImportController::class, 'mapping'])->whereNumber('batch')->name('imports.mapping');
         Route::put('impor/{batch}/pemetaan', [ImportController::class, 'updateMapping'])->whereNumber('batch')->middleware('throttle:30,1')->name('imports.mapping.update');

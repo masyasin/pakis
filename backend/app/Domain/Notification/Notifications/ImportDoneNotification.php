@@ -2,12 +2,13 @@
 
 namespace App\Domain\Notification\Notifications;
 
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Models\ImportBatch;
 use App\Domain\Notification\Enums\NotificationKind;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportStatus;
 
 /**
- * Impor pegawai selesai/gagal (BR-070) → pengunggah. Hanya jumlah baris dan nama berkas: tidak ada
+ * Impor selesai/gagal (BR-070, judul memakai label tipe impor) → pengunggah. Hanya jumlah baris dan nama berkas: tidak ada
  * data pegawai di isi notifikasi (bisa terkirim lewat email/Telegram).
  */
 class ImportDoneNotification extends PakisNotification
@@ -15,6 +16,9 @@ class ImportDoneNotification extends PakisNotification
     private readonly bool $failed;
 
     private readonly string $name;
+
+    /** Nama data tipe impor, huruf kecil ("pegawai"). */
+    private readonly string $label;
 
     /** @var array{created: int, updated: int, skipped: int, errors: int} */
     private readonly array $counts;
@@ -27,6 +31,7 @@ class ImportDoneNotification extends PakisNotification
         $this->batchId = $batch->id;
         $this->failed = $batch->status === ImportStatus::Failed;
         $this->name = $batch->original_name;
+        $this->label = ImportRegistry::has($batch->type) ? mb_strtolower(ImportRegistry::forBatch($batch)->label()) : 'data';
         $this->counts = [
             'created' => $batch->created_rows,
             'updated' => $batch->updated_rows,
@@ -42,7 +47,7 @@ class ImportDoneNotification extends PakisNotification
 
     public function title(): string
     {
-        return $this->failed ? 'Impor pegawai gagal' : 'Impor pegawai selesai';
+        return $this->failed ? "Impor {$this->label} gagal" : "Impor {$this->label} selesai";
     }
 
     public function body(): string

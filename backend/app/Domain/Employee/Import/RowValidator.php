@@ -13,6 +13,8 @@ use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Http\Requests\Employee\EmployeeRequest;
 use App\Models\User;
+use App\Support\Import\NormalizedRow;
+use App\Support\Import\ValidatedRow;
 use App\Support\Time\DisplayTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
@@ -71,55 +73,103 @@ final class RowValidator
     }
 
     /**
-     * @param  array<string, mixed>  $raw  field terpetakan => sel mentah
-     * @return array{data: array<string, mixed>, errors: array<string, list<string>>, key: string|null}
+     * Urutan field saat galat & data disusun. Sama dengan urutan pemeriksaan sebelum kontrak
+     * ImportType dipecah (T-085A), agar pesan galat, berkas galat, dan `import_rows.data` identik.
      */
-    public function validate(array $raw): array
-    {
-        $data = [];
-        $ids = [];
-        $errors = [];
-        $fail = function (string $field, string $message) use (&$errors) {
-            $errors[$field][] = $message;
-        };
-        $mapped = fn (string $field) => array_key_exists($field, $raw);
+    private const ORDER = [
+        'full_name', 'gender', 'join_date', 'birth_date', 'employee_number', 'nik', 'phone', 'email', 'address',
+        'employment_status', 'location', 'position', 'supervisor_number',
+    ];
 
-        // Nilai yang lolos normalisasi disimpan ternormalisasi; yang gagal disimpan apa adanya
-        // (untuk ditampilkan merah), kecuali NIK yang tidak pernah disimpan utuh (SEC-010).
-        $take = function (string $field, callable $normalize) use ($raw, $mapped, &$data, $fail): mixed {
-            if (! $mapped($field)) {
-                return null;
+    /** Field yang dicocokkan ke data referensi lewat kode atau nama. */
+    private const REFERENCES = ['employment_status', 'location', 'position'];
+
+    /**
+     * Langkah 1 (`ImportType::normalize`): bentuk tiap sel (teks, tanggal, jenis kelamin, NIK, HP).
+     * Nilai yang lolos disimpan ternormalisasi; yang gagal disimpan apa adanya (untuk ditampilkan
+     * merah), kecuali NIK yang tidak pernah disimpan utuh (SEC-010).
+     *
+     * @param  array<string, mixed>  $raw  field terpetakan => sel mentah
+     */
+    public function normalize(array $raw): NormalizedRow
+    {
+        $values = [];
+        $data = [];
+        $errors = [];
+
+        $take = function (string $field, callable $normalize) use ($raw, &$values, &$data, &$errors): void {
+            if (! array_key_exists($field, $raw)) {
+                return;
             }
             try {
                 $value = $normalize($raw[$field]);
             } catch (InvalidArgumentException $e) {
-                $fail($field, $e->getMessage());
+                $errors[$field][] = $e->getMessage();
+                $values[$field] = null;
                 $data[$field] = $field === 'nik' ? null : RowNormalizer::text($raw[$field]);
 
-                return null;
+                return;
             }
             if ($value === null && EmployeeImportFields::FIELDS[$field]['required']) {
-                $fail($field, 'Wajib diisi.');
+                $errors[$field][] = 'Wajib diisi.';
             }
+            $values[$field] = $value;
             $data[$field] = $value;
-
-            return $value;
         };
 
-        $name = $take('full_name', RowNormalizer::name(...));
+        $take('full_name', RowNormalizer::name(...));
+        $take('gender', RowNormalizer::gender(...));
+        // Seperti sebelum dipecah: kunci `gender` & `nik` selalu ada di data (null bila tidak dipetakan).
+        $data['gender'] = ($values['gender'] ?? null) instanceof Gender ? $values['gender']->value : ($data['gender'] ?? null);
+        $take('join_date', RowNormalizer::date(...));
+        $take('birth_date', RowNormalizer::date(...));
+        $take('employee_number', RowNormalizer::code(...));
+        $take('nik', RowNormalizer::nik(...));
+        $data['nik'] = is_string($values['nik'] ?? null) ? NikCipher::mask($values['nik']) : null;
+        $take('phone', RowNormalizer::phone(...));
+        $take('email', RowNormalizer::email(...));
+        $take('address', RowNormalizer::text(...));
+        $take('supervisor_number', RowNormalizer::code(...));
+
+        foreach (self::REFERENCES as $field) {
+            if (! array_key_exists($field, $raw)) {
+                continue;
+            }
+            $text = RowNormalizer::text($raw[$field]);
+            $values[$field] = $text;
+            $data[$field] = $text;
+            if ($text === null) {
+                $errors[$field][] = 'Wajib diisi.';
+            }
+        }
+
+        return new NormalizedRow($values, $data, $errors);
+    }
+
+    /**
+     * Langkah 2 (`ImportType::validate`): aturan panjang, tanggal, umur, referensi ber-scope, dan
+     * atasan. Galat disusun per field dalam urutan ORDER: galat normalisasi dulu, lalu aturan ini.
+     */
+    public function check(NormalizedRow $row): ValidatedRow
+    {
+        $values = $row->values;
+        $data = $row->data;
+        $extra = [];
+        $fail = function (string $field, string $message) use (&$extra): void {
+            $extra[$field][] = $message;
+        };
+
+        $name = $values['full_name'] ?? null;
         if (is_string($name) && (mb_strlen($name) < 2 || mb_strlen($name) > 150)) {
             $fail('full_name', 'Nama 2–150 karakter.');
         }
 
-        $gender = $take('gender', RowNormalizer::gender(...));
-        $data['gender'] = $gender instanceof Gender ? $gender->value : ($data['gender'] ?? null);
-
-        $join = $take('join_date', RowNormalizer::date(...));
+        $join = $values['join_date'] ?? null;
         if (is_string($join) && $join > $this->today) {
             $fail('join_date', 'Tanggal masuk tidak boleh melewati hari ini.');
         }
 
-        $birth = $take('birth_date', RowNormalizer::date(...));
+        $birth = $values['birth_date'] ?? null;
         if (is_string($birth) && $birth >= $this->today) {
             $fail('birth_date', 'Tanggal lahir harus sebelum hari ini.');
         } elseif (is_string($birth) && is_string($join)) {
@@ -129,28 +179,29 @@ final class RowValidator
             }
         }
 
-        $number = $take('employee_number', RowNormalizer::code(...));
+        $number = $values['employee_number'] ?? null;
         if (is_string($number) && preg_match(self::NUMBER_PATTERN, $number) !== 1) {
             $fail('employee_number', 'No. pegawai maks. 30 karakter: huruf, angka, titik, garis miring, strip.');
             $number = null;
+            $values['employee_number'] = null;
         }
 
-        $nik = $take('nik', RowNormalizer::nik(...));
-        $data['nik'] = is_string($nik) ? NikCipher::mask($nik) : null;
-
-        $take('phone', RowNormalizer::phone(...));
-        $take('email', RowNormalizer::email(...));
-
-        $address = $take('address', RowNormalizer::text(...));
+        $address = $values['address'] ?? null;
         if (is_string($address) && mb_strlen($address) > 500) {
             $fail('address', 'Alamat maks. 500 karakter.');
         }
 
-        $ids['employment_status_id'] = $this->reference('employment_status', $raw, $data, $fail, $this->statuses, 'Status kerja');
-        $ids['location_id'] = $this->reference('location', $raw, $data, $fail, $this->locations, 'Lokasi');
-        $ids['position_id'] = $this->reference('position', $raw, $data, $fail, $this->positions, 'Jabatan');
+        $ids = [];
+        foreach ([
+            'employment_status_id' => ['employment_status', $this->statuses, 'Status kerja'],
+            'location_id' => ['location', $this->locations, 'Lokasi'],
+            'position_id' => ['position', $this->positions, 'Jabatan'],
+        ] as $idKey => [$field, $index, $label]) {
+            $text = $values[$field] ?? null;
+            $ids[$idKey] = is_string($text) ? $this->reference($field, $text, $data, $fail, $index, $label) : null;
+        }
 
-        $supervisor = $take('supervisor_number', RowNormalizer::code(...));
+        $supervisor = $values['supervisor_number'] ?? null;
         if (is_string($supervisor)) {
             $key = mb_strtolower($supervisor);
             if ($number !== null && $key === mb_strtolower($number)) {
@@ -163,36 +214,52 @@ final class RowValidator
             }
         }
 
-        $data['ids'] = array_filter($ids, fn ($id) => $id !== null);
+        $errors = [];
+        $ordered = [];
+        foreach (self::ORDER as $field) {
+            $messages = [...($row->errors[$field] ?? []), ...($extra[$field] ?? [])];
+            if ($messages !== []) {
+                $errors[$field] = $messages;
+            }
+            if (array_key_exists($field, $data)) {
+                $ordered[$field] = $data[$field];
+            }
+        }
+        $ordered['ids'] = array_filter($ids, fn ($id) => $id !== null);
 
-        return [
-            'data' => $data,
-            'errors' => $errors,
-            'key' => RowKey::for(is_string($nik) ? $nik : null, $number, is_string($name) ? $name : null, is_string($birth) ? $birth : null),
-        ];
+        return new ValidatedRow($values, $ordered, $errors);
+    }
+
+    /** Kunci baris (RowKey) dari nilai yang sudah diperiksa. */
+    public static function key(ValidatedRow $row): ?string
+    {
+        $string = fn (string $field) => is_string($row->values[$field] ?? null) ? $row->values[$field] : null;
+
+        return RowKey::for($string('nik'), $string('employee_number'), $string('full_name'), $string('birth_date'));
+    }
+
+    /**
+     * Normalisasi + pemeriksaan sekaligus (bentuk sebelum kontrak ImportType).
+     *
+     * @param  array<string, mixed>  $raw  field terpetakan => sel mentah
+     * @return array{data: array<string, mixed>, errors: array<string, list<string>>, key: string|null}
+     */
+    public function validate(array $raw): array
+    {
+        $row = $this->check($this->normalize($raw));
+
+        return ['data' => $row->data, 'errors' => $row->errors, 'key' => self::key($row)];
     }
 
     /**
      * Cocokkan kode atau nama (tidak peka huruf besar). Nama yang dipakai lebih dari satu data
      * dianggap ambigu: pengguna diminta memakai kode.
      *
-     * @param  array<string, mixed>  $raw
      * @param  array<string, mixed>  $data
      * @param  array{code: array<string, list<int>>, name: array<string, list<int>>, label: array<int, string>}  $index
      */
-    private function reference(string $field, array $raw, array &$data, callable $fail, array $index, string $label): ?int
+    private function reference(string $field, string $text, array &$data, callable $fail, array $index, string $label): ?int
     {
-        if (! array_key_exists($field, $raw)) {
-            return null;
-        }
-        $text = RowNormalizer::text($raw[$field]);
-        $data[$field] = $text;
-        if ($text === null) {
-            $fail($field, 'Wajib diisi.');
-
-            return null;
-        }
-
         $key = mb_strtolower($text);
         $ids = $index['code'][$key] ?? $index['name'][$key] ?? [];
         if (count($ids) > 1) {

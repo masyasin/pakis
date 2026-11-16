@@ -2,11 +2,11 @@
 
 namespace App\Providers;
 
-use App\Domain\Employee\Events\ImportProcessed;
 use App\Domain\Notification\Channels\ChannelAvailability;
 use App\Domain\Notification\Listeners\SendExportReady;
 use App\Domain\Notification\Listeners\SendImportDone;
 use App\Support\Export\Events\ExportReady;
+use App\Support\Import\Events\ImportProcessed;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 

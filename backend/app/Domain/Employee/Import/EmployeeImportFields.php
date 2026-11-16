@@ -2,6 +2,8 @@
 
 namespace App\Domain\Employee\Import;
 
+use App\Support\Import\ImportFields;
+
 /**
  * Field sistem untuk impor pegawai (BR-054) beserta sinonim judul kolom yang dikenali. Sinonim
  * ditulis dalam bentuk ternormalisasi (`normalizeHeader`): huruf kecil, isi kurung dibuang,
@@ -84,36 +86,21 @@ final class EmployeeImportFields
         return self::FIELDS[$field]['label'] ?? $field;
     }
 
-    /**
-     * "No. HP (WA)*" → "no hp"; "NAMA  PEGAWAI" → "nama pegawai". Kurung dibuang karena biasanya
-     * berisi petunjuk format, bukan nama kolom.
-     */
+    /** Definisi field sebagai ImportFields (kontrak ImportType). */
+    public static function definition(): ImportFields
+    {
+        return new ImportFields(self::FIELDS);
+    }
+
+    /** Lihat ImportFields::normalizeHeader(). */
     public static function normalizeHeader(mixed $value): string
     {
-        if (! is_scalar($value)) {
-            return '';
-        }
-        $text = mb_strtolower(trim((string) $value));
-        $text = (string) preg_replace('/\([^)]*\)|\[[^]]*\]/u', ' ', $text);
-        $text = (string) preg_replace('/[^\p{L}\p{N}]+/u', ' ', $text);
-
-        return trim($text);
+        return ImportFields::normalizeHeader($value);
     }
 
     /** Field untuk judul kolom ini menurut sinonim, atau null. */
     public static function fieldForHeader(mixed $header): ?string
     {
-        $normalized = self::normalizeHeader($header);
-        if ($normalized === '') {
-            return null;
-        }
-
-        foreach (self::FIELDS as $key => $field) {
-            if (in_array($normalized, $field['synonyms'], true)) {
-                return $key;
-            }
-        }
-
-        return null;
+        return self::definition()->fieldForHeader($header);
     }
 }

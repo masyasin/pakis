@@ -12,7 +12,7 @@ class ImportUploadRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // middleware `can:employees.import`
+        return true; // pegawai: middleware `can:employees.import`; tipe lain: izin tipe di MasterImportController
     }
 
     /** @return array<string, mixed> */

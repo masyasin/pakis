@@ -3,26 +3,29 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Audit\AuditLogger;
-use App\Domain\Employee\Actions\CancelImport;
-use App\Domain\Employee\Actions\ProcessImportBatch;
-use App\Domain\Employee\Actions\SaveImportMapping;
-use App\Domain\Employee\Actions\StoreImportUpload;
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\EmployeeImportFields;
-use App\Domain\Employee\Import\ImportErrorFile;
-use App\Domain\Employee\Import\ImportFile;
+use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Import\ImportTemplate;
-use App\Domain\Employee\Import\MappingSuggester;
-use App\Domain\Employee\Import\RowNormalizer;
 use App\Domain\Employee\Listings\ImportBatchListing;
 use App\Domain\Employee\Listings\ImportRowListing;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportRow;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\ImportMappingRequest;
 use App\Http\Requests\Employee\ImportProcessRequest;
 use App\Http\Requests\Employee\ImportUploadRequest;
 use App\Models\User;
+use App\Support\Import\Actions\CancelImport;
+use App\Support\Import\Actions\ProcessImportBatch;
+use App\Support\Import\Actions\SaveImportMapping;
+use App\Support\Import\Actions\StoreImportUpload;
+use App\Support\Import\CellText;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportErrorFile;
+use App\Support\Import\ImportFields;
+use App\Support\Import\ImportFile;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportRow;
+use App\Support\Import\ImportStatus;
+use App\Support\Import\ImportType;
+use App\Support\Import\MappingSuggester;
 use App\Support\Listing\ListingQuery;
 use App\Support\Listing\UsesListing;
 use App\Support\Time\DisplayTime;
@@ -36,8 +39,9 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 /**
  * Impor pegawai (05 §4.7, FR-028, BR-054): unggah → pemetaan → validasi (T-027) → proses &
- * laporan + unduh galat (T-028). Semua route `can:employees.import`; batch di luar visibilitas
- * pengguna → 404 (route binding).
+ * laporan + unduh galat (T-028). Unggah/templat/riwayat di `can:employees.import`; langkah per
+ * batch dipakai semua tipe impor (BR-170, T-085A) dengan `can:manage,batch` (izin tipe batch);
+ * batch di luar visibilitas pengguna → 404 (route binding).
  */
 class ImportController extends Controller
 {
@@ -68,8 +72,8 @@ class ImportController extends Controller
     public function create(): Response
     {
         return Inertia::render('imports/create', [
-            'limits' => ['max_file_mb' => (int) setting('import.max_file_mb'), 'max_rows' => (int) setting('import.max_rows')],
-            'fields' => self::fields(),
+            'limits' => ['max_file_mb' => (int) setting('import.max_file_mb'), 'max_rows' => ImportRegistry::maxRows(EmployeeImportType::KEY)],
+            'fields' => self::employees()->fields()->forUi(),
         ]);
     }
 
@@ -77,7 +81,7 @@ class ImportController extends Controller
     {
         /** @var UploadedFile $file */
         $file = $request->file('file');
-        $batch = $action->handle(self::actor($request), $file);
+        $batch = $action->handle(self::actor($request), self::employees(), $file);
 
         return to_route('admin.imports.mapping', $batch);
     }
@@ -103,8 +107,9 @@ class ImportController extends Controller
             return to_route('admin.imports.rows.index', $batch);
         }
 
+        $type = ImportRegistry::forBatch($batch);
         $headers = $batch->headers();
-        $suggestion = MappingSuggester::suggest($headers);
+        $suggestion = MappingSuggester::suggest($type, $headers);
         $saved = $batch->columnMapping();
 
         return Inertia::render('imports/mapping', [
@@ -116,7 +121,7 @@ class ImportController extends Controller
             'samples' => self::samples($batch, count($headers)),
             'mapping' => (object) ($saved !== [] ? $saved : $suggestion['columns']),
             'profile' => $suggestion['profile'] !== null ? ['id' => $suggestion['profile']->id, 'name' => $suggestion['profile']->name] : null,
-            'fields' => self::fields(),
+            'fields' => $type->fields()->forUi(),
         ]);
     }
 
@@ -138,6 +143,8 @@ class ImportController extends Controller
             return to_route('admin.imports.mapping', $batch);
         }
 
+        $type = ImportRegistry::forBatch($batch);
+        $fields = $type->fields();
         $listing = new ImportRowListing(errorsFirst: $batch->error_rows > 0);
         $result = ListingQuery::apply(ImportRow::query()->where('import_batch_id', $batch->id), $listing, $request)
             ->through(fn (ImportRow $r) => [
@@ -145,24 +152,24 @@ class ImportController extends Controller
                 'row_number' => $r->row_number,
                 'status' => $r->status->value,
                 'data' => $r->data,
-                'errors' => self::errorList($r->errors ?? []),
+                'errors' => self::errorList($fields, $r->errors ?? []),
                 'warnings' => array_values(array_filter((array) ($r->data['warnings'] ?? []), is_string(...))),
                 'employee_id' => is_int($r->data['employee_id'] ?? null) ? $r->data['employee_id'] : null,
             ]);
 
-        $mapped = array_values(array_intersect(EmployeeImportFields::keys(), $batch->columnMapping()));
+        $mapped = array_values(array_intersect($fields->keys(), $batch->columnMapping()));
 
         return Inertia::render('imports/rows', [
             ...$result->toInertia(),
             'batch' => self::summary($batch),
-            'mappedFields' => array_map(fn (string $f) => ['key' => $f, 'label' => EmployeeImportFields::label($f)], $mapped),
+            'mappedFields' => array_map(fn (string $f) => ['key' => $f, 'label' => $fields->label($f)], $mapped),
             'can' => [
                 'remap' => $batch->status->canRemap(),
                 'cancel' => $batch->status->canCancel(),
                 'process' => $batch->status->canProcess() && $batch->valid_rows > 0 && Storage::disk(ImportFile::DISK)->exists($batch->stored_path),
                 'download_errors' => $batch->status->hasErrorReport() && $batch->error_rows > 0,
                 'view_employee' => $request->user()?->can('employees.view') ?? false,
-                'update_existing' => $request->user()?->can('employees.update') ?? false,
+                'update_existing' => ProcessImportBatch::canUpdateExisting(self::actor($request), $type),
             ],
         ]);
     }
@@ -228,13 +235,10 @@ class ImportController extends Controller
         ];
     }
 
-    /** @return list<array{key: string, label: string, required: bool, hint: string}> */
-    private static function fields(): array
+    /** Tipe impor pegawai: halaman unggah & templat di rute `impor/pegawai…` hanya untuk tipe ini. */
+    private static function employees(): ImportType
     {
-        return array_map(
-            fn (string $key) => ['key' => $key, 'label' => EmployeeImportFields::FIELDS[$key]['label'], 'required' => EmployeeImportFields::FIELDS[$key]['required'], 'hint' => EmployeeImportFields::FIELDS[$key]['hint']],
-            EmployeeImportFields::keys(),
-        );
+        return ImportRegistry::resolve(EmployeeImportType::KEY);
     }
 
     /**
@@ -253,7 +257,7 @@ class ImportController extends Controller
         $taken = 0;
         foreach (ImportFile::dataRows($batch) as $cells) {
             for ($i = 0; $i < $columns; $i++) {
-                $text = RowNormalizer::text($cells[$i] ?? null);
+                $text = CellText::of($cells[$i] ?? null);
                 if ($text !== null) {
                     $samples[$i][] = mb_strimwidth(self::maskLongDigits($text), 0, 60, '…');
                 }
@@ -283,12 +287,12 @@ class ImportController extends Controller
      * @param  array<string, list<string>>  $errors
      * @return list<array{field: string, label: string, message: string}>
      */
-    private static function errorList(array $errors): array
+    private static function errorList(ImportFields $fields, array $errors): array
     {
         $list = [];
         foreach ($errors as $field => $messages) {
             foreach ($messages as $message) {
-                $list[] = ['field' => $field, 'label' => $field === '_row' ? 'Baris' : EmployeeImportFields::label($field), 'message' => $message];
+                $list[] = ['field' => $field, 'label' => $fields->errorLabel($field), 'message' => $message];
             }
         }
 

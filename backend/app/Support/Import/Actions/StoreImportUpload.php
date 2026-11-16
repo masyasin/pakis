@@ -1,13 +1,15 @@
 <?php
 
-namespace App\Domain\Employee\Actions;
+namespace App\Support\Import\Actions;
 
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\EmployeeImportReader;
-use App\Domain\Employee\Import\HeaderDetector;
-use App\Domain\Employee\Import\ImportFile;
-use App\Domain\Employee\Models\ImportBatch;
 use App\Models\User;
+use App\Support\Import\HeaderDetector;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportFile;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportStatus;
+use App\Support\Import\ImportType;
+use App\Support\Import\SpreadsheetReader;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -16,12 +18,13 @@ use Throwable;
 use ZipArchive;
 
 /**
- * Langkah 1 impor (BR-054, SEC-050): periksa ISI berkas (bukan hanya ekstensi), simpan di disk
- * privat dengan nama acak, temukan baris judul, hitung baris data, lalu buat batch `uploaded`.
+ * Langkah 1 impor (BR-054, BR-170, SEC-050): periksa ISI berkas (bukan hanya ekstensi), simpan di
+ * disk privat dengan nama acak, temukan baris judul (sinonim field tipe impor), hitung baris data,
+ * lalu buat batch `uploaded` bertipe itu.
  */
 final class StoreImportUpload
 {
-    public function handle(User $actor, UploadedFile $file): ImportBatch
+    public function handle(User $actor, ImportType $type, UploadedFile $file): ImportBatch
     {
         $fail = fn (string $message) => throw ValidationException::withMessages(['file' => $message]);
 
@@ -39,12 +42,12 @@ final class StoreImportUpload
         try {
             $batch = new ImportBatch;
             $batch->forceFill(['stored_path' => $path, 'mapping' => ['header_row' => 1]]);
-            [$detected, $dataRows] = $this->scan($batch);
+            [$detected, $dataRows] = $this->scan($batch, $type);
 
             if ($detected === null) {
                 $fail('Baris judul kolom tidak ditemukan di 10 baris teratas. Gunakan templat atau periksa berkasnya.');
             }
-            $max = (int) setting('import.max_rows');
+            $max = ImportRegistry::maxRows($type->key());
             if ($dataRows > $max) {
                 $fail("Berkas berisi lebih dari {$max} baris data. Bagi menjadi beberapa berkas.");
             }
@@ -53,7 +56,7 @@ final class StoreImportUpload
             }
 
             $batch->forceFill([
-                'type' => ImportBatch::TYPE_EMPLOYEES,
+                'type' => $type->key(),
                 'original_name' => Str::limit(basename($file->getClientOriginalName()), 250, ''),
                 'file_hash' => hash_file('sha256', ImportFile::path($batch)),
                 'status' => ImportStatus::Uploaded,
@@ -106,27 +109,27 @@ final class StoreImportUpload
     /**
      * @return array{0: array{row: int, headers: list<string>}|null, 1: int}
      */
-    private function scan(ImportBatch $batch): array
+    private function scan(ImportBatch $batch, ImportType $type): array
     {
         $top = [];
         $detected = null;
         $count = 0;
-        $limit = (int) setting('import.max_rows');
+        $limit = ImportRegistry::maxRows($type->key());
 
-        foreach ((new EmployeeImportReader)->rows(ImportFile::path($batch), ImportFile::extension($batch)) as $number => $cells) {
+        foreach ((new SpreadsheetReader)->rows(ImportFile::path($batch), ImportFile::extension($batch)) as $number => $cells) {
             if ($detected === null) {
                 if ($number <= HeaderDetector::SCAN_ROWS) {
                     $top[$number] = $cells;
 
                     continue;
                 }
-                $detected = HeaderDetector::detect($top) ?? ['row' => PHP_INT_MAX, 'headers' => []];
+                $detected = HeaderDetector::detect($top, $type->fields()) ?? ['row' => PHP_INT_MAX, 'headers' => []];
                 if ($detected['row'] === PHP_INT_MAX) {
                     return [null, 0];
                 }
                 $count = self::countAfter($top, $detected['row']);
             }
-            if (! EmployeeImportReader::isEmptyRow($cells)) {
+            if (! SpreadsheetReader::isEmptyRow($cells)) {
                 $count++;
             }
             // Berhenti membaca begitu melewati batas: tidak perlu menelusuri berkas raksasa sampai habis.
@@ -136,7 +139,7 @@ final class StoreImportUpload
         }
 
         if ($detected === null) {
-            $detected = HeaderDetector::detect($top);
+            $detected = HeaderDetector::detect($top, $type->fields());
             if ($detected === null) {
                 return [null, 0];
             }
@@ -151,7 +154,7 @@ final class StoreImportUpload
     {
         $count = 0;
         foreach ($top as $number => $cells) {
-            if ($number > $headerRow && ! EmployeeImportReader::isEmptyRow($cells)) {
+            if ($number > $headerRow && ! SpreadsheetReader::isEmptyRow($cells)) {
                 $count++;
             }
         }

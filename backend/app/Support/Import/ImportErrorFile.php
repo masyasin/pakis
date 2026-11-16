@@ -1,10 +1,7 @@
 <?php
 
-namespace App\Domain\Employee\Import;
+namespace App\Support\Import;
 
-use App\Domain\Employee\Enums\ImportRowStatus;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportRow;
 use App\Support\Export\FormulaEscaper;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Common\Entity\Style\Style;
@@ -24,6 +21,7 @@ final class ImportErrorFile
     public function write(ImportBatch $batch, string $absolutePath): int
     {
         $headers = $batch->headers();
+        $fields = ImportRegistry::forBatch($batch)->fields();
         $columns = $batch->columnMapping();
         ksort($columns);
 
@@ -34,7 +32,7 @@ final class ImportErrorFile
             $titles = ['Baris'];
             foreach ($columns as $index => $field) {
                 $header = trim($headers[$index] ?? '');
-                $titles[] = $header !== '' ? $header : EmployeeImportFields::label($field);
+                $titles[] = $header !== '' ? $header : $fields->label($field);
             }
             $titles[] = 'Pesan galat';
             $writer->addRow(Row::fromValuesWithStyle(array_map(FormulaEscaper::escape(...), $titles), (new Style)->withFontBold(true)));
@@ -49,7 +47,7 @@ final class ImportErrorFile
                     $value = $row->data[$field] ?? null;
                     $values[] = is_scalar($value) ? $value : null;
                 }
-                $values[] = self::message($row->errors ?? []);
+                $values[] = self::message($fields, $row->errors ?? []);
 
                 $writer->addRow(Row::fromValues(array_map(FormulaEscaper::escape(...), $values)));
                 $count++;
@@ -62,11 +60,11 @@ final class ImportErrorFile
     }
 
     /** @param  array<string, list<string>>  $errors */
-    public static function message(array $errors): string
+    public static function message(ImportFields $fields, array $errors): string
     {
         $parts = [];
         foreach ($errors as $field => $messages) {
-            $label = $field === '_row' ? 'Baris' : EmployeeImportFields::label($field);
+            $label = $fields->errorLabel($field);
             foreach ($messages as $message) {
                 $parts[] = "{$label}: {$message}";
             }

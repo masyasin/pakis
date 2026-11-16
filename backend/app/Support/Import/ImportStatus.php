@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Employee\Enums;
+namespace App\Support\Import;
 
 /**
  * Status batch impor (06 §7.4); nilai identik dengan ENUM `import_batches.status`.

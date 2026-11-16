@@ -1,23 +1,27 @@
 <?php
 
-namespace App\Domain\Employee\Actions;
+namespace App\Support\Import\Actions;
 
-use App\Domain\Employee\Enums\ImportRowStatus;
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\ImportFile;
-use App\Domain\Employee\Import\RowKey;
-use App\Domain\Employee\Import\RowNormalizer;
-use App\Domain\Employee\Import\RowValidator;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportRow;
 use App\Jobs\ValidateImportBatchJob;
 use App\Models\User;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportFile;
+use App\Support\Import\ImportPhase;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportRow;
+use App\Support\Import\ImportRowStatus;
+use App\Support\Import\ImportStatus;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Langkah 3 impor (BR-054): validasi setiap baris berkas dengan pemetaan batch, simpan hasilnya di
- * `import_rows` (galat per sel, NIK termasking), deteksi kunci ganda dalam berkas. Berkas kecil
- * divalidasi langsung; berkas besar lewat antrean `imports` agar request tidak menunggu lama.
+ * Langkah 3 impor (BR-054, BR-170): validasi setiap baris berkas dengan pemetaan batch lewat
+ * kontrak tipe (`normalize` → `validate` → `rowKey`), simpan hasilnya di `import_rows` (galat per
+ * sel, data tanpa rahasia), deteksi kunci ganda dalam berkas. Berkas kecil divalidasi langsung;
+ * berkas besar lewat antrean `imports` agar request tidak menunggu lama.
+ *
+ * `row_key` = sha256 kunci gabungan mentah: kunci tipe lain (mis. lokasi+SKU+batch+bin saldo awal)
+ * bisa lebih dari 100 karakter, dan kunci pegawai mengandung hash NIK yang tidak perlu disimpan
+ * dalam bentuk yang bisa dibaca. Kunci mentah hanya hidup di memori untuk pesan duplikat.
  */
 final class ValidateImportBatch
 {
@@ -40,37 +44,26 @@ final class ValidateImportBatch
 
     public function handle(ImportBatch $batch, User $actor): void
     {
+        $type = ImportRegistry::forBatch($batch);
         $columns = $batch->columnMapping();
+        $context = $type->context($actor, $batch, ImportPhase::Validate);
 
-        // Lintasan pertama: nomor pegawai di berkas, agar atasan yang ada di berkas yang sama dikenali.
-        $numbers = [];
-        if (in_array('supervisor_number', $columns, true) && in_array('employee_number', $columns, true)) {
-            $numberColumn = (int) array_search('employee_number', $columns, true);
-            foreach (ImportFile::dataRows($batch) as $cells) {
-                $number = RowNormalizer::code($cells[$numberColumn] ?? null);
-                if ($number !== null) {
-                    $numbers[] = $number;
-                }
-            }
-        }
-
-        $validator = new RowValidator($actor, $numbers);
         $seen = [];
         $buffer = [];
         $valid = 0;
         $invalid = 0;
 
-        DB::transaction(function () use ($batch, $columns, $validator, &$seen, &$buffer, &$valid, &$invalid, $actor) {
+        DB::transaction(function () use ($batch, $columns, $type, $context, &$seen, &$buffer, &$valid, &$invalid, $actor) {
             ImportRow::query()->where('import_batch_id', $batch->id)->delete();
 
             foreach (ImportFile::dataRows($batch) as $number => $cells) {
-                $result = $validator->validate(ImportFile::mapRow($cells, $columns));
-                $errors = $result['errors'];
-                $key = $result['key'];
+                $row = $type->validate($type->normalize(ImportFile::mapRow($cells, $columns), $context), $context);
+                $errors = $row->errors;
+                $key = $type->rowKey($row);
 
                 if ($key !== null) {
                     if (isset($seen[$key])) {
-                        $errors['_row'][] = 'Duplikat dengan baris '.$seen[$key].' ('.RowKey::describe($key).'). Hanya baris pertama yang dipakai.';
+                        $errors['_row'][] = 'Duplikat dengan baris '.$seen[$key].' ('.$type->describeKey($key).'). Hanya baris pertama yang dipakai.';
                     } else {
                         $seen[$key] = $number;
                     }
@@ -80,8 +73,8 @@ final class ValidateImportBatch
                 $buffer[] = [
                     'import_batch_id' => $batch->id,
                     'row_number' => $number,
-                    'row_key' => $key,
-                    'data' => json_encode($result['data'], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
+                    'row_key' => $key === null ? null : hash('sha256', $key),
+                    'data' => json_encode($row->data, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                     'errors' => $errors === [] ? null : json_encode($errors, JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR),
                     'status' => ($errors === [] ? ImportRowStatus::Valid : ImportRowStatus::Invalid)->value,
                 ];

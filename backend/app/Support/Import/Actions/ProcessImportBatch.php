@@ -1,46 +1,45 @@
 <?php
 
-namespace App\Domain\Employee\Actions;
+namespace App\Support\Import\Actions;
 
 use App\Domain\Audit\AuditLogger;
-use App\Domain\Employee\Enums\ImportRowStatus;
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Events\ImportProcessed;
-use App\Domain\Employee\Import\EmployeeImportFields;
-use App\Domain\Employee\Import\ImportFile;
-use App\Domain\Employee\Import\RowNormalizer;
-use App\Domain\Employee\Import\RowValidator;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportRow;
 use App\Jobs\ProcessImportBatchJob;
 use App\Models\User;
+use App\Support\Import\Events\ImportProcessed;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportFile;
+use App\Support\Import\ImportPhase;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportRow;
+use App\Support\Import\ImportRowStatus;
+use App\Support\Import\ImportStatus;
+use App\Support\Import\ImportType;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
- * Langkah 4 impor (BR-054, T-028): tulis baris `valid` ke data pegawai.
+ * Langkah 4 impor (BR-054, BR-170, T-028): tulis baris `valid` lewat `ImportType::apply()`.
  *
  * - SATU transaksi per baris (status `import_rows` ikut di transaksi itu): bila proses berhenti di
  *   tengah, baris yang sudah sukses tetap konsisten dan batch ditandai `failed` (06 §7.4).
- * - Galat satu baris (ValidationException) tidak menghentikan batch; baris itu menjadi `invalid`.
- * - Atasan yang ada di berkas yang sama diproses lebih dulu (urutan topologis).
- * - Berkas asli dihapus setelah proses berakhir: isinya (termasuk NIK lengkap) tidak diperlukan
- *   lagi; berkas galat dibuat dari `import_rows` (keputusan Mas 15 Nov 2026).
+ * - Baris divalidasi ulang di transaksinya (data bisa berubah sejak validasi); galat satu baris
+ *   (ValidationException) tidak menghentikan batch, baris itu menjadi `invalid`.
+ * - Urutan dari `processOrder()` (mis. atasan sebelum bawahan di impor pegawai).
+ * - Berkas asli dihapus setelah proses berakhir: isinya (mis. NIK lengkap) tidak diperlukan lagi;
+ *   berkas galat dibuat dari `import_rows` (keputusan Mas 15 Nov 2026).
  */
 final class ProcessImportBatch
 {
-    public function __construct(
-        private readonly ApplyImportRow $apply,
-        private readonly AuditLogger $audit,
-    ) {}
+    public function __construct(private readonly AuditLogger $audit) {}
 
     /** `validated` → `processing`, lalu proses langsung atau lewat antrean `imports`. */
     public function start(User $actor, ImportBatch $batch, bool $updateExisting): ImportBatch
     {
         $batch = DB::transaction(function () use ($actor, $batch, $updateExisting) {
             $locked = ImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
+            $type = ImportRegistry::forBatch($locked);
             $fail = fn (string $message) => throw ValidationException::withMessages(['status' => $message]);
 
             if (! $locked->status->canProcess()) {
@@ -49,8 +48,8 @@ final class ProcessImportBatch
             if ($locked->valid_rows === 0) {
                 $fail('Tidak ada baris valid untuk diproses.');
             }
-            if ($updateExisting && ! $actor->can('employees.update')) {
-                $fail('Anda tidak punya izin mengubah data pegawai. Hapus centang "Perbarui data yang sudah ada".');
+            if ($updateExisting && ! self::canUpdateExisting($actor, $type)) {
+                $fail('Anda tidak punya izin mengubah data '.mb_strtolower($type->label()).'. Hapus centang "Perbarui data yang sudah ada".');
             }
             if (! Storage::disk(ImportFile::DISK)->exists($locked->stored_path)) {
                 $fail('Berkas asli sudah tidak tersedia. Unggah ulang berkasnya.');
@@ -102,67 +101,68 @@ final class ProcessImportBatch
         return ($batch->mapping['options']['update_existing'] ?? false) === true;
     }
 
+    public static function canUpdateExisting(User $actor, ImportType $type): bool
+    {
+        $permission = $type->updatePermission();
+
+        return $permission !== null && $actor->can($permission);
+    }
+
     private function run(ImportBatch $batch, User $actor): void
     {
+        $type = ImportRegistry::forBatch($batch);
         $columns = $batch->columnMapping();
         $rows = ImportRow::query()->where('import_batch_id', $batch->id)
             ->where('status', ImportRowStatus::Valid)->orderBy('row_number')->get()->keyBy('row_number');
 
-        // Satu lintasan berkas: sel mentah baris valid + semua nomor pegawai di berkas (atasan dari
-        // berkas yang sama sah walau barisnya galat; pesannya diberikan ApplyImportRow).
         $raws = [];
-        $allNumbers = [];
         foreach (ImportFile::dataRows($batch) as $number => $cells) {
-            $raw = ImportFile::mapRow($cells, $columns);
-            $code = RowNormalizer::code($raw['employee_number'] ?? null);
-            if ($code !== null) {
-                $allNumbers[] = $code;
-            }
             if ($rows->has($number)) {
-                $raws[$number] = $raw;
+                $raws[$number] = ImportFile::mapRow($cells, $columns);
             }
         }
 
-        $validator = new RowValidator($actor, $allNumbers);
-        [$order, $cyclic] = self::order($raws);
+        $context = $type->context($actor, $batch, ImportPhase::Process);
+        $order = $type->processOrder($raws);
         $updateExisting = self::updateExisting($batch);
-        $resolved = [];
 
-        foreach ($order as $number) {
+        foreach ($order->rows as $number) {
             /** @var ImportRow $row */
             $row = $rows[$number];
-            if (isset($cyclic[$number])) {
-                self::markInvalid($row, ['supervisor_number' => ['Rantai atasan di berkas ini melingkar (mis. A atasan B dan B atasan A).']]);
+            if (isset($order->rejected[$number])) {
+                self::markInvalid($type, $row, $order->rejected[$number]);
 
                 continue;
             }
             if (! isset($raws[$number])) {
-                self::markInvalid($row, ['_row' => ['Baris ini tidak ditemukan lagi di berkas.']]);
+                self::markInvalid($type, $row, ['_row' => ['Baris ini tidak ditemukan lagi di berkas.']]);
 
                 continue;
             }
 
             try {
-                $result = DB::transaction(function () use ($actor, $validator, $raws, $number, $updateExisting, $resolved, $row) {
-                    $result = $this->apply->handle($actor, $validator, $raws[$number], $updateExisting, $resolved);
+                $applied = DB::transaction(function () use ($actor, $type, $context, $raws, $number, $updateExisting, $row) {
+                    $validated = $type->validate($type->normalize($raws[$number], $context), $context);
+                    if (! $validated->isValid()) {
+                        throw ValidationException::withMessages($validated->errors);
+                    }
+
+                    $applied = $type->apply($actor, $validated, $raws[$number], $updateExisting, $context);
                     $row->forceFill([
-                        'status' => $result['status'],
-                        'data' => [...$row->data, 'employee_id' => $result['employee_id'], 'warnings' => $result['warnings']],
+                        'status' => $applied->status,
+                        'data' => [...$row->data, ...$applied->data],
                         'errors' => null,
                     ])->save();
 
-                    return $result;
+                    return $applied;
                 });
             } catch (ValidationException $e) {
-                self::markInvalid($row, $e->errors());
+                self::markInvalid($type, $row, $e->errors());
 
                 continue;
             }
 
-            $code = RowNormalizer::code($raws[$number]['employee_number'] ?? null);
-            if ($code !== null) {
-                $resolved[mb_strtolower($code)] = $result['employee_id'];
-            }
+            $type->committed($context, $raws[$number], $applied);
         }
     }
 
@@ -201,83 +201,19 @@ final class ProcessImportBatch
     }
 
     /**
-     * Urutan proses: atasan (nomor pegawai di berkas) sebelum bawahannya. Tiap baris punya paling
-     * banyak satu atasan, jadi graf berupa rantai/pohon; sisa setelah Kahn = baris pada lingkaran
-     * atau yang menggantung pada lingkaran.
-     *
-     * @param  array<int, array<string, mixed>>  $raws  nomor baris → sel mentah
-     * @return array{0: list<int>, 1: array<int, true>} urutan nomor baris, baris pada lingkaran
-     */
-    private static function order(array $raws): array
-    {
-        $byNumber = [];
-        foreach ($raws as $row => $raw) {
-            $code = RowNormalizer::code($raw['employee_number'] ?? null);
-            if ($code !== null) {
-                $byNumber[mb_strtolower($code)] ??= $row;
-            }
-        }
-
-        $parent = [];
-        $children = [];
-        foreach ($raws as $row => $raw) {
-            $supervisor = RowNormalizer::code($raw['supervisor_number'] ?? null);
-            $boss = $supervisor !== null ? ($byNumber[mb_strtolower($supervisor)] ?? null) : null;
-            if ($boss !== null && $boss !== $row) {
-                $parent[$row] = $boss;
-                $children[$boss][] = $row;
-            }
-        }
-
-        $order = [];
-        $queue = array_values(array_filter(array_keys($raws), fn (int $row) => ! isset($parent[$row])));
-        while ($queue !== []) {
-            $row = array_shift($queue);
-            $order[] = $row;
-            foreach ($children[$row] ?? [] as $child) {
-                $queue[] = $child;
-            }
-        }
-
-        $cyclic = [];
-        $left = array_values(array_diff(array_keys($raws), $order));
-        foreach ($left as $row) {
-            // Ikuti rantai atasan; bila kembali ke baris ini, baris ini bagian lingkaran.
-            $seen = [];
-            for ($at = $parent[$row] ?? null; $at !== null && ! isset($seen[$at]); $at = $parent[$at] ?? null) {
-                if ($at === $row) {
-                    $cyclic[$row] = true;
-                    break;
-                }
-                $seen[$at] = true;
-            }
-        }
-
-        // Baris lingkaran dulu (ditandai galat), lalu yang menggantung padanya: atasannya sudah galat.
-        usort($left, fn (int $a, int $b) => [! isset($cyclic[$a]), $a] <=> [! isset($cyclic[$b]), $b]);
-
-        return [[...$order, ...$left], $cyclic];
-    }
-
-    /**
-     * Kunci galat dari Action pegawai (`assignment.position_id`, `nik`, …) dikembalikan ke nama field
-     * impor agar sel yang tepat ditandai merah.
+     * Kunci galat dari Action domain dikembalikan ke nama field impor (`errorField()`) agar sel yang
+     * tepat ditandai merah; kunci yang bukan field tipe itu menjadi galat baris (`_row`).
      *
      * @param  array<string, array<int, string>>  $errors
      */
-    private static function markInvalid(ImportRow $row, array $errors): void
+    private static function markInvalid(ImportType $type, ImportRow $row, array $errors): void
     {
-        $map = [
-            'position_id' => 'position', 'location_id' => 'location', 'supervisor_employee_id' => 'supervisor_number',
-            'employment_status_id' => 'employment_status', 'start_date' => 'join_date',
-        ];
-        $fields = [...array_keys(EmployeeImportFields::FIELDS), '_row'];
+        $fields = $type->fields();
 
         $mapped = [];
         foreach ($errors as $key => $messages) {
-            $field = str_starts_with($key, 'assignment.') ? substr($key, strlen('assignment.')) : $key;
-            $field = $map[$field] ?? $field;
-            $field = in_array($field, $fields, true) ? $field : '_row';
+            $field = $type->errorField($key);
+            $field = $field === '_row' || $fields->has($field) ? $field : '_row';
             foreach ($messages as $message) {
                 $mapped[$field][] = $message;
             }

@@ -6,6 +6,7 @@ use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Support\NikCipher;
 use App\Domain\Employee\Support\PersonName;
 use App\Domain\Employee\Support\PhoneNormalizer;
+use App\Support\Import\CellText;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
@@ -48,23 +49,13 @@ final class RowNormalizer
 
     public static function isBlank(mixed $value): bool
     {
-        return $value === null || (is_string($value) && trim($value) === '');
+        return CellText::isBlank($value);
     }
 
-    /** Teks satu baris: spasi dirapikan. */
+    /** Teks satu baris: spasi dirapikan (CellText, dipakai bersama kerangka impor). */
     public static function text(mixed $value): ?string
     {
-        if (self::isBlank($value)) {
-            return null;
-        }
-        if ($value instanceof DateTimeInterface) {
-            return $value->format('Y-m-d');
-        }
-        if (is_float($value) && floor($value) === $value) {
-            $value = (int) $value;
-        }
-
-        return trim((string) preg_replace('/\s+/u', ' ', is_scalar($value) ? (string) $value : ''));
+        return CellText::of($value);
     }
 
     public static function name(mixed $value): ?string

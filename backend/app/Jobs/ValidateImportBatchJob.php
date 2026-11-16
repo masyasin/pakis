@@ -2,10 +2,10 @@
 
 namespace App\Jobs;
 
-use App\Domain\Employee\Actions\ValidateImportBatch;
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Models\ImportBatch;
 use App\Models\User;
+use App\Support\Import\Actions\ValidateImportBatch;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportStatus;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;

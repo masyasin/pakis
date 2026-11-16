@@ -5,8 +5,8 @@ use App\Domain\Attendance\Enums\CorrectionStatus;
 use App\Domain\Attendance\Models\AttendanceCorrection;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Audit\Models\AuditLog;
-use App\Domain\Employee\Import\EmployeeImportReader;
 use App\Models\User;
+use App\Support\Import\SpreadsheetReader;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Storage;
@@ -185,7 +185,7 @@ test('FR-038 CorrectionWeb: ekspor ber-scope tanpa path lampiran', function () {
 
     $path = tempnam(sys_get_temp_dir(), 'koreksi').'.xlsx';
     file_put_contents($path, $response->streamedContent());
-    $rows = iterator_to_array((new EmployeeImportReader)->rows($path, 'xlsx'), false);
+    $rows = iterator_to_array((new SpreadsheetReader)->rows($path, 'xlsx'), false);
     expect($rows[0])->toContain('Nomor', 'Alasan', 'Status', 'Presensi manual')->not->toContain('Lampiran')
         ->and(count($rows))->toBe(2)
         ->and(implode('|', array_map(fn ($r) => implode('|', array_map('strval', $r)), $rows)))->not->toContain('corrections/');

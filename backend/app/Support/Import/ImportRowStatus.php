@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Employee\Enums;
+namespace App\Support\Import;
 
 /**
  * Status baris impor; nilai identik dengan ENUM `import_rows.status`. T-027 hanya menghasilkan

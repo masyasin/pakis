@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Domain\Employee\Import;
+namespace App\Support\Import;
 
 /**
  * Menemukan baris judul kolom (BR-054, keputusan Mas 15 Nov 2026): di 10 baris teratas, baris
@@ -16,9 +16,10 @@ final class HeaderDetector
 
     /**
      * @param  array<int, list<mixed>>  $rows  baris teratas berkas, nomor baris asli => sel
+     * @param  ImportFields  $fields  field tipe impor (sinonim judul kolom)
      * @return array{row: int, headers: list<string>}|null
      */
-    public static function detect(array $rows): ?array
+    public static function detect(array $rows, ImportFields $fields): ?array
     {
         $best = null;
         $bestScore = 0;
@@ -28,13 +29,13 @@ final class HeaderDetector
             if ($number > self::SCAN_ROWS) {
                 break;
             }
-            if (EmployeeImportReader::isEmptyRow($cells)) {
+            if (SpreadsheetReader::isEmptyRow($cells)) {
                 continue;
             }
             $firstNonEmpty ??= $number;
 
             $score = count(array_unique(array_filter(array_map(
-                fn (mixed $cell) => EmployeeImportFields::fieldForHeader($cell),
+                fn (mixed $cell) => $fields->fieldForHeader($cell),
                 $cells,
             ))));
             if ($score > $bestScore) {
@@ -55,7 +56,7 @@ final class HeaderDetector
      */
     private static function headers(array $cells): array
     {
-        $headers = array_map(fn (mixed $cell) => RowNormalizer::text($cell) ?? '', $cells);
+        $headers = array_map(fn (mixed $cell) => CellText::of($cell) ?? '', $cells);
         while ($headers !== [] && end($headers) === '') {
             array_pop($headers);
         }

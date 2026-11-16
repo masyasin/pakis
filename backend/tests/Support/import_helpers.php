@@ -5,9 +5,10 @@
  * didefinisikan sekali di sini dan dimuat dengan require_once oleh tiap berkas test impor.
  */
 
-use App\Domain\Employee\Import\MappingSuggester;
-use App\Domain\Employee\Models\ImportBatch;
 use App\Models\User;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\MappingSuggester;
 use Illuminate\Http\UploadedFile;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -45,7 +46,7 @@ function impUpload(User $actor, UploadedFile $file): ImportBatch
 /** Simpan pemetaan hasil saran apa adanya. */
 function impMapSuggested(User $actor, ImportBatch $batch, array $extra = []): void
 {
-    $columns = MappingSuggester::suggest($batch->headers())['columns'];
+    $columns = MappingSuggester::suggest(ImportRegistry::forBatch($batch), $batch->headers())['columns'];
     test()->actingAs($actor)->put("/impor/{$batch->id}/pemetaan", ['columns' => $columns, ...$extra])
         ->assertSessionHasNoErrors()
         ->assertRedirect("/impor/{$batch->id}/baris");

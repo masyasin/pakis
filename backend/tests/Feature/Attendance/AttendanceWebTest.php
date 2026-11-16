@@ -8,11 +8,11 @@ use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Models\AttendanceLog;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Device\Models\Device;
-use App\Domain\Employee\Import\EmployeeImportReader;
 use App\Domain\Employee\Models\Assignment;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Organization\Models\Location;
 use App\Models\User;
+use App\Support\Import\SpreadsheetReader;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -233,7 +233,7 @@ test('SEC-051 AttendanceWeb: ekspor ber-scope tanpa koordinat, tercatat di audit
 
     $path = tempnam(sys_get_temp_dir(), 'absen').'.xlsx';
     file_put_contents($path, $response->streamedContent());
-    $rows = iterator_to_array((new EmployeeImportReader)->rows($path, 'xlsx'), false);
+    $rows = iterator_to_array((new SpreadsheetReader)->rows($path, 'xlsx'), false);
     expect($rows[0])->toContain('Nama', 'Status', 'Anomali')->not->toContain('Latitude')
         ->and(count($rows))->toBe(2);
 

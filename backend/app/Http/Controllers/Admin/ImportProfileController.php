@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Employee\Listings\ImportProfileListing;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportMappingProfile;
 use App\Http\Controllers\Controller;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportMappingProfile;
 use App\Support\Listing\ListingQuery;
 use App\Support\Listing\UsesListing;
 use Illuminate\Http\RedirectResponse;

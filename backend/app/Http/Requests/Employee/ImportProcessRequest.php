@@ -9,7 +9,7 @@ class ImportProcessRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return true; // middleware `can:employees.import` + binding batch yang terlihat
+        return true; // middleware `can:manage,batch` (ImportBatchPolicy: izin tipe batch) + binding batch yang terlihat
     }
 
     /** @return array<string, mixed> */

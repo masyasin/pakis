@@ -9,6 +9,7 @@ use App\Domain\Attendance\Listings\ScheduleOverrideListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Device\Listings\DeviceListing;
+use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Listings\AssignmentListing;
 use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Organization\Listings\DepartmentListing;
@@ -60,6 +61,13 @@ return [
         'attendance_days' => AttendanceDayListing::class,
         'attendance_summary' => AttendanceSummaryListing::class,
         'attendance_corrections' => AttendanceCorrectionListing::class,
+    ],
+
+    // Tipe impor (BR-170, T-085A): kunci = ImportType::key() => kelas. Kerangka ada di app/Support/Import.
+    // IMPORT_TEST_TYPE hanya diisi phpunit.xml (tipe uji di tests/Fixtures), kosong di lingkungan lain.
+    'imports' => [
+        'employees' => EmployeeImportType::class,
+        ...(is_string(env('IMPORT_TEST_TYPE')) && env('IMPORT_TEST_TYPE') !== '' ? ['uji_produk' => env('IMPORT_TEST_TYPE')] : []),
     ],
 
     // Content-Security-Policy (SEC-063). Konfigurasi infrastruktur, bukan setting bisnis.

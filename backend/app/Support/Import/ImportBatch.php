@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Domain\Employee\Models;
+namespace App\Support\Import;
 
 use App\Domain\Access\Enums\DataScope;
 use App\Domain\Access\Support\ScopeResolver;
-use App\Domain\Employee\Enums\ImportStatus;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

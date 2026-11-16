@@ -1,8 +1,7 @@
 <?php
 
-namespace App\Domain\Employee\Import;
+namespace App\Support\Import;
 
-use App\Domain\Employee\Models\ImportBatch;
 use Generator;
 use Illuminate\Support\Facades\Storage;
 
@@ -34,8 +33,8 @@ final class ImportFile
     public static function dataRows(ImportBatch $batch): Generator
     {
         $header = $batch->headerRow();
-        foreach ((new EmployeeImportReader)->rows(self::path($batch), self::extension($batch)) as $number => $cells) {
-            if ($number <= $header || EmployeeImportReader::isEmptyRow($cells)) {
+        foreach ((new SpreadsheetReader)->rows(self::path($batch), self::extension($batch)) as $number => $cells) {
+            if ($number <= $header || SpreadsheetReader::isEmptyRow($cells)) {
                 continue;
             }
             yield $number => $cells;

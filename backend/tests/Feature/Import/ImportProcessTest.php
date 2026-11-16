@@ -3,20 +3,21 @@
 use App\Domain\Access\Enums\DataScope;
 use App\Domain\Access\Models\Role;
 use App\Domain\Audit\Models\AuditLog;
-use App\Domain\Employee\Actions\ProcessImportBatch;
-use App\Domain\Employee\Actions\ValidateImportBatch;
-use App\Domain\Employee\Enums\ImportRowStatus;
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\EmployeeImportReader;
-use App\Domain\Employee\Import\MappingSuggester;
 use App\Domain\Employee\Models\Employee;
-use App\Domain\Employee\Models\ImportBatch;
-use App\Domain\Employee\Models\ImportRow;
 use App\Domain\Employee\Support\NikCipher;
 use App\Domain\Notification\Notifications\ImportDoneNotification;
 use App\Jobs\ProcessImportBatchJob;
 use App\Jobs\ValidateImportBatchJob;
 use App\Models\User;
+use App\Support\Import\Actions\ProcessImportBatch;
+use App\Support\Import\Actions\ValidateImportBatch;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportRow;
+use App\Support\Import\ImportRowStatus;
+use App\Support\Import\ImportStatus;
+use App\Support\Import\MappingSuggester;
+use App\Support\Import\SpreadsheetReader;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Storage;
@@ -293,7 +294,7 @@ test('SEC-051 ImportProcess: unduh galat .xlsx — baris galat + kolom pesan, NI
 
     $download = function () use ($batch): array {
         $response = $this->actingAs($this->hrd)->get("/impor/{$batch->id}/galat")->assertOk();
-        $rows = iterator_to_array((new EmployeeImportReader)->rows($response->baseResponse->getFile()->getPathname(), 'xlsx'), false);
+        $rows = iterator_to_array((new SpreadsheetReader)->rows($response->baseResponse->getFile()->getPathname(), 'xlsx'), false);
 
         return $rows;
     };
@@ -352,7 +353,7 @@ test('E2E-08 ImportProcess: 30 baris (5 galat) → perbaiki pemetaan → proses 
 
     // Pemetaan pertama salah: kolom "Kontak" (nomor HP) dipetakan ke email → semua baris galat.
     $batch = impUpload($this->hrd, $file());
-    $columns = MappingSuggester::suggest($batch->headers())['columns'];
+    $columns = MappingSuggester::suggest(ImportRegistry::forBatch($batch), $batch->headers())['columns'];
     $columns[7] = 'email';
     $this->actingAs($this->hrd)->put("/impor/{$batch->id}/pemetaan", ['columns' => $columns])->assertSessionHasNoErrors();
     expect($batch->refresh()->error_rows)->toBe(30);

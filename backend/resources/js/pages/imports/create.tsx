@@ -19,6 +19,16 @@ import { index, store, template } from '@/routes/admin/imports';
 type Props = {
     limits: { max_file_mb: number; max_rows: number };
     fields: ImportField[];
+    /**
+     * Tipe impor selain pegawai (`admin.master-imports.*`, T-085A). Kosong = impor pegawai Fase 0
+     * dengan teks & rute `impor/pegawai…` seperti semula.
+     */
+    importType?: {
+        label: string;
+        description: string;
+        store_url: string;
+        template_url: string;
+    };
 };
 
 const ACCEPT = '.xlsx,.csv';
@@ -30,7 +40,10 @@ function sizeLabel(bytes: number): string {
 }
 
 /** Impor pegawai langkah 1: unggah berkas (07 §4, BR-054, SEC-050). */
-export default function ImportCreate({ limits, fields }: Props) {
+export default function ImportCreate({ limits, fields, importType }: Props) {
+    const title = importType ? `Impor ${importType.label}` : 'Impor Pegawai';
+    const storeUrl = importType?.store_url ?? store().url;
+    const templateUrl = importType?.template_url ?? template().url;
     const form = useForm<{ file: File | null }>({ file: null });
     const input = useRef<HTMLInputElement>(null);
     const [dragging, setDragging] = useState(false);
@@ -47,14 +60,14 @@ export default function ImportCreate({ limits, fields }: Props) {
         pick(e.dataTransfer.files[0]);
     };
     const submit = () =>
-        form.post(store().url, { forceFormData: true, preserveScroll: true });
+        form.post(storeUrl, { forceFormData: true, preserveScroll: true });
 
     const required = fields.filter((f) => f.required);
     const optional = fields.filter((f) => !f.required);
 
     return (
         <>
-            <Head title="Impor Pegawai" />
+            <Head title={title} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
                 <Link
                     href={index()}
@@ -65,11 +78,11 @@ export default function ImportCreate({ limits, fields }: Props) {
                 </Link>
                 <div>
                     <h1 className="text-[1.4rem] leading-tight font-bold">
-                        Impor Pegawai
+                        {title}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Unggah daftar pegawai dari Excel atau CSV. Kolom boleh
-                        berurutan bebas dan judul tabel boleh ada di atasnya.
+                        {importType?.description ??
+                            'Unggah daftar pegawai dari Excel atau CSV. Kolom boleh berurutan bebas dan judul tabel boleh ada di atasnya.'}
                     </p>
                 </div>
 
@@ -191,7 +204,7 @@ export default function ImportCreate({ limits, fields }: Props) {
                                 className="w-full"
                                 asChild
                             >
-                                <a href={template().url}>
+                                <a href={templateUrl}>
                                     <Download aria-hidden="true" />
                                     Unduh templat (.xlsx)
                                 </a>

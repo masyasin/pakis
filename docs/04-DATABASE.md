@@ -335,7 +335,7 @@ CREATE TABLE import_rows (
   id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
   import_batch_id BIGINT UNSIGNED NOT NULL,
   row_number INT UNSIGNED NOT NULL,
-  row_key VARCHAR(100) NULL,                 -- nik_hash, atau employee_number, atau hash(nama+tgl lahir)
+  row_key CHAR(64) NULL,                     -- sha256 kunci gabungan tipe impor (T-085A, BR-170); pegawai: nik:<nik_hash> / no:<nomor> / nm:<hash nama+tgl lahir>
   data JSON NOT NULL,                        -- nilai SUDAH dipetakan; NIK disimpan termasking
   errors JSON NULL,                          -- {"birth_date":["Format tanggal tidak dikenali"]}
   status ENUM('valid','invalid','created','updated','skipped') NOT NULL,

@@ -2,9 +2,9 @@
 
 namespace App\Domain\Employee\Listings;
 
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Models\ImportBatch;
 use App\Models\User;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportStatus;
 use App\Support\Listing\Filters\DateRangeFilter;
 use App\Support\Listing\Filters\MultiSelectFilter;
 use App\Support\Listing\Filters\RelationFilter;

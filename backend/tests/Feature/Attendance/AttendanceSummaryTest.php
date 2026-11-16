@@ -2,9 +2,9 @@
 
 use App\Domain\Attendance\Enums\AttendanceStatus;
 use App\Domain\Attendance\Models\AttendanceDay;
-use App\Domain\Employee\Import\EmployeeImportReader;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Organization\Models\Location;
+use App\Support\Import\SpreadsheetReader;
 use Carbon\CarbonImmutable;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\EmployeeWorld;
@@ -132,7 +132,7 @@ test('FR-039 AttendanceSummary: ekspor sesuai rekap; Administrator tanpa izin ek
     $response->assertOk();
     $path = tempnam(sys_get_temp_dir(), 'rekap').'.xlsx';
     file_put_contents($path, $response->streamedContent());
-    $rows = iterator_to_array((new EmployeeImportReader)->rows($path, 'xlsx'), false);
+    $rows = iterator_to_array((new SpreadsheetReader)->rows($path, 'xlsx'), false);
 
     expect($rows[0])->toContain('Hari kerja', '% kehadiran', 'Libur')
         ->and(count($rows))->toBe(4);

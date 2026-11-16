@@ -2,7 +2,7 @@
 
 namespace App\Domain\Employee\Listings;
 
-use App\Domain\Employee\Enums\ImportRowStatus;
+use App\Support\Import\ImportRowStatus;
 use App\Support\Listing\Filters\MultiSelectFilter;
 use App\Support\Listing\HasListing;
 use App\Support\Listing\ListingSpec;

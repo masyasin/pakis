@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Domain\Employee\Actions;
+namespace App\Support\Import\Actions;
 
-use App\Domain\Employee\Enums\ImportStatus;
-use App\Domain\Employee\Import\ImportFile;
-use App\Domain\Employee\Models\ImportBatch;
 use App\Models\User;
+use App\Support\Import\ImportBatch;
+use App\Support\Import\ImportFile;
+use App\Support\Import\ImportStatus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;

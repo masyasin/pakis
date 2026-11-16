@@ -2,9 +2,9 @@
 
 use App\Domain\Employee\Enums\Gender;
 use App\Domain\Employee\Import\EmployeeImportFields;
-use App\Domain\Employee\Import\HeaderDetector;
-use App\Domain\Employee\Import\MappingSuggester;
 use App\Domain\Employee\Import\RowNormalizer;
+use App\Support\Import\HeaderDetector;
+use App\Support\Import\MappingSuggester;
 
 test('BR-054 tanggal: dd/mm/yyyy, dd-mm-yyyy, yyyy-mm-dd, nama bulan, sel tanggal, serial Excel', function (mixed $input, string $expected) {
     expect(RowNormalizer::date($input))->toBe($expected);
@@ -74,12 +74,12 @@ test('BR-054 header cerdas: judul laporan di baris 1, header di baris 3', functi
         4 => [1, 'Budi', 'L', '01/02/2024', 'x'],
     ];
 
-    expect(HeaderDetector::detect($rows))->toBe(['row' => 3, 'headers' => ['No', 'Nama Lengkap', 'L/P', 'Tgl Masuk', 'Catatan']]);
+    expect(HeaderDetector::detect($rows, EmployeeImportFields::definition()))->toBe(['row' => 3, 'headers' => ['No', 'Nama Lengkap', 'L/P', 'Tgl Masuk', 'Catatan']]);
 });
 
 test('BR-054 header: tanpa judul yang dikenali → baris tidak kosong pertama; berkas kosong → null', function () {
-    expect(HeaderDetector::detect([1 => [null], 2 => ['Kolom A', 'Kolom B'], 3 => ['x', 'y']]))->toBe(['row' => 2, 'headers' => ['Kolom A', 'Kolom B']])
-        ->and(HeaderDetector::detect([1 => [null], 2 => ['  ']]))->toBeNull();
+    expect(HeaderDetector::detect([1 => [null], 2 => ['Kolom A', 'Kolom B'], 3 => ['x', 'y']], EmployeeImportFields::definition()))->toBe(['row' => 2, 'headers' => ['Kolom A', 'Kolom B']])
+        ->and(HeaderDetector::detect([1 => [null], 2 => ['  ']], EmployeeImportFields::definition()))->toBeNull();
 });
 
 test('BR-054 tanda tangan header: beda huruf besar/spasi sama, beda urutan berbeda', function () {

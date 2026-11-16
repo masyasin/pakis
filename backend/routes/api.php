@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\V1\AttendanceController;
 use App\Http\Controllers\Api\V1\AttendanceCorrectionController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\ConfigController;
+use App\Http\Controllers\Api\V1\LookupController;
 use App\Http\Controllers\Api\V1\MeController;
 use App\Http\Controllers\Api\V1\NotificationController;
 use App\Http\Middleware\EnsureAppVersion;
@@ -35,6 +36,7 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
             Route::put('me', [MeController::class, 'update'])->name('me.update');
             Route::put('me/password', [MeController::class, 'password'])->name('me.password');
             Route::post('me/sessions/revoke-others', [MeController::class, 'revokeOthers'])->name('me.revoke-others');
+            Route::get('me/avatar', [MeController::class, 'avatar'])->name('me.avatar');
 
             // Absen (05 §5.4, T-036). Unggah absen dibatasi lebih ketat per pengguna (SEC-068).
             Route::middleware('can:attendance.self')->group(function () {
@@ -50,7 +52,12 @@ Route::prefix('v1')->name('api.v1.')->group(function () {
                 Route::get('attendance-corrections', [AttendanceCorrectionController::class, 'index'])->name('attendance-corrections.index');
                 Route::post('attendance-corrections', [AttendanceCorrectionController::class, 'store'])->name('attendance-corrections.store');
                 Route::post('attendance-corrections/{id}/cancel', [AttendanceCorrectionController::class, 'cancel'])->whereNumber('id')->name('attendance-corrections.cancel');
+                // Pilihan alasan koreksi dari referensi (bukan daftar tetap di aplikasi). Bukan *.index: daftar pendek tanpa paging, seperti lookup web.
+                Route::get('lookup/correction-reasons', [LookupController::class, 'correctionReasons'])->name('lookup.correction-reasons');
             });
+            // Lampiran: pengaju ATAU penyetuju berwenang (06 §6), jadi tanpa middleware izin; dicek controller.
+            Route::get('attendance-corrections/{id}/attachment', [AttendanceCorrectionController::class, 'attachment'])
+                ->whereNumber('id')->middleware('throttle:60,1')->name('attendance-corrections.attachment');
             Route::middleware('can:attendance_corrections.approve')->prefix('approvals')->name('approvals.')->group(function () {
                 Route::get('attendance-corrections', [ApprovalController::class, 'corrections'])->name('attendance-corrections.index');
                 Route::post('attendance-corrections/{id}/approve', [ApprovalController::class, 'approve'])->whereNumber('id')->name('attendance-corrections.approve');

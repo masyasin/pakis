@@ -1,5 +1,7 @@
 <?php
 
+use App\Domain\Access\Enums\DataScope;
+use App\Domain\Access\Models\Role;
 use App\Domain\Attendance\Enums\AttendanceStatus;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Device\Enums\DeviceStatus;
@@ -89,9 +91,11 @@ test('FR-040 Dashboard: angka hari ini & 7 hari mengikuti scope kepala_lokasi', 
         ->where('attendance.off', 1)
         ->where('attendance.week.6.present', 1));
 
-    // Tanpa attendance.view (mis. akun tanpa role) → tanpa angka presensi.
-    dbAs($this, User::factory()->create())->get('/dasbor')->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->where('attendance', null)->where('pending', []));
+    $this->useRealPermissions();
+    // Punya menu web lain tetapi tanpa dashboard.view → 403 (keputusan Mas 16 Nov 2026).
+    $role = Role::query()->create(['name' => 'lihat_pegawai', 'label' => 'Lihat pegawai', 'guard_name' => 'web', 'data_scope' => DataScope::All]);
+    $role->givePermissionTo('employees.view');
+    dbAs($this, User::factory()->withTwoFactor()->create()->assignRole('lihat_pegawai'))->get('/dasbor')->assertForbidden();
 });
 
 test('FR-040 Dashboard: kartu perlu tindakan = jumlah daftar tujuan dengan filter di URL, ber-scope', function () {

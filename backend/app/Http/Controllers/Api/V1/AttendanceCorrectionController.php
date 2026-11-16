@@ -6,6 +6,8 @@ use App\Domain\Attendance\Actions\CancelCorrection;
 use App\Domain\Attendance\Actions\SubmitCorrection;
 use App\Domain\Attendance\Listings\MyCorrectionListing;
 use App\Domain\Attendance\Models\AttendanceCorrection;
+use App\Domain\Attendance\Support\CorrectionAttachment;
+use App\Domain\Attendance\Support\CorrectionAuthority;
 use App\Domain\Attendance\Support\CorrectionPayload;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Attendance\StoreCorrectionRequest;
@@ -17,6 +19,7 @@ use App\Support\Listing\ListingQuery;
 use App\Support\Listing\UsesListing;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Koreksi presensi milik sendiri di Pakis Pro (05 §5.7, T-040). Izin `attendance_corrections.create`
@@ -51,6 +54,26 @@ class AttendanceCorrectionController extends Controller
         $correction->load(CorrectionPayload::RELATIONS);
 
         return self::respond($correction, 200);
+    }
+
+    /**
+     * Unduh lampiran (05 §5.7a, keputusan Mas 16 Nov 2026): pengaju sendiri, atau pengguna yang
+     * berwenang memutuskan koreksi itu (06 §6, termasuk yang sudah diputuskan; MOB-09). Selain itu,
+     * atau tanpa lampiran → 404 (keberadaan koreksi tidak bocor, SEC-033).
+     */
+    public function attachment(Request $request, int $id, CorrectionAuthority $authority): StreamedResponse
+    {
+        $user = self::user($request);
+        $correction = AttendanceCorrection::query()->find($id);
+        $allowed = $correction !== null && (
+            CorrectionAuthority::isOwn($user, $correction->employee_id)
+            || $authority->mayDecideFor($user, $correction->employee_id, $correction->approver_employee_id)
+        );
+        if (! $allowed || $correction->attachment_path === null) {
+            throw new ApiError(ErrorCode::NOT_FOUND);
+        }
+
+        return CorrectionAttachment::download($correction);
     }
 
     public static function respond(AttendanceCorrection $correction, int $status): JsonResponse

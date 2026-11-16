@@ -11,12 +11,16 @@ use App\Domain\Audit\Enums\SecurityChannel;
 use App\Domain\Device\Support\MobileAccess;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Api\ApiError;
+use App\Support\Api\ErrorCode;
 use App\Support\Api\RequestId;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\PersonalAccessToken;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Akun saya di Pakis Pro (05 §5.1: `api.v1.me.*`). Hanya data milik pengguna token; tidak ada ID
@@ -121,6 +125,24 @@ class MeController extends Controller
             ],
             'permissions' => MobileAccess::abilities($user),
         ];
+    }
+
+    /**
+     * Foto profil milik sendiri untuk Pakis Pro (05 §5.1 `api.v1.me.avatar`, keputusan Mas 16 Nov
+     * 2026). Hanya milik pemilik token; tanpa foto → 404. AvatarStore selalu menyimpan WebP.
+     */
+    public function avatar(Request $request): StreamedResponse
+    {
+        $path = self::user($request)->avatar_path;
+        if ($path === null || ! Storage::disk(AvatarStore::DISK)->exists($path)) {
+            throw new ApiError(ErrorCode::NOT_FOUND);
+        }
+
+        return Storage::disk(AvatarStore::DISK)->response($path, null, [
+            'Content-Type' => 'image/webp',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     private static function user(Request $request): User

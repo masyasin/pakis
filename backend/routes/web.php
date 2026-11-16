@@ -35,7 +35,7 @@ Route::post('telegram/webhook', TelegramWebhookController::class)
 Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     // 05 §4.2: path Bahasa Indonesia, nama admin.<modul>.
     // Dasbor (07 §4, T-044): angka dalam scope pengguna.
-    Route::get('dasbor', DashboardController::class)->name('dashboard');
+    Route::get('dasbor', DashboardController::class)->middleware('can:dashboard.view')->name('dashboard');
 
     // Notifikasi milik sendiri (05 §4.2, T-029). Jumlah belum dibaca dipolling lonceng tiap 60 detik.
     Route::get('notifikasi', [NotificationController::class, 'index'])->name('notifications.index');

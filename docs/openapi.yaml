@@ -209,6 +209,39 @@ paths:
                     type: object
                     properties:
                       revoked: { type: integer }
+  /me/avatar:
+    get:
+      tags: [Akun]
+      summary: Foto profil milik sendiri (keputusan Mas 16 Nov 2026)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      responses:
+        '200':
+          description: Foto profil (selalu WebP), `Cache-Control` no-store
+          content:
+            image/webp:
+              schema: { type: string, format: binary }
+        '404': { $ref: '#/components/responses/Error', description: 'NOT_FOUND (belum ada foto)' }
+  /lookup/correction-reasons:
+    get:
+      tags: [Koreksi]
+      summary: Pilihan alasan koreksi aktif dari referensi correction_reason (bukan daftar tetap di aplikasi)
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }]
+      responses:
+        '200':
+          description: Alasan aktif, urut sort_order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        code: { type: string, example: forgot }
+                        name: { type: string, example: Lupa presensi }
+        '403': { $ref: '#/components/responses/Error', description: 'FORBIDDEN (tanpa attendance_corrections.create)' }
   /attendance:
     get:
       tags: [Absensi]
@@ -449,6 +482,19 @@ paths:
         '200': { $ref: '#/components/responses/CorrectionOne' }
         '404': { $ref: '#/components/responses/Error', description: 'NOT_FOUND (bukan milik sendiri)' }
         '409': { $ref: '#/components/responses/Error', description: STATE_CONFLICT }
+  /attendance-corrections/{id}/attachment:
+    get:
+      tags: [Koreksi]
+      summary: Unduh lampiran koreksi — pengaju atau pengguna berwenang memutuskan (06 §6), keputusan Mas 16 Nov 2026
+      parameters: [{ $ref: '#/components/parameters/AppVersion' }, { $ref: '#/components/parameters/DeviceId' }, { $ref: '#/components/parameters/CorrectionId' }]
+      responses:
+        '200':
+          description: Berkas lampiran, `Content-Disposition` attachment, `Cache-Control` no-store
+          content:
+            image/jpeg: { schema: { type: string, format: binary } }
+            image/png: { schema: { type: string, format: binary } }
+            application/pdf: { schema: { type: string, format: binary } }
+        '404': { $ref: '#/components/responses/Error', description: 'NOT_FOUND (tidak ada, bukan wewenang, atau tanpa lampiran)' }
   /approvals/attendance-corrections:
     get:
       tags: [Koreksi]

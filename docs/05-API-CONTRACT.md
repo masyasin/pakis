@@ -326,6 +326,7 @@ Satu route `admin.lookup.show`, GET `/lookup/<sumber>?q=&parent=&limit=&ids[]=` 
 | `api.v1.me.update` | PUT | `/api/v1/me` | token | `phone`, `avatar` |
 | `api.v1.me.password` | PUT | `/api/v1/me/password` | token | |
 | `api.v1.me.revoke-others` | POST | `/api/v1/me/sessions/revoke-others` | token | Cabut sesi web milik sendiri |
+| `api.v1.me.avatar` | GET | `/api/v1/me/avatar` | token | Foto profil milik sendiri (WebP, `no-store`); tanpa foto → 404 `NOT_FOUND` (keputusan Mas 16 Nov 2026) |
 | `api.v1.attendance.today` | GET | `/api/v1/attendance/today` | `attendance.self` | |
 | `api.v1.attendance.store` | POST | `/api/v1/attendance` | `attendance.self` | |
 | `api.v1.attendance.index` | GET | `/api/v1/attendance` | `attendance.self` | ✅ |
@@ -333,6 +334,8 @@ Satu route `admin.lookup.show`, GET `/lookup/<sumber>?q=&parent=&limit=&ids[]=` 
 | `api.v1.attendance-corrections.index` | GET | `/api/v1/attendance-corrections` | `attendance_corrections.create` | ✅ (milik sendiri) |
 | `api.v1.attendance-corrections.store` | POST | `/api/v1/attendance-corrections` | `attendance_corrections.create` | |
 | `api.v1.attendance-corrections.cancel` | POST | `/api/v1/attendance-corrections/{id}/cancel` | pemilik, status `pending` | |
+| `api.v1.attendance-corrections.attachment` | GET | `/api/v1/attendance-corrections/{id}/attachment` | pengaju, atau berwenang memutuskan (06 §6, termasuk yang sudah diputuskan) | Biner `attachment`, `no-store`, throttle 60/menit; lainnya / tanpa lampiran → 404 `NOT_FOUND` (keputusan Mas 16 Nov 2026, MOB-09) |
+| `api.v1.lookup.correction-reasons` | GET | `/api/v1/lookup/correction-reasons` | `attendance_corrections.create` | `{ data: [{ code, name }] }` — `reference_items` grup `correction_reason` yang aktif, urut `sort_order`. Bukan daftar `*.index` (pendek, tanpa paging, seperti lookup web §4.11) |
 | `api.v1.approvals.attendance-corrections.index` | GET | `/api/v1/approvals/attendance-corrections` | `attendance_corrections.approve` | ✅ (scope data) |
 | `api.v1.approvals.attendance-corrections.approve` | POST | `/api/v1/approvals/attendance-corrections/{id}/approve` | `attendance_corrections.approve` | |
 | `api.v1.approvals.attendance-corrections.reject` | POST | `/api/v1/approvals/attendance-corrections/{id}/reject` | `attendance_corrections.approve` | |

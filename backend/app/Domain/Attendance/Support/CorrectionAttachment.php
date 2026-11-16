@@ -2,11 +2,13 @@
 
 namespace App\Domain\Attendance\Support;
 
+use App\Domain\Attendance\Models\AttendanceCorrection;
 use Carbon\CarbonInterface;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use RuntimeException;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Lampiran koreksi (05 §5.7, BR-069): JPEG/PNG/PDF ≤ `attendance.correction_attachment_max_kb`.
@@ -62,6 +64,29 @@ final class CorrectionAttachment
         Storage::disk(SelfieStore::DISK)->put($path, $clean);
 
         return $path;
+    }
+
+    /**
+     * Unduhan lampiran untuk web & API (T-041, T-043): selalu `attachment` + `no-store` + nosniff,
+     * jenis dari ekstensi yang KITA tetapkan saat menyimpan (bukan kiriman klien). Pemanggil sudah
+     * memeriksa wewenang; tanpa lampiran / berkas hilang → 404.
+     */
+    public static function download(AttendanceCorrection $correction): StreamedResponse
+    {
+        $path = $correction->attachment_path;
+        abort_unless($path !== null && Storage::disk(SelfieStore::DISK)->exists($path), 404);
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+        return Storage::disk(SelfieStore::DISK)->download($path, "lampiran-{$correction->number}.{$extension}", [
+            'Content-Type' => match ($extension) {
+                'pdf' => 'application/pdf',
+                'png' => 'image/png',
+                default => 'image/jpeg',
+            },
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     public function delete(?string $path): void

@@ -9,9 +9,9 @@ use App\Domain\Attendance\Listings\AttendanceDayListing;
 use App\Domain\Attendance\Models\AttendanceCorrection;
 use App\Domain\Attendance\Models\AttendanceDay;
 use App\Domain\Attendance\Support\AttendanceDayScope;
+use App\Domain\Attendance\Support\CorrectionAttachment;
 use App\Domain\Attendance\Support\CorrectionAuthority;
 use App\Domain\Attendance\Support\CorrectionPayload;
-use App\Domain\Attendance\Support\SelfieStore;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Http\Controllers\Controller;
@@ -27,7 +27,6 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -133,16 +132,7 @@ class AttendanceCorrectionController extends Controller
      */
     public function attachment(AttendanceCorrection $correction): StreamedResponse
     {
-        $path = $correction->attachment_path;
-        abort_unless($path !== null && Storage::disk(SelfieStore::DISK)->exists($path), 404);
-
-        $extension = pathinfo($path, PATHINFO_EXTENSION);
-
-        return Storage::disk(SelfieStore::DISK)->download($path, "lampiran-{$correction->number}.{$extension}", [
-            'Content-Type' => $extension === 'pdf' ? 'application/pdf' : ($extension === 'png' ? 'image/png' : 'image/jpeg'),
-            'Cache-Control' => 'private, no-store, max-age=0',
-            'X-Content-Type-Options' => 'nosniff',
-        ]);
+        return CorrectionAttachment::download($correction);
     }
 
     /** Isi presensi manual atas nama pegawai (BR-069): langsung disetujui, tercatat sebagai koreksi. */

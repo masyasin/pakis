@@ -199,7 +199,7 @@ export default function UserShow(props: Props) {
     return (
         <>
             <Head title={user.name} />
-            <div className="mx-auto w-full max-w-5xl space-y-5 p-4 md:px-7 md:py-6">
+            <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
                 <Button variant="ghost" size="sm" asChild>
                     <Link href={index()}>
                         <ArrowLeft aria-hidden="true" />

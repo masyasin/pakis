@@ -36,7 +36,7 @@ export default function SettingsLayout({ children }: PropsWithChildren) {
     const initials = useInitials()(user.name);
 
     return (
-        <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 md:px-6 md:py-8">
+        <div className="mx-auto w-full max-w-[1440px] space-y-6 p-4 md:px-7 md:py-6">
             <section className="overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]">
                 <div
                     aria-hidden="true"

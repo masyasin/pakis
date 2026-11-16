@@ -61,7 +61,7 @@ export default function AttendanceCorrectionShow({
     return (
         <>
             <Head title={`Koreksi ${c.number}`} />
-            <div className="mx-auto w-full max-w-[1100px] space-y-5 p-4 md:px-7 md:py-6">
+            <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
                 <Button variant="ghost" size="sm" className="-ml-2" asChild>
                     <Link href={index()}>
                         <ArrowLeft aria-hidden="true" />

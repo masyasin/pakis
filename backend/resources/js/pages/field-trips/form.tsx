@@ -107,7 +107,7 @@ export default function FieldTripForm({
             <Head title={title} />
             <form
                 onSubmit={submit}
-                className="mx-auto w-full max-w-3xl space-y-6 p-4 md:px-7 md:py-6"
+                className="mx-auto w-full max-w-[1440px] space-y-6 p-4 md:px-7 md:py-6"
                 noValidate
             >
                 <div className="flex flex-wrap items-center gap-3">

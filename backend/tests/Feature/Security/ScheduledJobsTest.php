@@ -174,6 +174,62 @@ test('SEC-041 Scheduled alert: lockout admin, lokasi palsu, ekspor massal di lua
     Notification::assertSentOnDemand(SecurityAlert::class, fn (SecurityAlert $n) => $n->title === 'Ekspor massal' && str_contains($n->lines[0], '7000 baris'));
 });
 
+test('SEC-041 Scheduled alert: ambang login gagal, jendela, dan masa redam diatur dari setting', function () {
+    setSetting('monitoring.login_burst_count', 5);
+    setSetting('monitoring.login_burst_minutes', 3);
+    setSetting('monitoring.alert_mute_minutes', 5);
+    foreach (range(1, 5) as $i) {
+        sjEvent(SecurityEventType::LoginFailed, at: CarbonImmutable::now()->subMinutes(2));
+    }
+    // Di luar jendela 3 menit → tidak dihitung, jadi IP kedua hanya 4 dalam jendela.
+    foreach (range(1, 4) as $i) {
+        sjEvent(SecurityEventType::LoginFailed, ip: '198.51.100.9');
+    }
+    sjEvent(SecurityEventType::LoginFailed, ip: '198.51.100.9', at: CarbonImmutable::now()->subMinutes(4));
+
+    $this->artisan('security:scan-alerts')->assertSuccessful();
+    expect(sjAlerts())->toBe(1);
+    Notification::assertSentOnDemand(SecurityAlert::class, fn (SecurityAlert $n) => str_contains($n->lines[0], '5 login gagal dari IP 203.0.113.7 dalam 3 menit'));
+
+    // Lewat masa redam 5 menit, serangan yang masih berjalan dilaporkan lagi.
+    $this->travel(6)->minutes();
+    foreach (range(1, 5) as $i) {
+        sjEvent(SecurityEventType::LoginFailed);
+    }
+    $this->artisan('security:scan-alerts')->assertSuccessful();
+    expect(sjAlerts())->toBe(2);
+});
+
+test('SEC-041 Scheduled alert: jam kerja ekspor massal dari setting, termasuk melewati tengah malam', function () {
+    $admin = User::factory()->create();
+    setSetting('monitoring.work_hour_start', 8);
+    setSetting('monitoring.work_hour_end', 17);
+
+    // 10.00 WIB di dalam 08–17 → tanpa alert; 18.00 → alert.
+    sjEvent(SecurityEventType::MassExport, $admin, context: ['row_count' => 3000]);
+    $this->artisan('security:scan-alerts')->assertSuccessful();
+    expect(sjAlerts())->toBe(0);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-16 18:00', 'Asia/Jakarta'));
+    sjEvent(SecurityEventType::MassExport, $admin, context: ['row_count' => 3000]);
+    $this->artisan('security:scan-alerts')->assertSuccessful();
+    expect(sjAlerts())->toBe(1);
+    Notification::assertSentOnDemand(SecurityAlert::class, fn (SecurityAlert $n) => str_contains($n->lines[0], 'di luar jam kerja (08.00–17.00)'));
+
+    // Jam kerja 22–06 (shift malam): 23.00 di dalam, 10.00 esok di luar.
+    setSetting('monitoring.work_hour_start', 22);
+    setSetting('monitoring.work_hour_end', 6);
+    $this->travelTo(CarbonImmutable::parse('2026-11-16 23:00', 'Asia/Jakarta'));
+    sjEvent(SecurityEventType::MassExport, $admin, context: ['row_count' => 3000]);
+    $this->artisan('security:scan-alerts')->assertSuccessful();
+    expect(sjAlerts())->toBe(1);
+
+    $this->travelTo(CarbonImmutable::parse('2026-11-17 10:00', 'Asia/Jakarta'));
+    sjEvent(SecurityEventType::MassExport, $admin, context: ['row_count' => 3000]);
+    $this->artisan('security:scan-alerts')->assertSuccessful();
+    expect(sjAlerts())->toBe(2);
+});
+
 test('SEC-041 Scheduled alert: tanpa email penerima, alert tetap tercatat di log tanpa email', function () {
     setSetting('monitoring.alert_emails', []);
     sjEvent(SecurityEventType::AttendanceMockDetected, User::factory()->create());

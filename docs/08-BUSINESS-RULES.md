@@ -109,6 +109,11 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `notification.circuit_failures` | int | 5 | 3–20 | ❌ |
 | `notification.circuit_minutes` | int | 15 | 5–120 | ❌ |
 | `monitoring.alert_emails` | email_list | `[]` | maks 5 email | ❌ |
+| `monitoring.login_burst_count` | int | 20 | 5–1000 | ❌ |
+| `monitoring.login_burst_minutes` | int | 10 | 1–120 | ❌ |
+| `monitoring.alert_mute_minutes` | int | 60 | 5–1440 | ❌ |
+| `monitoring.work_hour_start` | int | 6 | 0–23 | ❌ |
+| `monitoring.work_hour_end` | int | 21 | 1–24 | ❌ |
 | `retention.audit_years` | int | 5 | 1–10 | ❌ |
 | `retention.security_days` | int | 365 | 90–1825 | ❌ |
 | `retention.import_days` | int | 90 | 7–365 | ❌ |

@@ -80,7 +80,7 @@
 | ID | Kontrol | Verifikasi |
 |---|---|---|
 | SEC-040 | `audit_logs` append-only (trigger DB). Dicatat untuk setiap create/update/delete pada data penting (§7.1) dengan nilai lama/baru. Field sensitif (`password`, `two_factor_*`, `nik_*`, token) diganti `***`. Retensi `retention.audit_years`. | Test UPDATE langsung → gagal; test redaksi |
-| SEC-041 | `security_events` untuk semua event di `04` §2.11. Alert: ≥ 20 `login_failed` dari satu IP dalam 10 menit, `lockout` akun berperan admin, `attendance_mock_detected`, `mass_export` di luar jam 06.00–21.00 → email `monitoring.alert_emails`. | Test job alert |
+| SEC-041 | `security_events` untuk semua event di `04` §2.11. Alert: ≥ `monitoring.login_burst_count` (default 20) `login_failed` dari satu IP dalam `monitoring.login_burst_minutes` (default 10) menit — diredam `monitoring.alert_mute_minutes` per IP —, `lockout` akun berperan admin (Super Admin, Owner, Administrator), `attendance_mock_detected`, `mass_export` di luar jam kerja `monitoring.work_hour_start`–`monitoring.work_hour_end` (default 06.00–21.00, jam lokal) → email `monitoring.alert_emails`. Ambang dari setting (keputusan Mas 16 Nov 2026, `12`). | Test job alert |
 | SEC-042 | Log aplikasi JSON berisi `request_id`, `user_id`, route, durasi. **Tanpa** password, token, NIK, koordinat presisi, isi selfie. Log channel produksi `daily` retensi 30 hari. | Grep test log |
 
 ### 3.6 Unggahan & Ekspor

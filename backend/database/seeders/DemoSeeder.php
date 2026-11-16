@@ -165,6 +165,7 @@ class DemoSeeder extends Seeder
         $this->seedProducts();
         $this->seedRegistrations();
         $this->seedStock();
+        $this->call(CustomerDemoSeeder::class);
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).

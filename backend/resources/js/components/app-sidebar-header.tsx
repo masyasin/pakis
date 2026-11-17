@@ -33,16 +33,18 @@ export function AppSidebarHeader({
                 <div className="absolute inset-0 bg-[radial-gradient(40%_140%_at_0%_100%,color-mix(in_oklab,var(--primary)_6%,transparent),transparent_70%)]" />
                 <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/60 to-transparent dark:via-white/10" />
             </div>
-            <div className="flex min-w-0 items-center gap-2">
-                <SidebarTrigger className="-ml-1.5 size-9 text-muted-foreground hover:text-foreground" />
+            {/* min-w-0 + flex-1: judul halaman panjang dipotong (…) sebelum kapsul ikon, bukan
+                tertimpa di HP. */}
+            <div className="flex min-w-0 flex-1 items-center gap-2">
+                <SidebarTrigger className="-ml-1.5 size-9 shrink-0 text-muted-foreground hover:text-foreground" />
                 <Separator
                     orientation="vertical"
-                    className="mr-1 data-[orientation=vertical]:h-5"
+                    className="mr-1 shrink-0 data-[orientation=vertical]:h-5"
                 />
                 <Breadcrumbs breadcrumbs={breadcrumbs} />
             </div>
 
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex shrink-0 items-center gap-2">
                 {/* Ikon aksi dikelompokkan dalam satu kapsul kaca agar terlihat rapi, bukan berserakan. */}
                 <div className="flex items-center gap-0.5 rounded-full border border-border/60 bg-card/60 p-0.5 shadow-[0_1px_2px_rgb(0_0_0/0.04)] [&_a]:rounded-full [&_button]:rounded-full">
                     {/* Lonceng notifikasi (07 §1.2, T-029). */}

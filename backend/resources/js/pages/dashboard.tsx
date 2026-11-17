@@ -1470,6 +1470,8 @@ export default function Dashboard({
     // Baris bawah dua kolom: bila kartunya ganjil, "Perlu tindakan" selebar penuh (daftar 2 kolom)
     // agar tidak ada sel kosong di sebelahnya.
     const lowerCards =
+        (stockCharts?.value && stockCharts.value.length > 0 ? 1 : 0) +
+        (stockCharts ? 2 : 0) +
         (charts ? 1 : 0) +
         (charts && charts.locations.length > 0 ? 1 : 0) +
         (nearExpiry ? 1 : 0) +
@@ -1612,19 +1614,22 @@ export default function Dashboard({
                     </div>
                 )}
 
-                {stockCharts && (
-                    <div className="grid gap-3.5 lg:grid-cols-2">
-                        {stockCharts.value && stockCharts.value.length > 0 && (
-                            <Card
-                                title="Nilai stok per lokasi"
-                                note="HPP rata-rata × stok di tangan, gudang & toko dalam wilayah Anda."
-                            >
-                                <StockValueChart
-                                    rows={stockCharts.value}
-                                    animate={animate}
-                                />
-                            </Card>
-                        )}
+                <div className="grid gap-3.5 lg:grid-cols-2">
+                    {/* Urutan berpasangan dua kolom (T-087A): nilai | mutasi, ED per bulan | tabel mendekati ED,
+                        presensi | presensi, di bawah minimum | tanpa minimum; bila ganjil "Perlu tindakan" melebar. */}
+                    {stockCharts?.value && stockCharts.value.length > 0 && (
+                        <Card
+                            title="Nilai stok per lokasi"
+                            note="HPP rata-rata × stok di tangan, gudang & toko dalam wilayah Anda."
+                        >
+                            <StockValueChart
+                                rows={stockCharts.value}
+                                animate={animate}
+                            />
+                        </Card>
+                    )}
+
+                    {stockCharts && (
                         <Card
                             title="Mutasi stok per hari"
                             note={
@@ -1641,26 +1646,39 @@ export default function Dashboard({
                                 animate={animate}
                             />
                         </Card>
+                    )}
+
+                    {stockCharts && (
                         <Card
                             title="Batch mendekati ED per bulan"
                             note={`Batch tersedia & karantina yang ED-nya dalam ${stockCharts.expiry_days} hari ke depan.`}
-                            // Grafik nilai hanya untuk pemegang izin biaya: bila ada, kartu ini
-                            // ketiga (ganjil) dan dibuat selebar penuh agar tidak ada sel kosong.
-                            className={cn(
-                                stockCharts.value &&
-                                    stockCharts.value.length > 0 &&
-                                    'lg:col-span-2',
-                            )}
                         >
                             <ExpiryMonthChart
                                 rows={stockCharts.expiry}
                                 animate={animate}
                             />
                         </Card>
-                    </div>
-                )}
+                    )}
 
-                <div className="grid gap-3.5 lg:grid-cols-2">
+                    {nearExpiry && (
+                        <Card
+                            title="Stok mendekati ED"
+                            note={
+                                nearExpiry.more > 0
+                                    ? `Batch tersedia per lokasi stok, kumulatif. ${nearExpiry.more} lokasi lain tidak ditampilkan.`
+                                    : 'Batch tersedia per lokasi stok, kumulatif (kolom terbesar memuat yang lebih dekat).'
+                            }
+                        >
+                            {nearExpiry.locations.length > 0 ? (
+                                <NearExpiryTable data={nearExpiry} />
+                            ) : (
+                                <NoData>
+                                    Tidak ada batch yang mendekati ED.
+                                </NoData>
+                            )}
+                        </Card>
+                    )}
+
                     {charts && (
                         <Card
                             title="Sebaran jam masuk"
@@ -1691,25 +1709,6 @@ export default function Dashboard({
                                 locations={charts.locations}
                                 animate={animate}
                             />
-                        </Card>
-                    )}
-
-                    {nearExpiry && (
-                        <Card
-                            title="Stok mendekati ED"
-                            note={
-                                nearExpiry.more > 0
-                                    ? `Batch tersedia per lokasi stok, kumulatif. ${nearExpiry.more} lokasi lain tidak ditampilkan.`
-                                    : 'Batch tersedia per lokasi stok, kumulatif (kolom terbesar memuat yang lebih dekat).'
-                            }
-                        >
-                            {nearExpiry.locations.length > 0 ? (
-                                <NearExpiryTable data={nearExpiry} />
-                            ) : (
-                                <NoData>
-                                    Tidak ada batch yang mendekati ED.
-                                </NoData>
-                            )}
                         </Card>
                     )}
 

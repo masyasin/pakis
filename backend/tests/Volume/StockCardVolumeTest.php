@@ -1,7 +1,11 @@
 <?php
 
 use App\Domain\Inventory\Actions\ReconcileStockLedger;
+use App\Models\User;
+use Carbon\CarbonImmutable;
 use Database\Seeders\InventoryVolumeSeeder;
+use Database\Seeders\PermissionSeeder;
+use Database\Seeders\RoleSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
@@ -92,4 +96,42 @@ test('NFR-A02 1 juta mutasi: kartu stok per batch & per produk-lokasi-periode me
 
     // Ringkasan untuk log Implementasi_Plan (tampil di keluaran test).
     fwrite(STDERR, json_encode(['seed_s' => round($seeded), 'reconcile_s' => round($reconciled), 'batches' => $result['batches'], 'explain' => $report], JSON_PRETTY_PRINT).PHP_EOL);
+});
+
+test('NFR-A04 T-087 halaman Kartu Stok 1 juta mutasi, filter 1 produk 1 lokasi 1 bulan: p95 < 500 ms', function () {
+    (new InventoryVolumeSeeder)->run();
+    DB::statement('ANALYZE TABLE stock_movements, stock_batches');
+    (new PermissionSeeder)->run();
+    (new RoleSeeder)->run();
+    $owner = User::factory()->withTwoFactor()->create()->assignRole('owner');
+
+    try {
+        // Produk × lokasi × bulan dengan mutasi terbanyak = kasus terberat untuk filter ini.
+        $busiest = DB::table('stock_movements')
+            ->selectRaw("product_id, stock_location_id, DATE_FORMAT(business_date, '%Y-%m-01') AS month, COUNT(*) AS n")
+            ->groupBy('product_id', 'stock_location_id')->groupByRaw("DATE_FORMAT(business_date, '%Y-%m-01')")
+            ->orderByDesc('n')->first();
+        $from = $busiest->month;
+        $to = CarbonImmutable::parse($from)->endOfMonth()->toDateString();
+        $url = "/stok/kartu?filter[product_id][]={$busiest->product_id}&filter[stock_location_id][]={$busiest->stock_location_id}"
+            ."&filter[business_date][from]={$from}&filter[business_date][to]={$to}";
+
+        $this->actingAs($owner)->get($url)->assertOk(); // pemanasan (cache rute, koneksi)
+        $times = [];
+        for ($i = 0; $i < 20; $i++) {
+            $started = hrtime(true);
+            $this->actingAs($owner)->get($url.'&page='.($i % 3 + 1))->assertOk();
+            $times[] = (hrtime(true) - $started) / 1e6;
+        }
+        sort($times);
+        $p95 = $times[(int) ceil(0.95 * count($times)) - 1];
+
+        fwrite(STDERR, json_encode(['nfr_a04_stock_card_ms' => ['p50' => round($times[9], 1), 'p95' => round($p95, 1), 'max' => round(end($times), 1)],
+            'movements_in_filter' => DB::table('stock_movements')->where('product_id', $busiest->product_id)
+                ->where('stock_location_id', $busiest->stock_location_id)->whereBetween('business_date', [$from, $to])->count()]).PHP_EOL);
+        expect($p95)->toBeLessThan(500.0);
+    } finally {
+        DB::table('model_has_roles')->where('model_id', $owner->id)->delete();
+        $owner->delete();
+    }
 });

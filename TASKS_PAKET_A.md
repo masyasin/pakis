@@ -457,7 +457,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [x] `PaketAIdorTest` mencakup setiap route `show/edit/update/aksi` ber-scope stok & pelanggan (daftar route diambil dari router, bukan manual — route baru tanpa test membuat test merah)
   - [x] Admin Penjualan tidak menerima kolom biaya di posisi stok & kartu stok, dan ekspor stok ditolak (`stock.export` ❌, 403); Kepala Gudang (`stock.export` tanpa `stock.view_cost`) mengekspor tanpa kolom biaya
   - [x] Semua ekspor Paket A lewat `ExportableListing` + `StartExport` (tidak ada kelas `*Export` di `app/Domain`); ekspor > `export.mass_export_alert_rows` mencatat `mass_export`
-  - [ ] Kartu stok 1 juta mutasi, filter 1 produk 1 lokasi 1 bulan: p95 < 500 ms (lokal, dicatat di PR)
+  - [x] Kartu stok 1 juta mutasi, filter 1 produk 1 lokasi 1 bulan: p95 < 500 ms (lokal, dicatat di PR)
   - [x] Semua aksi SEC-110 tercatat audit (test data-driven)
   - [x] Semua listing lulus `ListingContractTest` (listing Fase 0 + 29 listing baru; tanpa angka total tetap)
   - [ ] Checklist rilis **15** §10.2 dicentang di `Implementasi_Plan.md`

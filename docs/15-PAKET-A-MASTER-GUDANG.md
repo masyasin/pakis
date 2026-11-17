@@ -1180,6 +1180,8 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 
 ## 6. Otorisasi
 
+**Uji volume (T-087, 18 Nov 2026; NFR-A02/NFR-A04):** 1 juta mutasi di 30.303 batch (`tests/Volume/StockCardVolumeTest.php`, `php artisan test --group=volume` di DB `pakis_one_test_vol`): EXPLAIN kartu stok per batch `ref smov_batch_time_idx` (33 baris), produk-lokasi-periode `range smov_product_loc_date_idx` (44 baris), FEFO `ref sbatch_fefo_idx` (11 baris), tanpa full scan; halaman Kartu Stok filter 1 produk × 1 lokasi × 1 bulan p50 40,7 ms / p95 65,7 ms (batas 500 ms); rekonsiliasi 0 selisih. Tidak ada index baru yang diperlukan.
+
 ### 6.1 Role baru
 
 | Kode | Nama | `data_scope` | `mfa_required` | `is_system` | Pemegang contoh |

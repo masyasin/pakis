@@ -1,19 +1,26 @@
 <?php
 
 use App\Domain\Audit\Models\AuditLog;
+use App\Domain\Catalog\Actions\SaveProductUnit;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductBarcode;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductUnit;
+use App\Domain\Purchasing\Models\PurchaseOrder;
+use App\Domain\Purchasing\Models\PurchaseOrderLine;
+use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Models\User;
+use App\Support\Api\ApiError;
+use App\Support\Api\ErrorCode;
 use Database\Seeders\ReferenceSeeder;
 use Database\Seeders\SequenceSeeder;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Testing\AssertableInertia as Assert;
+use Tests\Support\StockWorld;
 
 /*
  * T-070 — produk, satuan produk, barcode (FR-A07–A09, BR-150/151, 15 §4.4/§5). Izin
@@ -142,8 +149,32 @@ test('BR-150 maksimal satu default jual & satu default beli per produk; satuan d
 });
 
 test('BR-150 faktor satuan yang sudah dipakai dokumen terkunci (UNIT_FACTOR_LOCKED)', function () {
-    // Tabel dokumen (PO, mutasi stok) baru ada di T-077/T-079; ProductUsage sudah memeriksanya bila tabel ada.
-})->todo();
+    $product = makeProduct();
+    $url = "/produk/{$product->id}/satuan";
+    $box = ['unit_id' => unitId('box'), 'factor' => '24', 'is_default_sales' => false, 'is_default_purchase' => false, 'is_active' => true];
+    $this->actingAs($this->user)->post($url, $box)->assertSessionHasNoErrors();
+    $unit = ProductUnit::query()->where('product_id', $product->id)->where('unit_id', unitId('box'))->sole();
+
+    // Belum dipakai dokumen: faktor boleh diubah.
+    $flags = ['is_default_sales' => false, 'is_default_purchase' => false, 'is_active' => true];
+    $this->actingAs($this->user)->put("{$url}/{$unit->id}", [...$flags, 'factor' => '12'])->assertSessionHasNoErrors();
+
+    // Dipakai satu baris PO (T-079) → faktor terkunci, flag lain tetap boleh.
+    $supplier = tap((new Supplier)->forceFill(['code' => 'SUP-1', 'name' => 'CV Uji', 'payment_term_days' => 30, 'is_active' => true]))->save();
+    $stock = StockWorld::stockLocation(StockWorld::location('GD-UJI'), 'GD-UJI');
+    $po = tap((new PurchaseOrder)->forceFill([
+        'number' => 'PO-UJI-1', 'supplier_id' => $supplier->id, 'stock_location_id' => $stock->id, 'order_date' => '2026-11-16',
+        'payment_term_days' => 30, 'subtotal' => '0', 'discount_total' => '0', 'tax_total' => '0', 'grand_total' => '0', 'status' => 'draft',
+    ]))->save();
+    (new PurchaseOrderLine)->forceFill([
+        'purchase_order_id' => $po->id, 'line_no' => 1, 'product_id' => $product->id, 'product_unit_id' => $unit->id,
+        'qty' => '1', 'qty_base' => '12', 'unit_price' => '1000', 'discount_pct' => '0', 'line_total' => '1000',
+    ])->save();
+
+    expect(fn () => app(SaveProductUnit::class)->handle($product, $unit, [...$flags, 'factor' => '24'], $this->user->id))
+        ->toThrow(fn (ApiError $e) => expect($e->errorCode)->toBe(ErrorCode::UNIT_FACTOR_LOCKED));
+    expect($unit->fresh()->factor)->toBe('12.000');
+});
 
 test('FR-A09 barcode unik global dengan pesan pemilik; pencarian q=<barcode> menemukan produk persis', function () {
     $first = makeProduct();

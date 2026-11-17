@@ -102,12 +102,12 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations `vehicles`, `stock_locations`, `stock_bins` + seeder `TransitStockLocationSeeder`; `app/Domain/Inventory/{Models/{StockLocation,StockBin},Enums/{StockLocationType,BinZone},Actions/{SaveStockLocation,SaveStockBin},Listings/{StockLocationListing,StockBinListing},Policies/*}`; `app/Domain/Fleet/{Models/Vehicle,Actions/SaveVehicle,Listings/VehicleListing,Policies/VehiclePolicy}`; `app/Domain/Access/DataScope.php` (tambah `forStock()`); controllers `Admin/{StockLocationController,StockBinController,VehicleController}`; lookup `stock_locations`, `stock_bins`; pages `StockLocations/*`, `Vehicles/*`; tests
 - Deskripsi: CRUD lokasi stok (warehouse/store terikat lokasi Fase 0; vehicle dibuat otomatis saat kendaraan ditandai canvas; `TRANSIT` sistem). Bin karantina `Q-01` dibuat otomatis untuk warehouse/store. `DataScope::forStock(User, Builder, column)` sesuai **15** §6.2: lokasi pengguna = definisi Fase 0 lewat `OrgStructure` (penugasan utama + tambahan/rangkap + lokasi yang dikepalai).
 - Kriteria penerimaan:
-  - [ ] CHECK `sl_type_chk` menolak kombinasi tidak valid (test DB langsung)
-  - [ ] `TRANSIT` tidak bisa diubah/nonaktif/hapus (403)
-  - [ ] Kendaraan `is_canvas=true` → tepat satu lokasi stok `vehicle`; dinonaktifkan → lokasi stok ikut nonaktif bila saldo 0, ditolak bila saldo > 0 (setelah T-077, test ditandai `->todo()` sampai T-077)
-  - [ ] Plat dinormalisasi huruf besar tanpa spasi, unik
-  - [ ] Staf gudang scope `location` hanya melihat lokasi stok lokasinya (termasuk lokasi penugasan rangkap); akses ID lain → 404 (IDOR)
-  - [ ] 3 listing lulus kontrak
+  - [x] CHECK `sl_type_chk` menolak kombinasi tidak valid (test DB langsung)
+  - [x] `TRANSIT` tidak bisa diubah/nonaktif/hapus (403)
+  - [x] Kendaraan `is_canvas=true` → tepat satu lokasi stok `vehicle`; dinonaktifkan → lokasi stok ikut nonaktif bila saldo 0, ditolak bila saldo > 0 (setelah T-077, test ditandai `->todo()` sampai T-077) — test aktif sejak T-077 (`LedgerStockBalanceProbe`)
+  - [x] Plat dinormalisasi huruf besar tanpa spasi, unik
+  - [x] Staf gudang scope `location` hanya melihat lokasi stok lokasinya (termasuk lokasi penugasan rangkap); akses ID lain → 404 (IDOR)
+  - [x] 3 listing lulus kontrak
 - Verifikasi: `php artisan test --filter='StockLocation|StockBin|Vehicle'`
 - Di luar lingkup: data armada (Paket D), stok (T-077)
 
@@ -119,10 +119,10 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: `composer require brick/math:^1.0` (sudah terpasang 1.0.0 tidak langsung; jadikan langsung, API 1.x `RoundingMode` enum; catat di `03` §5); seeder referensi (`unit` dengan meta `integer_only`, `formulation`); migration `product_categories`; `app/Support/Money/{Money,Qty,UnitCost}.php` (belum ada di repo); `app/Domain/Catalog/{Models/ProductCategory,Enums/CategoryKind,Actions/SaveProductCategory,Listings/ProductCategoryListing,Policies/*,Units/UnitConverter.php}`; controller `Admin/ProductCategoryController`; page `ProductCategories/Index.tsx` (form di dialog); `components/pakis/QtyInput.tsx`; tests `tests/Unit/Support/{QtyTest,MoneyTest}.php`, `tests/Unit/Catalog/UnitConverterTest.php`, arch test `NoFloatInDomainTest`
 - Deskripsi: Kategori bertingkat (maks 3 level) dengan `kind` dan penanda perilaku. `UnitConverter::toBase(Qty, ProductUnit)` dan `fromBase()`, pembulatan half-up 3 desimal, validasi `integer_only`. `QtyInput` menampilkan "= 240 botol" di bawah input. Tabel `product_units` dibuat di T-070 (butuh `products`); converter diuji dengan model in-memory.
 - Kriteria penerimaan:
-  - [ ] `Qty::of('2.5')->times('24')` = `60.000` tanpa float (arch test: tidak ada tipe `float` di `App\Domain\{Catalog,Inventory,Pricing,Purchasing}`)
-  - [ ] Satuan `integer_only` menolak `1,5` (`422 QTY_NOT_INTEGER`)
-  - [ ] Kategori level 4 ditolak; kategori dengan produk tidak bisa dihapus (nonaktif saja)
-  - [ ] Listing `product_categories` lulus kontrak
+  - [x] `Qty::of('2.5')->times('24')` = `60.000` tanpa float (arch test: tidak ada tipe `float` di `App\Domain\{Catalog,Inventory,Pricing,Purchasing}`)
+  - [x] Satuan `integer_only` menolak `1,5` (`422 QTY_NOT_INTEGER`)
+  - [x] Kategori level 4 ditolak; kategori dengan produk tidak bisa dihapus (nonaktif saja)
+  - [x] Listing `product_categories` lulus kontrak
 - Verifikasi: `php artisan test --filter='Qty|Money|UnitConverter|ProductCategory'`
 - Di luar lingkup: produk (T-070)
 
@@ -134,13 +134,13 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: `app/Support/Upload/*` (diekstrak dari `app/Domain/Attendance/Support/CorrectionAttachment.php` & `app/Domain/Access/Support/AvatarStore.php`: deteksi isi berkas, allowlist JPG/PNG/WEBP/PDF, buang metadata, batas dari setting `upload.max_image_kb`/`upload.max_pdf_kb`, grup `upload` di registri + `08` §2); migrations `products`, `product_units`, `product_barcodes`; sequence `product`; `app/Domain/Catalog/{Models/{Product,ProductUnit,ProductBarcode},Enums/ProductStatus,Actions/{CreateProduct,UpdateProduct,SaveProductUnit,AddBarcode,RemoveBarcode},Listings/ProductListing (implements ExportableListing),Policies/ProductPolicy,Resources/ProductResource}`; kunci `products` di `config/pakis.php` `exports`; controller `Admin/ProductController`, `Admin/ProductUnitController`, `Admin/ProductBarcodeController`; lookup `products`, `product_units`; pages `Products/{Index,Form,Show}.tsx` (tab memakai `page-tabs.tsx`); tests `tests/Unit/Support/Upload/*` + produk
 - Deskripsi: Ekstrak komponen unggahan bersama `app/Support/Upload/` (PA-22) yang dipakai semua unggahan Paket A (T-071, T-074, T-080, T-083, T-084); test unggahan Fase 0 yang ada tetap hijau. Produk dengan penanda yang disalin dari kategori (BR-151). Satuan dasar dibuat otomatis. Barcode unik global, pencarian listing mendukung scan barcode exact. Foto produk di disk publik ter-resize (thumbnail 400 px) — **bukan** data pribadi; tetap lewat `app/Support/Upload/`. Ekspor `admin.products.export` (`products.view`) lewat pola Fase 0. Tab "Harga" dan "Stok" di halaman detail diisi placeholder komponen yang diisi T-075/T-087.
 - Kriteria penerimaan:
-  - [ ] SKU mode `auto` memakai `NumberGenerator('product')`; mode `manual` validasi unik huruf besar `[A-Z0-9-]{3,30}`
-  - [ ] Melonggarkan penanda kategori tanpa alasan ditolak; dengan alasan tercatat audit
-  - [ ] Faktor satuan yang sudah dipakai PO/mutasi → `409 UNIT_FACTOR_LOCKED` (test memakai fixture baris PO setelah T-079; sebelumnya `->todo()`)
-  - [ ] Maks satu default jual & satu default beli per produk
-  - [ ] Barcode duplikat ditolak; pencarian listing `q=<barcode>` menemukan produk
-  - [ ] Listing `products` + ekspor (`ExportableListing`) lulus kontrak; ekspor escape formula
-  - [ ] `app/Support/Upload/`: berkas berekstensi `.jpg` berisi skrip/HTML ditolak (deteksi dari isi), WEBP & PDF diterima, EXIF/lokasi foto dibuang, batas mengikuti `upload.max_*_kb`; test unggahan Fase 0 lama hijau
+  - [x] SKU mode `auto` memakai `NumberGenerator('product')`; mode `manual` validasi unik huruf besar `[A-Z0-9-]{3,30}`
+  - [x] Melonggarkan penanda kategori tanpa alasan ditolak; dengan alasan tercatat audit
+  - [x] Faktor satuan yang sudah dipakai PO/mutasi → `409 UNIT_FACTOR_LOCKED` (test memakai fixture baris PO setelah T-079; sebelumnya `->todo()`) — test aktif 17 Nov 2026 (fixture baris PO T-079)
+  - [x] Maks satu default jual & satu default beli per produk
+  - [x] Barcode duplikat ditolak; pencarian listing `q=<barcode>` menemukan produk
+  - [x] Listing `products` + ekspor (`ExportableListing`) lulus kontrak; ekspor escape formula
+  - [x] `app/Support/Upload/`: berkas berekstensi `.jpg` berisi skrip/HTML ditolak (deteksi dari isi), WEBP & PDF diterima, EXIF/lokasi foto dibuang, batas mengikuti `upload.max_*_kb`; test unggahan Fase 0 lama hijau
 - Verifikasi: `php artisan test --filter=Product`
 - Di luar lingkup: izin edar (T-071), prinsipal FK (T-072), harga (T-075)
 
@@ -152,10 +152,10 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations `product_registrations`, `reminder_logs` (**15** §4.1); `app/Domain/Catalog/{Models/ProductRegistration,Enums/RegistrationStatus,Actions/{SaveRegistration,RevokeRegistration},Queries/ActiveRegistration.php,Listings/ProductRegistrationListing}`; command `catalog:refresh-registrations` + jadwal (`->timezone(DisplayTime::timezone())`); case `NotificationKind::RegistrationExpiring` + kunci `notification.on_registration_expiring` (registri + `08` §2.5); controller; pages `ProductRegistrations/Index.tsx`, tab izin di `Products/Show.tsx`; dashboard widget; tests
 - Deskripsi: `ActiveRegistration::for(Product, date)` dipakai FEFO (T-078). Berkas izin (PDF/JPG) diunggah lewat `app/Support/Upload/` (T-070), disimpan di disk privat, akses signed URL 5 menit. Pengingat via notifikasi in-app Fase 0 sekali per izin per ambang.
 - Kriteria penerimaan:
-  - [ ] Izin `valid_until` kemarin → job → `expired`; produk wajib izin tanpa izin `active` → `ActiveRegistration` null
-  - [ ] Perpanjangan (izin baru) membuat produk berlaku lagi tanpa mengubah izin lama
-  - [ ] Pengingat H-60/30/7/0 tidak terkirim dua kali walau job dijalankan berulang
-  - [ ] Filter `registration_status=expiring` benar pada batas hari ke-60
+  - [x] Izin `valid_until` kemarin → job → `expired`; produk wajib izin tanpa izin `active` → `ActiveRegistration` null
+  - [x] Perpanjangan (izin baru) membuat produk berlaku lagi tanpa mengubah izin lama
+  - [x] Pengingat H-60/30/7/0 tidak terkirim dua kali walau job dijalankan berulang
+  - [x] Filter `registration_status=expiring` benar pada batas hari ke-60
 - Verifikasi: `php artisan test --filter=Registration`
 - Di luar lingkup: blokir alokasi (diuji di T-078)
 
@@ -167,9 +167,9 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations `principals`, `suppliers`, `supplier_products`, alter `products` add FK `principal_id`; `app/Domain/Purchasing/{Models/{Principal,Supplier,SupplierProduct},Actions/*,Listings/{PrincipalListing,SupplierListing},Policies/*}`; controllers; lookup `principals`, `suppliers`; pages `Principals/Index.tsx`, `Suppliers/{Index,Form,Show}.tsx`; tests
 - Deskripsi: Supplier dengan syarat bayar default, rekening terenkripsi & termasking, daftar produk dipasok (harga beli terakhir diperbarui saat penerimaan, lead time).
 - Kriteria penerimaan:
-  - [ ] Rekening tidak pernah muncul plaintext di respons/log/audit; `reveal-account` mencatat `sensitive_data_viewed`
-  - [ ] Supplier nonaktif tidak muncul di lookup PO
-  - [ ] 2 listing lulus kontrak
+  - [x] Rekening tidak pernah muncul plaintext di respons/log/audit; `reveal-account` mencatat `sensitive_data_viewed`
+  - [x] Supplier nonaktif tidak muncul di lookup PO
+  - [x] 2 listing lulus kontrak
 - Verifikasi: `php artisan test --filter='Supplier|Principal'`
 - Di luar lingkup: faktur & pembayaran supplier (Paket F)
 
@@ -181,15 +181,15 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; **pindah** `app/Domain/Employee/Support/PhoneNormalizer.php` → `app/Support/Phone/PhoneNormalizer.php` (perbarui pemakai: `EmployeeRequest`, `EmployeeListing`, `Employee/Import/RowNormalizer`, test `EmployeeSupportTest`; perilaku sama); addendum T-020: `app/Http/Requests/Access/UserRequest.php` menormalisasi `users.phone` lewat `PhoneNormalizer` + migrasi data kecil yang menormalisasi `users.phone` yang ada; `app/Domain/Customer/{Models/{SalesArea,Customer,CustomerAssignment},Enums/CustomerStatus,Actions/{SaveSalesArea,CreateCustomer,UpdateCustomer,ReassignCustomers},Listings/{SalesAreaListing,CustomerListing (implements ExportableListing)},Policies/*}`; kunci `customers` di `config/pakis.php` `exports`; `DataScope::forCustomer()`; command `customers:apply-assignments`; controllers; lookup `sales_areas`, `customers`; pages `SalesAreas/Index.tsx`, `Customers/{Index,Form,Show}.tsx`; `components/pakis/location-point-input.tsx` (tanpa library: tempel tautan Google Maps atau tombol "Ambil lokasi HP" lewat Geolocation API) + tampilan `location-diagram.tsx` yang ada; HP termasking memakai `masked-value.tsx`; tests
 - Deskripsi: Data kios inti tanpa verifikasi (T-074 menambah verifikasi, kontak, duplikat, HP, limit). Status awal `prospect`, `credit_limit_active=false`. `PhoneNormalizer` dipindah ke `app/Support/Phone/` dan dipakai Employee, akun (`users.phone`), dan Customer (PA-6/PA-23); tidak ada normalizer kedua. Pengalihan massal ≤ 500 kios. Titik kios **tanpa Leaflet, tanpa tile, tanpa mengubah CSP** (PA-20, pola T-021/T-038): diisi dari tautan Google Maps atau Geolocation API browser, ditampilkan dengan `LocationDiagram`. Ekspor `admin.customers.export` hanya untuk `customers.export`, HP termasking (PA-3, SEC-108).
 - Kriteria penerimaan:
-  - [ ] Unik satu penugasan aktif (test DB); pengalihan menutup lama & membuka baru dalam satu transaksi
-  - [ ] Pengalihan bertanggal masa depan diterapkan job pada hari H
-  - [ ] Supervisor (scope team) hanya melihat kios area yang ia supervisi atau milik timnya; Sales (Paket B) belum ada — test memakai role uji `self`
-  - [ ] IDOR: kios di luar scope → 404 di show/edit/update
-  - [ ] CSP tidak berubah (`img-src 'self' data: blob:`, `SecurityHeaders`); tidak ada dependency npm baru; titik dari tautan Google Maps dan dari Geolocation API tersimpan benar
-  - [ ] `App\Support\Phone\PhoneNormalizer` menggantikan kelas lama tanpa perubahan perilaku (test Employee/impor pegawai lama hijau); tidak ada `PhoneNormalizer` lain di `app/`
-  - [ ] `users.phone` baru tersimpan `62…`; migrasi data menormalisasi nilai lama (`0812…` → `62812…`), nilai tak sah dibiarkan dan dilaporkan
-  - [ ] Ekspor `customers`: tanpa `customers.export` → 403; HP termasking (SEC-108)
-  - [ ] 2 listing + ekspor `customers` lulus kontrak
+  - [x] Unik satu penugasan aktif (test DB); pengalihan menutup lama & membuka baru dalam satu transaksi
+  - [x] Pengalihan bertanggal masa depan diterapkan job pada hari H
+  - [x] Supervisor (scope team) hanya melihat kios area yang ia supervisi atau milik timnya; Sales (Paket B) belum ada — test memakai role uji `self`
+  - [x] IDOR: kios di luar scope → 404 di show/edit/update
+  - [x] CSP tidak berubah (`img-src 'self' data: blob:`, `SecurityHeaders`); tidak ada dependency npm baru; titik dari tautan Google Maps dan dari Geolocation API tersimpan benar
+  - [x] `App\Support\Phone\PhoneNormalizer` menggantikan kelas lama tanpa perubahan perilaku (test Employee/impor pegawai lama hijau); tidak ada `PhoneNormalizer` lain di `app/`
+  - [x] `users.phone` baru tersimpan `62…`; migrasi data menormalisasi nilai lama (`0812…` → `62812…`), nilai tak sah dibiarkan dan dilaporkan
+  - [x] Ekspor `customers`: tanpa `customers.export` → 403; HP termasking (SEC-108)
+  - [x] 2 listing + ekspor `customers` lulus kontrak
 - Verifikasi: `php artisan test --filter='SalesArea|Customer|PhoneNormalizer|EmployeeSupport|User'`
 - Di luar lingkup: verifikasi & limit (T-074), price list FK (T-075)
 
@@ -201,15 +201,15 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations `customer_contacts`, `customer_verifications`, `customer_otp_codes` (CHECK `customers_active_limit_chk` sudah dibuat T-073); `app/Domain/Customer/{Actions/{SubmitVerification,RecordOfficeCall,SendCustomerOtp,CheckCustomerOtp,RequestPhoneChange,RequestCreditLimit,RequestMerge},Approvables/{CustomerActivation,CustomerPhoneChange,CustomerCreditLimit,CustomerMerge},Duplicates/DuplicateFinder.php,Otp/CustomerOtpService.php,Listings/CustomerVerificationListing}` (`CustomerOtpService`: kirim lewat `OtpManager`/`OtpChannel` Fase 0 kanal `whatsapp` saja, simpan hash & hitung percobaan di `customer_otp_codes`; `OtpService` tidak dipakai karena per-`User` & khusus lupa password; **tidak** ada kontrak `WhatsAppChannel` baru); kunci setting `customer.otp_*` (**15** §9); case `NotificationKind::CustomerPhoneChanged` + kunci `notification.on_customer_phone_changed`; unggahan foto toko & dokumen kelayakan lewat `app/Support/Upload/` (T-070); controllers; pages `Customers/Verify.tsx` (OTP memakai `otp-code-input.tsx`, titik memakai `location-point-input.tsx` T-073), `CustomerVerifications/Index.tsx`, dialog duplikat; tests
 - Deskripsi: Implementasi BR-165/166 lengkap dengan engine approval T-067. `DuplicateFinder` memakai normalisasi nama + `similar_text` (tanpa dependency baru) + jarak Haversine. HP kios dibandingkan dengan `employees.phone` pegawai aktif **dan** `users.phone` akun aktif setelah normalisasi bersama `App\Support\Phone\PhoneNormalizer` (T-073). OTP: lewat kerangka OTP Fase 0, **hanya kanal WhatsApp** ke `owner_phone` (Telegram/email tidak membuktikan kepemilikan nomor, jadi tidak ditawarkan); panjang `auth.otp_length`, berlaku, percobaan, dan throttle per nomor/per pengguna dari kunci `customer.otp_*` (bukan konstanta); kode disimpan hash. Selama driver WhatsApp nyata belum ada (OQ-004), `customer.otp_enabled=false` dan jalur telepon kantor (BR-165b) yang dipakai. Pesan notifikasi kios lain (bukan OTP) lewat `WhatsAppSender` + `ChannelGuard`. Galat domain lewat jalur Inertia T-067; `admin.customers.duplicates` membalas JSON format `05` §2.2.
 - Kriteria penerimaan:
-  - [ ] `credit_limit_active=true` tanpa `verified_at` ditolak DB (CHECK) dan Policy
-  - [ ] HP sama dengan kios aktif → `CUSTOMER_PHONE_DUPLICATE`; HP pegawai aktif **atau** HP akun pengguna aktif (termasuk yang diketik `08…`) → `PHONE_BELONGS_TO_EMPLOYEE`
-  - [ ] Nama "Toko Tani Makmur" vs "TANI MAKMUR" berjarak 120 m → kandidat duplikat; simpan tanpa konfirmasi "bukan duplikat" ditolak
-  - [ ] `customer.otp_enabled=false` atau kanal WhatsApp tidak tersedia → endpoint OTP `503 CHANNEL_UNAVAILABLE`; jalur telepon kantor oleh pengguna ≠ pengaju berhasil; oleh pengaju ditolak; kanal Telegram/email tidak pernah dipakai untuk OTP kios
-  - [ ] OTP salah melebihi `customer.otp_max_attempts` atau kirim melebihi `customer.otp_send_per_*_hour` → `429 RATE_LIMITED`; angka diambil dari setting (test mengubah nilai setting); kode tidak pernah muncul di log aplikasi, `audit_logs`, `security_events`, maupun notifikasi (pesan log memakai nomor termasking "6281•••789"). Pengecualian satu-satunya: driver OTP `log` Fase 0 (`LogOtpChannel`, hanya lokal/staging, ditolak di produksi) yang memang menulis kode ke log `otp` untuk pengembangan
-  - [ ] Ganti HP butuh approval Owner; notifikasi Owner (`customer_phone_changed`) berisi nomor termasking; audit nilai lama/baru
-  - [ ] Foto toko & dokumen kelayakan ditolak bila bukan JPG/PNG/WEBP/PDF menurut isi berkas (`app/Support/Upload/`)
-  - [ ] Gabung kios: sumber `merged` + `merged_into_id`, listing default tidak menampilkan `merged`
-  - [ ] Limit ≥ ambang memakai rantai 2 langkah
+  - [x] `credit_limit_active=true` tanpa `verified_at` ditolak DB (CHECK) dan Policy
+  - [x] HP sama dengan kios aktif → `CUSTOMER_PHONE_DUPLICATE`; HP pegawai aktif **atau** HP akun pengguna aktif (termasuk yang diketik `08…`) → `PHONE_BELONGS_TO_EMPLOYEE`
+  - [x] Nama "Toko Tani Makmur" vs "TANI MAKMUR" berjarak 120 m → kandidat duplikat; simpan tanpa konfirmasi "bukan duplikat" ditolak
+  - [x] `customer.otp_enabled=false` atau kanal WhatsApp tidak tersedia → endpoint OTP `503 CHANNEL_UNAVAILABLE`; jalur telepon kantor oleh pengguna ≠ pengaju berhasil; oleh pengaju ditolak; kanal Telegram/email tidak pernah dipakai untuk OTP kios — aktivasi: telepon kantor boleh dipilih walau OTP tersedia (PA-49); ganti HP: dicatat pengaju sendiri (PA-57a); uji kanal WA nyata menunggu driver (OQ-004)
+  - [x] OTP salah melebihi `customer.otp_max_attempts` atau kirim melebihi `customer.otp_send_per_*_hour` → `429 RATE_LIMITED`; angka diambil dari setting (test mengubah nilai setting); kode tidak pernah muncul di log aplikasi, `audit_logs`, `security_events`, maupun notifikasi (pesan log memakai nomor termasking "6281•••789"). Pengecualian satu-satunya: driver OTP `log` Fase 0 (`LogOtpChannel`, hanya lokal/staging, ditolak di produksi) yang memang menulis kode ke log `otp` untuk pengembangan
+  - [x] Ganti HP butuh approval Owner; notifikasi Owner (`customer_phone_changed`) berisi nomor termasking; audit nilai lama/baru
+  - [x] Foto toko & dokumen kelayakan ditolak bila bukan JPG/PNG/WEBP/PDF menurut isi berkas (`app/Support/Upload/`)
+  - [x] Gabung kios: sumber `merged` + `merged_into_id`, listing default tidak menampilkan `merged`
+  - [x] Limit ≥ ambang memakai rantai 2 langkah — pengaju cukup `customers.manage`; izin khusus di langkah persetujuan (PA-56f)
 - Verifikasi: `php artisan test --filter='CustomerVerification|CustomerDuplicate|CustomerPhone|CreditLimit|CustomerOtp'`
 - Di luar lingkup: kelayakan pembeli terbatas dipakai di dokumen jual (Paket B); driver WhatsApp nyata untuk kerangka OTP Fase 0 (Paket C, OQ-004)
 
@@ -221,12 +221,12 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations + FK `customers.price_list_id` + trigger `price_list_items_lock`; `app/Domain/Pricing/{Models/*,Enums/PriceVersionStatus,Actions/{SavePriceList,CreatePriceVersion,UpsertPriceItems,SubmitPriceVersion},Approvables/PriceListPublish,PriceResolver.php,Data/ResolvedPrice.php,Listings/{PriceListListing,PriceListItemListing (implements ExportableListing)}}`; kunci `price_list_items` di `config/pakis.php` `exports` (rute `admin.price-lists.items.export`, `prices.view`); command `pricing:activate-versions`; controllers; pages `PriceLists/{Index,Show,Items}.tsx`; tests
 - Deskripsi: Versi baru bisa kosong, salin versi lain, atau salin dengan persen naik/turun (dibulatkan sesuai `pricing.rounding`). Editor item: tabel dengan input harga per satuan dan baris tier `min_qty`. `PriceResolver` mengembalikan `ResolvedPrice{price, price_list_version_id, source_list_kind, min_qty}`.
 - Kriteria penerimaan:
-  - [ ] Ubah item versi `published` ditolak di Policy **dan** trigger DB (`PRICE_VERSION_LOCKED`)
-  - [ ] Resolusi 4 tingkat (store→kios→area→default) dengan fallback per produk (test tabel kasus)
-  - [ ] `min_qty` 1/10/50: qty 49 → harga tier 10
-  - [ ] Versi berlaku besok tidak dipakai hari ini; job men-supersede versi lama tepat waktu
-  - [ ] Penerbitan oleh pemegang `prices.publish` langsung terbit; pengguna lain → approval
-  - [ ] 2 listing + ekspor `price_list_items` (`ExportableListing`) lulus kontrak
+  - [x] Ubah item versi `published` ditolak di Policy **dan** trigger DB (`PRICE_VERSION_LOCKED`)
+  - [x] Resolusi 4 tingkat (store→kios→area→default) dengan fallback per produk (test tabel kasus)
+  - [x] `min_qty` 1/10/50: qty 49 → harga tier 10
+  - [x] Versi berlaku besok tidak dipakai hari ini; job men-supersede versi lama tepat waktu
+  - [x] Penerbitan oleh pemegang `prices.publish` langsung terbit; pengguna lain → approval
+  - [x] 2 listing + ekspor `price_list_items` (`ExportableListing`) lulus kontrak
 - Verifikasi: `php artisan test --filter='Price'`
 - Di luar lingkup: snapshot di dokumen jual (Paket B)
 
@@ -238,10 +238,10 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; `app/Domain/Pricing/{Models/Promotion*,Enums/{PromotionType,PromotionStatus},Actions/{SavePromotion,SubmitPromotion,EndPromotion},Approvables/PromotionActivate,PromotionEngine.php,Data/{PricedLine,AppliedPromotion}.php,Listings/PromotionListing}`; controller + `simulate`; pages `Promotions/{Index,Form,Simulate}.tsx`; tests
 - Deskripsi: Lima tipe promo. `PromotionEngine::apply()` murni (tanpa side effect) agar bisa dipakai simulasi, Paket B (web), dan C (offline — logika yang sama diporting ke Dart; sediakan fixture kasus uji JSON `tests/Fixtures/promotion_cases.json` yang dipakai kedua sisi).
 - Kriteria penerimaan:
-  - [ ] Fixture ≥ 15 kasus (tiap tipe, stackable vs tidak, prioritas, harga tidak negatif, pembulatan) lulus
-  - [ ] Promo dana prinsipal wajib `principal_id`; `shared` wajib `principal_share_pct`
-  - [ ] Promo lewat `ends_at` → `ended` oleh job; promo `active` tidak bisa diubah selain diakhiri
-  - [ ] Simulasi tidak menulis apa pun ke DB (test query log)
+  - [x] Fixture ≥ 15 kasus (tiap tipe, stackable vs tidak, prioritas, harga tidak negatif, pembulatan) lulus
+  - [x] Promo dana prinsipal wajib `principal_id`; `shared` wajib `principal_share_pct`
+  - [x] Promo lewat `ends_at` → `ended` oleh job; promo `active` tidak bisa diubah selain diakhiri
+  - [x] Simulasi tidak menulis apa pun ke DB (test query log)
 - Verifikasi: `php artisan test --filter=Promotion`
 - Di luar lingkup: pemakaian anggaran & bonus barang (Paket B)
 
@@ -261,18 +261,18 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 
   Semua method menerima `Source{type, id, line_id}` dan wajib dipanggil di dalam `DB::transaction` milik Action pemanggil (method melempar bila tidak ada transaksi aktif). Kunci baris `stock_batches` urut `id` naik, retry deadlock maks 3x, lalu `StockConflict` → `409 STATE_CONFLICT` (kode bersama, **15** §11.3). `AccountingOutbox::record(code, source, businessDate, payload)` ditulis Action pemanggil di transaksi yang sama (payload: peran akun + nilai string desimal + kualifier **15** §11.4: `stock_location_id` & `product_id` per baris, `refs.supplier_id` untuk `inventory.goods_received`/`inventory.purchase_returned`). `PeriodGuard::assertOpen(date)` membaca `setting('accounting.lock_date')` (kosong = terbuka) dan menolak dengan `422 PERIOD_LOCKED` (jalur galat web T-067); Action pemanggil outbox memanggilnya dengan tanggal bisnis dokumen sebelum menulis mutasi. `PeriodGuardArchTest` berlaku untuk semua domain (bukan hanya `Sales/Receivable/Cash/Pos`): setiap kelas Action yang memanggil `AccountingOutbox::record()` juga memanggil `PeriodGuard`. Layar & aksi ubah lock date (`UpdateLockDate`, BR-229, `accounting.lock`), katalog event B, dan validator keseimbangan **bukan** bagian task ini (T-096).
 - Kriteria penerimaan:
-  - [ ] Arch test: hanya `App\Domain\Inventory\Ledger` yang memanggil `update/insert` pada `stock_batches.qty_*` dan `stock_movements`
-  - [ ] UPDATE/DELETE `stock_movements` ditolak trigger (test SQL langsung)
-  - [ ] `LastUnitTest`: 20 proses mengambil 1 unit terakhir → 1 sukses, 19 `INSUFFICIENT_STOCK`, saldo 0, tanpa deadlock tak tertangani (CI MariaDB)
-  - [ ] HPP: kasus BR-159 (stok 0; 10@1.000 + 10@1.200 = 1.100,0000; presisi 4 desimal; total lintas lokasi termasuk TRANSIT & karantina)
-  - [ ] `qty_after` setiap mutasi = saldo batch setelahnya; `inventory:reconcile` pada data acak 1.000 mutasi = 0 selisih
-  - [ ] Pemanggilan di luar transaksi melempar `LogicException`
-  - [ ] Setting `inventory.negative_stock_allowed` berpenanda `locked` dan hanya bisa `false` (test registri)
-  - [ ] `accounting.lock_date` tipe `date`, default kosong, berpenanda `locked` (test registri dua arah dengan `08` §2); `PeriodGuard::assertOpen()` → `PERIOD_LOCKED` untuk tanggal ≤ lock date, lolos untuk tanggal sesudahnya dan bila kosong
-  - [ ] `PeriodGuardArchTest`: Action fixture yang memanggil `AccountingOutbox::record()` tanpa `PeriodGuard` membuat test merah (domain apa pun)
-  - [ ] Galat `PERIOD_LOCKED` di dalam transaksi Action → rollback: tidak ada `stock_movements` maupun `accounting_events` tertulis
-  - [ ] Selisih rekonsiliasi mengirim notifikasi `stock_reconcile_mismatch` ke Owner & `super_admin` (default lonceng saja)
-  - [ ] Seeder volume (`InventoryVolumeSeeder`, testing saja) 1 juta mutasi; query kartu stok per batch & per produk-lokasi-periode memakai index (assert `EXPLAIN` tanpa `ALL`)
+  - [x] Arch test: hanya `App\Domain\Inventory\Ledger` yang memanggil `update/insert` pada `stock_batches.qty_*` dan `stock_movements`
+  - [x] UPDATE/DELETE `stock_movements` ditolak trigger (test SQL langsung)
+  - [x] `LastUnitTest`: 20 proses mengambil 1 unit terakhir → 1 sukses, 19 `INSUFFICIENT_STOCK`, saldo 0, tanpa deadlock tak tertangani (CI MariaDB)
+  - [x] HPP: kasus BR-159 (stok 0; 10@1.000 + 10@1.200 = 1.100,0000; presisi 4 desimal; total lintas lokasi termasuk TRANSIT & karantina)
+  - [x] `qty_after` setiap mutasi = saldo batch setelahnya; `inventory:reconcile` pada data acak 1.000 mutasi = 0 selisih
+  - [x] Pemanggilan di luar transaksi melempar `LogicException`
+  - [x] Setting `inventory.negative_stock_allowed` berpenanda `locked` dan hanya bisa `false` (test registri)
+  - [x] `accounting.lock_date` tipe `date`, default kosong, berpenanda `locked` (test registri dua arah dengan `08` §2); `PeriodGuard::assertOpen()` → `PERIOD_LOCKED` untuk tanggal ≤ lock date, lolos untuk tanggal sesudahnya dan bila kosong
+  - [x] `PeriodGuardArchTest`: Action fixture yang memanggil `AccountingOutbox::record()` tanpa `PeriodGuard` membuat test merah (domain apa pun)
+  - [x] Galat `PERIOD_LOCKED` di dalam transaksi Action → rollback: tidak ada `stock_movements` maupun `accounting_events` tertulis
+  - [x] Selisih rekonsiliasi mengirim notifikasi `stock_reconcile_mismatch` ke Owner & `super_admin` (default lonceng saja)
+  - [x] Seeder volume (`InventoryVolumeSeeder`, testing saja) 1 juta mutasi; query kartu stok per batch & per produk-lokasi-periode memakai index (assert `EXPLAIN` tanpa `ALL`) — grup test `volume` manual, dikecualikan dari run default/CI (keputusan Mas); hasil 999.999 mutasi, EXPLAIN tanpa ALL, rekonsiliasi 0 selisih
 - Verifikasi: `php artisan test --filter='Ledger|StockLedgerArch|LastUnit|PeriodGuard'` · `php artisan inventory:stress --workers=20` (CI)
 - Di luar lingkup: dokumen pemakai (T-080–T-086), layar & aturan ubah tanggal kunci (T-096), mesin jurnal (Paket F)
 
@@ -284,11 +284,11 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: `app/Domain/Inventory/Allocation/{FefoAllocator.php,Allocation.php}`; `app/Domain/Inventory/Actions/ExpireBatches.php`; commands `inventory:expire-batches`, `inventory:near-expiry-alerts` (memakai `reminder_logs`, kunci `ed90`/`ed60`/`ed30`); lookup `available_batches` (`LookupSource` dengan dua parameter lewat `rules()`); `components/pakis/batch-picker.tsx` (di atas `async-select.tsx`); `ExpiryBadge` & `StockStatusBadge` = perluasan peta `components/pakis/status-badge.tsx` (bukan badge baru); case `NotificationKind::{BatchNearExpiry,BatchExpired}` + kunci `notification.on_batch_near_expiry`/`on_batch_expired`; widget dashboard; tests
 - Deskripsi: `FefoAllocator::allocate()` sesuai BR-102 (read-only, tanpa kunci); pemanggil mengunci saat eksekusi lewat `StockLedger`. Validasi ulang ketersediaan saat eksekusi (alokasi bisa basi). `BatchPicker` menandai batch bukan-FEFO dan meminta konfirmasi.
 - Kriteria penerimaan:
-  - [ ] Urutan: ED terdekat, NULL terakhir, `received_date`, `id` (test tabel kasus)
-  - [ ] Batch `quarantine`/`expired`, ED ≤ hari ini + `min_sell_days`, dan produk tanpa izin aktif tidak dialokasikan (`PRODUCT_REGISTRATION_INACTIVE`)
-  - [ ] Alokasi 1 produk pada 200 batch < 100 ms (NFR-A02, test benchmark longgar)
-  - [ ] Job ED: batch kemarin → `expired`, reservasi aktif dilepas, log status tercatat dengan user NULL; dijalankan dua kali tidak menggandakan log
-  - [ ] Alert per ambang terkirim sekali per batch
+  - [x] Urutan: ED terdekat, NULL terakhir, `received_date`, `id` (test tabel kasus)
+  - [x] Batch `quarantine`/`expired`, ED ≤ hari ini + `min_sell_days`, dan produk tanpa izin aktif tidak dialokasikan (`PRODUCT_REGISTRATION_INACTIVE`)
+  - [x] Alokasi 1 produk pada 200 batch < 100 ms (NFR-A02, test benchmark longgar)
+  - [x] Job ED: batch kemarin → `expired`, reservasi aktif dilepas, log status tercatat dengan user NULL; dijalankan dua kali tidak menggandakan log
+  - [x] Alert per ambang terkirim sekali per batch
 - Verifikasi: `php artisan test --filter='Fefo|ExpireBatches|NearExpiry'`
 - Di luar lingkup: alokasi pesanan penjualan (Paket B)
 
@@ -300,11 +300,11 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; sequence `purchase_order`; `app/Domain/Purchasing/{Models/{PurchaseOrder,PurchaseOrderLine},Enums/PurchaseOrderStatus,Actions/{SavePurchaseOrder,SubmitPurchaseOrder,CancelPurchaseOrder,ClosePurchaseOrder,RecalculatePurchaseOrder},Approvables/PurchaseOrderApproval,Listings/PurchaseOrderListing (implements ExportableListing),Policies/PurchaseOrderPolicy,Resources/PurchaseOrderResource}`; kunci `purchase_orders` di `config/pakis.php` `exports` (rute `admin.purchase-orders.export`, `purchase_orders.view`); controller; pages `Purchasing/PurchaseOrders/{Index,Form,Show,Print}.tsx`; `components/pakis/{DocumentHeader,DocumentLines,MoneyInput}.tsx`; tests
 - Deskripsi: Editor baris (produk via lookup, satuan default beli, harga dari `supplier_products` terakhir sebagai saran). Total dihitung server dengan `Money`. Halaman cetak HTML sementara (PDF menunggu OQ-109/ADR-114).
 - Kriteria penerimaan:
-  - [ ] Total dari klien diabaikan; server menghitung ulang (test kirim total salah)
-  - [ ] PO `approved` tidak bisa diubah (403); tutup wajib alasan
-  - [ ] Purchasing tidak bisa menyetujui PO buatannya walau diberi `purchase_orders.approve` (maker-checker)
-  - [ ] Staf gudang (scope location) hanya melihat PO ke lokasinya; IDOR → 404
-  - [ ] Listing + ekspor (`ExportableListing`) lulus kontrak; filter `overdue` benar
+  - [x] Total dari klien diabaikan; server menghitung ulang (test kirim total salah)
+  - [x] PO `approved` tidak bisa diubah (403); tutup wajib alasan
+  - [x] Purchasing tidak bisa menyetujui PO buatannya walau diberi `purchase_orders.approve` (maker-checker)
+  - [x] Staf gudang (scope location) hanya melihat PO ke lokasinya; IDOR → 404
+  - [x] Listing + ekspor (`ExportableListing`) lulus kontrak; filter `overdue` benar
 - Verifikasi: `php artisan test --filter=PurchaseOrder`
 - Di luar lingkup: penerimaan (T-080), PPN (Paket F, OQ-101)
 
@@ -405,11 +405,11 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: `app/Support/Import/*` (kontrak per tipe impor `fields()`, `normalize()`, `validate()`, `rowKey()`, `apply()` + registri tipe; staging, pemetaan, validasi, proses, berkas galat dipindah dari `app/Domain/Employee/{Actions/{StoreImportUpload,SaveImportMapping,ValidateImportBatch,ProcessImportBatch,ApplyImportRow,CancelImport},Import/*}` sejauh generik); `app/Domain/Employee/Import/*` menjadi implementasi tipe `employees` dari kontrak itu; migration `import_rows.row_key` menyimpan **sha256 kunci gabungan** (64 karakter) + migrasi data baris lama; `ImportBatch` tipe tidak lagi hanya `TYPE_EMPLOYEES`; `routes/admin.php`: rute `/impor/{type}…` dengan `whereIn('type', <tipe terdaftar>)` agar tidak bentrok dengan `impor/pegawai…`, `impor/profil`, `impor/{batch}` (`whereNumber`); batas baris per tipe lewat setting (`import.max_rows_<type>`, fallback `import.max_rows`; registri + `08` §2); tests
 - Deskripsi: Impor pegawai Fase 0 sekarang khusus pegawai (`app/Domain/Employee/{Actions,Import}`). Task ini mengekstrak kerangkanya ke `app/Support/Import` dengan kontrak generik, lalu merefaktor impor pegawai **tanpa mengubah perilaku** (rute, izin `employees.import`, pesan, pemetaan tersimpan, idempoten, laporan galat tetap). Kunci idempoten `row_key` = sha256 kunci gabungan karena kunci gabungan tipe baru (mis. saldo awal lokasi+SKU+batch+bin) bisa > 100 karakter. Tipe Paket A (`products`, `customers`, `price_items`, `opening_stock`, `stock_levels`) didaftarkan oleh T-085/T-086 di atas kerangka ini.
 - Kriteria penerimaan:
-  - [ ] Seluruh test impor pegawai lama (T-027/T-028) hijau tanpa diubah perilakunya; rute & nama rute `admin.imports.*` tidak berubah
-  - [ ] `row_key` = sha256 kunci gabungan; impor ulang file yang sama tetap 0 baris baru (pegawai)
-  - [ ] Tipe uji (fixture) bisa didaftarkan hanya dengan mengimplementasikan kontrak (tanpa menyalin kode pegawai)
-  - [ ] `/impor/{type}` hanya menerima tipe terdaftar; `impor/pegawai/baru`, `impor/profil`, `impor/{batch}` tetap menuju controller lama (test rute)
-  - [ ] Batas baris per tipe dibaca dari setting; tanpa kunci khusus memakai `import.max_rows`
+  - [x] Seluruh test impor pegawai lama (T-027/T-028) hijau tanpa diubah perilakunya; rute & nama rute `admin.imports.*` tidak berubah
+  - [x] `row_key` = sha256 kunci gabungan; impor ulang file yang sama tetap 0 baris baru (pegawai)
+  - [x] Tipe uji (fixture) bisa didaftarkan hanya dengan mengimplementasikan kontrak (tanpa menyalin kode pegawai)
+  - [x] `/impor/{type}` hanya menerima tipe terdaftar; `impor/pegawai/baru`, `impor/profil`, `impor/{batch}` tetap menuju controller lama (test rute)
+  - [x] Batas baris per tipe dibaca dari setting; tanpa kunci khusus memakai `import.max_rows`
 - Verifikasi: `php artisan test --filter='Import'` · `php artisan test tests/Contract` · `./vendor/bin/phpstan`
 - Di luar lingkup: importer tipe Paket A (T-085, T-086)
 

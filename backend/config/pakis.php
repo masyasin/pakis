@@ -9,8 +9,6 @@ use App\Domain\Attendance\Listings\ScheduleOverrideListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Catalog\Listings\ProductListing;
-use App\Domain\Pricing\Approvables\PriceListPublish;
-use App\Domain\Pricing\Listings\PriceListItemListing;
 use App\Domain\Customer\Approvables\CustomerActivation;
 use App\Domain\Customer\Listings\CustomerListing;
 use App\Domain\Device\Listings\DeviceListing;
@@ -20,6 +18,8 @@ use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 use App\Domain\Organization\Listings\PositionListing;
+use App\Domain\Pricing\Approvables\PriceListPublish;
+use App\Domain\Pricing\Listings\PriceListItemListing;
 
 /*
  * Konfigurasi TEKNIS PAKIS ONE yang bukan secret dan bukan parameter bisnis.

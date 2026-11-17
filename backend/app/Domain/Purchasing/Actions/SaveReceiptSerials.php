@@ -6,6 +6,7 @@ use App\Domain\Audit\AuditLogger;
 use App\Domain\Inventory\Enums\SerialInputMethod;
 use App\Domain\Inventory\Enums\SerialStatus;
 use App\Domain\Inventory\Models\SerialNumber;
+use App\Domain\Purchasing\Enums\GoodsReceiptStatus;
 use App\Domain\Purchasing\Models\GoodsReceipt;
 use App\Domain\Purchasing\Models\GoodsReceiptLine;
 use App\Models\User;
@@ -26,7 +27,8 @@ use Throwable;
  * dan terhadap `serial_numbers` produk yang sama (`SERIAL_DUPLICATE`; unik DB lapis kedua). Nomor yang
  * sudah ada di baris ini dipertahankan; yang hilang dari daftar dihapus; yang baru dibuat dengan
  * `input_method` kiriman — manual wajib foto label (disimpan sebelum transaksi, dihapus bila gagal).
- * Nomor seri dibuat dengan `stock_batch_id` NULL sampai GR diposting (PA-65).
+ * Nomor seri dibuat dengan `stock_batch_id` NULL sampai GR diposting (PA-65). Mengubah nomor seri penerimaan
+ * yang sudah `checked` mengembalikannya ke `draft` (wajib periksa ulang, SEC-104).
  */
 final class SaveReceiptSerials
 {
@@ -37,7 +39,7 @@ final class SaveReceiptSerials
 
     /**
      * @param  list<string>  $serials
-     * @return array{total: int, added: int, removed: int}
+     * @return array{total: int, added: int, removed: int, reset: bool}
      */
     public function handle(GoodsReceipt $receipt, GoodsReceiptLine $line, array $serials, SerialInputMethod $method, ?UploadedFile $photo, User $actor): array
     {
@@ -89,7 +91,7 @@ final class SaveReceiptSerials
 
     /**
      * @param  list<string>  $serials
-     * @return array{total: int, added: int, removed: int}
+     * @return array{total: int, added: int, removed: int, reset: bool}
      */
     private function replace(GoodsReceipt $receipt, GoodsReceiptLine $line, array $serials, SerialInputMethod $method, ?StoredUpload $stored, User $actor): array
     {
@@ -128,10 +130,20 @@ final class SaveReceiptSerials
             $added++;
         }
 
+        // SEC-104 dua orang: hasil periksa hanya berlaku untuk isi yang diperiksa. Bila nomor seri berubah
+        // setelah diperiksa, penerimaan kembali draf agar pemosting tidak bisa mengubah isi lalu langsung
+        // memposting tanpa pemeriksa (pola SaveGoodsReceipt).
+        $reset = $locked->status === GoodsReceiptStatus::Checked && ($added > 0 || $removed->isNotEmpty());
+        if ($reset) {
+            $before = $locked->audited();
+            $locked->forceFill(['status' => GoodsReceiptStatus::Draft, 'checked_by' => null, 'checked_at' => null, 'updated_by' => $actor->id])->save();
+            $this->audit->record('goods_receipt.updated', $locked, $before, [...$locked->audited(), 'reason' => 'serials_changed_after_check']);
+        }
+
         $this->audit->record('goods_receipt.serials', $locked, null, [
             'line_id' => $line->id, 'product_id' => $line->product_id, 'total' => count($serials), 'added' => $added, 'removed' => $removed->count(), 'method' => $method->value,
         ]);
 
-        return ['total' => count($serials), 'added' => $added, 'removed' => $removed->count()];
+        return ['total' => count($serials), 'added' => $added, 'removed' => $removed->count(), 'reset' => $reset];
     }
 }

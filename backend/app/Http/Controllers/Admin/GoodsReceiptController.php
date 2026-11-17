@@ -199,7 +199,9 @@ class GoodsReceiptController extends Controller
         abort_unless($line->goods_receipt_id === $gr->id, 404);
         Gate::authorize('serials', $gr);
         $result = $action->handle($gr, $line, $request->serials(), $request->inputMethod(), $request->file('photo'), $user);
-        Inertia::flash('toast', ['type' => 'success', 'message' => "{$result['total']} nomor seri tersimpan untuk baris ini."]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => $result['reset']
+            ? "{$result['total']} nomor seri tersimpan. Penerimaan kembali draf: periksa ulang sebelum diposting."
+            : "{$result['total']} nomor seri tersimpan untuk baris ini."]);
 
         return back();
     }

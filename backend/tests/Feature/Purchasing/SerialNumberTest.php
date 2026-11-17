@@ -8,6 +8,7 @@ use App\Domain\Catalog\Models\ProductUnit;
 use App\Domain\Inventory\Enums\SerialInputMethod;
 use App\Domain\Inventory\Enums\SerialStatus;
 use App\Domain\Inventory\Models\SerialNumber;
+use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Purchasing\Actions\SavePurchaseOrder;
 use App\Domain\Purchasing\Enums\GoodsReceiptStatus;
 use App\Domain\Purchasing\Enums\PurchaseOrderStatus;
@@ -149,6 +150,32 @@ test('BR-144 UAT-A12 5 sprayer diterima → 5 nomor seri in_stock dengan batch; 
     $this->actingAs($this->owner)->get("/nomor-seri?filter[stock_location_id]={$this->store->id}")->assertInertia(fn (Assert $page) => $page->has('rows', 0));
     $this->actingAs($this->owner)->get('/nomor-seri?filter[status][]=sold')->assertInertia(fn (Assert $page) => $page->has('rows', 0));
     $this->actingAs($this->owner)->get('/nomor-seri?sort=serial_no')->assertInertia(fn (Assert $page) => $page->where('rows.0.serial_no', 'SPR-001'));
+});
+
+test('SEC-104 ganti nomor seri setelah diperiksa → kembali draf; posting ditolak sampai diperiksa ulang', function () {
+    $gr = serialGr(serialPo('2'), qty: '2');
+    putSerials($gr, ['serials' => ['SPR-A', 'SPR-B'], 'method' => 'scan'])->assertSessionHasNoErrors();
+    $this->actingAs($this->clerk)->post("/penerimaan/{$gr->id}/periksa")->assertSessionHasNoErrors();
+    expect($gr->fresh()->status)->toBe(GoodsReceiptStatus::Checked);
+
+    // Kirim ulang daftar yang sama: tidak ada perubahan, hasil periksa tetap berlaku.
+    putSerials($gr, ['serials' => ['SPR-A', 'SPR-B'], 'method' => 'scan'], $this->clerk2)->assertSessionHasNoErrors();
+    expect($gr->fresh()->status)->toBe(GoodsReceiptStatus::Checked);
+
+    // Pemosting mengganti satu nomor → kembali draf, pemeriksa dikosongkan, posting ditolak.
+    putSerials($gr, ['serials' => ['SPR-A', 'SPR-Z'], 'method' => 'scan'], $this->clerk2)->assertSessionHasNoErrors();
+    $gr->refresh();
+    expect($gr->status)->toBe(GoodsReceiptStatus::Draft)
+        ->and($gr->checked_by)->toBeNull()
+        ->and($gr->checked_at)->toBeNull();
+    $this->actingAs($this->clerk2)->postJson("/penerimaan/{$gr->id}/posting")->assertStatus(409)->assertJsonPath('error.code', 'STATE_CONFLICT');
+    expect(StockMovement::query()->count())->toBe(0);
+
+    // Diperiksa ulang oleh staf 2 → posting harus oleh orang lain (staf 1).
+    $this->actingAs($this->clerk2)->post("/penerimaan/{$gr->id}/periksa")->assertSessionHasNoErrors();
+    $this->actingAs($this->clerk2)->postJson("/penerimaan/{$gr->id}/posting")->assertStatus(403)->assertJsonPath('error.code', 'RECEIPT_SAME_PERSON');
+    $this->actingAs($this->clerk)->post("/penerimaan/{$gr->id}/posting")->assertSessionHasNoErrors();
+    expect($gr->fresh()->status)->toBe(GoodsReceiptStatus::Posted);
 });
 
 test('06 §5 daftar nomor seri ber-scope Stok: staf gudang lain lokasi tidak melihat nomor seri gudang ini', function () {

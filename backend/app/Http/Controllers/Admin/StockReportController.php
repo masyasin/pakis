@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Domain\Access\DataScope;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Inventory\Ledger\BatchKey;
 use App\Domain\Inventory\Listings\StockMovementListing;
 use App\Domain\Inventory\Listings\StockPositionListing;
 use App\Domain\Inventory\Listings\StockTraceListing;
@@ -161,10 +162,36 @@ class StockReportController extends Controller
                 'qty_on_hand' => $b->qty_on_hand,
             ]);
 
+        $searched = $product !== null && $batchNo !== '';
+
         return Inertia::render('stock/trace', [
             ...$result->toInertia(),
-            'searched' => $product !== null && $batchNo !== '',
+            'searched' => $searched,
+            'examples' => $searched ? [] : self::traceExamples($user),
         ]);
+    }
+
+    /**
+     * Contoh telusur (halaman kosong): batch bernomor yang terakhir masuk dalam scope Stok, satu per
+     * produk + nomor batch, agar pengguna langsung punya titik mulai tanpa menghafal nomor batch.
+     *
+     * @return list<array{product_id: int, sku: string, name: string, batch_no: string}>
+     */
+    private static function traceExamples(User $user): array
+    {
+        $query = StockBatch::query()->where('stock_batches.batch_no', '<>', BatchKey::NO_BATCH)
+            ->groupBy('stock_batches.product_id', 'stock_batches.batch_no')
+            ->selectRaw('stock_batches.product_id, stock_batches.batch_no, MAX(stock_batches.id) AS last_id')
+            ->orderByDesc('last_id')->limit(6);
+        $rows = app(DataScope::class)->forStock($query, $user, 'stock_batches.stock_location_id')->get();
+        $products = Product::query()->whereIn('id', $rows->pluck('product_id'))->get(['id', 'sku', 'name'])->keyBy('id');
+
+        return array_values($rows->filter(fn ($r) => isset($products[$r->product_id]))->map(fn ($r) => [
+            'product_id' => (int) $r->product_id,
+            'sku' => $products[$r->product_id]->sku,
+            'name' => $products[$r->product_id]->name,
+            'batch_no' => (string) $r->batch_no,
+        ])->all());
     }
 
     /**

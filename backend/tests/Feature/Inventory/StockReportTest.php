@@ -109,7 +109,9 @@ test('FR-A30 kartu stok: rentang tanggal bawaan bulan berjalan, scope Stok, cari
 
 test('UAT-A17 telusur batch: tanpa produk + nomor batch kosong; dengan keduanya semua lokasi dalam scope (Owner semua)', function () {
     $this->actingAs($this->head)->get('/stok/telusur')->assertOk()
-        ->assertInertia(fn (Assert $page) => $page->component('stock/trace')->where('searched', false)->has('rows', 0));
+        ->assertInertia(fn (Assert $page) => $page->component('stock/trace')->where('searched', false)->has('rows', 0)
+            // Contoh titik mulai hanya dari batch dalam scope (bukan batch lokasi lain).
+            ->where('examples', [['product_id' => $this->product->id, 'sku' => 'RPT-01', 'name' => $this->product->name, 'batch_no' => 'B-001']]));
 
     $url = "/stok/telusur?filter[product_id][]={$this->product->id}&q=B-001";
     $this->actingAs($this->head)->get($url)->assertOk()

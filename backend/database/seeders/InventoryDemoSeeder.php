@@ -6,6 +6,9 @@ use App\Domain\Accounting\Outbox\AccountingOutbox;
 use App\Domain\Accounting\Outbox\EventCode;
 use App\Domain\Accounting\Outbox\EventSource;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Catalog\Models\ProductBarcode;
+use App\Domain\Catalog\Models\ProductCategory;
+use App\Domain\Catalog\Models\ProductUnit;
 use App\Domain\Inventory\Actions\CreateStockOpname;
 use App\Domain\Inventory\Actions\QuarantineStock;
 use App\Domain\Inventory\Actions\ReceiveStockTransfer;
@@ -17,6 +20,7 @@ use App\Domain\Inventory\Actions\SaveStockTransfer;
 use App\Domain\Inventory\Actions\ShipStockTransfer;
 use App\Domain\Inventory\Actions\StartStockOpname;
 use App\Domain\Inventory\Enums\DisposalMethod;
+use App\Domain\Inventory\Enums\SerialInputMethod;
 use App\Domain\Inventory\Enums\StockBatchStatus;
 use App\Domain\Inventory\Enums\StockOpnameScope;
 use App\Domain\Inventory\Ledger\BatchKey;
@@ -27,6 +31,14 @@ use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Inventory\Models\StockBin;
 use App\Domain\Inventory\Models\StockLocation;
 use App\Domain\Inventory\Models\StockTransfer;
+use App\Domain\Purchasing\Actions\CheckGoodsReceipt;
+use App\Domain\Purchasing\Actions\PostGoodsReceipt;
+use App\Domain\Purchasing\Actions\SaveGoodsReceipt;
+use App\Domain\Purchasing\Actions\SavePurchaseOrder;
+use App\Domain\Purchasing\Actions\SaveReceiptSerials;
+use App\Domain\Purchasing\Enums\PurchaseOrderStatus;
+use App\Domain\Purchasing\Models\GoodsReceiptLine;
+use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Models\User;
@@ -35,6 +47,7 @@ use App\Support\Money\UnitCost;
 use App\Support\Time\DisplayTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use RuntimeException;
 
 /**
@@ -46,7 +59,8 @@ use RuntimeException;
  *
  *     php artisan db:seed --class=InventoryDemoSeeder
  *
- * Idempoten kasar: dilewati bila sudah ada mutasi demo (catatan "Data demo").
+ * Idempoten kasar: dilewati bila sudah ada mutasi demo (catatan "Data demo"). Nomor seri demo punya
+ * penjaga sendiri (produk DM-ALT-003), sehingga DB yang sudah berisi stok demo tetap mendapatkannya.
  */
 class InventoryDemoSeeder extends Seeder
 {
@@ -90,6 +104,7 @@ class InventoryDemoSeeder extends Seeder
         if (app()->isProduction()) {
             throw new RuntimeException('InventoryDemoSeeder ditolak di produksi: data demo hanya untuk local/staging (04 §4.2).');
         }
+        $this->seedSerials();
         if (StockTransfer::query()->where('note', 'Data demo')->exists()) {
             return;
         }
@@ -194,6 +209,71 @@ class InventoryDemoSeeder extends Seeder
                 app(RecordRecount::class)->handle($opname, $line->fresh(), $qty->minus('3'), 'Data demo: dicek ulang', $counter2->id);
             }
         }
+    }
+
+    /**
+     * Nomor seri demo (BR-144, halaman Nomor Seri): produk alat bermotor yang melacak nomor seri,
+     * dipesan lewat PO demo (disetujui jalan pintas seperti PO demo T-079), diterima dengan 6 nomor seri
+     * (scan), diperiksa & diposting dua orang berbeda (SEC-104) — alur sama dengan layar penerimaan.
+     */
+    private function seedSerials(): void
+    {
+        if (Product::withTrashed()->where('sku', 'DM-ALT-003')->exists()) {
+            return;
+        }
+        $category = ProductCategory::query()->where('code', 'ALAT')->first();
+        $unitId = ReferenceItem::query()->forGroup(ReferenceGroup::Unit)->where('code', 'unit')->value('id');
+        $location = StockLocation::query()->where('code', 'GD-UNDAAN')->first();
+        $supplier = Supplier::query()->orderBy('id')->value('id');
+        $creator = User::query()->where('name', 'Dwi Lestari')->first() ?? User::query()->role('owner')->orderBy('id')->first();
+        $checker = User::query()->where('name', 'Slamet Riyadi')->first();
+        $poster = User::query()->where('name', 'Joko Susilo')->first();
+        if ($category === null || $unitId === null || $location === null || $supplier === null || $creator === null || $checker === null || $poster === null) {
+            return;
+        }
+
+        $product = DB::transaction(function () use ($category, $unitId) {
+            // Kategori Alat tidak mewajibkan nomor seri; produk ini memperketatnya (BR-151 boleh lebih ketat).
+            $product = tap((new Product)->forceFill([
+                'sku' => 'DM-ALT-003', 'name' => 'Mesin Semprot Demo Bermotor 25 L', 'product_category_id' => $category->id,
+                'principal_id' => Product::query()->where('sku', 'DM-ALT-001')->value('principal_id'),
+                'package_size' => '25 L', 'base_unit_id' => (int) $unitId, 'tracks_batch' => false, 'tracks_expiry' => false,
+                'tracks_serial' => true, 'requires_registration' => false, 'is_restricted' => false, 'warranty_months' => 12,
+                'is_sellable' => true, 'is_purchasable' => true, 'status' => 'active',
+            ]))->save();
+            $unit = tap((new ProductUnit)->forceFill([
+                'product_id' => $product->id, 'unit_id' => (int) $unitId, 'factor' => '1',
+                'is_base' => true, 'is_default_sales' => true, 'is_default_purchase' => true, 'is_active' => true,
+            ]))->save();
+            (new ProductBarcode)->forceFill(['product_id' => $product->id, 'product_unit_id' => $unit->id, 'barcode' => '2000099900001'])->save();
+
+            return $product;
+        });
+        $unit = ProductUnit::query()->where('product_id', $product->id)->firstOrFail();
+
+        $today = CarbonImmutable::now(DisplayTime::timezone());
+        $order = app(SavePurchaseOrder::class)->handle(null, [
+            'supplier_id' => (int) $supplier, 'stock_location_id' => $location->id, 'order_date' => $today->subDays(3)->toDateString(),
+            'expected_date' => $today->toDateString(), 'payment_term_days' => null, 'note' => 'Data demo',
+        ], [['product_unit_id' => $unit->id, 'qty' => '6', 'unit_price' => '1450000', 'discount_pct' => '0', 'note' => null]], $creator->id);
+        // Jalan pintas khusus demo (pola PO demo T-079): langsung disetujui tanpa antrean.
+        $order->forceFill(['status' => PurchaseOrderStatus::Approved, 'submitted_at' => now(), 'approved_at' => now()])->save();
+
+        $bin = StockBin::query()->where('stock_location_id', $location->id)->where('zone', 'general')->orderBy('code')->value('id');
+        $receipt = app(SaveGoodsReceipt::class)->handle(null, [
+            'purchase_order_id' => $order->id,
+            'received_at' => $today->subDay()->setTime(10, 15)->format('Y-m-d\TH:i'),
+            'supplier_delivery_no' => 'SJ-DEMO-SERI', 'vehicle_plate' => null, 'note' => 'Data demo',
+        ], [[
+            'id' => null, 'purchase_order_line_id' => $order->lines()->value('id'), 'product_unit_id' => null, 'qty_received' => '6', 'qty_rejected' => '0',
+            'reject_reason_id' => null, 'batch_no' => null, 'expiry_date' => null, 'registration_no_seen' => null,
+            'stock_bin_id' => $bin === null ? null : (int) $bin, 'unit_cost' => null,
+        ]], $checker);
+        $line = GoodsReceiptLine::query()->where('goods_receipt_id', $receipt->id)->firstOrFail();
+        $serials = array_map(fn (int $i) => sprintf('DMSPR25-%04d', 2600 + $i), range(1, 6));
+        app(SaveReceiptSerials::class)->handle($receipt, $line, $serials, SerialInputMethod::Scan, null, $checker);
+        app(CheckGoodsReceipt::class)->handle($receipt->fresh(), $checker);
+        app(PostGoodsReceipt::class)->handle($receipt->fresh(), $poster);
     }
 
     /** Saldo awal satu batch + event outbox (pola T-086), dalam satu transaksi buku stok. */

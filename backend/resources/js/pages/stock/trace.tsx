@@ -23,14 +23,30 @@ export type StockTraceRow = {
     qty_on_hand: string;
 };
 
-type Props = ListingProps<StockTraceRow> & { searched: boolean };
+type TraceExample = {
+    product_id: number;
+    sku: string;
+    name: string;
+    batch_no: string;
+};
+
+type Props = ListingProps<StockTraceRow> & {
+    searched: boolean;
+    /** Batch terakhir masuk dalam scope, sebagai titik mulai saat belum mencari. */
+    examples: TraceExample[];
+};
 
 /**
  * Telusur batch untuk recall (15 §7.3 `stock_batches_trace`, UAT-A17): pilih produk di filter dan
  * ketik nomor batch → semua lokasi yang pernah menyimpan batch itu (termasuk saldo 0) dalam scope
  * Stok. Riwayat mutasi dibuka lewat Kartu Stok. Paket B menambah kios penerima.
  */
-export default function StockTrace({ rows, listing, searched }: Props) {
+export default function StockTrace({
+    rows,
+    listing,
+    searched,
+    examples,
+}: Props) {
     const columns: DataTableColumn<StockTraceRow>[] = [
         {
             key: 'location',
@@ -111,6 +127,25 @@ export default function StockTrace({ rows, listing, searched }: Props) {
                             : 'Pilih produk di filter lalu ketik nomor batch untuk melihat di mana saja batch itu berada.'}
                     </p>
                 </div>
+
+                {!searched && examples.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-2 text-sm">
+                        <span className="text-muted-foreground">Contoh:</span>
+                        {examples.map((e) => (
+                            <Link
+                                key={`${e.product_id}-${e.batch_no}`}
+                                href={`/stok/telusur?filter[product_id][]=${e.product_id}&q=${encodeURIComponent(e.batch_no)}`}
+                                className="rounded-full border bg-card px-3 py-1 hover:border-primary"
+                            >
+                                <span className="font-mono">{e.batch_no}</span>
+                                <span className="text-muted-foreground">
+                                    {' '}
+                                    · {e.sku}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                )}
 
                 <DataTable
                     rows={rows}

@@ -211,6 +211,8 @@ class DemoSeeder extends Seeder
         $this->seedPurchaseReturns();
         // Stok, mutasi, opname, karantina & BA demo untuk laporan stok (T-087).
         $this->call(InventoryDemoSeeder::class);
+        // Antrean Verifikasi Kios demo (pengajuan sales + telepon kantor oleh pengguna lain).
+        $this->call(CustomerVerificationDemoSeeder::class);
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).

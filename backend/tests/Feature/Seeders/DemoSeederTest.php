@@ -15,6 +15,7 @@ use App\Domain\Organization\Models\Position;
 use App\Domain\Pricing\PriceResolver;
 use App\Models\User;
 use App\Support\Money\Qty;
+use Database\Seeders\ApprovalRuleSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -87,16 +88,17 @@ test('04 §4.2 data demo: 3 lokasi, 15 pegawai fiktif dengan penugasan, kepala l
     }
 });
 
-test('T-070 data demo: 14 produk fiktif dengan satuan dasar, kemasan besar, dan barcode unik; idempoten', function () {
+test('T-070 data demo: 14 produk fiktif (+1 alat bernomor seri T-087) dengan satuan dasar, kemasan besar, dan barcode unik; idempoten', function () {
     $this->seed(DemoSeeder::class);
     Product::query()->where('sku', 'DM-INS-001')->update(['name' => 'Diubah dari layar']);
     $this->seed(DemoSeeder::class);
 
-    expect(Product::query()->count())->toBe(14)
+    // 14 produk katalog demo + DM-ALT-003 (alat bernomor seri, InventoryDemoSeeder T-087).
+    expect(Product::query()->count())->toBe(15)
         ->and(Product::query()->where('sku', 'DM-INS-001')->value('name'))->toBe('Diubah dari layar')
-        ->and(ProductUnit::query()->where('is_base', true)->count())->toBe(14)
-        ->and(ProductUnit::query()->where('is_default_sales', true)->count())->toBe(14)
-        ->and(ProductUnit::query()->where('is_default_purchase', true)->count())->toBe(14)
+        ->and(ProductUnit::query()->where('is_base', true)->count())->toBe(15)
+        ->and(ProductUnit::query()->where('is_default_sales', true)->count())->toBe(15)
+        ->and(ProductUnit::query()->where('is_default_purchase', true)->count())->toBe(15)
         ->and(ProductBarcode::query()->count())->toBe(ProductUnit::query()->count())
         ->and(ProductBarcode::query()->pluck('barcode')->every(fn (string $b) => str_starts_with($b, '200')))->toBeTrue();
 
@@ -172,15 +174,17 @@ test('T-080 data demo penerimaan: satu terposting sebagian (dua orang) + satu dr
     $this->seed(DemoSeeder::class);
     $this->seed(DemoSeeder::class);
 
-    expect(DB::table('goods_receipts')->orderBy('id')->pluck('status')->all())->toBe(['posted', 'draft']);
-    $posted = DB::table('goods_receipts')->where('status', 'posted')->first();
+    // Penerimaan nomor seri demo T-087 (SJ-DEMO-SERI) di luar cakupan test ini.
+    $receipts = DB::table('goods_receipts')->where('supplier_delivery_no', '<>', 'SJ-DEMO-SERI');
+    expect((clone $receipts)->orderBy('id')->pluck('status')->all())->toBe(['posted', 'draft']);
+    $posted = (clone $receipts)->where('status', 'posted')->first();
     expect($posted->checked_by)->not->toBe($posted->posted_by)
         ->and(DB::table('purchase_orders')->where('id', $posted->purchase_order_id)->value('status'))->toBe('partially_received')
-        ->and(DB::table('stock_movements')->where('source_type', 'goods_receipt')->count())->toBe(2)
+        ->and(DB::table('stock_movements')->where('source_type', 'goods_receipt')->where('source_id', $posted->id)->count())->toBe(2)
         // Batch hasil penerimaan tidak dikarantina (karantina demo gudang T-087 berasal dari saldo awal).
         ->and(DB::table('stock_batches')->where('status', 'quarantine')
             ->whereIn('id', DB::table('stock_movements')->where('source_type', 'goods_receipt')->select('stock_batch_id'))->count())->toBe(0)
-        ->and(DB::table('accounting_events')->where('event_code', 'inventory.goods_received')->count())->toBe(1);
+        ->and(DB::table('accounting_events')->where('event_code', 'inventory.goods_received')->where('source_id', $posted->id)->count())->toBe(1);
 });
 
 test('T-081 data demo retur ke prinsipal: satu terkirim (disetujui owner) + satu draf; idempoten', function () {
@@ -207,7 +211,19 @@ test('T-087 data demo gudang: saldo awal ber-outbox, stok minimum, mutasi diteri
         ->and(DB::table('stock_opname_lines')->whereNotNull('counted_by')->count())->toBe(8)
         ->and(DB::table('stock_batches')->where('status', 'quarantine')->count())->toBe(1)
         ->and(DB::table('stock_batches')->where('status', 'expired')->count())->toBe(1)
-        ->and(DB::table('disposal_reports')->value('status'))->toBe('draft');
+        ->and(DB::table('disposal_reports')->value('status'))->toBe('draft')
+        // Nomor seri demo lewat penerimaan PO (dua orang): 6 unit in_stock ber-batch.
+        ->and(DB::table('serial_numbers')->where('status', 'in_stock')->whereNotNull('stock_batch_id')->count())->toBe(6);
+});
+
+test('T-074 data demo antrean verifikasi kios: dua pengajuan menunggu persetujuan (telepon kantor dicatat pengguna lain); idempoten', function () {
+    // Seperti DatabaseSeeder: aturan persetujuan di-seed sebelum data demo.
+    $this->seed([ApprovalRuleSeeder::class, DemoSeeder::class]);
+    $this->seed(DemoSeeder::class);
+
+    $pending = DB::table('customer_verifications')->where('status', 'pending')->get();
+    expect($pending)->toHaveCount(2)
+        ->and($pending->every(fn ($v) => $v->method === 'office_call' && $v->office_call_note !== null))->toBeTrue();
 });
 
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {

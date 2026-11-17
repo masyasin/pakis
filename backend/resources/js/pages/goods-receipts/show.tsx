@@ -436,7 +436,9 @@ export default function GoodsReceiptShow({
                                         aria-label={`Retur penerimaan ${receipt.number} ke prinsipal`}
                                     >
                                         <Undo2 aria-hidden="true" />
-                                        <ActionLabel>Retur ke Prinsipal</ActionLabel>
+                                        <ActionLabel>
+                                            Retur ke Prinsipal
+                                        </ActionLabel>
                                     </Link>
                                 </Button>
                             )}

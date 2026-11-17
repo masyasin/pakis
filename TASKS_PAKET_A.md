@@ -488,7 +488,7 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   - [x] Angka kartu = jumlah baris halaman tujuan dengan filter tautannya (scope sama; test membandingkan keduanya)
   - [x] Nilai rupiah hanya untuk `stock.view_cost` (SEC-107)
   - [x] Kartu saldo awal hilang setelah saldo awal ditutup
-  - [ ] Dasbor tetap ringan: tiap kartu satu query agregat ber-index (tanpa N+1), dicek dengan data volume T-087
+  - [x] Dasbor tetap ringan: tiap kartu satu query agregat ber-index (tanpa N+1), dicek dengan data volume T-087 — `tests/Volume/DashboardVolumeTest.php`: 1 juta mutasi, Owner p95 140 ms, 60 query tetap per muat
 - Verifikasi: `php artisan test --filter=Dashboard` · `npm run lint && npm run types`
 - Di luar lingkup: kartu Paket B (piutang, limit kredit, penjualan)
 

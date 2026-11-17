@@ -22,13 +22,14 @@ use App\Domain\Employee\Models\Employee;
 use App\Domain\Inventory\Enums\DisposalReportStatus;
 use App\Domain\Inventory\Enums\StockBatchStatus;
 use App\Domain\Inventory\Enums\StockOpnameStatus;
+use App\Domain\Inventory\Imports\OpeningStockImportType;
 use App\Domain\Inventory\Ledger\MovementType;
 use App\Domain\Inventory\Listings\DisposalReportListing;
 use App\Domain\Inventory\Listings\StockBatchListing;
-use App\Domain\Inventory\Listings\StockMovementListing;
 use App\Domain\Inventory\Listings\StockOpnameListing;
 use App\Domain\Inventory\Listings\StockTransferListing;
 use App\Domain\Inventory\Models\DisposalReport;
+use App\Domain\Inventory\Models\StockMovement;
 use App\Domain\Inventory\Models\StockOpname;
 use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Queries\BelowMinimumSummary;
@@ -55,7 +56,6 @@ use App\Support\Import\Listings\ImportBatchListing;
 use App\Support\Listing\HasListing;
 use App\Support\Listing\ListingQuery;
 use Brick\Math\BigDecimal;
-use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -190,7 +190,7 @@ class DashboardController extends Controller
             // Banner "Saldo awal masih dibuka" (T-087A): hanya selama saldo awal belum ditutup, bagi yang
             // boleh menutupnya; nilai rupiah hanya untuk pemegang `stock.view_cost` (SEC-107).
             'opening_balance' => $user->can('settings.update') && setting('inventory.opening_balance_open') === true
-                ? self::openingBalance($user) : null,
+                ? self::openingBalance($user, $scope) : null,
             // Produk tanpa stok minimum per lokasi (T-087A): tiap baris membuka Stok Minimum lokasi itu, filter "belum diatur".
             'levels_unset' => $user->can('stock_locations.manage') ? $unsetLevels->for($user) : null,
             // Grafik stok (T-087A): rentang tren mutasi = rentang grafik presensi (?dari/?sampai).
@@ -218,20 +218,21 @@ class DashboardController extends Controller
     }
 
     /** @return array{count: int, value: string|null, href: string} */
-    private static function openingBalance(User $user): array
+    private static function openingBalance(User $user, DataScope $scope): array
     {
-        $movements = StockMovementListing::base($user)->where('stock_movements.movement_type', MovementType::OpeningBalance->value);
-        $value = null;
-        if ($user->can('stock.view_cost')) {
-            $value = BigDecimal::zero();
-            foreach ((clone $movements)->select(['stock_movements.qty', 'stock_movements.unit_cost'])->cursor() as $m) {
-                $value = $value->plus(BigDecimal::of($m->qty)->multipliedBy($m->unit_cost)->toScale(2, RoundingMode::HalfUp));
-            }
-        }
+        // Saring lewat `source_type` (index smov_source_idx): mutasi saldo awal hanya berasal dari impor
+        // saldo awal (T-086). Tanpa itu, 1 juta mutasi = pindai penuh ±4,5 detik per query (uji volume T-087A).
+        $movements = $scope->forStock(StockMovement::query()
+            ->where('stock_movements.source_type', OpeningStockImportType::SOURCE_TYPE)
+            ->where('stock_movements.movement_type', MovementType::OpeningBalance->value), $user, 'stock_movements.stock_location_id');
+        $row = $movements->toBase()
+            ->selectRaw('COUNT(*) AS movements')
+            ->selectRaw('CAST(COALESCE(SUM(ROUND(stock_movements.qty * stock_movements.unit_cost, 2)), 0) AS CHAR) AS total_value')
+            ->first();
 
         return [
-            'count' => (clone $movements)->count(),
-            'value' => $value === null ? null : (string) $value->toScale(2),
+            'count' => (int) ($row->movements ?? 0),
+            'value' => $user->can('stock.view_cost') ? (string) BigDecimal::of((string) ($row->total_value ?? '0'))->toScale(2) : null,
             'href' => route('admin.settings.edit', ['group' => 'inventory']),
         ];
     }

@@ -706,6 +706,7 @@ CREATE TABLE stock_movements (
   KEY smov_batch_time_idx (stock_batch_id, moved_at),
   KEY smov_source_idx (source_type, source_id),
   KEY smov_product_loc_date_idx (product_id, stock_location_id, business_date),
+  KEY smov_date_loc_idx (business_date, stock_location_id), -- T-087A: grafik dasbor mutasi per hari
   CONSTRAINT smov_batch_fk FOREIGN KEY (stock_batch_id) REFERENCES stock_batches(id),
   CONSTRAINT smov_qty_chk CHECK (qty <> 0)
 );
@@ -1070,6 +1071,7 @@ CREATE TABLE stock_quarantine_releases (
 | `sbatch_expiry_idx` | Job karantina harian & laporan mendekati ED |
 | `smov_batch_time_idx` | Kartu stok per batch |
 | `smov_product_loc_date_idx` | Kartu stok per produk per lokasi per periode |
+| `smov_date_loc_idx` | Grafik dasbor mutasi per hari, semua produk di lokasi dalam scope (T-087A, uji volume 1 juta mutasi) |
 | `smov_source_idx` | Telusur mutasi dari dokumen (PO/GR/mutasi/opname) |
 | `sres_source_idx` | Lepas/konsumsi reservasi per dokumen |
 | `customers_area_sales_idx` | Scope `customer`: kios per area & sales |

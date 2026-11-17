@@ -9,6 +9,7 @@ import {
     ScanBarcode,
     Stamp,
     Truck,
+    Undo2,
     Upload,
     Wallet,
     X,
@@ -113,6 +114,8 @@ type Props = {
         post_blocked_same_person: boolean;
         serials: boolean;
         view_po: boolean;
+        /** Retur batch penerimaan ini ke prinsipal (T-081). */
+        return?: boolean;
     };
 };
 
@@ -424,6 +427,17 @@ export default function GoodsReceiptShow({
                                 >
                                     <ClipboardCheck aria-hidden="true" />
                                     <ActionLabel>Periksa</ActionLabel>
+                                </Button>
+                            )}
+                            {can.return && (
+                                <Button variant="outline" size="sm" asChild>
+                                    <Link
+                                        href={`/pembelian/retur/baru?gr=${receipt.id}`}
+                                        aria-label={`Retur penerimaan ${receipt.number} ke prinsipal`}
+                                    >
+                                        <Undo2 aria-hidden="true" />
+                                        <ActionLabel>Retur ke Prinsipal</ActionLabel>
+                                    </Link>
                                 </Button>
                             )}
                             {can.post && (

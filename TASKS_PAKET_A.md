@@ -337,10 +337,10 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; sequence `purchase_return`; `app/Domain/Purchasing/{Models/{PurchaseReturn,PurchaseReturnLine},Actions/{SavePurchaseReturn,SubmitPurchaseReturn,ShipPurchaseReturn,ClosePurchaseReturn},Approvables/PurchaseReturnApproval,Listings/PurchaseReturnListing}`; controller; pages `Purchasing/PurchaseReturns/*`; tests
 - Deskripsi: Pilih batch (termasuk karantina/ED). Disetujui → reservasi; dikirim → `issue` tipe `purchase_return`, outbox `inventory.purchase_returned` (dua nilai: biaya batch & HPP rata-rata, selisih ke peran `inventory_variance`). Tutup setelah prinsipal mengonfirmasi (catatan + lampiran opsional).
 - Kriteria penerimaan:
-  - [ ] Retur melebihi qty tersedia batch → `INSUFFICIENT_STOCK`
-  - [ ] Ditolak → reservasi dilepas; dibatalkan setelah approved → reservasi dilepas
-  - [ ] Payload outbox seimbang (D = K) dengan selisih biaya ke `inventory_variance`
-  - [ ] `ShipPurchaseReturn` memanggil `PeriodGuard` dengan tanggal bisnis kirim; payload membawa `stock_location_id` & `product_id` per baris + `refs.supplier_id`; selisih biaya tidak memancarkan `inventory.adjusted` terpisah (**15** §11.4)
+  - [x] Retur melebihi qty tersedia batch → `INSUFFICIENT_STOCK`
+  - [x] Ditolak → reservasi dilepas; dibatalkan setelah approved → reservasi dilepas (reservasi baru dibuat saat disetujui, jadi retur ditolak tidak punya reservasi)
+  - [x] Payload outbox seimbang (D = K) dengan selisih biaya ke `inventory_variance`
+  - [x] `ShipPurchaseReturn` memanggil `PeriodGuard` dengan tanggal bisnis kirim; payload membawa `stock_location_id` & `product_id` per baris + `refs.supplier_id`; selisih biaya tidak memancarkan `inventory.adjusted` terpisah (**15** §11.4)
 - Verifikasi: `php artisan test --filter=PurchaseReturn`
 - Di luar lingkup: nota debit/pemotongan hutang (Paket F)
 

@@ -28,6 +28,7 @@ use App\Domain\Pricing\Approvables\PriceListPublish;
 use App\Domain\Pricing\Approvables\PromotionActivate;
 use App\Domain\Pricing\Listings\PriceListItemListing;
 use App\Domain\Purchasing\Approvables\PurchaseOrderApproval;
+use App\Domain\Purchasing\Approvables\PurchaseReturnApproval;
 use App\Domain\Purchasing\Approvables\ShortShelfLifeApproval;
 use App\Domain\Purchasing\Listings\GoodsReceiptListing;
 use App\Domain\Purchasing\Listings\PurchaseOrderListing;
@@ -109,7 +110,8 @@ return [
         'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => OpnameVarianceApproval::class, 'conditions' => []],
         'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => null, 'conditions' => []],
         'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => null, 'conditions' => []],
-        'purchase_return' => ['label' => 'Retur ke prinsipal', 'model' => null, 'conditions' => []],
+        // T-081: dokumen = baris purchase_returns (nominal = nilai HPP saat diajukan).
+        'purchase_return' => ['label' => 'Retur ke prinsipal', 'model' => PurchaseReturnApproval::class, 'conditions' => []],
         // T-074: aktivasi & ganti HP = baris customer_verifications; limit & gabung = baris customers (PA-49).
         'customer_activation' => ['label' => 'Aktivasi kios', 'model' => CustomerActivation::class, 'conditions' => []],
         'customer_credit_limit' => ['label' => 'Limit kredit kios', 'model' => CustomerCreditLimit::class, 'conditions' => []],

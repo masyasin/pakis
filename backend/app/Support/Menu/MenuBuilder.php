@@ -63,6 +63,7 @@ final class MenuBuilder
         ['Persediaan', 'Nomor Seri', 'serial', 'stock.view', 'admin.serials.index'],
         ['Pembelian', 'Purchase Order', 'purchase_order', 'purchase_orders.view', 'admin.purchase-orders.index'],
         ['Pembelian', 'Penerimaan Barang', 'goods_receipt', 'goods_receipts.view', 'admin.goods-receipts.index'],
+        ['Pembelian', 'Retur ke Prinsipal', 'purchase_return', 'purchase_returns.manage', 'admin.purchase-returns.index'],
         ['Pembelian', 'Supplier', 'supplier', 'suppliers.view', 'admin.suppliers.index'],
         ['Pembelian', 'Prinsipal', 'principal', 'suppliers.view', 'admin.principals.index'],
         ['Master', 'Produk', 'product', 'products.view', 'admin.products.index'],

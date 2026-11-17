@@ -49,6 +49,15 @@ final class StockLedger
     /** Retry setelah percobaan pertama (BR-101: "maks 3 kali"). */
     public const MAX_RETRIES = 3;
 
+    /**
+     * Tipe sumber yang boleh mereservasi batch `quarantine`/`expired` (PA-68, T-081): retur ke prinsipal
+     * justru mengeluarkan barang karantina/ED, dan reservasinya melindungi qty dari dokumen lain
+     * (pemusnahan, opname). Sumber lain tetap hanya batch `available`; `disposed` selalu ditolak.
+     *
+     * @var list<string>
+     */
+    public const RESERVE_ANY_STATUS_SOURCES = ['purchase_return'];
+
     public function __construct(private readonly CostCalculator $costs) {}
 
     /**
@@ -248,7 +257,8 @@ final class StockLedger
 
     /**
      * Reservasi (BR-155): menaikkan `qty_reserved`, `qty_on_hand` tetap, tanpa mutasi. Hanya batch
-     * `available`. Masa berlaku bawaan `inventory.reservation_ttl_hours`.
+     * `available`, kecuali sumber di `RESERVE_ANY_STATUS_SOURCES` (juga `quarantine`/`expired`). Masa
+     * berlaku bawaan `inventory.reservation_ttl_hours`.
      */
     public function reserve(StockBatch $batch, Qty $qty, Source $source, ?int $ttlHours = null): StockReservation
     {
@@ -260,8 +270,10 @@ final class StockLedger
         }
 
         $row = $this->lockBatches([$batch->id])[$batch->id];
-        if ($row->status !== StockBatchStatus::Available->value) {
-            throw new BatchNotAvailable((int) $row->id, StockBatchStatus::from((string) $row->status));
+        $status = StockBatchStatus::from((string) $row->status);
+        $anyStatus = in_array($source->type, self::RESERVE_ANY_STATUS_SOURCES, true);
+        if ($status === StockBatchStatus::Disposed || ($status !== StockBatchStatus::Available && ! $anyStatus)) {
+            throw new BatchNotAvailable((int) $row->id, $status);
         }
         $this->assertAvailable($row, $qty);
 

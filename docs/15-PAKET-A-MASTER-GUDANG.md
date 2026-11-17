@@ -1128,7 +1128,8 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.goods-receipts.check` / `post` | POST | `/penerimaan/{gr}/periksa` · `/posting` | `goods_receipts.create` | Posting: pengirim ≠ pemeriksa bila setting `purchasing.receipt_two_person` |
 | `admin.goods-receipts.serials` | PUT | `/penerimaan/{gr}/baris/{line}/seri` | `goods_receipts.create` | Input/scan nomor seri |
 | `admin.purchase-returns.index`/`create`/`store`/`show` | | `/pembelian/retur/...` | `purchase_returns.manage` | |
-| `admin.purchase-returns.submit`/`ship`/`close` | POST | `/pembelian/retur/{ret}/...` | `purchase_returns.manage` | |
+| `admin.purchase-returns.edit`/`update` | GET/PUT | `/pembelian/retur/{ret}/ubah` · `/pembelian/retur/{ret}` | `purchase_returns.manage` | Draf saja (PA-68, T-081) |
+| `admin.purchase-returns.submit`/`ship`/`close`/`cancel` | POST | `/pembelian/retur/{ret}/ajukan` · `/kirim` · `/tutup` · `/batal` | `purchase_returns.manage` | `cancel` dari `draft`/`approved`/`rejected`, melepas reservasi (PA-68, T-081); `close` wajib catatan konfirmasi |
 | `admin.stock.index` | GET | `/stok` | `stock.view` | Posisi stok. Mode tampilan `per_product` / `per_batch` (filter) |
 | `admin.stock.export` | GET | `/stok/ekspor` | `stock.export` | Data sensitif (HPP/biaya), izin `.export` seperti Fase 0. Kolom HPP hanya bila `stock.view_cost` (SEC-107) |
 | `admin.stock-levels.index`/`upsert` | GET/PUT | `/stok/minimum` | `stock.view` / `stock_locations.manage` | Stok min/maks per produk per lokasi stok. Impor via `master_imports` tipe `stock_levels` |

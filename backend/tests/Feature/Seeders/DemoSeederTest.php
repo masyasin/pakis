@@ -181,6 +181,16 @@ test('T-080 data demo penerimaan: satu terposting sebagian (dua orang) + satu dr
         ->and(DB::table('accounting_events')->where('event_code', 'inventory.goods_received')->count())->toBe(1);
 });
 
+test('T-081 data demo retur ke prinsipal: satu terkirim (disetujui owner) + satu draf; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    expect(DB::table('purchase_returns')->orderBy('id')->pluck('status')->all())->toBe(['shipped', 'draft'])
+        ->and(DB::table('stock_movements')->where('source_type', 'purchase_return')->count())->toBe(1)
+        ->and(DB::table('accounting_events')->where('event_code', 'inventory.purchase_returned')->count())->toBe(1)
+        ->and(DB::table('stock_reservations')->where('source_type', 'purchase_return')->value('status'))->toBe('consumed');
+});
+
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {
     app()->detectEnvironment(fn () => 'production');
 

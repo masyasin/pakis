@@ -2,7 +2,7 @@ import { TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { AsyncSelect } from '@/components/pakis/async-select';
 import { FormDialog } from '@/components/pakis/form-dialog';
-import { ExpiryBadge } from '@/components/pakis/status-badge';
+import { ExpiryBadge, StatusBadge } from '@/components/pakis/status-badge';
 import type { ExpiryState } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatCivilDate } from '@/lib/local-date';
@@ -21,6 +21,8 @@ export type BatchOption = LookupOption & {
     bin: string | null;
     /** Posisi dalam urutan FEFO penuh; 1 = batch yang seharusnya keluar lebih dulu. */
     fefo_rank: number;
+    /** Status batch (hanya lookup `returnable_batches`, T-081). */
+    status?: string;
 };
 
 /** Nilai yang disimpan dokumen pemakai (baris mutasi/retur, T-081/T-082): `fefo_override` = BR-156. */
@@ -30,6 +32,11 @@ export type BatchPick = {
 };
 
 type Props = {
+    /**
+     * Sumber lookup. `returnable_batches` (retur ke prinsipal, T-081) memuat batch karantina/ED dan
+     * selalu `fefo_rank` 1, jadi peringatan FEFO tidak muncul.
+     */
+    source?: 'available_batches' | 'returnable_batches';
     productId: number | null;
     stockLocationId: number | null;
     value: BatchPick | null;
@@ -77,6 +84,7 @@ function OptionHint({ option }: { option: LookupOption }) {
  * lewat StockLedger (alokasi bisa basi).
  */
 export function BatchPicker({
+    source = 'available_batches',
     productId,
     stockLocationId,
     value,
@@ -107,7 +115,7 @@ export function BatchPicker({
     return (
         <div className="grid gap-1.5">
             <AsyncSelect
-                source="available_batches"
+                source={source}
                 params={
                     ready
                         ? {
@@ -150,6 +158,11 @@ export function BatchPicker({
                         {selected.unit}
                         {selected.bin ? ` · rak ${selected.bin}` : ''}
                     </span>
+                    {selected.status && selected.status !== 'available' && (
+                        <StatusBadge
+                            status={`stock_batch.${selected.status}`}
+                        />
+                    )}
                     {value?.fefoOverride && (
                         <span
                             role="status"

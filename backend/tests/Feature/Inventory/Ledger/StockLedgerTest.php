@@ -235,6 +235,25 @@ test('BR-155 lepas reservasi idempoten; TTL bawaan dari setting; batch karantina
     expect(fn () => $this->ledger->reserve($q, Qty::of(1), LedgerWorld::source()))->toThrow(BatchNotAvailable::class);
 });
 
+test('PA-68 BR-155 retur prinsipal boleh mereservasi batch karantina & kedaluwarsa; disposed tetap ditolak; sumber lain tidak', function () {
+    $q = LedgerWorld::receive($this->gd, $this->product, '5', key: new BatchKey('Q-RTB', null, LedgerWorld::quarantineBin($this->gd)->id));
+    $res = $this->ledger->reserve($q, Qty::of(2), LedgerWorld::source('purchase_return', 3, 1));
+    expect($res->status)->toBe(ReservationStatus::Active)
+        ->and($q->fresh()->qty_reserved)->toBe('2.000')
+        ->and(fn () => $this->ledger->reserve($q, Qty::of(1), LedgerWorld::source('stock_transfer', 3, 1)))->toThrow(BatchNotAvailable::class);
+
+    $expired = LedgerWorld::receive($this->gd, $this->product, '3', key: new BatchKey('ED-RTB', '2026-01-01'));
+    $this->ledger->setStatus($expired, StockBatchStatus::Expired);
+    expect($this->ledger->reserve($expired->fresh(), Qty::of(3), LedgerWorld::source('purchase_return', 4, 1))->status)->toBe(ReservationStatus::Active)
+        ->and(fn () => $this->ledger->reserve($expired->fresh(), Qty::of(1), LedgerWorld::source('purchase_return', 5, 1)))->toThrow(InsufficientStock::class);
+
+    $gone = LedgerWorld::receive($this->gd, $this->product, '1', key: new BatchKey('X-RTB', '2026-01-01'));
+    $this->ledger->setStatus($gone, StockBatchStatus::Expired);
+    $this->ledger->issue($gone->fresh(), Qty::of(1), LedgerWorld::source('disposal_report', 1, 1), MovementType::Disposal, LedgerWorld::DATE);
+    $this->ledger->setStatus($gone->fresh(), StockBatchStatus::Disposed);
+    expect(fn () => $this->ledger->reserve($gone->fresh(), Qty::of(1), LedgerWorld::source('purchase_return', 6, 1)))->toThrow(BatchNotAvailable::class);
+});
+
 test('BR-155 job release-reservations melepas yang lewat masa berlaku saja', function () {
     $batch = LedgerWorld::receive($this->gd, $this->product, '10');
     $old = $this->ledger->reserve($batch, Qty::of(2), LedgerWorld::source(), ttlHours: 1);

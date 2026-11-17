@@ -5,6 +5,7 @@ namespace App\Providers;
 use App\Domain\Fleet\Models\Vehicle;
 use App\Domain\Fleet\Policies\VehiclePolicy;
 use App\Domain\Inventory\Lookup\AvailableBatchLookup;
+use App\Domain\Inventory\Lookup\ReturnableBatchLookup;
 use App\Domain\Inventory\Lookup\StockBinLookup;
 use App\Domain\Inventory\Lookup\StockLocationLookup;
 use App\Domain\Inventory\Models\StockBin;
@@ -38,6 +39,8 @@ class InventoryServiceProvider extends ServiceProvider
             $registry->register('stock_bins', StockBinLookup::class);
             // Batch layak FEFO untuk BatchPicker (T-078).
             $registry->register('available_batches', AvailableBatchLookup::class);
+            // Batch yang bisa diretur ke prinsipal, termasuk karantina/ED (T-081, PA-68).
+            $registry->register('returnable_batches', ReturnableBatchLookup::class);
 
             return $registry;
         });

@@ -132,6 +132,8 @@ class GoodsReceiptController extends Controller
                 'post_blocked_same_person' => $twoPerson && $gr->checked_by === $user->id,
                 'serials' => Gate::forUser($user)->allows('serials', $gr),
                 'view_po' => $gr->purchase_order_id !== null && $user->can('purchase_orders.view'),
+                // T-081: retur batch hasil penerimaan ini (form retur memeriksa scope lagi).
+                'return' => $gr->status === GoodsReceiptStatus::Posted && $user->can('purchase_returns.manage'),
             ],
         ]);
     }

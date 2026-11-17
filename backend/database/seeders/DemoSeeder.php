@@ -3,6 +3,8 @@
 namespace Database\Seeders;
 
 use App\Domain\Access\Support\RoleCatalog;
+use App\Domain\Approval\Actions\DecideApprovalStep;
+use App\Domain\Approval\Models\ApprovalRequest;
 use App\Domain\Approval\Models\ApprovalRule;
 use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Attendance\Models\Shift;
@@ -25,6 +27,7 @@ use App\Domain\Fleet\Actions\SaveVehicle;
 use App\Domain\Fleet\Models\Vehicle;
 use App\Domain\Inventory\Actions\SaveStockBin;
 use App\Domain\Inventory\Actions\SaveStockLocation;
+use App\Domain\Inventory\Ledger\StockLedger;
 use App\Domain\Inventory\Models\StockBin;
 use App\Domain\Inventory\Models\StockLocation;
 use App\Domain\Numbering\NumberGenerator;
@@ -46,13 +49,20 @@ use App\Domain\Purchasing\Actions\PostGoodsReceipt;
 use App\Domain\Purchasing\Actions\SaveGoodsReceipt;
 use App\Domain\Purchasing\Actions\SavePrincipal;
 use App\Domain\Purchasing\Actions\SavePurchaseOrder;
+use App\Domain\Purchasing\Actions\SavePurchaseReturn;
 use App\Domain\Purchasing\Actions\SaveSupplier;
+use App\Domain\Purchasing\Actions\ShipPurchaseReturn;
 use App\Domain\Purchasing\Actions\SubmitPurchaseOrder;
+use App\Domain\Purchasing\Actions\SubmitPurchaseReturn;
+use App\Domain\Purchasing\Approvables\PurchaseReturnApproval;
 use App\Domain\Purchasing\Enums\PurchaseOrderStatus;
+use App\Domain\Purchasing\Enums\PurchaseReturnStatus;
 use App\Domain\Purchasing\Models\GoodsReceipt;
+use App\Domain\Purchasing\Models\GoodsReceiptLine;
 use App\Domain\Purchasing\Models\Principal;
 use App\Domain\Purchasing\Models\PurchaseOrder;
 use App\Domain\Purchasing\Models\PurchaseOrderLine;
+use App\Domain\Purchasing\Models\PurchaseReturn;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
@@ -198,6 +208,7 @@ class DemoSeeder extends Seeder
         $this->seedPromotions();
         $this->seedPurchaseOrders();
         $this->seedGoodsReceipts();
+        $this->seedPurchaseReturns();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -670,6 +681,54 @@ class DemoSeeder extends Seeder
                 $order->forceFill(['status' => PurchaseOrderStatus::Approved, 'submitted_at' => now(), 'approved_at' => now()])->save();
             }
         }
+    }
+
+    /**
+     * Retur demo T-081: dari batch hasil penerimaan demo, satu retur sudah dikirim (diajukan kepala gudang,
+     * disetujui owner, dikirim kepala gudang) dan satu draf. Lewat Action resmi agar reservasi, mutasi,
+     * dan event akuntansi sama seperti dari layar. Dilewati bila sudah ada retur (idempoten).
+     */
+    private function seedPurchaseReturns(): void
+    {
+        $maker = User::query()->where('name', 'Joko Susilo')->first();
+        $owner = User::query()->where('name', 'Hadi Santoso')->first();
+        $receipt = GoodsReceipt::query()->where('status', 'posted')->orderBy('id')->first();
+        $reason = ReferenceItem::query()->forGroup(ReferenceGroup::PurchaseReturnReason)->where('code', 'damaged')->value('id');
+        if ($maker === null || $owner === null || $receipt === null || $reason === null || PurchaseReturn::query()->exists()) {
+            return;
+        }
+        $batches = GoodsReceiptLine::query()->where('goods_receipt_id', $receipt->id)->whereNotNull('stock_batch_id')->orderBy('id')->pluck('stock_batch_id');
+        if ($batches->isEmpty()) {
+            return;
+        }
+        $header = ['supplier_id' => $receipt->supplier_id, 'stock_location_id' => $receipt->stock_location_id, 'reason_id' => (int) $reason,
+            'goods_receipt_id' => $receipt->id, 'note' => 'Data demo'];
+
+        $shipped = app(SavePurchaseReturn::class)->handle(null, $header, [['stock_batch_id' => (int) $batches[0], 'qty_base' => '5']], $maker);
+        if (ApprovalRule::query()->where('document_type', 'purchase_return')->where('is_active', true)->exists()) {
+            $submitted = app(SubmitPurchaseReturn::class)->handle($shipped, $maker);
+            if ($submitted->status === PurchaseReturnStatus::PendingApproval && $submitted->approval_request_id !== null) {
+                $request = ApprovalRequest::query()->findOrFail($submitted->approval_request_id);
+                app(DecideApprovalStep::class)->approve($owner, $request->id, $request->current_step, 'Data demo', true);
+            }
+        } else {
+            // Jalan pintas khusus demo (pola PO demo) bila aturan persetujuan belum di-seed: tetap lewat
+            // onApproved agar reservasi stok dibuat sama seperti persetujuan sungguhan.
+            $submitted = $shipped;
+            StockLedger::transaction(function () use ($shipped) {
+                $doc = PurchaseReturnApproval::query()->lockForUpdate()->findOrFail($shipped->id);
+                $doc->forceFill(['status' => PurchaseReturnStatus::PendingApproval])->save();
+                $doc->onApproved(null);
+            });
+        }
+        if ($submitted->fresh()?->status === PurchaseReturnStatus::Approved) {
+            app(ShipPurchaseReturn::class)->handle($submitted, [], $maker);
+        }
+
+        // Draf: barang lain yang masih dikumpulkan sebelum diajukan.
+        $draftBatch = $batches[1] ?? $batches[0];
+        app(SavePurchaseReturn::class)->handle(null, [...$header, 'goods_receipt_id' => null, 'reason_id' => (int) (ReferenceItem::query()->forGroup(ReferenceGroup::PurchaseReturnReason)->where('code', 'near_expiry')->value('id') ?? $reason)],
+            [['stock_batch_id' => (int) $draftBatch, 'qty_base' => '2']], $maker);
     }
 
     /**

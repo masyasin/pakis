@@ -56,6 +56,7 @@ return [
     'promotions', // T-076
     'purchase_orders', // T-079
     'goods_receipts', // T-080
+    'purchase_returns', // T-081
     'serial_numbers', // T-080
     'stock_locations', // T-068
     'stock_bins', // T-068

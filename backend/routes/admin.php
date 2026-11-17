@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\ProductUnitController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PromotionController;
 use App\Http\Controllers\Admin\PurchaseOrderController;
+use App\Http\Controllers\Admin\PurchaseReturnController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\RoleController;
@@ -522,6 +523,21 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     Route::middleware('can:stock.view')->group(function () {
         Route::get('nomor-seri', [SerialNumberController::class, 'index'])->name('serials.index');
         Route::get('nomor-seri/ekspor', [SerialNumberController::class, 'export'])->name('serials.export');
+    });
+
+    // Retur ke prinsipal (15 §5 `admin.purchase-returns.*`, FR-A26, BR-155/159, T-081). `baru` sebelum `{ret}`;
+    // ubah/batal ditambah PA-68. Scope Stok lokasi stok dicek controller (di luar scope → 404).
+    Route::middleware('can:purchase_returns.manage')->group(function () {
+        Route::get('pembelian/retur', [PurchaseReturnController::class, 'index'])->name('purchase-returns.index');
+        Route::get('pembelian/retur/baru', [PurchaseReturnController::class, 'create'])->name('purchase-returns.create');
+        Route::post('pembelian/retur', [PurchaseReturnController::class, 'store'])->name('purchase-returns.store');
+        Route::get('pembelian/retur/{ret}', [PurchaseReturnController::class, 'show'])->whereNumber('ret')->name('purchase-returns.show');
+        Route::get('pembelian/retur/{ret}/ubah', [PurchaseReturnController::class, 'edit'])->whereNumber('ret')->name('purchase-returns.edit');
+        Route::put('pembelian/retur/{ret}', [PurchaseReturnController::class, 'update'])->whereNumber('ret')->name('purchase-returns.update');
+        Route::post('pembelian/retur/{ret}/ajukan', [PurchaseReturnController::class, 'submit'])->whereNumber('ret')->name('purchase-returns.submit');
+        Route::post('pembelian/retur/{ret}/kirim', [PurchaseReturnController::class, 'ship'])->whereNumber('ret')->middleware('throttle:30,1')->name('purchase-returns.ship');
+        Route::post('pembelian/retur/{ret}/tutup', [PurchaseReturnController::class, 'close'])->whereNumber('ret')->name('purchase-returns.close');
+        Route::post('pembelian/retur/{ret}/batal', [PurchaseReturnController::class, 'cancel'])->whereNumber('ret')->name('purchase-returns.cancel');
     });
 
     // Area penjualan (15 §5 `admin.sales-areas.*`, FR-A12, T-073): tambah/ubah lewat dialog di halaman

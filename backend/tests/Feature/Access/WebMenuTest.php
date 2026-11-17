@@ -41,7 +41,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
         '' => ['Dasbor', 'Persetujuan'],
         'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'],
         'Persediaan' => ['Mutasi Stok', 'Stock Opname', 'Nomor Seri'],
-        'Pembelian' => ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal'],
+        'Pembelian' => ['Purchase Order', 'Penerimaan Barang', 'Retur ke Prinsipal', 'Supplier', 'Prinsipal'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
@@ -81,12 +81,12 @@ test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › 
     'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan'], ['Daftar Harga', 'Promo'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
 ]);
 
-test('T-072/T-079/T-080 menu Pembelian › Purchase Order, Penerimaan Barang, Supplier & Prinsipal sesuai izin (15 §6.4)', function (string $role, ?array $expected) {
+test('T-072/T-079/T-080/T-081 menu Pembelian › Purchase Order, Penerimaan Barang, Retur ke Prinsipal (purchase_returns.manage), Supplier & Prinsipal sesuai izin (15 §6.4)', function (string $role, ?array $expected) {
     expect(menuOf($role)['Pembelian'] ?? null)->toBe($expected);
 })->with([
-    'owner' => ['owner', ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal']],
-    'purchasing' => ['purchasing', ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal']],
-    'kepala_gudang' => ['kepala_gudang', ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal']],
+    'owner' => ['owner', ['Purchase Order', 'Penerimaan Barang', 'Retur ke Prinsipal', 'Supplier', 'Prinsipal']],
+    'purchasing' => ['purchasing', ['Purchase Order', 'Penerimaan Barang', 'Retur ke Prinsipal', 'Supplier', 'Prinsipal']],
+    'kepala_gudang' => ['kepala_gudang', ['Purchase Order', 'Penerimaan Barang', 'Retur ke Prinsipal', 'Supplier', 'Prinsipal']],
     'admin_penjualan' => ['admin_penjualan', null],
     'staf_gudang' => ['staf_gudang', ['Penerimaan Barang']],
     'supervisor' => ['supervisor', null],

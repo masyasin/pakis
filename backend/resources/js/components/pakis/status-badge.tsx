@@ -175,6 +175,17 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
         tone: 'muted',
     },
     'serial.scrapped': { label: 'Dimusnahkan', tone: 'danger' },
+    // Retur ke prinsipal (T-081, 15 §4.9)
+    'purchase_return.draft': { label: 'Draf', tone: 'muted' },
+    'purchase_return.pending_approval': {
+        label: 'Menunggu persetujuan',
+        tone: 'warning',
+    },
+    'purchase_return.approved': { label: 'Disetujui', tone: 'info' },
+    'purchase_return.shipped': { label: 'Dikirim', tone: 'info' },
+    'purchase_return.closed': { label: 'Selesai', tone: 'success' },
+    'purchase_return.rejected': { label: 'Ditolak', tone: 'danger' },
+    'purchase_return.cancelled': { label: 'Dibatalkan', tone: 'muted' },
 };
 
 const TONE_CLASS: Record<StatusTone, string> = {

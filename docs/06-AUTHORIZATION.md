@@ -223,6 +223,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | Distribusi | Persediaan | Nomor Seri (T-080; hanya yang sudah masuk stok) | `stock.view` | ✅ | ❌ | ❌ | ✅ | ✅ |
 | Distribusi | Pembelian | Purchase Order (T-079; role Paket A: `15` §6.4, kepala gudang terbatas lokasinya) | `purchase_orders.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Pembelian | Penerimaan Barang (T-080; role Paket A: `15` §6.4, staf & kepala gudang terbatas lokasinya) | `goods_receipts.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
+| Distribusi | Pembelian | Retur ke Prinsipal (T-081; role Paket A: `15` §6.4, kepala gudang terbatas lokasinya) | `purchase_returns.manage` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Pembelian | Supplier (T-072; role Paket A: `15` §6.4) | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Pembelian | Prinsipal (T-072; role Paket A: `15` §6.4) | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Master | Produk (T-070; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |

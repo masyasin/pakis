@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Domain\Customer\Events\CustomerPhoneChanged;
+use App\Domain\Customer\Listeners\SendCustomerPhoneChangedNotification;
 use App\Domain\Customer\Lookup\CustomerLookup;
 use App\Domain\Customer\Lookup\SalesAreaLookup;
 use App\Domain\Customer\Lookup\SalesEmployeeLookup;
@@ -13,6 +15,7 @@ use App\Models\User;
 use App\Support\Lookup\LookupRegistry;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
@@ -40,6 +43,9 @@ class CustomerServiceProvider extends ServiceProvider
     {
         Gate::policy(SalesArea::class, SalesAreaPolicy::class);
         Gate::policy(Customer::class, CustomerPolicy::class);
+
+        // Ganti HP kios disetujui → notifikasi termasking ke pemegang izin persetujuan (BR-166(4), SEC-105).
+        Event::listen(CustomerPhoneChanged::class, SendCustomerPhoneChangedNotification::class);
 
         // Cek duplikat menjawab "HP ini milik pegawai/kios lain?" — dibatasi per pengguna agar tidak
         // dipakai menyisir nomor (enumerasi). Pemakaian form normal hanya beberapa kali per menit.

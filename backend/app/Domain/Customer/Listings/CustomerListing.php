@@ -48,7 +48,9 @@ final class CustomerListing implements ExportableListing
                     }
                 }))
             ->filters([
-                MultiSelectFilter::make('status', 'Status')->column('status')->options(CustomerStatus::options()),
+                // Bawaan tanpa `merged` (BR-166(5)): kios yang sudah digabung hanya muncul bila difilter.
+                MultiSelectFilter::make('status', 'Status')->column('status')->options(CustomerStatus::options())
+                    ->default(CustomerStatus::listedByDefault()),
                 RelationFilter::make('sales_area_id', 'Area')
                     ->source('sales_areas')
                     ->column('sales_area_id')

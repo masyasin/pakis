@@ -42,7 +42,15 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $credit_limit
  * @property bool $credit_limit_active
  * @property int $term_days
+ * @property bool $harvest_term_allowed
+ * @property int|null $harvest_term_max_days
+ * @property bool $restricted_buyer_eligible
+ * @property string|null $restricted_buyer_note
+ * @property string|null $restricted_buyer_document_path
+ * @property Carbon|null $restricted_buyer_valid_until
  * @property CustomerStatus $status
+ * @property string|null $hold_reason
+ * @property int|null $merged_into_id
  * @property Carbon|null $verified_at
  * @property int|null $verified_by
  * @property int|null $created_by
@@ -56,6 +64,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property-read Employee|null $assignedSales
  * @property-read StockLocation|null $homeStockLocation
  * @property-read CustomerAssignment|null $openAssignment
+ * @property-read Customer|null $mergedInto
  */
 class Customer extends Model
 {
@@ -63,6 +72,13 @@ class Customer extends Model
 
     /** Kolom profil yang diubah form T-073 dan diaudit (tanpa cache penugasan, limit, verifikasi). */
     public const PROFILE = ['store_name', 'owner_name', 'owner_phone', 'customer_type_id', 'address', 'village_code', 'latitude', 'longitude', 'home_stock_location_id', 'term_days'];
+
+    /**
+     * Ketentuan dagang yang diubah lewat form ubah kios (T-074, `customers.update`): tempo panen dan
+     * kelayakan pembeli pestisida terbatas (BR-112; penegakannya di dokumen jual Paket B). Path
+     * dokumen tidak ikut di sini: diganti lewat unggahan (SEC-109).
+     */
+    public const TRADE_TERMS = ['harvest_term_allowed', 'harvest_term_max_days', 'restricted_buyer_eligible', 'restricted_buyer_note', 'restricted_buyer_valid_until'];
 
     protected $guarded = ['id'];
 
@@ -82,6 +98,11 @@ class Customer extends Model
             'term_days' => 'integer',
             'latitude' => 'decimal:7',
             'longitude' => 'decimal:7',
+            'harvest_term_allowed' => 'boolean',
+            'harvest_term_max_days' => 'integer',
+            'restricted_buyer_eligible' => 'boolean',
+            'restricted_buyer_valid_until' => 'date',
+            'merged_into_id' => 'integer',
         ];
     }
 
@@ -131,10 +152,23 @@ class Customer extends Model
         return $this->hasOne(CustomerAssignment::class)->whereNull('end_date');
     }
 
+    /** @return HasMany<CustomerContact, $this> */
+    public function contacts(): HasMany
+    {
+        return $this->hasMany(CustomerContact::class);
+    }
+
+    /** @return BelongsTo<Customer, $this> kios tujuan bila kios ini sudah digabung (BR-166(5)) */
+    public function mergedInto(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class, 'merged_into_id')->withTrashed();
+    }
+
     /** @return array<string, mixed> nilai profil untuk audit (tanpa jejak waktu/pembuat) */
     public function audited(): array
     {
-        $values = $this->only(self::PROFILE);
+        $values = $this->only([...self::PROFILE, ...self::TRADE_TERMS]);
+        $values['restricted_buyer_valid_until'] = $this->restricted_buyer_valid_until?->toDateString();
         $values['code'] = $this->code;
 
         return $values;

@@ -9,7 +9,10 @@ use App\Http\Controllers\Admin\AttendanceController;
 use App\Http\Controllers\Admin\AttendanceCorrectionController;
 use App\Http\Controllers\Admin\AttendanceSummaryController;
 use App\Http\Controllers\Admin\AuditLogController;
+use App\Http\Controllers\Admin\CustomerChangeController;
+use App\Http\Controllers\Admin\CustomerContactController;
 use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\CustomerFileController;
 use App\Http\Controllers\Admin\CustomerVerificationController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DeviceController;
@@ -500,6 +503,32 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('lokasi-stok', [StockLocationController::class, 'store'])->name('stock-locations.store');
         Route::post('lokasi-stok/rak', [StockBinController::class, 'store'])->name('stock-bins.store');
         Route::put('lokasi-stok/rak/{bin}', [StockBinController::class, 'update'])->whereNumber('bin')->name('stock-bins.update');
+        // Limit kredit, gabung, status, kontak (15 §5, BR-125, BR-166(5), §6.6, T-074 bagian 2).
+        Route::post('pelanggan/{customer}/limit', [CustomerChangeController::class, 'creditLimit'])->whereNumber('customer')
+            ->middleware('throttle:30,1')->name('customers.credit-limit');
+        Route::post('pelanggan/{customer}/gabung', [CustomerChangeController::class, 'merge'])->whereNumber('customer')
+            ->middleware('throttle:30,1')->name('customers.merge');
+        Route::post('pelanggan/{customer}/status', [CustomerChangeController::class, 'status'])->whereNumber('customer')
+            ->middleware('throttle:30,1')->name('customers.status');
+        Route::post('pelanggan/{customer}/kontak', [CustomerContactController::class, 'store'])->whereNumber('customer')
+            ->middleware('throttle:60,1')->name('customers.contacts.store');
+        Route::put('pelanggan/{customer}/kontak/{contact}', [CustomerContactController::class, 'update'])->whereNumber(['customer', 'contact'])
+            ->scopeBindings()->middleware('throttle:60,1')->name('customers.contacts.update');
+        Route::delete('pelanggan/{customer}/kontak/{contact}', [CustomerContactController::class, 'destroy'])->whereNumber(['customer', 'contact'])
+            ->scopeBindings()->middleware('throttle:60,1')->name('customers.contacts.destroy');
+    });
+    // Ganti HP kios (BR-126, BR-166(4)): hanya `customers.change_phone`; OTP ke HP LAMA = JSON.
+    Route::middleware('can:customers.change_phone')->group(function () {
+        Route::post('pelanggan/{customer}/ganti-hp', [CustomerChangeController::class, 'changePhone'])->whereNumber('customer')
+            ->middleware('throttle:30,1')->name('customers.change-phone');
+        Route::post('pelanggan/{customer}/ganti-hp/otp', [CustomerChangeController::class, 'sendPhoneOtp'])->whereNumber('customer')->name('customers.change-phone.otp.send');
+        Route::post('pelanggan/{customer}/ganti-hp/otp/cek', [CustomerChangeController::class, 'checkPhoneOtp'])->whereNumber('customer')->name('customers.change-phone.otp.check');
+    });
+    // Berkas privat kios: URL bertanda tangan 5 menit (SEC-108/109, pola selfie T-038 & izin edar T-071).
+    Route::middleware(['can:customers.view', 'signed:relative', 'throttle:120,1'])->group(function () {
+        Route::get('pelanggan/{customer}/foto', [CustomerFileController::class, 'photo'])->whereNumber('customer')->name('customers.photo');
+        Route::get('pelanggan/{customer}/dokumen-pembeli-terbatas', [CustomerFileController::class, 'restrictedDocument'])->whereNumber('customer')->name('customers.restricted-document');
+        Route::get('pelanggan/verifikasi/{verification}/foto', [CustomerFileController::class, 'verificationPhoto'])->whereNumber('verification')->name('customer-verifications.photo');
         Route::get('lokasi-stok/{stockLocation}/ubah', [StockLocationController::class, 'edit'])->whereNumber('stockLocation')->name('stock-locations.edit');
         Route::put('lokasi-stok/{stockLocation}', [StockLocationController::class, 'update'])->whereNumber('stockLocation')->name('stock-locations.update');
     });

@@ -5,10 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Customer\Actions\CreateCustomer;
 use App\Domain\Customer\Actions\ReassignCustomers;
 use App\Domain\Customer\Actions\UpdateCustomer;
+use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Customer\Listings\CustomerListing;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerAssignment;
 use App\Domain\Customer\Support\AssignmentApplier;
+use App\Domain\Customer\Support\CustomerChangeState;
+use App\Domain\Customer\Support\CustomerFileUrls;
 use App\Domain\Customer\Support\VerificationState;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
@@ -24,6 +27,7 @@ use App\Support\Phone\PhoneNormalizer;
 use App\Support\Time\DisplayTime;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Gate;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -96,7 +100,7 @@ class CustomerController extends Controller
         return to_route('admin.customers.show', $customer);
     }
 
-    public function show(Request $request, Customer $customer, VerificationState $verification): Response
+    public function show(Request $request, Customer $customer, VerificationState $verification, CustomerChangeState $changes): Response
     {
         Gate::authorize('view', $customer);
         $user = self::user($request);
@@ -124,6 +128,9 @@ class CustomerController extends Controller
                 'credit_limit_active' => $customer->credit_limit_active,
                 'verified_at' => $customer->verified_at !== null ? DisplayTime::toLocal($customer->verified_at)->toIso8601String() : null,
                 'created_at' => $customer->created_at !== null ? DisplayTime::toLocal($customer->created_at)->toIso8601String() : null,
+                // Foto toko di disk privat: tautan bertanda tangan 5 menit (SEC-108/109).
+                'photo_url' => CustomerFileUrls::photo($customer),
+                'hold_reason' => $customer->hold_reason,
             ],
             'assignments' => $assignments->map(fn (CustomerAssignment $a) => [
                 'id' => $a->id,
@@ -140,9 +147,16 @@ class CustomerController extends Controller
             'phoneMasked' => ! $fullPhone,
             // Tab verifikasi (T-074): keadaan OTP/telepon kantor/antrean kios ini.
             'verification' => $verification->for($customer, $user),
+            // T-074 bagian 2: kontak, ganti HP, limit, gabung, status (kontrak di CustomerChangeState).
+            'changes' => $changes->for($customer, $user),
             'can' => [
-                'update' => $user->can('update', $customer),
-                'reassign' => $user->can('reassign', Customer::class),
+                'update' => $user->can('update', $customer) && $customer->status !== CustomerStatus::Merged,
+                'reassign' => $user->can('reassign', Customer::class) && $customer->status !== CustomerStatus::Merged,
+                'change_phone' => $user->can('changePhone', $customer),
+                'credit_limit' => $user->can('setCreditLimit', $customer),
+                'merge' => $user->can('merge', $customer),
+                'change_status' => $user->can('changeStatus', $customer),
+                'manage_contacts' => $user->can('manageContacts', $customer),
             ],
             'today' => $today,
             'maxReassign' => ReassignCustomers::MAX_CUSTOMERS,
@@ -166,7 +180,8 @@ class CustomerController extends Controller
     public function update(CustomerRequest $request, Customer $customer, UpdateCustomer $action): RedirectResponse
     {
         Gate::authorize('update', $customer);
-        $saved = $action->handle($customer, $request->customerData(), self::user($request)->id);
+        $document = $request->file('restricted_buyer_document');
+        $saved = $action->handle($customer, $request->customerData(), self::user($request)->id, $document instanceof UploadedFile ? $document : null);
 
         Inertia::flash('toast', ['type' => 'success', 'message' => "Kios \"{$saved->store_name}\" disimpan."]);
 
@@ -214,6 +229,14 @@ class CustomerController extends Controller
             'term_days' => $c->term_days,
             'status' => $c->status->value,
             'is_verified' => $c->verified_at !== null,
+            // Ketentuan dagang (T-074, `customers.update`).
+            'harvest_term_allowed' => $c->harvest_term_allowed,
+            'harvest_term_max_days' => $c->harvest_term_max_days,
+            'restricted_buyer_eligible' => $c->restricted_buyer_eligible,
+            'restricted_buyer_note' => $c->restricted_buyer_note,
+            'restricted_buyer_valid_until' => $c->restricted_buyer_valid_until?->toDateString(),
+            'restricted_buyer_document_url' => CustomerFileUrls::restrictedDocument($c),
+            'merged_into_id' => $c->merged_into_id,
         ];
     }
 

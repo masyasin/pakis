@@ -7,16 +7,22 @@ use App\Domain\Audit\AuditLogger;
 use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Customer\Enums\VerificationStatus;
 use App\Domain\Customer\Models\Customer;
+use App\Domain\Customer\Models\CustomerVerification;
 use App\Domain\Customer\Support\DuplicateGuard;
 use App\Domain\Customer\Support\OfficeCallDrafts;
 use App\Support\Api\ApiError;
 use App\Support\Api\ErrorCode;
+use App\Support\Upload\SecureUpload;
+use App\Support\Upload\UploadTarget;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
- * Ubah profil kios (15 §5 `admin.customers.update`, T-073). Hanya kolom Customer::PROFILE: kode,
- * area/sales (lewat ReassignCustomers), status, limit, verifikasi, foto, dan kelayakan pembeli
- * terbatas tidak pernah diubah di sini (T-074).
+ * Ubah profil kios (15 §5 `admin.customers.update`, T-073). Hanya kolom Customer::PROFILE dan
+ * ketentuan dagang Customer::TRADE_TERMS (tempo panen, kelayakan pembeli terbatas + dokumennya,
+ * T-074): kode, area/sales (lewat ReassignCustomers), status, limit, verifikasi, dan foto toko
+ * tidak pernah diubah di sini (masing-masing lewat jalurnya sendiri, sebagian lewat approval).
  *
  * HP pemilik (BR-126, BR-166(4), PA-47): boleh diubah hanya selama kios `prospect` dan HP belum
  * terverifikasi. Setelah itu wajib jalur ganti HP + approval (T-074) → 409 STATE_CONFLICT.
@@ -32,42 +38,94 @@ final class UpdateCustomer
         private readonly DuplicateGuard $duplicates,
         private readonly ApprovalEngine $approvals,
         private readonly OfficeCallDrafts $drafts,
+        private readonly SecureUpload $uploads,
     ) {}
 
-    /** @param  array<string, mixed>  $data  sudah divalidasi CustomerRequest */
-    public function handle(Customer $customer, array $data, ?int $userId): Customer
+    /**
+     * @param  array<string, mixed>  $data  sudah divalidasi CustomerRequest
+     * @param  UploadedFile|null  $restrictedDocument  dokumen kelayakan pembeli terbatas baru (SEC-109)
+     */
+    public function handle(Customer $customer, array $data, ?int $userId, ?UploadedFile $restrictedDocument = null): Customer
     {
-        return DB::transaction(function () use ($customer, $data, $userId) {
-            $locked = Customer::query()->lockForUpdate()->findOrFail($customer->id);
-            $before = $locked->audited();
+        // Berkas diperiksa & disimpan dulu: isi berkas yang ditolak (SEC-109) tidak mengubah data apa pun.
+        $stored = $restrictedDocument !== null
+            ? $this->uploads->store($restrictedDocument, UploadTarget::privateDocument('customer-documents', 'restricted_buyer_document'))
+            : null;
 
-            $locked->fill(array_intersect_key($data, array_flip(Customer::PROFILE)));
+        try {
+            [$saved, $oldPath] = DB::transaction(fn () => $this->save($customer, $data, $userId, $stored?->path));
+        } catch (Throwable $e) {
+            $this->uploads->delete(CustomerVerification::DISK, $stored?->path);
 
-            if ($locked->isDirty('owner_phone') && ! self::phoneEditable($locked)) {
-                throw new ApiError(ErrorCode::STATE_CONFLICT, publicMessage: 'HP pemilik kios ini sudah terverifikasi atau kiosnya bukan prospek lagi. Ganti HP lewat menu Ganti HP agar diverifikasi ulang.');
-            }
+            throw $e;
+        }
+        if ($oldPath !== null) {
+            $this->uploads->delete(CustomerVerification::DISK, $oldPath);
+        }
 
-            if (! $locked->isDirty()) {
-                return $locked;
-            }
+        return $saved;
+    }
 
-            $override = $locked->isDirty(['owner_phone', 'store_name', 'latitude', 'longitude', 'village_code'])
-                ? $this->duplicates->check([...$locked->only(Customer::PROFILE), ...array_intersect_key($data, array_flip(DuplicateGuard::CONFIRM_KEYS))], $locked->id, phoneChanged: $locked->isDirty('owner_phone'))
-                : null;
-            $phoneChanged = $locked->isDirty('owner_phone');
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{0: Customer, 1: string|null} kios tersimpan + path dokumen lama yang sudah diganti
+     */
+    private function save(Customer $customer, array $data, ?int $userId, ?string $documentPath): array
+    {
+        $locked = Customer::query()->lockForUpdate()->findOrFail($customer->id);
+        $before = $locked->audited();
+        $oldDocument = $locked->restricted_buyer_document_path;
 
-            $locked->updated_by = $userId;
-            $locked->save();
+        $locked->fill(array_intersect_key($data, array_flip([...Customer::PROFILE, ...Customer::TRADE_TERMS])));
+        self::normalizeTradeTerms($locked, $documentPath);
 
-            $this->audit->record('customer.updated', $locked, $before, $locked->audited());
-            $this->duplicates->recordOverride($locked, $override, $data);
+        if ($locked->isDirty('owner_phone') && ! self::phoneEditable($locked)) {
+            throw new ApiError(ErrorCode::STATE_CONFLICT, publicMessage: 'HP pemilik kios ini sudah terverifikasi atau kiosnya bukan prospek lagi. Ganti HP lewat menu Ganti HP agar diverifikasi ulang.');
+        }
 
-            if ($phoneChanged) {
-                $this->withdrawPendingActivation($locked);
-            }
+        if (! $locked->isDirty()) {
+            return [$locked, null];
+        }
 
-            return $locked;
-        });
+        $override = $locked->isDirty(['owner_phone', 'store_name', 'latitude', 'longitude', 'village_code'])
+            ? $this->duplicates->check([...$locked->only(Customer::PROFILE), ...array_intersect_key($data, array_flip(DuplicateGuard::CONFIRM_KEYS))], $locked->id, phoneChanged: $locked->isDirty('owner_phone'))
+            : null;
+        $phoneChanged = $locked->isDirty('owner_phone');
+
+        $locked->updated_by = $userId;
+        $locked->save();
+
+        $after = $locked->audited();
+        if ($documentPath !== null) {
+            // Path berkas tidak diaudit (nama acak); cukup tanda bahwa dokumen diganti.
+            $after['restricted_buyer_document_replaced'] = true;
+        }
+        $this->audit->record('customer.updated', $locked, $before, $after);
+        $this->duplicates->recordOverride($locked, $override, $data);
+
+        if ($phoneChanged) {
+            $this->withdrawPendingActivation($locked);
+        }
+
+        return [$locked, $documentPath !== null ? $oldDocument : null];
+    }
+
+    /**
+     * Tempo panen & kelayakan pembeli terbatas (BR-112, T-074): tempo panen mati → batas hari dikosongkan;
+     * layak pembeli terbatas wajib punya dokumen (baru atau yang sudah ada).
+     */
+    private static function normalizeTradeTerms(Customer $customer, ?string $documentPath): void
+    {
+        if ($documentPath !== null) {
+            $customer->restricted_buyer_document_path = $documentPath;
+        }
+        if (! $customer->harvest_term_allowed) {
+            $customer->harvest_term_max_days = null;
+        }
+        if ($customer->restricted_buyer_eligible && $customer->restricted_buyer_document_path === null) {
+            $message = 'Unggah dokumen kelayakan pembeli pestisida terbatas.';
+            throw new ApiError(ErrorCode::VALIDATION_FAILED, ['restricted_buyer_document' => $message], $message);
+        }
     }
 
     private function withdrawPendingActivation(Customer $customer): void

@@ -7,6 +7,7 @@ use App\Domain\Customer\Models\Customer;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Models\User;
 use App\Support\Phone\PhoneNormalizer;
+use App\Support\Time\DisplayTime;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\DB;
@@ -97,7 +98,16 @@ class CustomerRequest extends FormRequest
             ...$creating ? [
                 'sales_area_id' => ['required', 'integer', Rule::exists('sales_areas', 'id')->where('is_active', true)->whereNull('deleted_at')],
                 'assigned_sales_employee_id' => ['nullable', 'integer', Rule::exists('employees', 'id')->where('status', 'active')->whereNull('deleted_at')],
-            ] : [],
+            ] : [
+                // Ketentuan dagang (T-074): hanya saat ubah, opsional (form lama tanpa kolom ini tetap sah).
+                'harvest_term_allowed' => ['sometimes', 'boolean'],
+                'harvest_term_max_days' => ['nullable', 'integer', 'min:1', 'max:365', Rule::requiredIf(fn () => $this->boolean('harvest_term_allowed'))],
+                'restricted_buyer_eligible' => ['sometimes', 'boolean'],
+                'restricted_buyer_note' => ['nullable', 'string', 'max:255'],
+                'restricted_buyer_valid_until' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:'.DisplayTime::toLocal(now())->toDateString(), Rule::requiredIf(fn () => $this->boolean('restricted_buyer_eligible'))],
+                // Jenis & ukuran dari ISI berkas diperiksa SecureUpload (SEC-109).
+                'restricted_buyer_document' => ['nullable', 'file'],
+            ],
         ];
     }
 
@@ -173,6 +183,9 @@ class CustomerRequest extends FormRequest
             'longitude.required_with' => 'Titik lokasi tidak lengkap. Tempel ulang tautan Google Maps atau ambil lokasi HP.',
             'home_stock_location_id.exists' => 'Gudang asal harus gudang atau toko yang aktif.',
             'duplicate_reason.min' => 'Alasan "bukan duplikat" minimal 5 karakter.',
+            'harvest_term_max_days.required' => 'Isi batas hari tempo panen.',
+            'restricted_buyer_valid_until.required' => 'Isi masa berlaku dokumen kelayakan pembeli terbatas.',
+            'restricted_buyer_valid_until.after_or_equal' => 'Masa berlaku dokumen sudah lewat.',
             'sales_area_id.exists' => 'Area penjualan tidak ditemukan atau sudah nonaktif.',
             'assigned_sales_employee_id.exists' => 'Pegawai tidak ditemukan atau sudah nonaktif.',
         ];
@@ -199,6 +212,12 @@ class CustomerRequest extends FormRequest
             'assigned_sales_employee_id' => 'sales',
             'not_duplicate' => 'bukan duplikat',
             'duplicate_reason' => 'alasan bukan duplikat',
+            'harvest_term_allowed' => 'tempo panen',
+            'harvest_term_max_days' => 'batas hari tempo panen',
+            'restricted_buyer_eligible' => 'pembeli pestisida terbatas',
+            'restricted_buyer_note' => 'catatan pembeli terbatas',
+            'restricted_buyer_valid_until' => 'berlaku sampai',
+            'restricted_buyer_document' => 'dokumen kelayakan',
         ];
     }
 }

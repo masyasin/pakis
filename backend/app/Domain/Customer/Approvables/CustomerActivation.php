@@ -4,16 +4,16 @@ namespace App\Domain\Customer\Approvables;
 
 use App\Domain\Approval\Contracts\Approvable;
 use App\Domain\Approval\Models\ApprovalRequest;
-use App\Domain\Approval\Models\ApprovalStep;
 use App\Domain\Approval\Support\Rupiah;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Customer\Enums\VerificationMethod;
 use App\Domain\Customer\Enums\VerificationStatus;
 use App\Domain\Customer\Enums\VerificationType;
+use App\Domain\Customer\Events\CustomerActivated;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\CustomerVerification;
-use App\Domain\Inventory\Models\StockLocation;
+use App\Domain\Customer\Support\CustomerApprovalScope;
 use App\Domain\Settings\DecimalString;
 use App\Support\Api\ApiError;
 use App\Support\Api\ErrorCode;
@@ -92,15 +92,12 @@ class CustomerActivation extends CustomerVerification implements Approvable
 
     public function approvalScopeLocationId(): ?int
     {
-        $customer = $this->customerOrFail();
-        $stockLocationId = $customer->home_stock_location_id ?? $customer->salesArea?->home_stock_location_id;
-
-        return $stockLocationId === null ? null : StockLocation::query()->withTrashed()->whereKey($stockLocationId)->value('location_id');
+        return CustomerApprovalScope::locationId($this->customerOrFail());
     }
 
     public function approvalScopeEmployeeId(): ?int
     {
-        return $this->customerOrFail()->assigned_sales_employee_id;
+        return CustomerApprovalScope::employeeId($this->customerOrFail());
     }
 
     public function creatorUserId(): ?int
@@ -143,7 +140,7 @@ class CustomerActivation extends CustomerVerification implements Approvable
             'credit_limit_active' => DecimalString::compare($limit, '0') > 0,
             'owner_phone_verified_at' => $this->otp_verified_at ?? now(),
             'verified_at' => now(),
-            'verified_by' => self::finalDecider($request),
+            'verified_by' => CustomerApprovalScope::finalDecider($request),
         ])->save();
 
         $this->forceFill(['status' => VerificationStatus::Approved])->save();
@@ -156,6 +153,8 @@ class CustomerActivation extends CustomerVerification implements Approvable
             'verification_id' => $this->id,
             'method' => $this->method->value,
         ]);
+
+        event(new CustomerActivated($customer->id, $this->id, $customer->verified_by));
     }
 
     public function onRejected(ApprovalRequest $request): void
@@ -176,16 +175,5 @@ class CustomerActivation extends CustomerVerification implements Approvable
     private function customerOrFail(): Customer
     {
         return $this->customer ?? throw new LogicException("Kios verifikasi #{$this->id} tidak ditemukan.");
-    }
-
-    /** Pemutus langkah terakhir (penyetuju akhir) = `verified_by`; null bila disetujui otomatis. */
-    private static function finalDecider(?ApprovalRequest $request): ?int
-    {
-        if ($request === null) {
-            return null;
-        }
-        $last = $request->steps->filter(fn (ApprovalStep $s) => $s->decided_by !== null)->sortByDesc('step_order')->first();
-
-        return $last?->decided_by;
     }
 }

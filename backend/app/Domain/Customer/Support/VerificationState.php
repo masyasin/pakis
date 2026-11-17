@@ -61,6 +61,8 @@ final class VerificationState
             'requested_credit_limit' => $v->requested_credit_limit,
             'office_call_note' => $v->office_call_note,
             'approval_request_id' => $v->approval_request_id,
+            // Foto verifikasi di disk privat: tautan bertanda tangan 5 menit (SEC-108/109).
+            'photo_url' => CustomerFileUrls::verificationPhoto($v),
             'submitted_by' => $v->submitter !== null ? ['id' => $v->submitter->id, 'name' => $v->submitter->name] : null,
             'created_at' => $v->created_at !== null ? DisplayTime::toLocal($v->created_at)->toIso8601String() : null,
         ];

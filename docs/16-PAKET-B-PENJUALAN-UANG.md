@@ -3,7 +3,7 @@
 Revisi 16 Nov 2026 (repo): PF-3 — `PeriodGuard` + `accounting.lock_date` + `PeriodGuardArchTest` dipindah ke T-077 (Paket A); T-096 menambah layar & aksi ubah tanggal kunci, katalog event B, validator keseimbangan, dan kasus arch test `ReceivableLedger`. Aturan kontrak payload `14` §7.
 
 **Rentang:** T-088–T-113 · FR-B01–FR-B42 · BR-200–BR-229 · SEC-111–SEC-130 · OQ-121 dst.
-**Kontrak lintas modul:** `14-ROADMAP-LENGKAP.md` (ADR-101–ADR-115, event §7, penomoran §8, status §11, adapter §12). **Bergantung pada:** `15-PAKET-A-MASTER-GUDANG.md` (disingkat **15**): approval engine, `StockLedger`, `FefoAllocator`, `PriceResolver`, `PromotionEngine`, `DataScope::forStock/forCustomer`, `WhatsAppChannel`, `reminder_logs`.
+**Kontrak lintas modul:** `14-ROADMAP-LENGKAP.md` (ADR-101–ADR-115, event §7, penomoran §8, status §11, adapter §12). **Bergantung pada:** `15-PAKET-A-MASTER-GUDANG.md` (disingkat **15**): approval engine, `StockLedger`, `FefoAllocator`, `PriceResolver`, `PromotionEngine`, `DataScope::forStock/forCustomer`, kanal WhatsApp Fase 0 (`OtpManager` kanal `whatsapp` untuk OTP, `WhatsAppSender` + `ChannelGuard` untuk pesan; tanpa kontrak `WhatsAppChannel` baru, PA-6), `reminder_logs`.
 **Modul konsep v1.4:** SAL-01, SAL-02, SAL-03, SAL-05, DLV-01 (web), FIN-01, FIN-04, FLD-03 (web), AUD-01, POS-01, GAR-01 (jual), WEB-01, BI-01, CORE-04 (template), CORE-06 (saldo awal piutang).
 
 ## 0. Penyelarasan (cek sebelum T-088)
@@ -13,7 +13,7 @@ Revisi 16 Nov 2026 (repo): PF-3 — `PeriodGuard` + `accounting.lock_date` + `Pe
 | S-1 | Paket A selesai dan exit gate lulus. Nama kelas & tabel Paket A sesuai **15** | Repo |
 | S-2 | `ApprovalEngine` mendukung `conditions` dengan kunci per `document_type` (**15** §4.2). Paket B menambah kunci `exception_types` | `RuleMatcher` |
 | S-3 | `StockLedger` menerima tipe mutasi baru `delivery_dispatch_out/in`, `delivery_return_out/in` (ALTER ENUM di T-090, §4.3) | `MovementType` |
-| S-4 | `WhatsAppChannel` driver `log` sudah ada (T-074). Paket B menambah antrean pesan & template, **bukan** driver nyata | **15** T-074 |
+| S-4 | Tidak ada kontrak `WhatsAppChannel` baru (PA-6): OTP kios T-074 lewat `OtpManager` kanal `whatsapp` Fase 0 (driver `log` hanya non-produksi), pesan kios lain lewat `WhatsAppSender` + `ChannelGuard` (T-029). Paket B menambah antrean pesan & template di atas `WhatsAppSender`, **bukan** driver nyata | **15** T-074, PA-6 |
 | S-5 | Library PDF (OQ-109/ADR-114) **wajib diputuskan sebelum T-091**. Bila belum, T-091/T-093/T-100 memakai halaman cetak HTML dan PDF menyusul | `03` §5 |
 | S-6 | Dependency baru: library PDF sesuai OQ-109 (satu saja) dan `workbox` (npm, untuk PWA POS, T-107). Tidak ada yang lain | `03` §5 |
 | S-7 | Halaman publik (kwitansi, konfirmasi saldo, garansi, katalog) memakai **Blade** server-render di domain yang sama, terpisah dari Inertia admin | `03` |

@@ -10,6 +10,9 @@ use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
 use App\Domain\Catalog\Listings\ProductListing;
 use App\Domain\Customer\Approvables\CustomerActivation;
+use App\Domain\Customer\Approvables\CustomerCreditLimit;
+use App\Domain\Customer\Approvables\CustomerMerge;
+use App\Domain\Customer\Approvables\CustomerPhoneChange;
 use App\Domain\Customer\Listings\CustomerListing;
 use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Employee\Import\EmployeeImportType;
@@ -92,11 +95,11 @@ return [
         'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => null, 'conditions' => []],
         'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => null, 'conditions' => []],
         'purchase_return' => ['label' => 'Retur ke prinsipal', 'model' => null, 'conditions' => []],
-        // T-074: dokumen = baris customer_verifications (PA-49).
+        // T-074: aktivasi & ganti HP = baris customer_verifications; limit & gabung = baris customers (PA-49).
         'customer_activation' => ['label' => 'Aktivasi kios', 'model' => CustomerActivation::class, 'conditions' => []],
-        'customer_credit_limit' => ['label' => 'Limit kredit kios', 'model' => null, 'conditions' => []],
-        'customer_phone_change' => ['label' => 'Ganti nomor HP kios', 'model' => null, 'conditions' => []],
-        'customer_merge' => ['label' => 'Gabung kios duplikat', 'model' => null, 'conditions' => []],
+        'customer_credit_limit' => ['label' => 'Limit kredit kios', 'model' => CustomerCreditLimit::class, 'conditions' => []],
+        'customer_phone_change' => ['label' => 'Ganti nomor HP kios', 'model' => CustomerPhoneChange::class, 'conditions' => []],
+        'customer_merge' => ['label' => 'Gabung kios duplikat', 'model' => CustomerMerge::class, 'conditions' => []],
         // T-075: dokumen = baris price_list_versions.
         'price_list_publish' => ['label' => 'Terbit daftar harga', 'model' => PriceListPublish::class, 'conditions' => []],
         'promotion_activate' => ['label' => 'Aktivasi promo', 'model' => null, 'conditions' => []],

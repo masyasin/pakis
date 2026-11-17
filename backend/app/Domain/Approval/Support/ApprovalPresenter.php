@@ -76,13 +76,25 @@ final class ApprovalPresenter
 
         return [
             ...$this->row($request, $user, $passwordRecent),
-            'context' => $request->context ?? [],
+            'context' => self::visibleContext($request->context),
             'document_url' => $url,
             'decided_at' => $request->decided_at?->toIso8601String(),
             'rule' => ['name' => $request->rule_snapshot['name']],
             'acting_for' => $actingFor === null ? null : ['id' => $actingFor->id, 'name' => $actingFor->name],
             'steps' => $request->steps->map(fn (ApprovalStep $s) => $this->step($request, $s))->values()->all(),
         ];
+    }
+
+    /**
+     * Konteks untuk penyetuju tanpa kunci mesin berawalan `_` (mis. `_merge_into_id`): kunci itu
+     * dibaca callback dokumen saat diputuskan, bukan informasi tampilan (PA-56).
+     *
+     * @param  array<array-key, mixed>|null  $context
+     * @return array<array-key, mixed>
+     */
+    public static function visibleContext(?array $context): array
+    {
+        return array_filter($context ?? [], fn ($key) => ! is_string($key) || ! str_starts_with($key, '_'), ARRAY_FILTER_USE_KEY);
     }
 
     /** @return array<string, mixed> */

@@ -204,16 +204,16 @@ CREATE TABLE approval_delegations (
 | `stock_quarantine_release` | Lepas karantina manual | — | `stock_quarantine.release` |
 | `purchase_return` | Ajukan retur ke prinsipal | nilai (HPP) | `purchase_returns.approve` |
 | `customer_activation` | Kirim verifikasi kios | limit kredit yang diminta (0 bila tanpa limit) | < Rp 20 jt: `customers.verify` · ≥ Rp 20 jt: `customers.verify` lalu `credit_limits.set_high` (keputusan Mas 16 Nov 2026, PA-51: satu permintaan, satu aturan bertingkat; dokumen = baris `customer_verifications` ber-`type = activation`, PA-49) |
-| `customer_credit_limit` | Ubah limit kredit | limit baru | < Rp 20 jt: `credit_limits.set` · ≥ Rp 20 jt: + `credit_limits.set_high` |
-| `customer_phone_change` | Ubah nomor HP kios | — | `customers.change_phone_approve` |
-| `customer_merge` | Gabung kios duplikat | — | `customers.merge` |
+| `customer_credit_limit` | Ubah limit kredit | limit baru | < Rp 20 jt: `credit_limits.set` · ≥ Rp 20 jt: `direct_supervisor` (atasan langsung **sales kios**; `scope_employee_id` = `assigned_sales_employee_id`) lalu `credit_limits.set_high` (keputusan Mas 16 Nov 2026, PA-51; pola PA-26 agar Owner tidak buntu oleh BR-153(11)). Dokumen = baris `customers`, limit diminta = `approval_requests.amount` (PA-56). Kios belum terverifikasi → 422 `CUSTOMER_NOT_VERIFIED` |
+| `customer_phone_change` | Ubah nomor HP kios | — | `customers.change_phone_approve` (dokumen = baris `customer_verifications` ber-`type = phone_change`, PA-49/PA-57) |
+| `customer_merge` | Gabung kios duplikat | — | `customers.merge` (dokumen = baris `customers` kios sumber, kios tujuan di `context._merge_into_id`, PA-56/PA-58) |
 | `price_list_publish` | Terbitkan versi price list | — | `prices.publish` |
 | `promotion_activate` | Aktifkan promo | anggaran | `promotions.approve` |
 | `serial_swap` | Tukar nomor seri | — | `serials.approve_swap` |
 
 Angka rupiah di tabel adalah **contoh seed**. Wajib ditetapkan Pakis saat UAT (OQ-113).
 
-Registri jenis dokumen (T-067): `config/pakis.php` `approvables` (`label`, `model` = kelas Approvable yang diisi task pemilik dokumen, `conditions` = kunci kondisi yang diizinkan). Seed = `ApprovalRuleSeeder` (18 aturan untuk 14 jenis sejak T-074; jenis yang sudah punya aturan apa pun tidak disentuh — aturan aktivasi kios bawaan T-067 yang belum diubah/dipakai dijadikan bertingkat oleh migrasi data T-074, PA-51). Kontrak `App\Domain\Approval\Contracts\Approvable`: `approvalDocumentType`, `approvalAmount`, `approvalSummary`, `approvalContext`, `approvalConditions`, `approvalScopeLocationId`, `approvalScopeEmployeeId`, `creatorUserId`, `approvalUrl`, `onApproved(?request)`, `onRejected`, `onCancelled`.
+Registri jenis dokumen (T-067): `config/pakis.php` `approvables` (`label`, `model` = kelas Approvable yang diisi task pemilik dokumen, `conditions` = kunci kondisi yang diizinkan). Seed = `ApprovalRuleSeeder` (18 aturan untuk 14 jenis sejak T-074; jenis yang sudah punya aturan apa pun tidak disentuh — aturan aktivasi kios dan limit kredit bawaan T-067 yang belum diubah/dipakai diperbarui migrasi data T-074 `060300` dan `060400`, PA-51). Kontrak `App\Domain\Approval\Contracts\Approvable`: `approvalDocumentType`, `approvalAmount`, `approvalSummary`, `approvalContext`, `approvalConditions`, `approvalScopeLocationId`, `approvalScopeEmployeeId`, `creatorUserId`, `approvalUrl`, `onApproved(?request)`, `onRejected`, `onCancelled`.
 
 ### 4.3 Lokasi stok, rak, kendaraan (T-068)
 
@@ -1098,10 +1098,15 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.customers.verify` | POST | `/pelanggan/{customer}/verifikasi` | `customers.manage` | Kirim verifikasi (foto, titik, OTP/telepon kantor) → approval `customer_activation`. Metode telepon kantor = draf menunggu telepon (PA-49) |
 | `admin.customers.office-call` | POST | `/pelanggan/{customer}/verifikasi/telepon-kantor` | `customers.manage` | Catat telepon kantor (BR-165b) oleh pengguna ≠ pengaju draf → baris verifikasi + approval `customer_activation` atas nama pengaju (PA-49, T-074) |
 | `admin.customers.otp.send` / `admin.customers.otp.check` | POST | `/pelanggan/{customer}/otp` · `/otp/cek` | `customers.manage` | Lewat `CustomerOtpService`: **pengiriman** memakai kanal OTP Fase 0 (`App\Domain\Notification\Otp\{OtpManager,OtpChannel}`, `config/otp.php`), **kanal `whatsapp` saja** ke `owner_phone` (BR-165); **penyimpanan kode (hash), masa berlaku, dan batas percobaan** di tabel `customer_otp_codes` + setting `customer.otp_*`. `OtpService` Fase 0 tidak dipakai karena menyimpan kode di cache per `User` dan khusus lupa password, sedangkan kios bukan `User`. 503 `CHANNEL_UNAVAILABLE` bila `customer.otp_enabled=false` atau kanal WhatsApp tidak tersedia (`OtpManager::available('whatsapp')` = false: driver `none`, atau `log` di produksi) → jalur telepon kantor |
-| `admin.customers.change-phone` | POST | `/pelanggan/{customer}/ganti-hp` | `customers.change_phone` | → approval `customer_phone_change` |
-| `admin.customers.credit-limit` | POST | `/pelanggan/{customer}/limit` | `customers.manage` | → approval `customer_credit_limit` |
+| `admin.customers.change-phone` | POST | `/pelanggan/{customer}/ganti-hp` | `customers.change_phone` | Body `new_phone`, `method` (`otp`/`office_call`), `otp_code`/`office_call_note`, `reason` → bukti HP **lama**, approval `customer_phone_change` (PA-57) |
+| `admin.customers.change-phone.otp.send` / `.check` | POST | `/pelanggan/{customer}/ganti-hp/otp` · `/otp/cek` | `customers.change_phone` | **JSON.** OTP WhatsApp ke HP **lama** (tujuan `phone_change`), batas sama dengan OTP aktivasi (`customer.otp_*`) |
+| `admin.customers.credit-limit` | POST | `/pelanggan/{customer}/limit` | `customers.manage` | Body `credit_limit` (rupiah ≥ 0, 0 = tanpa limit), `reason` → approval `customer_credit_limit`. Belum terverifikasi → 422 `CUSTOMER_NOT_VERIFIED` |
 | `admin.customers.reassign` | POST | `/pelanggan/alihkan` | `customers.manage` | Massal: `customer_ids[]`, area, sales, tanggal, alasan |
-| `admin.customers.merge` | POST | `/pelanggan/{customer}/gabung` | `customers.manage` | → approval `customer_merge` |
+| `admin.customers.merge` | POST | `/pelanggan/{customer}/gabung` | `customers.manage` | Body `target_customer_id` (dalam scope), `reason` → approval `customer_merge` (PA-58) |
+| `admin.customers.status` | POST | `/pelanggan/{customer}/status` | `customers.manage` | Body `action` (`hold`/`release`/`deactivate`/`reactivate`), `reason` (5–255) — transisi manual §6.6 (PA-58) |
+| `admin.customers.contacts.store` / `update` / `destroy` | POST/PUT/DELETE | `/pelanggan/{customer}/kontak` · `/kontak/{contact}` | `customers.manage` | Kontak kios (`name`, `role?`, `phone?`); kontak di-bind sebagai anak kios (kontak kios lain → 404). Diaudit |
+| `admin.customers.photo` / `admin.customers.restricted-document` | GET | `/pelanggan/{customer}/foto` · `/dokumen-pembeli-terbatas` | `customers.view` + `signed` | Foto toko & dokumen kelayakan pembeli terbatas dari disk privat, signed URL 5 menit (SEC-108/109) |
+| `admin.customer-verifications.photo` | GET | `/pelanggan/verifikasi/{verification}/foto` | `customers.view` + `signed` | Foto verifikasi kios, signed URL 5 menit |
 | `admin.customers.export` | GET | `/pelanggan/ekspor` | `customers.export` | Data sensitif (HP pemilik), izin `.export` seperti Fase 0. Nomor HP termasking (SEC-108) |
 | `admin.customer-verifications.index` | GET | `/pelanggan/verifikasi` | `customers.verify` | Antrean verifikasi |
 | `admin.price-lists.index`/`store`/`update` | | `/daftar-harga/...` | `prices.view` / `.manage` | |
@@ -1299,7 +1304,10 @@ Catatan penting:
 | Promo | `draft` | Ajukan | `promotions.manage` | `pending_approval` → `active` / `draft` |
 | Promo | `active` | Akhiri / anggaran habis / lewat tanggal | `promotions.manage` / sistem | `ended` |
 | Kios | `prospect` | Verifikasi disetujui | approval `customer_activation` | `active` (limit aktif) |
-| Kios | `active` | Tunggakan/blokir manual | sistem (B) / `customers.manage` | `credit_hold` |
+| Kios | `active` | Tunggakan/blokir manual (alasan) | sistem (B) / `customers.manage` | `credit_hold` |
+| Kios | `credit_hold` | Lepas tahan kredit (alasan) | `customers.manage` | `active` |
+| Kios | `prospect`/`active`/`credit_hold` | Nonaktifkan (alasan; permintaan approval kios yang menunggu ditarik) | `customers.manage` | `inactive` |
+| Kios | `inactive` | Aktifkan kembali (alasan; HP dicek ulang BR-166(2)(3)) | `customers.manage` | `active` (terverifikasi) / `prospect` (belum) |
 | Kios | `active`/`credit_hold`/`prospect` | Digabung | approval `customer_merge` | `merged` |
 
 ### 6.7 Diagram alur utama
@@ -1574,7 +1582,7 @@ Pola Fase 0 (catatan T-029): tiap jenis = case `NotificationKind` + kunci `notif
 | `approval_decided` | `notification.on_approval_decided` | `ApprovalDecided` | Pengaju | T-067 |
 | `approval_escalated` | `notification.on_approval_escalated` | `EscalateApprovals` (BR-153(6)) | Penyetuju langkah + pemegang `escalation_permission` | T-067 |
 | `registration_expiring` | `notification.on_registration_expiring` | H-60/30/7/0 (BR-152) | Pemegang `product_registrations.manage` | T-071 |
-| `customer_phone_changed` | `notification.on_customer_phone_changed` | Ganti HP kios disetujui (BR-166(4)) | Owner (nomor termasking) | T-074 |
+| `customer_phone_changed` | `notification.on_customer_phone_changed` | Ganti HP kios disetujui (BR-166(4)) | Pemegang `customers.change_phone_approve` yang aktif (Owner), bukan `super_admin` (semangat PA-37); nomor termasking | T-074 |
 | `stock_reconcile_mismatch` | `notification.on_stock_reconcile_mismatch` | `ReconcileStockLedger` menemukan selisih (BR-154) | Owner & `super_admin` | T-077 |
 | `batch_near_expiry` | `notification.on_batch_near_expiry` | Per ambang `inventory.near_expiry_days` (BR-157) | Kepala gudang lokasi terkait | T-078 |
 | `batch_expired` | `notification.on_batch_expired` | `ExpireBatches` (BR-157) | Kepala gudang lokasi terkait | T-078 |

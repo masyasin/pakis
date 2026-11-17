@@ -7,7 +7,7 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Aturan approval bawaan 15 §4.2.1 (T-067; aktivasi kios bertingkat T-074, PA-51), termasuk PA-26: PO ≥ Rp 25 jt = atasan langsung pengaju
+ * Aturan approval bawaan 15 §4.2.1 (T-067; aktivasi kios bertingkat & limit ≥ 20 jt lewat atasan sales T-074, PA-51), termasuk PA-26: PO ≥ Rp 25 jt = atasan langsung pengaju
  * lalu `purchase_orders.approve_high` (BR-153(11): satu orang satu langkah, jadi dua langkah yang
  * sama-sama hanya dipegang Owner tidak bisa dipakai). Angka rupiah adalah CONTOH (OQ-113), ditetapkan
  * Pakis saat UAT lewat layar Aturan Persetujuan.
@@ -57,9 +57,11 @@ class ApprovalRuleSeeder extends Seeder
                 ['name' => 'Aktivasi kios, limit di bawah Rp 20 juta', 'min' => null, 'max' => '20000000', 'steps' => [$perm('customers.verify')]],
                 ['name' => 'Aktivasi kios, limit Rp 20 juta ke atas', 'min' => '20000000', 'max' => null, 'steps' => [$perm('customers.verify'), $perm('credit_limits.set_high')]],
             ],
+            // Keputusan Mas 16 Nov 2026 (T-074, PA-51): ≥ 20 jt = atasan langsung SALES kios lalu
+            // `credit_limits.set_high` (pola PA-26), bukan `credit_limits.set` dua kali dengan Owner.
             'customer_credit_limit' => [
                 ['name' => 'Limit kredit di bawah Rp 20 juta', 'min' => null, 'max' => '20000000', 'steps' => [$perm('credit_limits.set')]],
-                ['name' => 'Limit kredit Rp 20 juta ke atas', 'min' => '20000000', 'max' => null, 'steps' => [$perm('credit_limits.set'), $perm('credit_limits.set_high')]],
+                ['name' => 'Limit kredit Rp 20 juta ke atas', 'min' => '20000000', 'max' => null, 'steps' => [['direct_supervisor'], $perm('credit_limits.set_high')]],
             ],
             'customer_phone_change' => [
                 ['name' => 'Ganti nomor HP kios', 'min' => null, 'max' => null, 'steps' => [$perm('customers.change_phone_approve')]],

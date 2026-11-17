@@ -90,6 +90,24 @@ final class CustomerWorld
         return $customer;
     }
 
+    /**
+     * Kios yang sudah lolos verifikasi (status `active`, HP terverifikasi) tanpa melewati alur
+     * approval aktivasi — untuk test ganti HP / limit / gabung / status (T-074 bagian 2).
+     *
+     * @param  array<string, mixed>  $attributes
+     */
+    public static function activeCustomer(SalesArea $area, string $store, array $attributes = []): Customer
+    {
+        $customer = self::customer($area, $store, $attributes);
+        $customer->forceFill([
+            'status' => 'active',
+            'verified_at' => now(),
+            'owner_phone_verified_at' => now(),
+        ])->save();
+
+        return $customer->refresh();
+    }
+
     /** @return array<string, mixed> isian form kios yang sah */
     public static function payload(SalesArea $area, array $override = []): array
     {

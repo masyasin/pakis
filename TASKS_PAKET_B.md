@@ -432,7 +432,7 @@ Jalur kritis: T-088 → T-089 → T-090 → T-091 → T-092 → T-093 → T-097 
 ### T-111 — Template pesan & antrean pengiriman
 - Paket: B | Prioritas: P0 | Estimasi: 6 jam
 - Memenuhi: FR-B41, BR-219 (template & antrean), SEC-119 (template), SEC-129
-- Dependensi: Paket A (T-074 `WhatsAppChannel`)
+- Dependensi: Paket A (T-074; kanal WhatsApp Fase 0 `WhatsAppSender` + `ChannelGuard` T-029 — tanpa kontrak `WhatsAppChannel` baru, PA-6)
 - Konteks wajib: **16** §4.2 (`message_templates`, `outbound_messages`), §5.1 (`message-templates.*`, `outbound-messages`), §8.2 BR-219, §9 (`messages.max_attempts`), §10.2 SEC-119, SEC-129, §11.1 (`messages:dispatch`)
 - File: migrations; seeder template default (7 kode); `app/Domain/Integration/Messaging/{MessageTemplateRenderer,PlaceholderRegistry,QueueMessage,DispatchMessage}.php`; `app/Jobs/SendOutboundMessage.php`; pages `Settings/MessageTemplates/*`, `Messages/Outbound.tsx`; tests
 - Deskripsi: Template per kode & kanal dengan placeholder allowlist; antrean dengan backoff; status; kirim ulang; pesan gagal 3x → notifikasi Finance untuk kirim manual. Dipakai T-093, T-100, T-103, T-108.

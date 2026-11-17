@@ -120,6 +120,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `notification.on_approval_decided` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-067) | ❌ |
 | `notification.on_approval_escalated` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-067) | ❌ |
 | `notification.on_registration_expiring` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-071, BR-152) | ❌ |
+| `notification.on_customer_phone_changed` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-074, BR-166(4); penerima pemegang `customers.change_phone_approve`, bukan `super_admin`, nomor termasking) | ❌ |
 | `notification.whatsapp_daily_limit` | int | 300 | 0–10000 | ❌ |
 | `notification.whatsapp_hourly_per_user` | int | 5 | 1–50 | ❌ |
 | `notification.circuit_failures` | int | 5 | 3–20 | ❌ |

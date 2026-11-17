@@ -78,8 +78,8 @@ test('BR-166(4) SEC-105 ganti HP lewat telepon kantor → approval Owner → HP 
         ->and($change->status)->toBe(VerificationStatus::Pending)
         ->and($request->document_type)->toBe('customer_phone_change')
         ->and($request->steps->pluck('permission_name')->all())->toBe(['customers.change_phone_approve'])
-        ->and($request->context['HP lama'])->toBe('0812•••••001')
-        ->and($request->context['HP baru'])->toBe('0812•••••999')
+        ->and($request->context['HP lama'])->toBe('081•••••001')
+        ->and($request->context['HP baru'])->toBe('081•••••999')
         ->and(json_encode($request->context))->not->toContain('6281234567999');
     // HP belum berubah sebelum disetujui.
     expect($this->customer->fresh()->owner_phone)->toBe('6281234567001');
@@ -103,7 +103,7 @@ test('BR-166(4) SEC-105 ganti HP lewat telepon kantor → approval Owner → HP 
         $text = $n->title().' '.$n->body();
 
         return $n->kind() === NotificationKind::CustomerPhoneChanged
-            && str_contains($text, '0812•••••001') && str_contains($text, '0812•••••999')
+            && str_contains($text, '081•••••001') && str_contains($text, '081•••••999')
             && ! str_contains($text, '6281234567001') && ! str_contains($text, '6281234567999');
     });
     Notification::assertNotSentTo($this->vendor, CustomerPhoneChangedNotification::class);
@@ -113,7 +113,7 @@ test('BR-166(4) SEC-105 ganti HP lewat telepon kantor → approval Owner → HP 
 test('BR-166(4) SEC-105 OTP ganti HP dikirim ke HP LAMA (WhatsApp saja); kode benar → pengajuan method otp, kode habis', function () {
     $channel = CustomerVerificationWorld::enableOtp();
     $this->actingAs($this->admin)->postJson("/pelanggan/{$this->customer->id}/ganti-hp/otp")->assertOk()
-        ->assertJsonPath('data.phone', '0812•••••001');
+        ->assertJsonPath('data.phone', '081•••••001');
     expect(array_column($channel->sent, 'address'))->toBe(['6281234567001']);
     $code = (string) $channel->lastCode();
 
@@ -170,7 +170,7 @@ test('BR-153(8) ganti HP ditolak Owner → HP tetap, verifikasi rejected; detail
     changePhone($this->admin, $this->customer, [])->assertSessionHasNoErrors();
 
     $this->actingAs($this->admin)->get("/pelanggan/{$this->customer->id}")->assertInertia(fn (Assert $p) => $p
-        ->where('changes.phone_change.pending.phone_target', '0812•••••999')
+        ->where('changes.phone_change.pending.phone_target', '081•••••999')
         ->where('changes.phone_change.can_request', false)
         ->where('can.change_phone', true));
 

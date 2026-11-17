@@ -94,7 +94,7 @@ test('BR-165b SEC-105 telepon kantor: pengaju sendiri ditolak; pengguna lain men
         ->and($request->amount)->toBe('5000000.00')
         ->and($request->steps)->toHaveCount(1)
         ->and($request->context['Ditelepon oleh'])->toBe('Oki Kantor')
-        ->and($request->context['HP pemilik'])->toBe('0812•••••001');
+        ->and($request->context['HP pemilik'])->toBe('081•••••001');
     expect(AuditLog::query()->where('event', 'customer.office_call_recorded')->where('user_id', $this->office->id)->exists())->toBeTrue();
 
     // Maker-checker: pengaju tidak bisa menyetujui sendiri.

@@ -68,8 +68,8 @@ final class PhoneNormalizer
     }
 
     /**
-     * Tampilan termasking (SEC-108): 4 digit awal (bentuk lokal `08…`) + 5 titik + 3 digit akhir,
-     * mis. `0812•••••789` untuk `628123456789`.
+     * Tampilan termasking (SEC-108): 3 karakter awal bentuk lokal (`081`) + 5 titik + 3 digit akhir,
+     * mis. `081•••••789` untuk `628123456789`.
      * Jumlah titik tetap agar panjang nomor asli tidak terbaca. Nomor terlalu pendek (< 8 digit,
      * data lama tak sah) seluruhnya diganti titik supaya tidak ada digit tengah yang bocor.
      */
@@ -85,9 +85,11 @@ final class PhoneNormalizer
         }
         // Tampilan memakai awalan lokal `08…` seperti HP penuh di layar (0812-…), bukan bentuk
         // simpan `62…`, agar nomor termasking & nomor penuh terbaca sama (keputusan Mas 17 Nov 2026).
+        // Hanya 3 karakter awal (`081`): `0` menggantikan `62` (dua digit), jadi digit pelanggan
+        // yang terbuka tetap sama banyak dengan bentuk lama `6281•••••789` — masking tidak melemah.
         $local = str_starts_with($digits, '62') ? '0'.substr($digits, 2) : $digits;
 
-        return substr($local, 0, 4).'•••••'.substr($local, -3);
+        return substr($local, 0, 3).'•••••'.substr($local, -3);
     }
 
     /**

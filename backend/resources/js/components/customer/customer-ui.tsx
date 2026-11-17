@@ -117,7 +117,7 @@ export type ChangeState = {
 
 /**
  * HP pemilik kios. Server sudah memutuskan masking (SEC-108: penuh hanya untuk `customers.manage`),
- * jadi nilai termasking (`0812•••••789`) ditampilkan apa adanya tanpa tombol buka; nilai penuh
+ * jadi nilai termasking (`081•••••789`) ditampilkan apa adanya tanpa tombol buka; nilai penuh
  * diformat `0812-3456-7890` agar mudah dibaca.
  */
 export function CustomerPhone({

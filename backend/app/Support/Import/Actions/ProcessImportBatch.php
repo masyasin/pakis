@@ -2,6 +2,7 @@
 
 namespace App\Support\Import\Actions;
 
+use App\Domain\Accounting\Period\PeriodGuard;
 use App\Domain\Audit\AuditLogger;
 use App\Jobs\ProcessImportBatchJob;
 use App\Models\User;
@@ -38,12 +39,15 @@ final class ProcessImportBatch
      * `validated` → `processing`, lalu proses langsung atau lewat antrean `imports`. `$passwordConfirmed`
      * = pengimpor baru saja mengonfirmasi password; wajib bila tipe memintanya (T-085, PA-70) dan
      * disimpan di opsi batch agar `apply()` (juga di job antrean) tahu syaratnya terpenuhi.
+     * `$businessDate` (`Y-m-d`) = tanggal bisnis dari pengimpor bila tipe memintanya (T-086: tanggal
+     * cutover saldo awal), wajib di periode terbuka (`PeriodGuard`).
      */
-    public function start(User $actor, ImportBatch $batch, bool $updateExisting, bool $passwordConfirmed = false): ImportBatch
+    public function start(User $actor, ImportBatch $batch, bool $updateExisting, bool $passwordConfirmed = false, ?string $businessDate = null): ImportBatch
     {
-        $batch = DB::transaction(function () use ($actor, $batch, $updateExisting, $passwordConfirmed) {
+        $batch = DB::transaction(function () use ($actor, $batch, $updateExisting, $passwordConfirmed, $businessDate) {
             $locked = ImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
             $type = ImportRegistry::forBatch($locked);
+            $type->ensureAvailable();
             $fail = fn (string $message) => throw ValidationException::withMessages(['status' => $message]);
 
             if (! $locked->status->canProcess()) {
@@ -58,13 +62,21 @@ final class ProcessImportBatch
             if (! $passwordConfirmed && $type->requiresPassword($locked, $actor)) {
                 throw ValidationException::withMessages(['current_password' => 'Konfirmasi password Anda untuk memproses impor ini.']);
             }
+            $options = ['update_existing' => $updateExisting, 'password_confirmed' => $passwordConfirmed];
+            if ($type->requiresBusinessDate()) {
+                if ($businessDate === null || ! self::isDate($businessDate)) {
+                    throw ValidationException::withMessages(['business_date' => 'Isi tanggal dengan format yang benar.']);
+                }
+                PeriodGuard::assertOpen($businessDate, 'business_date');
+                $options['business_date'] = $businessDate;
+            }
             if (! Storage::disk(ImportFile::DISK)->exists($locked->stored_path)) {
                 $fail('Berkas asli sudah tidak tersedia. Unggah ulang berkasnya.');
             }
 
             $locked->forceFill([
                 'status' => ImportStatus::Processing,
-                'mapping' => [...($locked->mapping ?? []), 'options' => ['update_existing' => $updateExisting, 'password_confirmed' => $passwordConfirmed]],
+                'mapping' => [...($locked->mapping ?? []), 'options' => $options],
                 'updated_by' => $actor->id,
             ])->save();
 
@@ -112,6 +124,21 @@ final class ProcessImportBatch
     public static function passwordConfirmed(ImportBatch $batch): bool
     {
         return ($batch->mapping['options']['password_confirmed'] ?? false) === true;
+    }
+
+    /** Tanggal bisnis batch (`Y-m-d`) yang diisi saat proses dimulai, bila tipe memintanya (T-086). */
+    public static function businessDate(ImportBatch $batch): ?string
+    {
+        $date = $batch->mapping['options']['business_date'] ?? null;
+
+        return is_string($date) ? $date : null;
+    }
+
+    private static function isDate(string $value): bool
+    {
+        $parsed = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+
+        return $parsed !== false && $parsed->format('Y-m-d') === $value;
     }
 
     public static function canUpdateExisting(User $actor, ImportType $type): bool

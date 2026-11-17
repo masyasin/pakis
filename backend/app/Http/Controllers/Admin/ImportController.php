@@ -11,6 +11,7 @@ use App\Http\Requests\Employee\ImportMappingRequest;
 use App\Http\Requests\Employee\ImportProcessRequest;
 use App\Http\Requests\Employee\ImportUploadRequest;
 use App\Models\User;
+use App\Support\Api\ApiError;
 use App\Support\Auth\PasswordConfirmation;
 use App\Support\Import\Actions\CancelImport;
 use App\Support\Import\Actions\ProcessImportBatch;
@@ -82,7 +83,7 @@ class ImportController extends Controller
                 'key' => $t->key(),
                 'label' => $t->label(),
                 'create_url' => $t::routeSlug() === null ? route('admin.imports.create', absolute: false) : route('admin.master-imports.create', $t::routeSlug(), false),
-            ], $types),
+            ], array_values(array_filter($types, self::available(...)))),
         ]);
     }
 
@@ -189,13 +190,18 @@ class ImportController extends Controller
                 'update_existing' => ProcessImportBatch::canUpdateExisting(self::actor($request), $type),
                 // T-085: mis. kios aktif-terverifikasi → tombol Proses meminta password dulu.
                 'requires_password' => $batch->status->canProcess() && $type->requiresPassword($batch, self::actor($request)),
+                // T-086: saldo awal → dialog Proses meminta tanggal cutover (bawaan hari ini, zona tampilan).
+                'requires_business_date' => $type->requiresBusinessDate(),
             ],
+            'defaultBusinessDate' => DisplayTime::toLocal(now())->toDateString(),
+            // Ringkasan sebelum konfirmasi (T-086: jumlah baris, total qty per lokasi, total nilai).
+            'typeSummary' => $batch->status->canProcess() ? $type->summary($batch) : [],
         ]);
     }
 
     public function process(ImportProcessRequest $request, ImportBatch $batch, ProcessImportBatch $action): RedirectResponse
     {
-        $batch = $action->start(self::actor($request), $batch, $request->updateExisting(), self::confirmPassword($request));
+        $batch = $action->start(self::actor($request), $batch, $request->updateExisting(), self::confirmPassword($request), $request->businessDate());
 
         Inertia::flash('toast', match ($batch->status) {
             ImportStatus::Completed => ['type' => 'success', 'message' => sprintf('Impor selesai: %d dibuat, %d diperbarui, %d dilewati, %d galat.', $batch->created_rows, $batch->updated_rows, $batch->skipped_rows, $batch->error_rows)],
@@ -260,6 +266,18 @@ class ImportController extends Controller
      * Password diketik di dialog Proses, atau konfirmasi password terbaru masih berlaku (pola
      * ApprovalController). Password salah → galat field `current_password`.
      */
+    /** Tipe yang sedang bisa dipakai (T-086: saldo awal yang sudah ditutup tidak ditawarkan lagi). */
+    private static function available(ImportType $type): bool
+    {
+        try {
+            $type->ensureAvailable();
+
+            return true;
+        } catch (ApiError) {
+            return false;
+        }
+    }
+
     private static function confirmPassword(Request $request): bool
     {
         if ($request->filled('current_password')) {

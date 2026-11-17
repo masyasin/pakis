@@ -24,6 +24,7 @@ use App\Domain\Inventory\Approvables\DisposalApproval;
 use App\Domain\Inventory\Approvables\OpnameVarianceApproval;
 use App\Domain\Inventory\Approvables\QuarantineReleaseApproval;
 use App\Domain\Inventory\Approvables\TransferVarianceApproval;
+use App\Domain\Inventory\Imports\OpeningStockImportType;
 use App\Domain\Inventory\Imports\StockLevelImportType;
 use App\Domain\Inventory\Listings\SerialNumberListing;
 use App\Domain\Organization\Listings\DepartmentListing;
@@ -101,6 +102,7 @@ return [
         'customers' => CustomerImportType::class,
         'price_items' => PriceItemImportType::class,
         'stock_levels' => StockLevelImportType::class,
+        'opening_stock' => OpeningStockImportType::class,
         ...(is_string(env('IMPORT_TEST_TYPE')) && env('IMPORT_TEST_TYPE') !== '' ? ['uji_produk' => env('IMPORT_TEST_TYPE')] : []),
     ],
 

@@ -194,8 +194,13 @@ test('PA-19 halaman Pengaturan mengirim penanda locked/one_way dan hak ubah kunc
 
 // --- Penanda one_way ----------------------------------------------------------------------------
 
-test('PA-19 one_way: true → false boleh, false → true ditolak', function () {
-    putApproval(['approval__contoh_satu_arah' => '0'])->assertSessionHasNoErrors();
+test('PA-19 one_way: true → false boleh (T-086: dengan konfirmasi password), false → true ditolak', function () {
+    // Mematikan kunci one_way tidak bisa dibatalkan, jadi wajib konfirmasi password dulu (T-086, PA-71).
+    putApproval(['approval__contoh_satu_arah' => '0'])->assertRedirect(route('password.confirm'));
+    app()->forgetScopedInstances();
+    expect(setting('approval.contoh_satu_arah'))->toBeTrue();
+
+    putApproval(['approval__contoh_satu_arah' => '0'], confirmed: true)->assertSessionHasNoErrors();
     app()->forgetScopedInstances();
     expect(setting('approval.contoh_satu_arah'))->toBeFalse();
 

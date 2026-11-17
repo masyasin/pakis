@@ -361,4 +361,16 @@ final class ProductImportType implements ImportType
 
         return $diff;
     }
+
+    public function ensureAvailable(): void {}
+
+    public function requiresBusinessDate(): bool
+    {
+        return false;
+    }
+
+    public function summary(ImportBatch $batch): array
+    {
+        return [];
+    }
 }

@@ -4,6 +4,7 @@ namespace App\Domain\Settings\Actions;
 
 use App\Domain\Access\Support\RoleCatalog;
 use App\Domain\Audit\AuditLogger;
+use App\Domain\Inventory\Actions\CloseOpeningBalance;
 use App\Domain\Settings\Branding\ImageProcessor;
 use App\Domain\Settings\SettingDefinition;
 use App\Domain\Settings\SettingRegistry;
@@ -99,8 +100,15 @@ final class UpdateSettingGroup
         }
         $this->guardFlags($definitions, $current, $after, $userId, $passwordConfirmed);
 
-        DB::transaction(function () use ($changed, $resetKeys, $current, $definitions, $userId) {
+        DB::transaction(function () use ($changed, $resetKeys, $current, $definitions, $userId, $after) {
             $this->store->write($changed, $resetKeys, $userId);
+
+            // T-086 (BR-170): mematikan "saldo awal masih dibuka" = tutup saldo awal; audit penutupan
+            // ditulis atomik bersama setting. Di-resolve di sini (bukan konstruktor) agar domain
+            // Settings tidak memuat Inventory untuk grup lain.
+            if (($after[CloseOpeningBalance::SETTING_KEY] ?? null) === false) {
+                app(CloseOpeningBalance::class)->handle($userId);
+            }
 
             foreach ($changed as $key => $value) {
                 $this->audit->record('setting.updated', null, [$key => $current[$key]], [$key => $definitions[$key]->cast($value)]);
@@ -131,6 +139,15 @@ final class UpdateSettingGroup
                     $definitions[$key]->field() => 'Konfirmasi password dulu untuk mengubah pengaturan terkunci.',
                 ])->all());
             }
+        }
+
+        // Mematikan kunci one_way tidak bisa dibatalkan (mis. tutup saldo awal), jadi wajib konfirmasi password.
+        $turnedOff = array_values(array_filter(array_keys($after), fn ($key) => $definitions[$key]->oneWay
+            && $current[$key] === true && $after[$key] === false));
+        if ($turnedOff !== [] && ! $passwordConfirmed) {
+            throw ValidationException::withMessages(collect($turnedOff)->mapWithKeys(fn ($key) => [
+                $definitions[$key]->field() => 'Konfirmasi password dulu. Pengaturan ini tidak bisa dinyalakan lagi setelah dimatikan.',
+            ])->all());
         }
 
         $reopened = array_values(array_filter(array_keys($after), fn ($key) => $definitions[$key]->oneWay

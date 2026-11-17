@@ -134,7 +134,7 @@ test('BR-170 batas baris per tipe: kunci import.max_rows_<type> bila terdaftar, 
 test('BR-170 rute /impor/{type} hanya untuk slug terdaftar; rute impor pegawai tetap ke controller lama', function () {
     expect(Route::getRoutes()->getByName('admin.master-imports.create')?->wheres['type'])->toBe(ImportRegistry::routePattern())
         // T-085: empat tipe master Paket A + tipe uji.
-        ->and(explode('|', ImportRegistry::routePattern()))->toEqualCanonicalizing(['produk', 'kios', 'harga', preg_quote('stok-minimum', '/'), preg_quote('uji-produk', '/')]);
+        ->and(explode('|', ImportRegistry::routePattern()))->toEqualCanonicalizing(['produk', 'kios', 'harga', preg_quote('stok-minimum', '/'), preg_quote('saldo-awal', '/'), preg_quote('uji-produk', '/')]);
 
     $this->actingAs($this->stocker)->get('/impor/tidak-ada/baru')->assertNotFound();
     $this->actingAs($this->stocker)->get('/impor/uji-produk/baru')->assertOk()

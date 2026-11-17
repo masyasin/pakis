@@ -35,6 +35,7 @@ final class SaveImportMapping
             }
 
             $type = ImportRegistry::forBatch($locked);
+            $type->ensureAvailable();
             $fields = $type->fields();
             $headers = $locked->headers();
             $mapping = [];

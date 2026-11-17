@@ -100,4 +100,25 @@ interface ImportType
      * proses dimulai.
      */
     public function requiresPassword(ImportBatch $batch, User $actor): bool;
+
+    /**
+     * Gerbang tingkat tipe (T-086): lempar ApiError bila tipe ini sedang tidak bisa dipakai sama
+     * sekali, mis. saldo awal sudah ditutup (`OPENING_BALANCE_CLOSED`). Dipanggil di halaman unggah,
+     * saat unggah, sebelum validasi, dan saat proses dimulai. Tipe lain: tidak melakukan apa pun.
+     */
+    public function ensureAvailable(): void;
+
+    /**
+     * Proses batch ini butuh tanggal bisnis dari pengimpor (T-086: tanggal cutover saldo awal).
+     * Tanggal diperiksa `PeriodGuard` saat proses dimulai dan dibaca `ProcessImportBatch::businessDate()`.
+     */
+    public function requiresBusinessDate(): bool;
+
+    /**
+     * Ringkasan sebelum konfirmasi proses (T-086: jumlah baris, total qty per lokasi, total nilai),
+     * dihitung dari baris valid batch. Tipe tanpa ringkasan mengembalikan [].
+     *
+     * @return list<array{label: string, value: string}>
+     */
+    public function summary(ImportBatch $batch): array;
 }

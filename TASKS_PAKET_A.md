@@ -437,12 +437,12 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: `app/Domain/Inventory/Imports/OpeningStockImporter.php` (tipe `opening_stock` di kerangka T-085A); kunci `import.max_rows_opening_stock`; `app/Domain/Inventory/Actions/CloseOpeningBalance.php`; `docs/runbooks/CUTOVER-PAKET-A.md` (baru); tests
 - Deskripsi: Impor saldo awal per lokasi + SKU + batch + ED + rak + qty + biaya. Ringkasan sebelum konfirmasi: jumlah baris, total qty per lokasi, total nilai. Runbook cutover: freeze transaksi manual lama, opname fisik, impor, cocokkan nilai dengan pembukuan lama, tutup saldo awal, mulai transaksi di sistem.
 - Kriteria penerimaan:
-  - [ ] Saldo awal ke lokasi yang punya mutasi selain `opening_balance` → `LOCATION_HAS_MOVEMENTS`
-  - [ ] Setelah ditutup → `OPENING_BALANCE_CLOSED`; setting tidak bisa dibuka lagi (penanda `one_way`: `false → true` ditolak)
-  - [ ] File 30.000 baris batch diterima (batas `import.max_rows_opening_stock`, NFR-A01)
-  - [ ] `product_costs.avg_cost` = rata-rata tertimbang biaya file; outbox `inventory.opening_balance` total = Σ qty × biaya
-  - [ ] Aksi impor saldo awal memanggil `PeriodGuard` dengan tanggal bisnis saldo awal; payload membawa `stock_location_id` & `product_id` per baris; tidak memancarkan `inventory.goods_received` (**15** §11.4)
-  - [ ] Runbook dapat diikuti tim Pakis (dicek saat UAT-A19)
+  - [x] Saldo awal ke lokasi yang punya mutasi selain `opening_balance` → `LOCATION_HAS_MOVEMENTS`
+  - [x] Setelah ditutup → `OPENING_BALANCE_CLOSED`; setting tidak bisa dibuka lagi (penanda `one_way`: `false → true` ditolak)
+  - [x] File 30.000 baris batch diterima (batas `import.max_rows_opening_stock`, NFR-A01)
+  - [x] `product_costs.avg_cost` = rata-rata tertimbang biaya file; outbox `inventory.opening_balance` total = Σ qty × biaya
+  - [x] Aksi impor saldo awal memanggil `PeriodGuard` dengan tanggal bisnis saldo awal; payload membawa `stock_location_id` & `product_id` per baris; tidak memancarkan `inventory.goods_received` (**15** §11.4)
+  - [ ] Runbook dapat diikuti tim Pakis (dicek saat UAT-A19) — runbook `docs/runbooks/CUTOVER-PAKET-A.md` sudah ditulis; uji ikut menunggu UAT
 - Verifikasi: `php artisan test --filter=OpeningStock`
 - Di luar lingkup: saldo awal piutang (T-112)
 

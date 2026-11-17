@@ -101,6 +101,16 @@ final class SettingRegistry
     }
 
     /**
+     * Kunci `one_way` grup ini (bool yang hanya boleh true → false).
+     *
+     * @return list<string>
+     */
+    public static function oneWayKeys(string $group): array
+    {
+        return array_values(array_map(fn (SettingDefinition $d) => $d->key, array_filter(self::group($group), fn (SettingDefinition $d) => $d->oneWay)));
+    }
+
+    /**
      * @return array<string, SettingDefinition>
      */
     public static function public(): array
@@ -186,6 +196,8 @@ final class SettingRegistry
             $t('export.mass_export_alert_rows', SettingType::Int, 1000, 'Peringatan ekspor massal (baris)', 'Ekspor lebih besar dicatat di log keamanan.', min: 100, max: 100000),
             $t('import.max_file_mb', SettingType::Int, 5, 'Ukuran berkas impor maks (MB)', min: 1, max: 20),
             $t('import.max_rows', SettingType::Int, 2000, 'Baris impor maks', min: 50, max: 10000),
+            // T-086 (NFR-A01): saldo awal satu berkas bisa ±30.000 batch, di atas batas impor umum.
+            $t('import.max_rows_opening_stock', SettingType::Int, 30000, 'Baris impor saldo awal stok maks', 'Batas khusus impor saldo awal stok. Impor lain memakai "Baris impor maks".', min: 1000, max: 50000),
             $t('notification.mail_from_name', SettingType::String, 'PAKIS ONE', 'Nama pengirim email', max: 60),
             // BR-070 (T-029): notifikasi aplikasi selalu aktif; kanal luar = kanal jenis ∩ kanal global ∩ alamat penerima.
             $t('notification.channels', SettingType::MultiEnum, ['email'], 'Kanal notifikasi aktif', 'Notifikasi di aplikasi (lonceng) selalu aktif. Matikan WhatsApp/Telegram di sini bila kuota habis atau nomor/bot diblokir; notifikasi dialihkan ke kanal cadangan.',
@@ -270,6 +282,8 @@ final class SettingRegistry
             $t('inventory.opname_blind_count_default', SettingType::Bool, true, 'Opname hitung buta (bawaan)', 'Opname baru menyembunyikan jumlah sistem dari penghitung sampai selesai dihitung. Bisa diubah per opname.'),
             $t('inventory.opname_recount_threshold_pct', SettingType::Decimal, '5', 'Ambang hitung ulang opname (%)', 'Baris yang selisihnya sebesar persen ini dari jumlah sistem (atau lebih) wajib dihitung ulang orang lain sebelum ditinjau.', min: 0, max: 100),
             $t('inventory.opname_recount_threshold_amount', SettingType::Money, '500000', 'Ambang hitung ulang opname (Rp)', 'Baris yang nilai selisihnya sebesar ini (atau lebih) wajib dihitung ulang orang lain. 0 = hanya ambang persen.', min: 0),
+            // T-086 (BR-170): saldo awal stok hanya bisa diimpor selama ini menyala; mematikannya = tutup saldo awal.
+            $t('inventory.opening_balance_open', SettingType::Bool, true, 'Saldo awal stok masih dibuka', 'Matikan setelah impor saldo awal selesai dan nilainya cocok dengan pembukuan lama. Setelah dimatikan, saldo awal tidak bisa diimpor lagi dan pengaturan ini tidak bisa dinyalakan kembali. Butuh konfirmasi password.', oneWay: true),
 
             // 2.11 Harga (T-075, 15 §9, BR-168).
             $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),

@@ -80,6 +80,10 @@ enum ErrorCode: string
     case OPNAME_BATCH_LOCKED = 'OPNAME_BATCH_LOCKED';
     case OPNAME_RECOUNT_REQUIRED = 'OPNAME_RECOUNT_REQUIRED';
 
+    // T-086 saldo awal stok (BR-170).
+    case OPENING_BALANCE_CLOSED = 'OPENING_BALANCE_CLOSED';
+    case LOCATION_HAS_MOVEMENTS = 'LOCATION_HAS_MOVEMENTS';
+
     public function status(): int
     {
         return match ($this) {
@@ -106,7 +110,9 @@ enum ErrorCode: string
             self::APPROVAL_ALREADY_PENDING,
             self::PRICE_VERSION_LOCKED,
             self::UNIT_FACTOR_LOCKED,
-            self::OPNAME_BATCH_LOCKED => 409,
+            self::OPNAME_BATCH_LOCKED,
+            self::OPENING_BALANCE_CLOSED,
+            self::LOCATION_HAS_MOVEMENTS => 409,
             self::PAYLOAD_TOO_LARGE => 413,
             self::VALIDATION_FAILED,
             self::INSUFFICIENT_STOCK,
@@ -211,6 +217,8 @@ enum ErrorCode: string
             self::OPNAME_BATCH_LOCKED => 'Sebagian batch di cakupan ini sedang dihitung di opname lain. Selesaikan atau batalkan opname itu dulu.',
             // SEC-103: pesan tidak menyebut angka sistem; baris yang wajib dihitung ulang ada di `details.lines`.
             self::OPNAME_RECOUNT_REQUIRED => 'Ada baris yang wajib dihitung ulang oleh orang lain sebelum opname bisa dilanjutkan.',
+            self::OPENING_BALANCE_CLOSED => 'Saldo awal stok sudah ditutup. Stok berikutnya dicatat lewat penerimaan atau opname.',
+            self::LOCATION_HAS_MOVEMENTS => 'Lokasi stok ini sudah punya transaksi selain saldo awal, jadi saldo awal tidak bisa diimpor ke sana.',
         };
     }
 }

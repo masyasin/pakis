@@ -298,4 +298,16 @@ final class CustomerImportType implements ImportType
         return $actor->can('customers.verify')
             && ImportRow::query()->where('import_batch_id', $batch->id)->where('status', ImportRowStatus::Valid->value)->where('data->parsed->verified', true)->exists();
     }
+
+    public function ensureAvailable(): void {}
+
+    public function requiresBusinessDate(): bool
+    {
+        return false;
+    }
+
+    public function summary(ImportBatch $batch): array
+    {
+        return [];
+    }
 }

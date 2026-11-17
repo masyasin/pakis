@@ -31,6 +31,7 @@ import {
     DialogTitle,
 } from '@/components/ui/dialog';
 import InputError from '@/components/input-error';
+import { Input } from '@/components/ui/input';
 import PasswordInput from '@/components/password-input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
@@ -71,7 +72,13 @@ type Props = ListingProps<ImportRowItem> & {
         update_existing: boolean;
         /** Proses wajib konfirmasi password (mis. kios aktif-terverifikasi, T-085). */
         requires_password?: boolean;
+        /** Proses meminta tanggal bisnis (tanggal cutover saldo awal, T-086). */
+        requires_business_date?: boolean;
     };
+    /** Bawaan isian tanggal bisnis: hari ini di zona tampilan. */
+    defaultBusinessDate?: string;
+    /** Ringkasan sebelum konfirmasi (T-086: baris, total qty per lokasi, total nilai). */
+    typeSummary?: { label: string; value: string }[];
 };
 
 /** Interval cek ulang saat validasi/proses berjalan di antrean. */
@@ -314,6 +321,8 @@ export default function ImportRows({
     batch,
     mappedFields,
     can,
+    defaultBusinessDate = '',
+    typeSummary = [],
 }: Props) {
     const validating = batch.status === 'mapped' && batch.failure === null;
     const processing = batch.status === 'processing';
@@ -325,6 +334,10 @@ export default function ImportRows({
     const [submitting, setSubmitting] = useState(false);
     const [password, setPassword] = useState('');
     const [passwordError, setPasswordError] = useState<string | null>(null);
+    const [businessDate, setBusinessDate] = useState(defaultBusinessDate);
+    const [businessDateError, setBusinessDateError] = useState<string | null>(
+        null,
+    );
     const isEmployees = batch.type === 'employees';
     const noun = batch.type_label.toLowerCase();
 
@@ -590,29 +603,71 @@ export default function ImportRows({
                         {batch.error_rows > 0 &&
                             ` ${batch.error_rows.toLocaleString('id-ID')} baris galat dilewati.`}
                     </DialogDescription>
-                    <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3">
-                        <Checkbox
-                            id="update-existing"
-                            checked={updateExisting && can.update_existing}
-                            disabled={!can.update_existing}
-                            onCheckedChange={(v) =>
-                                setUpdateExisting(v === true)
-                            }
-                            className="mt-0.5"
-                        />
-                        <div className="grid gap-1">
-                            <Label htmlFor="update-existing">
-                                Perbarui data yang sudah ada
+                    {typeSummary.length > 0 && (
+                        <dl
+                            className="grid grid-cols-[1fr_auto] gap-x-4 gap-y-1 rounded-lg border bg-muted/30 p-3 text-sm"
+                            aria-label="Ringkasan impor"
+                        >
+                            {typeSummary.map((item) => (
+                                <div key={item.label} className="contents">
+                                    <dt className="text-muted-foreground">
+                                        {item.label}
+                                    </dt>
+                                    <dd className="text-right font-medium tabular-nums">
+                                        {item.value}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    )}
+                    {can.requires_business_date && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="import-business-date">
+                                Tanggal cutover
                             </Label>
+                            <Input
+                                id="import-business-date"
+                                type="date"
+                                value={businessDate}
+                                onChange={(e) => {
+                                    setBusinessDate(e.target.value);
+                                    setBusinessDateError(null);
+                                }}
+                            />
                             <p className="text-xs text-muted-foreground">
-                                {isEmployees
-                                    ? 'Pegawai yang sudah terdaftar (NIK, no. pegawai, atau nama + tanggal lahir sama) diperbarui dengan isi sel yang tidak kosong. Bila tidak dicentang, baris itu dilewati. Lokasi & jabatan pegawai lama tidak pernah diubah otomatis.'
-                                    : 'Data yang sudah terdaftar (kunci sama) diperbarui sesuai berkas. Bila tidak dicentang, baris itu dilewati.'}
-                                {!can.update_existing &&
-                                    ` Opsi ini tidak tersedia untuk Anda atau untuk data ${noun}.`}
+                                Tanggal mutasi saldo awal dan jurnalnya. Harus
+                                sesudah tanggal kunci akuntansi.
                             </p>
+                            <InputError
+                                message={businessDateError ?? undefined}
+                            />
                         </div>
-                    </div>
+                    )}
+                    {!can.requires_business_date && (
+                        <div className="flex items-start gap-3 rounded-lg border bg-muted/30 p-3">
+                            <Checkbox
+                                id="update-existing"
+                                checked={updateExisting && can.update_existing}
+                                disabled={!can.update_existing}
+                                onCheckedChange={(v) =>
+                                    setUpdateExisting(v === true)
+                                }
+                                className="mt-0.5"
+                            />
+                            <div className="grid gap-1">
+                                <Label htmlFor="update-existing">
+                                    Perbarui data yang sudah ada
+                                </Label>
+                                <p className="text-xs text-muted-foreground">
+                                    {isEmployees
+                                        ? 'Pegawai yang sudah terdaftar (NIK, no. pegawai, atau nama + tanggal lahir sama) diperbarui dengan isi sel yang tidak kosong. Bila tidak dicentang, baris itu dilewati. Lokasi & jabatan pegawai lama tidak pernah diubah otomatis.'
+                                        : 'Data yang sudah terdaftar (kunci sama) diperbarui sesuai berkas. Bila tidak dicentang, baris itu dilewati.'}
+                                    {!can.update_existing &&
+                                        ` Opsi ini tidak tersedia untuk Anda atau untuk data ${noun}.`}
+                                </p>
+                            </div>
+                        </div>
+                    )}
                     {can.requires_password && (
                         <div className="grid gap-2">
                             <Label htmlFor="import-password">
@@ -651,6 +706,9 @@ export default function ImportRows({
                                         ...(can.requires_password
                                             ? { current_password: password }
                                             : {}),
+                                        ...(can.requires_business_date
+                                            ? { business_date: businessDate }
+                                            : {}),
                                     },
                                     {
                                         onStart: () => setSubmitting(true),
@@ -658,8 +716,14 @@ export default function ImportRows({
                                             setPasswordError(
                                                 errors.current_password ?? null,
                                             );
+                                            setBusinessDateError(
+                                                errors.business_date ?? null,
+                                            );
                                             // Galat lain (mis. status batch) tampil di halaman seperti sebelumnya.
-                                            if (!errors.current_password) {
+                                            if (
+                                                !errors.current_password &&
+                                                !errors.business_date
+                                            ) {
                                                 setConfirmProcess(false);
                                             }
                                         },

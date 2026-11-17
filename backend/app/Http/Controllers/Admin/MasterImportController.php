@@ -67,6 +67,8 @@ class MasterImportController extends Controller
         abort_if($import === null, 404);
         $user = $request->user();
         abort_unless($user instanceof User && ImportRegistry::allows($user, $import), 403);
+        // T-086: mis. saldo awal sudah ditutup → OPENING_BALANCE_CLOSED (web: kembali + toast).
+        $import->ensureAvailable();
 
         return $import;
     }

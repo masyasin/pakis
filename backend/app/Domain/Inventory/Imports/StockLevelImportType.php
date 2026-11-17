@@ -179,4 +179,16 @@ final class StockLevelImportType implements ImportType
     {
         return false;
     }
+
+    public function ensureAvailable(): void {}
+
+    public function requiresBusinessDate(): bool
+    {
+        return false;
+    }
+
+    public function summary(ImportBatch $batch): array
+    {
+        return [];
+    }
 }

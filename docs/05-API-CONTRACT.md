@@ -108,6 +108,8 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 | `TRANSFER_OVER_RECEIPT` | 422 | Qty diterima (total hitung per baris) > qty dikirim (BR-161). `details["lines.<i>.qty_received"]` = pesan field yang menyebut qty maksimal. Ditambah 17 Nov 2026 (T-082) |
 | `OPNAME_BATCH_LOCKED` | 409 | Mulai opname saat sebagian batch di cakupannya ada di opname lain yang `counting`/`review`/`pending_approval` (BR-162(8)). `details.opnames` = nomor opname yang mengunci. Ditambah 17 Nov 2026 (T-083) |
 | `OPNAME_RECOUNT_REQUIRED` | 422 | Selesai hitung/ajukan posting saat baris dengan selisih ≥ ambang `inventory.opname_recount_threshold_*` (atau, setelah selisih ditolak, setiap baris selisih) belum dihitung ulang pengguna lain (BR-162(4), SEC-103). `details.lines` = id baris, tanpa angka sistem. Ditambah 17 Nov 2026 (T-083) |
+| `OPENING_BALANCE_CLOSED` | 409 | Impor saldo awal stok (unggah, validasi, proses) setelah `inventory.opening_balance_open` dimatikan (BR-170). Ditambah 17 Nov 2026 (T-086) |
+| `LOCATION_HAS_MOVEMENTS` | 409 | Saldo awal ke lokasi stok yang sudah punya mutasi selain `opening_balance` (BR-170). Di impor tampil sebagai galat sel lokasi. Ditambah 17 Nov 2026 (T-086) |
 | `PERIOD_LOCKED` | 422 | Tanggal bisnis dokumen ber-outbox (penerimaan, retur prinsipal, mutasi & selisih mutasi, opname, pemusnahan, saldo awal) ≤ `accounting.lock_date` (ADR-115, `15` §11.4); dilempar `PeriodGuard::assertOpen()` sebelum mutasi ditulis, jadi transaksi batal utuh. Pesan menyebut tanggal kunci. Ditambah 17 Nov 2026 (T-077); task Paket B pertama yang mengembalikannya lewat API memindahkannya ke §2.3 + `api_error.dart` |
 
 ## 3. Standar Daftar (Listing) — Web & API

@@ -104,6 +104,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `export.mass_export_alert_rows` | int | 1000 | 100–100000 | ❌ |
 | `import.max_file_mb` | int | 5 | 1–20 | ❌ |
 | `import.max_rows` | int | 2000 | 50–10000 | ❌ |
+| `import.max_rows_opening_stock` | int | 30000 | 1000–50000 (T-086, NFR-A01; tipe impor lain memakai `import.max_rows`) | ❌ |
 | `notification.mail_from_name` | string | `PAKIS ONE` | ≤ 60 | ❌ |
 | `notification.channels` | multi enum | `["email"]` | subset `email`, `telegram`, `whatsapp`, boleh kosong (notifikasi aplikasi selalu aktif). `telegram`/`whatsapp` hanya bisa dipilih bila driver kanal itu tersedia | ❌ |
 | `notification.on_export_ready` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` | ❌ |
@@ -205,6 +206,7 @@ Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok
 | `inventory.opname_blind_count_default` | bool | `true` | — (T-083, BR-162(3); bawaan per opname) | ❌ |
 | `inventory.opname_recount_threshold_pct` | decimal | 5 | 0–100 (T-083, BR-162(4); selisih ≥ persen ini dari jumlah sistem wajib dihitung ulang orang lain) | ❌ |
 | `inventory.opname_recount_threshold_amount` | money | 500000 | ≥ 0 (T-083, BR-162(4); 0 = hanya ambang persen) | ❌ |
+| `inventory.opening_balance_open` | bool | true | Penanda `one_way` (hanya true → false), konfirmasi password; dimatikan = tutup saldo awal (T-086, BR-170) | ❌ |
 
 Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`). `inventory.negative_stock_allowed` terkunci `false`: `StockLedger` menolak bekerja bila nilainya lain, dan layar Pengaturan menolak `true` (T-077). `inventory.reservation_ttl_hours` = masa berlaku reservasi batch bawaan; reservasi `active` yang lewat `expires_at` dilepas job tiap 15 menit (BR-155). `inventory.near_expiry_days` = ambang peringatan mendekati ED (job 06.00, satu notifikasi per batch per ambang lewat `reminder_logs` kunci `ed<hari>`); ambang terbesar juga batas label oranye "mendekati ED" dan kolom widget dasbor. `inventory.min_sell_days_before_expiry` = batch ber-ED ≤ tanggal alokasi + nilai ini tidak dialokasikan FEFO maupun ditawarkan lookup `available_batches` (BR-102).
 

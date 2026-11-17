@@ -236,4 +236,16 @@ final class PriceItemImportType implements ImportType
 
         return $draft;
     }
+
+    public function ensureAvailable(): void {}
+
+    public function requiresBusinessDate(): bool
+    {
+        return false;
+    }
+
+    public function summary(ImportBatch $batch): array
+    {
+        return [];
+    }
 }

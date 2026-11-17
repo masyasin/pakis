@@ -56,7 +56,11 @@ class SettingController extends Controller
     {
         abort_unless(isset(SettingRegistry::GROUPS[$group]), 404);
 
-        if ($this->needsPasswordConfirmation($request, $group)) {
+        // T-086: mematikan kunci one_way (mis. tutup saldo awal) tidak bisa dibatalkan → konfirmasi
+        // password dulu; setelahnya pengguna kembali ke halaman grup ini dan mengulang. Hanya permintaan
+        // yang benar-benar mematikannya, agar simpan biasa di grup yang sama tidak terganggu.
+        if ($this->needsPasswordConfirmation($request, $group)
+            || ($this->turnsOffOneWay($request, $group) && ! PasswordConfirmation::isRecent($request))) {
             return redirect()->guest(route('password.confirm'));
         }
 
@@ -115,6 +119,20 @@ class SettingController extends Controller
             || (SettingRegistry::hasLocked($group) && $this->isSuperAdmin($request));
 
         return $required && ! PasswordConfirmation::isRecent($request);
+    }
+
+    private function turnsOffOneWay(Request $request, string $group): bool
+    {
+        $values = (array) $request->input('values', []);
+        foreach (SettingRegistry::oneWayKeys($group) as $key) {
+            $field = str_replace('.', '__', $key);
+            if (array_key_exists($field, $values) && setting($key) === true
+                && filter_var($values[$field], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) === false) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function isSuperAdmin(Request $request): bool

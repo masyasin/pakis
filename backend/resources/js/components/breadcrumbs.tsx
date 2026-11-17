@@ -25,7 +25,8 @@ export function Breadcrumbs({
 
                             return (
                                 <Fragment key={index}>
-                                    {/* HP: hanya halaman aktif agar header tidak terbungkus dua baris. */}
+                                    {/* HP: hanya halaman aktif; nama panjang (mis. kios) boleh 2 baris kecil
+                                        agar terbaca, bukan dipotong. */}
                                     <BreadcrumbItem
                                         className={
                                             isLast
@@ -34,7 +35,7 @@ export function Breadcrumbs({
                                         }
                                     >
                                         {isLast ? (
-                                            <BreadcrumbPage className="truncate font-medium">
+                                            <BreadcrumbPage className="line-clamp-2 text-[13px] leading-tight font-medium break-words sm:line-clamp-1 sm:text-sm sm:leading-normal">
                                                 {item.title}
                                             </BreadcrumbPage>
                                         ) : (

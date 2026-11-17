@@ -12,6 +12,8 @@ use App\Support\Listing\HasListing;
 use App\Support\Listing\ListingSpec;
 use App\Support\Listing\Search\TextSearch;
 use App\Support\Listing\Sort;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 
 /**
  * Daftar berita acara (`admin.disposal-reports.index`, katalog 07 §3.4 / 15 §7.3: `disposal_reports`).
@@ -33,7 +35,11 @@ final class DisposalReportListing implements HasListing
             ->sorts([
                 Sort::make('created_at', 'Dibuat')->column('disposal_reports.created_at'),
                 Sort::make('number', 'Nomor')->column('disposal_reports.number'),
-                Sort::make('total_cost', 'Nilai')->column('disposal_reports.total_cost'),
+                // SEC-107 (PA-72): tanpa `stock.view_cost` kolom nilai tidak dikirim; urutan menurut nilai pun
+                // membocorkan peringkat HPP, jadi sort ini jatuh ke tanggal dibuat untuk pengguna itu.
+                Sort::make('total_cost', 'Nilai')->using(fn (Builder $q, string $dir) => Auth::user()?->can('stock.view_cost') === true
+                    ? $q->orderBy('disposal_reports.total_cost', $dir)
+                    : $q->orderBy('disposal_reports.created_at', 'desc')),
             ])
             ->defaultSort('-created_at');
     }

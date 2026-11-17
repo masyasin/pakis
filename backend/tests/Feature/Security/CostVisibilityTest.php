@@ -5,6 +5,9 @@ use App\Domain\Audit\Models\SecurityEvent;
 use App\Domain\Inventory\Ledger\BatchKey;
 use App\Domain\Inventory\Listings\StockMovementListing;
 use App\Domain\Inventory\Listings\StockPositionListing;
+use App\Domain\Inventory\Models\DisposalReport;
+use App\Domain\Reference\Enums\ReferenceGroup;
+use App\Domain\Reference\Models\ReferenceItem;
 use App\Support\Export\ExportableListing;
 use App\Support\Export\ExportRunner;
 use App\Support\Export\UserScopedExportColumns;
@@ -92,4 +95,19 @@ test('15 §5 semua ekspor Paket A lewat ExportableListing + StartExport: tanpa k
         expect(is_subclass_of($class, ExportableListing::class))->toBeTrue()
             ->and(is_subclass_of($class, UserScopedExportColumns::class))->toBeTrue("{$key} memuat kolom biaya: wajib memilih kolom per pengguna (SEC-107).");
     }
+});
+
+test('SEC-107 sort nilai BA pemusnahan tanpa stock.view_cost tidak membocorkan peringkat HPP (jatuh ke tanggal dibuat)', function () {
+    $reason = (int) ReferenceItem::query()->forGroup(ReferenceGroup::DisposalReason)->value('id');
+    $make = fn (string $no, string $cost, string $at) => tap((new DisposalReport)->forceFill([
+        'number' => $no, 'stock_location_id' => $this->gd->id, 'reason_id' => $reason, 'method' => 'destroy', 'status' => 'draft',
+        'total_cost' => $cost, 'created_at' => $at, 'updated_at' => $at,
+    ]))->save();
+    $make('BAP-MAHAL', '900000', '2026-11-10 03:00:00');
+    $make('BAP-MURAH', '1000', '2026-11-15 03:00:00');
+
+    $this->actingAs(($this->as)('kepala_gudang'))->get('/pemusnahan?sort=-total_cost')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('rows.0.number', 'BAP-MURAH')->missing('rows.0.total_cost'));
+    $this->actingAs(($this->as)('owner'))->get('/pemusnahan?sort=-total_cost')->assertOk()
+        ->assertInertia(fn (Assert $page) => $page->where('rows.0.number', 'BAP-MAHAL')->where('rows.0.total_cost', '900000.00'));
 });

@@ -326,8 +326,9 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
 
     // Impor pegawai langkah 1 + riwayat & profil (05 §4.7, FR-028, BR-054, T-027). Rute statis
     // (`pegawai/*`, `profil`) didaftarkan sebelum `{batch}`.
+    // Riwayat `impor` juga untuk impor master (T-085, PA-70): izin per tipe dicek controller.
+    Route::get('impor', [ImportController::class, 'index'])->name('imports.index');
     Route::middleware('can:employees.import')->group(function () {
-        Route::get('impor', [ImportController::class, 'index'])->name('imports.index');
         Route::get('impor/pegawai/baru', [ImportController::class, 'create'])->name('imports.create');
         Route::get('impor/pegawai/templat', [ImportController::class, 'template'])->name('imports.template');
         Route::post('impor/pegawai', [ImportController::class, 'store'])->middleware('throttle:20,1')->name('imports.store');

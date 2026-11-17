@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Import\ImportTemplate;
-use App\Domain\Employee\Listings\ImportBatchListing;
 use App\Domain\Employee\Listings\ImportRowListing;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Employee\ImportMappingRequest;
 use App\Http\Requests\Employee\ImportProcessRequest;
 use App\Http\Requests\Employee\ImportUploadRequest;
 use App\Models\User;
+use App\Support\Auth\PasswordConfirmation;
 use App\Support\Import\Actions\CancelImport;
 use App\Support\Import\Actions\ProcessImportBatch;
 use App\Support\Import\Actions\SaveImportMapping;
@@ -25,6 +25,7 @@ use App\Support\Import\ImportRegistry;
 use App\Support\Import\ImportRow;
 use App\Support\Import\ImportStatus;
 use App\Support\Import\ImportType;
+use App\Support\Import\Listings\ImportBatchListing;
 use App\Support\Import\MappingSuggester;
 use App\Support\Listing\ListingQuery;
 use App\Support\Listing\UsesListing;
@@ -51,9 +52,17 @@ class ImportController extends Controller
     #[UsesListing(ImportBatchListing::class)]
     public function index(Request $request): Response
     {
-        $result = ListingQuery::apply(ImportBatchListing::query(self::actor($request)), new ImportBatchListing, $request)
+        $actor = self::actor($request);
+        // Riwayat terbuka untuk impor pegawai (employees.import) ATAU impor master (T-085, PA-70).
+        $types = ImportRegistry::allowedFor($actor);
+        abort_if($types === [], 403);
+        $labels = collect(ImportRegistry::all())->mapWithKeys(fn (ImportType $t) => [$t->key() => $t->label()]);
+
+        $result = ListingQuery::apply(ImportBatchListing::query($actor), new ImportBatchListing, $request)
             ->through(fn (ImportBatch $b) => [
                 'id' => $b->id,
+                'type' => $b->type,
+                'type_label' => $labels[$b->type] ?? $b->type,
                 'original_name' => $b->original_name,
                 'status' => $b->status->value,
                 'status_label' => $b->status->label(),
@@ -66,7 +75,15 @@ class ImportController extends Controller
                 'creator' => $b->creator?->name,
             ]);
 
-        return Inertia::render('imports/index', $result->toInertia());
+        return Inertia::render('imports/index', [
+            ...$result->toInertia(),
+            // Kartu "Mulai impor" per tipe yang boleh (rute pegawai sendiri; tipe master /impor/{slug}).
+            'importTypes' => array_map(fn (ImportType $t) => [
+                'key' => $t->key(),
+                'label' => $t->label(),
+                'create_url' => $t::routeSlug() === null ? route('admin.imports.create', absolute: false) : route('admin.master-imports.create', $t::routeSlug(), false),
+            ], $types),
+        ]);
     }
 
     public function create(): Response
@@ -170,13 +187,15 @@ class ImportController extends Controller
                 'download_errors' => $batch->status->hasErrorReport() && $batch->error_rows > 0,
                 'view_employee' => $request->user()?->can('employees.view') ?? false,
                 'update_existing' => ProcessImportBatch::canUpdateExisting(self::actor($request), $type),
+                // T-085: mis. kios aktif-terverifikasi → tombol Proses meminta password dulu.
+                'requires_password' => $batch->status->canProcess() && $type->requiresPassword($batch, self::actor($request)),
             ],
         ]);
     }
 
     public function process(ImportProcessRequest $request, ImportBatch $batch, ProcessImportBatch $action): RedirectResponse
     {
-        $batch = $action->start(self::actor($request), $batch, $request->updateExisting());
+        $batch = $action->start(self::actor($request), $batch, $request->updateExisting(), self::confirmPassword($request));
 
         Inertia::flash('toast', match ($batch->status) {
             ImportStatus::Completed => ['type' => 'success', 'message' => sprintf('Impor selesai: %d dibuat, %d diperbarui, %d dilewati, %d galat.', $batch->created_rows, $batch->updated_rows, $batch->skipped_rows, $batch->error_rows)],
@@ -216,6 +235,8 @@ class ImportController extends Controller
     {
         return [
             'id' => $batch->id,
+            'type' => $batch->type,
+            'type_label' => ImportRegistry::has($batch->type) ? ImportRegistry::forBatch($batch)->label() : $batch->type,
             'original_name' => $batch->original_name,
             'status' => $batch->status->value,
             'status_label' => $batch->status->label(),
@@ -233,6 +254,24 @@ class ImportController extends Controller
             'created_at' => $batch->created_at?->toIso8601String(),
             'created_at_local' => $batch->created_at !== null ? DisplayTime::toLocal($batch->created_at)->format('Y-m-d H:i') : null,
         ];
+    }
+
+    /**
+     * Password diketik di dialog Proses, atau konfirmasi password terbaru masih berlaku (pola
+     * ApprovalController). Password salah → galat field `current_password`.
+     */
+    private static function confirmPassword(Request $request): bool
+    {
+        if ($request->filled('current_password')) {
+            $request->validate(['current_password' => ['current_password:web']], [
+                'current_password.current_password' => 'Password salah.',
+            ]);
+            $request->session()->passwordConfirmed();
+
+            return true;
+        }
+
+        return PasswordConfirmation::isRecent($request);
     }
 
     /** Tipe impor pegawai: halaman unggah & templat di rute `impor/pegawai…` hanya untuk tipe ini. */

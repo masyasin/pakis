@@ -136,4 +136,9 @@ final class ProductLikeImportType implements ImportType
     {
         return $key;
     }
+
+    public function requiresPassword(ImportBatch $batch, User $actor): bool
+    {
+        return false;
+    }
 }

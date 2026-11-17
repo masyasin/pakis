@@ -30,6 +30,8 @@ import {
     DialogFooter,
     DialogTitle,
 } from '@/components/ui/dialog';
+import InputError from '@/components/input-error';
+import PasswordInput from '@/components/password-input';
 import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
@@ -67,6 +69,8 @@ type Props = ListingProps<ImportRowItem> & {
         download_errors: boolean;
         view_employee: boolean;
         update_existing: boolean;
+        /** Proses wajib konfirmasi password (mis. kios aktif-terverifikasi, T-085). */
+        requires_password?: boolean;
     };
 };
 
@@ -91,6 +95,50 @@ function Cell({ error, children }: { error: boolean; children: ReactNode }) {
             {children}
         </span>
     );
+}
+
+/**
+ * Kolom tipe impor master (T-085): nomor baris, ringkasan kolom terpetakan (maks. 4) sebagai judul,
+ * status, pesan. Impor pegawai memakai kolom khususnya di bawah.
+ */
+function buildGenericColumns(
+    fields: { key: string; label: string }[],
+): DataTableColumn<ImportRowItem>[] {
+    const [head, ...rest] = fields;
+
+    return [
+        {
+            key: 'row_number',
+            header: 'Baris',
+            sortKey: 'row_number',
+            className: 'w-16 tabular-nums',
+            cell: (r) => r.row_number,
+        },
+        {
+            key: 'data',
+            header: 'Data',
+            primary: true,
+            cell: (r) => (
+                <span className="grid gap-0.5">
+                    <Cell error={head ? hasError(r, head.key) : false}>
+                        <span className="font-medium">
+                            {(head && text(r.data[head.key])) ?? '–'}
+                        </span>
+                    </Cell>
+                    <span className="text-xs text-muted-foreground">
+                        {rest
+                            .slice(0, 3)
+                            .map((f) => text(r.data[f.key]))
+                            .filter(Boolean)
+                            .join(' · ')}
+                    </span>
+                </span>
+            ),
+        },
+        ...buildColumns(false).filter((c) =>
+            ['status', 'errors'].includes(c.key),
+        ),
+    ];
 }
 
 function buildColumns(
@@ -257,8 +305,8 @@ function DownloadErrors({ batchId }: { batchId: number }) {
 }
 
 /**
- * Impor pegawai langkah 3–4 (07 §4, BR-054): hasil validasi per baris, proses ke data pegawai
- * (T-028), lalu laporan akhir di halaman yang sama.
+ * Impor langkah 3–4 (07 §4, BR-054, BR-170): hasil validasi per baris, proses ke data tipe impor
+ * (pegawai T-028; master T-085), lalu laporan akhir di halaman yang sama.
  */
 export default function ImportRows({
     rows,
@@ -275,6 +323,10 @@ export default function ImportRows({
     const [confirmProcess, setConfirmProcess] = useState(false);
     const [updateExisting, setUpdateExisting] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [password, setPassword] = useState('');
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+    const isEmployees = batch.type === 'employees';
+    const noun = batch.type_label.toLowerCase();
 
     const title = finished
         ? 'Laporan impor'
@@ -298,7 +350,9 @@ export default function ImportRows({
         return () => window.clearInterval(timer);
     }, [validating, processing]);
 
-    const columns = buildColumns(can.view_employee);
+    const columns = isEmployees
+        ? buildColumns(can.view_employee)
+        : buildGenericColumns(mappedFields);
 
     return (
         <>
@@ -383,7 +437,7 @@ export default function ImportRows({
                         <span>
                             {validating
                                 ? `Memeriksa ${batch.total_rows.toLocaleString('id-ID')} baris…`
-                                : `Menyimpan ${batch.valid_rows.toLocaleString('id-ID')} baris ke data pegawai…`}{' '}
+                                : `Menyimpan ${batch.valid_rows.toLocaleString('id-ID')} baris ke data ${noun}…`}{' '}
                             Halaman ini diperbarui otomatis
                             {processing &&
                                 ', dan Anda akan mendapat notifikasi saat selesai'}
@@ -449,7 +503,7 @@ export default function ImportRows({
                                         ? 'Tidak ada baris valid. Perbaiki berkas lalu unggah ulang.'
                                         : batch.error_rows > 0
                                           ? `${batch.valid_rows.toLocaleString('id-ID')} baris valid siap disimpan. Baris galat dilewati; unduh, perbaiki, lalu unggah ulang nanti.`
-                                          : 'Semua baris valid dan siap disimpan ke data pegawai.'}
+                                          : `Semua baris valid dan siap disimpan ke data ${noun}.`}
                                 </p>
                                 <div className="grid shrink-0 gap-2 sm:flex">
                                     {can.download_errors && (
@@ -503,10 +557,10 @@ export default function ImportRows({
                                         {batch.completed_at_local &&
                                             `Selesai ${batch.completed_at_local}. `}
                                         {batch.update_existing
-                                            ? 'Pegawai yang sudah terdaftar diperbarui.'
-                                            : 'Pegawai yang sudah terdaftar dilewati.'}{' '}
-                                        Lokasi & jabatan pegawai lama tidak
-                                        diubah otomatis.
+                                            ? 'Data yang sudah terdaftar diperbarui.'
+                                            : 'Data yang sudah terdaftar dilewati.'}{' '}
+                                        {isEmployees &&
+                                            'Lokasi & jabatan pegawai lama tidak diubah otomatis.'}
                                     </p>
                                 </div>
                                 {can.download_errors && (
@@ -530,8 +584,9 @@ export default function ImportRows({
                     <DialogTitle>Proses impor ini?</DialogTitle>
                     <DialogDescription>
                         {batch.valid_rows.toLocaleString('id-ID')} baris valid
-                        disimpan ke data pegawai. Pegawai baru dibuat beserta
-                        penugasan utamanya.
+                        disimpan ke data {noun}.
+                        {isEmployees &&
+                            ' Pegawai baru dibuat beserta penugasan utamanya.'}
                         {batch.error_rows > 0 &&
                             ` ${batch.error_rows.toLocaleString('id-ID')} baris galat dilewati.`}
                     </DialogDescription>
@@ -550,16 +605,36 @@ export default function ImportRows({
                                 Perbarui data yang sudah ada
                             </Label>
                             <p className="text-xs text-muted-foreground">
-                                Pegawai yang sudah terdaftar (NIK, no. pegawai,
-                                atau nama + tanggal lahir sama) diperbarui
-                                dengan isi sel yang tidak kosong. Bila tidak
-                                dicentang, baris itu dilewati. Lokasi & jabatan
-                                pegawai lama tidak pernah diubah otomatis.
+                                {isEmployees
+                                    ? 'Pegawai yang sudah terdaftar (NIK, no. pegawai, atau nama + tanggal lahir sama) diperbarui dengan isi sel yang tidak kosong. Bila tidak dicentang, baris itu dilewati. Lokasi & jabatan pegawai lama tidak pernah diubah otomatis.'
+                                    : 'Data yang sudah terdaftar (kunci sama) diperbarui sesuai berkas. Bila tidak dicentang, baris itu dilewati.'}
                                 {!can.update_existing &&
-                                    ' Anda tidak punya izin mengubah data pegawai, jadi opsi ini tidak tersedia.'}
+                                    ` Opsi ini tidak tersedia untuk Anda atau untuk data ${noun}.`}
                             </p>
                         </div>
                     </div>
+                    {can.requires_password && (
+                        <div className="grid gap-2">
+                            <Label htmlFor="import-password">
+                                Konfirmasi password Anda
+                            </Label>
+                            <PasswordInput
+                                id="import-password"
+                                autoComplete="current-password"
+                                value={password}
+                                onChange={(e) => {
+                                    setPassword(e.target.value);
+                                    setPasswordError(null);
+                                }}
+                            />
+                            <p className="text-xs text-muted-foreground">
+                                Berkas ini berisi kios yang ditandai sudah
+                                terverifikasi. Kios itu langsung aktif tanpa
+                                persetujuan aktivasi, jadi password diperlukan.
+                            </p>
+                            <InputError message={passwordError ?? undefined} />
+                        </div>
+                    )}
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>
                             <Button variant="outline">Kembali</Button>
@@ -573,13 +648,26 @@ export default function ImportRows({
                                         update_existing:
                                             updateExisting &&
                                             can.update_existing,
+                                        ...(can.requires_password
+                                            ? { current_password: password }
+                                            : {}),
                                     },
                                     {
                                         onStart: () => setSubmitting(true),
-                                        onFinish: () => {
-                                            setSubmitting(false);
-                                            setConfirmProcess(false);
+                                        onError: (errors) => {
+                                            setPasswordError(
+                                                errors.current_password ?? null,
+                                            );
+                                            // Galat lain (mis. status batch) tampil di halaman seperti sebelumnya.
+                                            if (!errors.current_password) {
+                                                setConfirmProcess(false);
+                                            }
                                         },
+                                        onSuccess: () => {
+                                            setConfirmProcess(false);
+                                            setPassword('');
+                                        },
+                                        onFinish: () => setSubmitting(false),
                                     },
                                 )
                             }
@@ -601,7 +689,7 @@ export default function ImportRows({
                     <DialogTitle>Batalkan impor ini?</DialogTitle>
                     <DialogDescription>
                         Berkas yang diunggah dihapus dari server dan impor tidak
-                        bisa dilanjutkan. Tidak ada data pegawai yang berubah.
+                        bisa dilanjutkan. Tidak ada data {noun} yang berubah.
                     </DialogDescription>
                     <DialogFooter className="gap-2">
                         <DialogClose asChild>
@@ -635,5 +723,5 @@ export default function ImportRows({
 }
 
 ImportRows.layout = {
-    breadcrumbs: [{ title: 'Impor Pegawai', href: index() }],
+    breadcrumbs: [{ title: 'Impor', href: index() }],
 };

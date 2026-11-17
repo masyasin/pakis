@@ -194,4 +194,9 @@ final class EmployeeImportType implements ImportType
 
         return $context;
     }
+
+    public function requiresPassword(ImportBatch $batch, User $actor): bool
+    {
+        return false;
+    }
 }

@@ -4,7 +4,7 @@ import { cn } from '@/lib/utils';
 const STEPS = ['Unggah', 'Pemetaan kolom', 'Validasi', 'Proses'] as const;
 
 /**
- * Langkah wizard impor pegawai (07 §4). `complete` menandai langkah terakhir selesai (impor sudah
+ * Langkah wizard impor (07 §4; pegawai & impor master T-085). `complete` menandai langkah terakhir selesai (impor sudah
  * diproses), sehingga semua langkah tampil tercentang.
  */
 export function ImportSteps({
@@ -15,10 +15,7 @@ export function ImportSteps({
     complete?: boolean;
 }) {
     return (
-        <ol
-            className="grid grid-cols-4 gap-2"
-            aria-label="Langkah impor pegawai"
-        >
+        <ol className="grid grid-cols-4 gap-2" aria-label="Langkah impor">
             {STEPS.map((label, i) => {
                 const step = i + 1;
                 const done = step < current || complete;
@@ -79,6 +76,9 @@ export function ImportSteps({
 
 export type ImportBatchSummary = {
     id: number;
+    /** Kunci tipe impor, mis. `employees`, `products` (T-085). */
+    type: string;
+    type_label: string;
     original_name: string;
     status: string;
     status_label: string;

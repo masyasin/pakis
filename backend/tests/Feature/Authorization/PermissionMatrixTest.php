@@ -67,7 +67,8 @@ const REPRESENTATIVE = [
     'assignments.view' => ['GET', '/penugasan'],
     'assignments.manage' => ['POST', '/pegawai/{employee}/penugasan'],
     'employees.offboard' => ['POST', '/pegawai/{employee}/nonaktifkan'],
-    'employees.import' => ['GET', '/impor'],
+    // T-085: riwayat `/impor` kini juga terbuka bagi pemegang impor master (PA-70 c); halaman unggah pegawai tetap khusus izin ini.
+    'employees.import' => ['GET', '/impor/pegawai/baru'],
     'devices.view' => ['GET', '/perangkat'],
     'devices.manage' => ['POST', '/perangkat/{device}/tolak', ['reason' => 'Bukan HP kantor']],
     'attendance.view' => ['GET', '/absensi'],

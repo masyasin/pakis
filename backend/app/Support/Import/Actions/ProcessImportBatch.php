@@ -34,10 +34,14 @@ final class ProcessImportBatch
 {
     public function __construct(private readonly AuditLogger $audit) {}
 
-    /** `validated` → `processing`, lalu proses langsung atau lewat antrean `imports`. */
-    public function start(User $actor, ImportBatch $batch, bool $updateExisting): ImportBatch
+    /**
+     * `validated` → `processing`, lalu proses langsung atau lewat antrean `imports`. `$passwordConfirmed`
+     * = pengimpor baru saja mengonfirmasi password; wajib bila tipe memintanya (T-085, PA-70) dan
+     * disimpan di opsi batch agar `apply()` (juga di job antrean) tahu syaratnya terpenuhi.
+     */
+    public function start(User $actor, ImportBatch $batch, bool $updateExisting, bool $passwordConfirmed = false): ImportBatch
     {
-        $batch = DB::transaction(function () use ($actor, $batch, $updateExisting) {
+        $batch = DB::transaction(function () use ($actor, $batch, $updateExisting, $passwordConfirmed) {
             $locked = ImportBatch::query()->lockForUpdate()->findOrFail($batch->id);
             $type = ImportRegistry::forBatch($locked);
             $fail = fn (string $message) => throw ValidationException::withMessages(['status' => $message]);
@@ -51,13 +55,16 @@ final class ProcessImportBatch
             if ($updateExisting && ! self::canUpdateExisting($actor, $type)) {
                 $fail('Anda tidak punya izin mengubah data '.mb_strtolower($type->label()).'. Hapus centang "Perbarui data yang sudah ada".');
             }
+            if (! $passwordConfirmed && $type->requiresPassword($locked, $actor)) {
+                throw ValidationException::withMessages(['current_password' => 'Konfirmasi password Anda untuk memproses impor ini.']);
+            }
             if (! Storage::disk(ImportFile::DISK)->exists($locked->stored_path)) {
                 $fail('Berkas asli sudah tidak tersedia. Unggah ulang berkasnya.');
             }
 
             $locked->forceFill([
                 'status' => ImportStatus::Processing,
-                'mapping' => [...($locked->mapping ?? []), 'options' => ['update_existing' => $updateExisting]],
+                'mapping' => [...($locked->mapping ?? []), 'options' => ['update_existing' => $updateExisting, 'password_confirmed' => $passwordConfirmed]],
                 'updated_by' => $actor->id,
             ])->save();
 
@@ -99,6 +106,12 @@ final class ProcessImportBatch
     public static function updateExisting(ImportBatch $batch): bool
     {
         return ($batch->mapping['options']['update_existing'] ?? false) === true;
+    }
+
+    /** Pengimpor mengonfirmasi password saat memulai proses (T-085, PA-70). */
+    public static function passwordConfirmed(ImportBatch $batch): bool
+    {
+        return ($batch->mapping['options']['password_confirmed'] ?? false) === true;
     }
 
     public static function canUpdateExisting(User $actor, ImportType $type): bool
@@ -185,6 +198,7 @@ final class ProcessImportBatch
                 'updated_by' => $actor->id ?? $batch->updated_by,
             ])->save();
 
+            $activated = ImportRow::query()->where('import_batch_id', $batch->id)->where('data->activated', true)->count();
             $this->audit->record('import.processed', $batch, null, [
                 'status' => $status->value,
                 'created' => $batch->created_rows,
@@ -192,6 +206,8 @@ final class ProcessImportBatch
                 'skipped' => $batch->skipped_rows,
                 'errors' => $batch->error_rows,
                 'update_existing' => self::updateExisting($batch),
+                // Hanya tipe yang mengaktifkan data langsung (kios cutover, PA-70 a) yang menambah kunci ini.
+                ...($activated > 0 ? ['activated' => $activated, 'password_confirmed' => self::passwordConfirmed($batch)] : []),
             ]);
         });
 

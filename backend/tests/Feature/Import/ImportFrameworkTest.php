@@ -37,6 +37,8 @@ beforeEach(function () {
     $this->stocker = User::factory()->withTwoFactor()->create();
     $stocker = $this->stocker;
     Gate::define(ProductLikeImportType::PERMISSION, fn (User $u) => $u->is($stocker));
+    // Tipe ber-slug = tipe master: butuh izin payung master_imports.manage juga (T-085, PA-70).
+    Gate::define('master_imports.manage', fn (User $u) => $u->is($stocker));
 });
 
 /** Unggah ke tipe uji lalu kembalikan batch terakhir. */
@@ -131,7 +133,8 @@ test('BR-170 batas baris per tipe: kunci import.max_rows_<type> bila terdaftar, 
 
 test('BR-170 rute /impor/{type} hanya untuk slug terdaftar; rute impor pegawai tetap ke controller lama', function () {
     expect(Route::getRoutes()->getByName('admin.master-imports.create')?->wheres['type'])->toBe(ImportRegistry::routePattern())
-        ->and(ImportRegistry::routePattern())->toBe(preg_quote('uji-produk', '/'));
+        // T-085: empat tipe master Paket A + tipe uji.
+        ->and(explode('|', ImportRegistry::routePattern()))->toEqualCanonicalizing(['produk', 'kios', 'harga', preg_quote('stok-minimum', '/'), preg_quote('uji-produk', '/')]);
 
     $this->actingAs($this->stocker)->get('/impor/tidak-ada/baru')->assertNotFound();
     $this->actingAs($this->stocker)->get('/impor/uji-produk/baru')->assertOk()

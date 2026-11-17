@@ -421,11 +421,11 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: `app/Domain/Catalog/Imports/ProductImporter.php`, `app/Domain/Customer/Imports/CustomerImporter.php`, `app/Domain/Pricing/Imports/PriceItemImporter.php`, `app/Domain/Inventory/Imports/StockLevelImporter.php` (implementasi kontrak `app/Support/Import` dari T-085A); template unduhan `.xlsx` per tipe; registrasi tipe impor; tests dengan fixture Excel dummy (header acak, angka "1.250.000", tanggal "17/08/2026")
 - Deskripsi: Empat importer memakai staging & pemetaan kolom kerangka `app/Support/Import` (T-085A). HP kios dinormalisasi `App\Support\Phone\PhoneNormalizer`. Kios hasil impor berstatus `active` **hanya** bila kolom `sudah_terverifikasi=ya` dan pengimpor punya `customers.verify` + konfirmasi password (cutover); selain itu `prospect`. Harga diimpor ke versi `draft`.
 - Kriteria penerimaan:
-  - [ ] Impor ulang file yang sama → 0 baris baru, 0 perubahan (idempoten)
-  - [ ] Error per sel tampil dengan nomor baris & kolom asli
-  - [ ] HP kios dinormalisasi; duplikat dalam file dan terhadap DB dilaporkan
-  - [ ] Nilai diawali `=`/`+`/`-`/`@` diperlakukan sebagai teks (tidak dieksekusi)
-  - [ ] Impor kios aktif-terverifikasi tercatat audit dengan jumlah baris
+  - [x] Impor ulang file yang sama → 0 baris baru, 0 perubahan (idempoten)
+  - [x] Error per sel tampil dengan nomor baris & kolom asli
+  - [x] HP kios dinormalisasi; duplikat dalam file dan terhadap DB dilaporkan
+  - [x] Nilai diawali `=`/`+`/`-`/`@` diperlakukan sebagai teks (tidak dieksekusi)
+  - [x] Impor kios aktif-terverifikasi tercatat audit dengan jumlah baris
 - Verifikasi: `php artisan test --filter=Import`
 - Di luar lingkup: saldo awal stok (T-086), piutang awal (Paket B)
 

@@ -93,4 +93,11 @@ interface ImportType
 
     /** Kunci galat dari Action domain (mis. `assignment.position_id`) → nama field impor. */
     public function errorField(string $key): string;
+
+    /**
+     * Proses batch ini wajib konfirmasi password pengimpor (T-085, PA-70), mis. impor kios yang
+     * langsung aktif-terverifikasi saat cutover. Dibaca saat halaman pratinjau dibuat dan lagi saat
+     * proses dimulai.
+     */
+    public function requiresPassword(ImportBatch $batch, User $actor): bool;
 }

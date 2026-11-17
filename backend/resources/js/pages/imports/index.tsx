@@ -11,6 +11,8 @@ import type { ListingProps } from '@/types/listing';
 
 type BatchRow = {
     id: number;
+    type: string;
+    type_label: string;
     original_name: string;
     status: string;
     status_label: string;
@@ -49,6 +51,7 @@ const columns: DataTableColumn<BatchRow>[] = [
             </span>
         ),
     },
+    { key: 'type', header: 'Jenis data', cell: (r) => r.type_label },
     {
         key: 'status',
         header: 'Status',
@@ -101,33 +104,56 @@ const columns: DataTableColumn<BatchRow>[] = [
     },
 ];
 
-/** Riwayat impor pegawai (05 §4.7, 07 §3.4 `import_batches`). */
-export default function ImportsIndex({
-    rows,
-    listing,
-}: ListingProps<BatchRow>) {
+type ImportTypeLink = { key: string; label: string; create_url: string };
+
+type Props = ListingProps<BatchRow> & { importTypes: ImportTypeLink[] };
+
+/**
+ * Riwayat impor (05 §4.7, 07 §3.4 `import_batches`): pegawai dan impor master T-085 (produk, kios,
+ * harga, stok minimum). Hanya tipe yang boleh dipakai pengguna yang tampil, sebagai tombol mulai.
+ */
+export default function ImportsIndex({ rows, listing, importTypes }: Props) {
+    const single = importTypes.length === 1 ? importTypes[0] : null;
+    const heading = single ? `Impor ${single.label}` : 'Impor Data';
+    const hasEmployees = importTypes.some((t) => t.key === 'employees');
     const uploadButton = (
         <Button asChild>
-            <Link href={create()}>
+            <Link href={single?.create_url ?? create()}>
                 <Upload aria-hidden="true" />
-                Impor Pegawai
+                {single ? `Impor ${single.label}` : 'Impor Pegawai'}
             </Link>
         </Button>
     );
 
     return (
         <>
-            <Head title="Impor Pegawai" />
+            <Head title={heading} />
             <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
                 <div>
                     <h1 className="text-[1.4rem] leading-tight font-bold">
-                        Impor Pegawai
+                        {heading}
                     </h1>
                     <p className="text-sm text-muted-foreground">
-                        Masukkan banyak pegawai sekaligus dari Excel atau CSV.
-                        Setiap baris diperiksa dulu sebelum disimpan.
+                        Masukkan banyak data sekaligus dari Excel atau CSV.
+                        Setiap baris diperiksa dulu sebelum disimpan, dan impor
+                        ulang berkas yang sama tidak menggandakan data.
                     </p>
                 </div>
+                {importTypes.length > 1 && (
+                    <div
+                        className="flex flex-wrap gap-2"
+                        aria-label="Mulai impor"
+                    >
+                        {importTypes.map((t) => (
+                            <Button key={t.key} variant="outline" asChild>
+                                <Link href={t.create_url}>
+                                    <Upload aria-hidden="true" />
+                                    Impor {t.label}
+                                </Link>
+                            </Button>
+                        ))}
+                    </div>
+                )}
                 <DataTable
                     rows={rows}
                     listing={listing}
@@ -136,19 +162,23 @@ export default function ImportsIndex({
                     rowHref={(r) => show(r.id).url}
                     toolbarActions={
                         <>
-                            <Button variant="outline" asChild>
-                                <Link href={profiles()}>
-                                    <Settings2 aria-hidden="true" />
-                                    <span className="hidden sm:inline">
-                                        Profil pemetaan
-                                    </span>
-                                    <span className="sm:hidden">Profil</span>
-                                </Link>
-                            </Button>
-                            {uploadButton}
+                            {hasEmployees && (
+                                <Button variant="outline" asChild>
+                                    <Link href={profiles()}>
+                                        <Settings2 aria-hidden="true" />
+                                        <span className="hidden sm:inline">
+                                            Profil pemetaan
+                                        </span>
+                                        <span className="sm:hidden">
+                                            Profil
+                                        </span>
+                                    </Link>
+                                </Button>
+                            )}
+                            {single && uploadButton}
                         </>
                     }
-                    emptyAction={uploadButton}
+                    emptyAction={single ? uploadButton : undefined}
                 />
             </div>
         </>
@@ -156,5 +186,5 @@ export default function ImportsIndex({
 }
 
 ImportsIndex.layout = {
-    breadcrumbs: [{ title: 'Impor Pegawai', href: index() }],
+    breadcrumbs: [{ title: 'Impor', href: index() }],
 };

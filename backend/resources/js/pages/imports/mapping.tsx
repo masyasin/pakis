@@ -340,7 +340,7 @@ export default function ImportMapping({
 
 ImportMapping.layout = {
     breadcrumbs: [
-        { title: 'Impor Pegawai', href: index() },
+        { title: 'Impor', href: index() },
         { title: 'Pemetaan kolom', href: '#' },
     ],
 };

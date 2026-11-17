@@ -32,13 +32,17 @@ final class CreateProduct
         private readonly SecureUpload $uploads,
     ) {}
 
-    /** @param  array<string, mixed>  $data  sudah divalidasi ProductRequest */
-    public function handle(array $data, ?UploadedFile $photo, ?int $userId): Product
+    /**
+     * @param  array<string, mixed>  $data  sudah divalidasi ProductRequest
+     * @param  bool  $keepSku  pakai `$data['sku']` walau `product.sku_mode` otomatis (impor master saat cutover
+     *                         mempertahankan SKU lama; SKU = kunci idempoten impor, T-085, PA-70)
+     */
+    public function handle(array $data, ?UploadedFile $photo, ?int $userId, bool $keepSku = false): Product
     {
         $stored = $photo !== null ? $this->uploads->store($photo, UploadTarget::productPhoto()) : null;
 
         try {
-            return DB::transaction(fn () => $this->create($data, $stored, $userId));
+            return DB::transaction(fn () => $this->create($data, $stored, $userId, $keepSku));
         } catch (Throwable $e) {
             if ($stored !== null) {
                 $this->uploads->delete($stored->disk, $stored->path);
@@ -49,14 +53,14 @@ final class CreateProduct
     }
 
     /** @param  array<string, mixed>  $data */
-    private function create(array $data, ?StoredUpload $stored, ?int $userId): Product
+    private function create(array $data, ?StoredUpload $stored, ?int $userId, bool $keepSku): Product
     {
         $category = ProductCategory::query()->sharedLock()->findOrFail((int) $data['product_category_id']);
         $flags = array_map(fn ($v) => (bool) $v, array_intersect_key($data, Product::FLAGS));
         $relaxed = ProductFlags::relaxed($category, $flags);
         ProductFlags::assertReason($relaxed, $data['flag_reason'] ?? null);
 
-        $sku = setting('product.sku_mode') === 'auto'
+        $sku = setting('product.sku_mode') === 'auto' && ! $keepSku
             ? $this->numbers->next('product', isTaken: fn (string $n) => Product::withTrashed()->where('sku', $n)->exists())
             : (string) $data['sku'];
 

@@ -8,11 +8,13 @@ use App\Domain\Attendance\Listings\HolidayListing;
 use App\Domain\Attendance\Listings\ScheduleOverrideListing;
 use App\Domain\Audit\Listings\AuditLogListing;
 use App\Domain\Audit\Listings\SecurityEventListing;
+use App\Domain\Catalog\Imports\ProductImportType;
 use App\Domain\Catalog\Listings\ProductListing;
 use App\Domain\Customer\Approvables\CustomerActivation;
 use App\Domain\Customer\Approvables\CustomerCreditLimit;
 use App\Domain\Customer\Approvables\CustomerMerge;
 use App\Domain\Customer\Approvables\CustomerPhoneChange;
+use App\Domain\Customer\Imports\CustomerImportType;
 use App\Domain\Customer\Listings\CustomerListing;
 use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Employee\Import\EmployeeImportType;
@@ -22,12 +24,14 @@ use App\Domain\Inventory\Approvables\DisposalApproval;
 use App\Domain\Inventory\Approvables\OpnameVarianceApproval;
 use App\Domain\Inventory\Approvables\QuarantineReleaseApproval;
 use App\Domain\Inventory\Approvables\TransferVarianceApproval;
+use App\Domain\Inventory\Imports\StockLevelImportType;
 use App\Domain\Inventory\Listings\SerialNumberListing;
 use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 use App\Domain\Organization\Listings\PositionListing;
 use App\Domain\Pricing\Approvables\PriceListPublish;
 use App\Domain\Pricing\Approvables\PromotionActivate;
+use App\Domain\Pricing\Imports\PriceItemImportType;
 use App\Domain\Pricing\Listings\PriceListItemListing;
 use App\Domain\Purchasing\Approvables\PurchaseOrderApproval;
 use App\Domain\Purchasing\Approvables\PurchaseReturnApproval;
@@ -92,6 +96,11 @@ return [
     // IMPORT_TEST_TYPE hanya diisi phpunit.xml (tipe uji di tests/Fixtures), kosong di lingkungan lain.
     'imports' => [
         'employees' => EmployeeImportType::class,
+        // T-085 impor master (BR-170): rute /impor/{slug}, izin tipe + master_imports.manage.
+        'products' => ProductImportType::class,
+        'customers' => CustomerImportType::class,
+        'price_items' => PriceItemImportType::class,
+        'stock_levels' => StockLevelImportType::class,
         ...(is_string(env('IMPORT_TEST_TYPE')) && env('IMPORT_TEST_TYPE') !== '' ? ['uji_produk' => env('IMPORT_TEST_TYPE')] : []),
     ],
 

@@ -20,7 +20,7 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
  * Langkah 1 impor untuk tipe selain pegawai (`admin.master-imports.*`, `/impor/{type}`, BR-170,
  * T-085A). `{type}` dibatasi pola slug terdaftar di rute; izin = izin tipe itu
  * (`ImportType::permission()`). Langkah berikutnya memakai rute batch bersama `admin.imports.*`.
- * Izin payung `master_imports.manage` (15 §5) dipasang T-085 bersama tipe Paket A pertama.
+ * Izin payung `master_imports.manage` (15 §5) dipasang T-085 lewat `ImportRegistry::allows()`.
  */
 class MasterImportController extends Controller
 {
@@ -65,7 +65,8 @@ class MasterImportController extends Controller
     {
         $import = ImportRegistry::forSlug($slug);
         abort_if($import === null, 404);
-        abort_unless($request->user()?->can($import->permission()) ?? false, 403);
+        $user = $request->user();
+        abort_unless($user instanceof User && ImportRegistry::allows($user, $import), 403);
 
         return $import;
     }

@@ -251,7 +251,7 @@ export default function ImportCreate({ limits, fields, importType }: Props) {
 
 ImportCreate.layout = {
     breadcrumbs: [
-        { title: 'Impor Pegawai', href: index() },
+        { title: 'Impor', href: index() },
         { title: 'Unggah', href: '#' },
     ],
 };

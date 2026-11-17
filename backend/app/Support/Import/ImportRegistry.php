@@ -3,6 +3,7 @@
 namespace App\Support\Import;
 
 use App\Domain\Settings\SettingRegistry;
+use App\Models\User;
 use InvalidArgumentException;
 
 /**
@@ -75,6 +76,25 @@ final class ImportRegistry
         }
 
         return null;
+    }
+
+    /** Izin payung tipe impor master (15 §5 `admin.master-imports.*`, PA-34(b), T-085). */
+    public const MASTER_PERMISSION = 'master_imports.manage';
+
+    /**
+     * Boleh memakai tipe ini: izin tipe, DAN untuk tipe master (ber-`routeSlug`, yaitu semua selain
+     * impor pegawai Fase 0) juga izin payung `master_imports.manage` (T-085, PA-70).
+     */
+    public static function allows(User $user, ImportType $type): bool
+    {
+        return $user->can($type->permission())
+            && ($type::routeSlug() === null || $user->can(self::MASTER_PERMISSION));
+    }
+
+    /** @return list<ImportType> tipe yang boleh dipakai pengguna (riwayat, kartu "Mulai impor"). */
+    public static function allowedFor(User $user): array
+    {
+        return array_values(array_filter(self::all(), fn (ImportType $t) => self::allows($user, $t)));
     }
 
     /**

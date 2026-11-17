@@ -27,13 +27,17 @@ final class CreateCustomer
         private readonly DuplicateGuard $duplicates,
     ) {}
 
-    /** @param  array<string, mixed>  $data  sudah divalidasi CustomerRequest */
-    public function handle(array $data, ?int $userId): Customer
+    /**
+     * @param  array<string, mixed>  $data  sudah divalidasi CustomerRequest
+     * @param  bool  $keepCode  pakai `$data['code']` bila diisi walau `customer.code_mode` otomatis (impor
+     *                          kios saat cutover mempertahankan kode lama, T-085, PA-70)
+     */
+    public function handle(array $data, ?int $userId, bool $keepCode = false): Customer
     {
-        return DB::transaction(function () use ($data, $userId) {
+        return DB::transaction(function () use ($data, $userId, $keepCode) {
             $override = $this->duplicates->check($data, null);
 
-            $code = setting('customer.code_mode') === 'auto'
+            $code = setting('customer.code_mode') === 'auto' && ! ($keepCode && ($data['code'] ?? '') !== '')
                 ? $this->numbers->next('customer', isTaken: fn (string $n) => Customer::withTrashed()->where('code', $n)->exists())
                 : (string) $data['code'];
 

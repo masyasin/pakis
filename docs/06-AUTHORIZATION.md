@@ -233,6 +233,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | Distribusi | Master | Kategori (T-069; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Lokasi Stok (T-068; role Paket A: `15` §6.4) | `stock_locations.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
 | Distribusi | Master | Kendaraan (T-068; role Paket A: `15` §6.4) | `vehicles.view` | ✅ | ✅ | ❌ | ✅ | ✅ |
+| Distribusi | Master | Impor Master (T-085; ke `/impor`, riwayat disaring ke tipe yang boleh; role Paket A: `15` §6.4) | `master_imports.manage` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | HRIS | Unit Kerja | Lokasi | `locations.view` | ✅ | ✅ | ✅ | ✅ | ❌ |
 | HRIS | Unit Kerja | Departemen | `departments.view` | ✅ | ✅ | ✅ | ❌ | ❌ |
 | HRIS | Unit Kerja | Jabatan | `positions.view` | ✅ | ✅ | ✅ | ❌ | ❌ |

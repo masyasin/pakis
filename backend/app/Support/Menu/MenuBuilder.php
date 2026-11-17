@@ -74,6 +74,8 @@ final class MenuBuilder
         // T-068: lokasi stok (gudang/toko/canvas/TRANSIT) & kendaraan minimal; daftar ber-scope Stok (15 §6.2).
         ['Master', 'Lokasi Stok', 'warehouse', 'stock_locations.view', 'admin.stock-locations.index'],
         ['Master', 'Kendaraan', 'vehicle', 'vehicles.view', 'admin.vehicles.index'],
+        // T-085: riwayat & mulai impor master (produk, kios, harga, stok minimum); halaman sama dengan riwayat impor pegawai.
+        ['Master', 'Impor Master', 'import', 'master_imports.manage', 'admin.imports.index'],
         ['Unit Kerja', 'Lokasi', 'location', 'locations.view', 'admin.locations.index'],
         ['Unit Kerja', 'Departemen', 'department', 'departments.view', 'admin.departments.index'],
         ['Unit Kerja', 'Jabatan', 'position', 'positions.view', 'admin.positions.index'],

@@ -218,6 +218,7 @@ Grup `pricing` (tab "Harga"), dipakai daftar harga berversi (T-075, `15` §9) da
 |---|---|---|---|---|
 | `pricing.rounding` | enum | `none` | `none`, `100`, `500`, `1000` | ❌ |
 | `pricing.allow_backdated_publish` | bool | `false` | — | ❌ |
+| `pricing.promo_ending_days` | int | 7 | 1–60 (T-087A, PA-73: ambang kartu dasbor promo segera berakhir) | ❌ |
 
 Catatan: `pricing.rounding` membulatkan ke atas harga hasil salin versi ±% (dan promo T-076) ke kelipatan nilai itu; `none` = dua desimal half-up. `pricing.allow_backdated_publish` mati = versi baru tidak boleh berlaku surut (BR-168); hidup = pemegang `prices.publish` boleh menerbitkan versi berlaku surut dengan alasan.
 

@@ -482,12 +482,12 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
   8. **Impor tertunda/gagal** (izin tipe impor, `ImportRegistry::allowedFor`): batch `validated` belum diproses atau `failed`.
   9. **Produk aktif tanpa harga** (`prices.manage`): produk dijual yang tidak punya baris di versi terbit daftar harga aktif mana pun (kesiapan Paket B).
   10. **Produk tanpa stok minimum** (`stock_locations.manage`): pasangan produk aktif × gudang/toko dalam scope yang belum punya `product_stock_levels` (kesiapan peringatan stok).
-- Diputuskan di plan mode T-087A (aturan berhenti CLAUDE.md §5): kunci setting ambang promo (usulan `promotions.ending_soon_days`, int 7, 1–60, `08` §2), urutan & pengelompokan kartu di layar, dan apakah kartu 9–10 cukup angka (tanpa daftar).
+- Diputuskan Mas di rencana T-087A (18 Nov 2026, PA-73): kunci `pricing.promo_ending_days` (int 7, 1–60); kartu angka di daftar "Perlu tindakan", kartu baru bernilai 0 disembunyikan, saldo awal = banner; produk tanpa stok minimum = daftar per lokasi. **Ditambah 3 grafik stok** (nilai per lokasi, mutasi per hari, ED per bulan).
 - Kriteria penerimaan:
-  - [ ] Tiap kartu tampil hanya untuk pemegang izinnya; pengguna tanpa izin tidak menerima prop-nya (test per kartu)
-  - [ ] Angka kartu = jumlah baris halaman tujuan dengan filter tautannya (scope sama; test membandingkan keduanya)
-  - [ ] Nilai rupiah hanya untuk `stock.view_cost` (SEC-107)
-  - [ ] Kartu saldo awal hilang setelah saldo awal ditutup
+  - [x] Tiap kartu tampil hanya untuk pemegang izinnya; pengguna tanpa izin tidak menerima prop-nya (test per kartu)
+  - [x] Angka kartu = jumlah baris halaman tujuan dengan filter tautannya (scope sama; test membandingkan keduanya)
+  - [x] Nilai rupiah hanya untuk `stock.view_cost` (SEC-107)
+  - [x] Kartu saldo awal hilang setelah saldo awal ditutup
   - [ ] Dasbor tetap ringan: tiap kartu satu query agregat ber-index (tanpa N+1), dicek dengan data volume T-087
 - Verifikasi: `php artisan test --filter=Dashboard` · `npm run lint && npm run types`
 - Di luar lingkup: kartu Paket B (piutang, limit kredit, penjualan)

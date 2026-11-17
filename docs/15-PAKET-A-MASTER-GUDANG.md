@@ -1491,7 +1491,7 @@ flowchart LR
 | `disposal_reports` | `admin.disposal-reports.index` | nomor | `status`, `method`, `stock_location_id` | `created_at` desc | Stok |
 | `stock_batches` | `admin.stock-batches.index` | SKU, nama, batch | `stock_location_id`, `status`, `stock_bin_id` | `expiry_date` asc | Stok (halaman Karantina, PA-69) |
 | `serial_numbers` | `admin.serials.index` | nomor seri (exact & prefix), SKU | `product_id`, `status`, `stock_location_id` | `created_at` desc | Stok |
-| `stock_levels` | `admin.stock-levels.index` | SKU, nama | `stock_location_id` (wajib), `category_id`, `below_min` (ya) | `product.name` | Stok |
+| `stock_levels` | `admin.stock-levels.index` | SKU, nama | `stock_location_id` (wajib), `category_id`, `unset` (ya, T-087A), `below_min` (ya) | `product.name` | Stok |
 | `stock_batches_trace` | `admin.stock.trace` | — | `product_id` + `batch_no` (wajib) | `stock_location.code` | Stok (`all` untuk Owner) |
 | `stock_fefo_violations` | `admin.stock-audit.fefo.index` | nomor dokumen, SKU, batch | `stock_location_id` (asal), `product_id`, `created_at` (rentang) | `created_at` desc | Stok lokasi asal; izin `stock.audit_reports` (PA-72) |
 | `stock_opname_counters` | `admin.stock-audit.counters.index` | nomor opname | `stock_location_id`, `counted_by`, `frozen_at` (rentang) | `frozen_at` desc | Stok; izin `stock.audit_reports` (PA-72) |
@@ -1509,7 +1509,27 @@ Total listing setelah Paket A: listing Fase 0 + 29 listing baru (jumlah Fase 0 b
 | Mutasi belum diterima | `stock_transfers.receive` | Mutasi `shipped` > `inventory.transfer_receive_reminder_hours` |
 | PO terlambat | `purchase_orders.view` | PO `approved`/`partially_received` lewat `expected_date` |
 
-**Widget tambahan (T-087A, PA-73, keputusan Mas 18 Nov 2026):** saldo awal masih dibuka (Owner, selama `inventory.opening_balance_open`), batch di karantina, opname & BA tertunda, retur & penerimaan tertunda, kios menunggu verifikasi, batch kedaluwarsa masih ada stok, harga & promo perlu tindakan, impor tertunda/gagal, produk aktif tanpa harga, produk tanpa stok minimum. Rincian izin & isi di `TASKS_PAKET_A.md` T-087A; tiap kartu = jumlah halaman tujuan dengan filter yang sama, nilai rupiah hanya `stock.view_cost`.
+**Widget tambahan (T-087A, PA-73, keputusan Mas 18 Nov 2026).** Kartu angka masuk daftar "Perlu tindakan" dan tidak dikirim bila bernilai 0; angka = jumlah baris halaman tujuan dengan filter tautannya; nilai rupiah hanya `stock.view_cost`.
+
+| Widget | Untuk | Isi / tujuan |
+|---|---|---|
+| Saldo awal masih dibuka (banner) | `settings.update`, selama `inventory.opening_balance_open` | Jumlah mutasi saldo awal + total nilai → Pengaturan › Gudang & stok |
+| Batch di karantina / Batch kedaluwarsa masih ada stok | `stock_quarantine.manage` | `/stok/karantina`, status `quarantine` / `expired` |
+| Opname belum selesai | `stock_opnames.view` | `/opname`, status `counting`/`review`/`pending_approval` |
+| Pemusnahan belum dilaksanakan | `stock_disposals.manage` | `/pemusnahan`, status `approved` |
+| Retur ke prinsipal belum selesai | `purchase_returns.manage` | `/pembelian/retur`, status `approved`/`shipped` |
+| Penerimaan barang masih draf | `goods_receipts.view` | `/penerimaan`, status `draft` |
+| Kios menunggu verifikasi | `customers.verify` | `/pelanggan/verifikasi`, status `pending` |
+| Daftar harga punya versi draf | `prices.manage` | `/daftar-harga`, filter `has_draft` |
+| Promo segera berakhir | `promotions.manage` | `/promo`, filter `ending_soon` (`pricing.promo_ending_days`) |
+| Impor perlu tindakan | tipe impor yang boleh | `/impor`, status `validated`/`failed` |
+| Produk tanpa harga | `prices.manage` + `products.view` | `/produk`, filter `price_status=missing` (versi berlaku = aturan `PriceResolver::effectiveVersion`) |
+| Produk tanpa stok minimum (daftar per lokasi) | `stock_locations.manage` | `/stok/minimum` per lokasi, filter `unset` |
+| Grafik nilai stok per lokasi | `stock.view` + `stock.view_cost` | Σ qty di tangan × HPP rata-rata, gudang/toko dalam scope |
+| Grafik mutasi stok per hari | `stock.view` | Baris mutasi masuk vs keluar per tanggal bisnis, rentang = rentang grafik dasbor |
+| Grafik batch mendekati ED per bulan | `stock.view` | Batch tersedia/karantina yang ED-nya dalam ambang terbesar `inventory.near_expiry_days`; nilai hanya `stock.view_cost` |
+
+Permintaan lepas karantina tidak dibuat kartu sendiri karena sudah terhitung di "Menunggu persetujuan saya".
 
 ## 8. Aturan Bisnis
 

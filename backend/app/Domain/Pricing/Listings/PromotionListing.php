@@ -5,6 +5,7 @@ namespace App\Domain\Pricing\Listings;
 use App\Domain\Pricing\Enums\PromotionFunding;
 use App\Domain\Pricing\Enums\PromotionStatus;
 use App\Domain\Pricing\Enums\PromotionType;
+use App\Support\Listing\Filters\BooleanFilter;
 use App\Support\Listing\Filters\DateRangeFilter;
 use App\Support\Listing\Filters\MultiSelectFilter;
 use App\Support\Listing\Filters\SelectFilter;
@@ -32,6 +33,14 @@ final class PromotionListing implements HasListing
                 SelectFilter::make('type', 'Tipe')->column('promotions.type')->options(PromotionType::options()),
                 MultiSelectFilter::make('status', 'Status')->column('promotions.status')->options(PromotionStatus::options()),
                 SelectFilter::make('funded_by', 'Sumber dana')->column('promotions.funded_by')->options(PromotionFunding::options()),
+                // T-087A (PA-73): promo aktif yang berakhir dalam `pricing.promo_ending_days` hari ke depan.
+                BooleanFilter::make('ending_soon', 'Segera berakhir')
+                    ->using(function (Builder $q, mixed $value): void {
+                        $soon = fn (Builder $w) => $w->where('promotions.status', PromotionStatus::Active->value)
+                            ->where('promotions.ends_at', '>', now())
+                            ->where('promotions.ends_at', '<=', now()->addDays((int) setting('pricing.promo_ending_days')));
+                        (bool) $value ? $q->where($soon) : $q->whereNot($soon);
+                    }),
                 DateRangeFilter::make('active_on', 'Berlaku pada')
                     ->using(function (Builder $q, array $range): void {
                         $tz = DisplayTime::timezone();

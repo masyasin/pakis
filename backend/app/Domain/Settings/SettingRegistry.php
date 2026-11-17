@@ -287,6 +287,8 @@ final class SettingRegistry
 
             // 2.11 Harga (T-075, 15 §9, BR-168).
             $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),
+            // T-087A (PA-73): ambang kartu dasbor "promo segera berakhir".
+            $t('pricing.promo_ending_days', SettingType::Int, 7, 'Ambang promo segera berakhir (hari)', 'Promo aktif yang berakhir dalam jumlah hari ini muncul di kartu dasbor "Promo segera berakhir".', min: 1, max: 60),
             $t('pricing.allow_backdated_publish', SettingType::Bool, false, 'Izinkan versi harga berlaku surut', 'Bila aktif, pemegang izin terbit harga boleh menerbitkan versi yang mulai berlaku di masa lalu dengan alasan tertulis. Bawaan: tidak boleh.'),
 
             // 2.12 Pembelian (T-079 PO, T-080 penerimaan; 15 §9, BR-158, SEC-104).

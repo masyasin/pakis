@@ -152,6 +152,10 @@
     --viz-on-time: #2e7d46;
     --viz-late: #e0a030;
     --viz-absent: #c22a5c;
+    /* Grafik stok dasbor (T-087A): slot kategorikal 1–2 palet rujukan, divalidasi (CVD ΔE 24,7,
+       normal ΔE 33,6, kontras ≥ 3:1) terhadap kartu #ffffff. Satu seri = slot 1; masuk/keluar = 1 & 2. */
+    --viz-series-1: #2a78d6;
+    --viz-series-2: #eb6834;
     --radius: 0.75rem;
     --sidebar: #ffffff;
     --sidebar-foreground: #16241b;
@@ -217,6 +221,9 @@
     --viz-on-time: #1e8048;
     --viz-late: #bf8a1a;
     --viz-absent: #e5507e;
+    /* Langkah gelap hue yang sama, divalidasi terhadap kartu gelap #1a221d (CVD ΔE 26,8, normal ΔE 31,8). */
+    --viz-series-1: #3987e5;
+    --viz-series-2: #d95926;
     --sidebar: #0e1410;
     --sidebar-foreground: #e5ede7;
     --sidebar-primary: #79b98b;

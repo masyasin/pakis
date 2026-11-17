@@ -7,8 +7,6 @@ use App\Domain\Inventory\Actions\MoveBin;
 use App\Domain\Inventory\Actions\QuarantineStock;
 use App\Domain\Inventory\Actions\ReleaseQuarantine;
 use App\Domain\Inventory\Enums\QuarantineReleaseStatus;
-use App\Domain\Inventory\Enums\StockBatchStatus;
-use App\Domain\Inventory\Enums\StockLocationType;
 use App\Domain\Inventory\Listings\StockBatchListing;
 use App\Domain\Inventory\Models\QuarantineRelease;
 use App\Domain\Inventory\Models\StockBatch;
@@ -36,14 +34,7 @@ class QuarantineController extends Controller
     public function index(Request $request): Response
     {
         $user = self::user($request);
-        $query = $this->scoped(StockBatch::query(), $user)
-            ->select('stock_batches.*')
-            ->join('products', 'products.id', '=', 'stock_batches.product_id')
-            ->leftJoin('stock_bins', 'stock_bins.id', '=', 'stock_batches.stock_bin_id')
-            ->where('stock_batches.qty_on_hand', '>', 0)
-            ->where('stock_batches.status', '<>', StockBatchStatus::Disposed->value)
-            ->whereIn('stock_batches.stock_location_id', fn ($q) => $q->select('id')->from('stock_locations')
-                ->whereIn('type', [StockLocationType::Warehouse->value, StockLocationType::Store->value]))
+        $query = StockBatchListing::query($user)
             ->with(['product:id,sku,name,base_unit_id', 'product.baseUnit:id,name', 'stockLocation:id,name', 'bin:id,code,zone']);
         $pending = QuarantineRelease::query()->where('status', QuarantineReleaseStatus::Pending->value)->pluck('stock_batch_id')->flip();
 

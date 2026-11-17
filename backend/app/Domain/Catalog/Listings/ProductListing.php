@@ -7,6 +7,7 @@ use App\Domain\Catalog\Enums\ProductStatus;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Support\RegistrationState;
+use App\Domain\Pricing\Enums\PriceVersionStatus;
 use App\Domain\Purchasing\Models\Principal;
 use App\Models\User;
 use App\Support\Export\ExportableListing;
@@ -57,6 +58,20 @@ final class ProductListing implements ExportableListing
                 BooleanFilter::make('restricted', 'Pestisida terbatas')->column('is_restricted'),
                 SelectFilter::make('status', 'Status')->column('status')->options(ProductStatus::options()),
                 // BR-152 (T-071): dihitung dari tanggal izin, bukan kolom status saja.
+                // T-087A (PA-73): produk aktif yang dijual tetapi tidak punya harga di versi berlaku daftar
+                // harga aktif mana pun (aturan "berlaku" sama dengan PriceResolver::effectiveVersion).
+                SelectFilter::make('price_status', 'Harga')->options(['missing' => 'Belum ada harga berlaku'])
+                    ->using(fn (Builder $query, mixed $value) => $value === 'missing'
+                        ? $query->where('products.status', ProductStatus::Active->value)->where('products.is_sellable', true)
+                            ->whereNotExists(fn ($q) => $q->selectRaw('1')->from('price_list_items')
+                                ->join('price_list_versions', 'price_list_versions.id', '=', 'price_list_items.price_list_version_id')
+                                ->join('price_lists', 'price_lists.id', '=', 'price_list_versions.price_list_id')
+                                ->whereColumn('price_list_items.product_id', 'products.id')
+                                ->where('price_lists.is_active', true)
+                                ->whereIn('price_list_versions.status', [PriceVersionStatus::Published->value, PriceVersionStatus::Superseded->value])
+                                ->where('price_list_versions.effective_from', '<=', now())
+                                ->where(fn ($w) => $w->whereNull('price_list_versions.effective_to')->orWhere('price_list_versions.effective_to', '>', now())))
+                        : $query),
                 SelectFilter::make('registration_status', 'Izin edar')
                     ->options(RegistrationState::options())
                     ->using(fn (Builder $query, mixed $value) => RegistrationState::apply($query, (string) $value)),

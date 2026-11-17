@@ -12,21 +12,50 @@ use App\Domain\Attendance\Queries\AttendanceInsights;
 use App\Domain\Attendance\Queries\TodaySummary;
 use App\Domain\Catalog\Listings\ProductListing;
 use App\Domain\Catalog\Models\Product;
+use App\Domain\Customer\Enums\VerificationStatus;
+use App\Domain\Customer\Listings\CustomerVerificationListing;
 use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Device\Models\Device;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Inventory\Enums\DisposalReportStatus;
+use App\Domain\Inventory\Enums\StockBatchStatus;
+use App\Domain\Inventory\Enums\StockOpnameStatus;
+use App\Domain\Inventory\Ledger\MovementType;
+use App\Domain\Inventory\Listings\DisposalReportListing;
+use App\Domain\Inventory\Listings\StockBatchListing;
+use App\Domain\Inventory\Listings\StockMovementListing;
+use App\Domain\Inventory\Listings\StockOpnameListing;
 use App\Domain\Inventory\Listings\StockTransferListing;
+use App\Domain\Inventory\Models\DisposalReport;
+use App\Domain\Inventory\Models\StockOpname;
 use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Queries\BelowMinimumSummary;
+use App\Domain\Inventory\Queries\MissingStockLevelSummary;
 use App\Domain\Inventory\Queries\NearExpirySummary;
+use App\Domain\Inventory\Queries\StockCharts;
+use App\Domain\Pricing\Listings\PriceListListing;
+use App\Domain\Pricing\Listings\PromotionListing;
+use App\Domain\Pricing\Models\PriceList;
+use App\Domain\Pricing\Models\Promotion;
+use App\Domain\Purchasing\Enums\GoodsReceiptStatus;
+use App\Domain\Purchasing\Enums\PurchaseReturnStatus;
+use App\Domain\Purchasing\Listings\GoodsReceiptListing;
 use App\Domain\Purchasing\Listings\PurchaseOrderListing;
+use App\Domain\Purchasing\Listings\PurchaseReturnListing;
+use App\Domain\Purchasing\Models\GoodsReceipt;
 use App\Domain\Purchasing\Models\PurchaseOrder;
+use App\Domain\Purchasing\Models\PurchaseReturn;
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\Import\ImportRegistry;
+use App\Support\Import\ImportStatus;
+use App\Support\Import\Listings\ImportBatchListing;
 use App\Support\Listing\HasListing;
 use App\Support\Listing\ListingQuery;
+use Brick\Math\BigDecimal;
+use Brick\Math\RoundingMode;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -40,7 +69,7 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope, ApprovalVisibility $approvals, NearExpirySummary $nearExpiry, BelowMinimumSummary $belowMin): Response
+    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope, ApprovalVisibility $approvals, NearExpirySummary $nearExpiry, BelowMinimumSummary $belowMin, MissingStockLevelSummary $unsetLevels, StockCharts $stockCharts): Response
     {
         $user = $request->user();
         abort_unless($user instanceof User, 403);
@@ -127,7 +156,47 @@ class DashboardController extends Controller
                     'admin.employees.index',
                     ['filter' => ['has_account' => '0']],
                 ) : null,
+                // Kartu tambahan Paket A (T-087A, PA-73). Basis & filter = halaman tujuan; kartu baru
+                // bernilai 0 tidak dikirim agar daftar tidak ramai (kartu lama di atas tetap tampil).
+                ...self::nonZero([
+                    $user->can('stock_quarantine.manage') ? self::item('quarantine_batches', StockBatchListing::query($user), new StockBatchListing,
+                        'admin.stock-batches.index', ['filter' => ['status' => [StockBatchStatus::Quarantine->value]]]) : null,
+                    $user->can('stock_quarantine.manage') ? self::item('expired_batches', StockBatchListing::query($user), new StockBatchListing,
+                        'admin.stock-batches.index', ['filter' => ['status' => [StockBatchStatus::Expired->value]]]) : null,
+                    $user->can('stock_opnames.view') ? self::item('opnames_open', $scope->forStock(StockOpname::query(), $user, 'stock_opnames.stock_location_id'),
+                        new StockOpnameListing, 'admin.stock-opnames.index', ['filter' => ['status' => [
+                            StockOpnameStatus::Counting->value, StockOpnameStatus::Review->value, StockOpnameStatus::PendingApproval->value,
+                        ]]]) : null,
+                    $user->can('stock_disposals.manage') ? self::item('disposals_approved', $scope->forStock(DisposalReport::query(), $user, 'disposal_reports.stock_location_id'),
+                        new DisposalReportListing, 'admin.disposal-reports.index', ['filter' => ['status' => [DisposalReportStatus::Approved->value]]]) : null,
+                    $user->can('purchase_returns.manage') ? self::item('returns_open', $scope->forStock(PurchaseReturn::query(), $user, 'purchase_returns.stock_location_id'),
+                        new PurchaseReturnListing, 'admin.purchase-returns.index', ['filter' => ['status' => [
+                            PurchaseReturnStatus::Approved->value, PurchaseReturnStatus::Shipped->value,
+                        ]]]) : null,
+                    $user->can('goods_receipts.view') ? self::item('receipts_draft', $scope->forStock(GoodsReceipt::query(), $user, 'goods_receipts.stock_location_id'),
+                        new GoodsReceiptListing, 'admin.goods-receipts.index', ['filter' => ['status' => [GoodsReceiptStatus::Draft->value]]]) : null,
+                    $user->can('customers.verify') ? self::item('customers_unverified', CustomerVerificationListing::query($user), new CustomerVerificationListing,
+                        'admin.customer-verifications.index', ['filter' => ['status' => [VerificationStatus::Pending->value]]]) : null,
+                    $user->can('prices.manage') ? self::item('price_drafts', PriceList::query(), new PriceListListing,
+                        'admin.price-lists.index', ['filter' => ['has_draft' => '1']]) : null,
+                    $user->can('promotions.manage') ? self::item('promos_ending', Promotion::query(), new PromotionListing,
+                        'admin.promotions.index', ['filter' => ['ending_soon' => '1']]) : null,
+                    ImportRegistry::allowedFor($user) !== [] ? self::item('imports_pending', ImportBatchListing::query($user), new ImportBatchListing,
+                        'admin.imports.index', ['filter' => ['status' => [ImportStatus::Validated->value, ImportStatus::Failed->value]]]) : null,
+                    $user->can('prices.manage') && $user->can('products.view') ? self::item('products_unpriced', Product::query(), new ProductListing,
+                        'admin.products.index', ['filter' => ['price_status' => 'missing']]) : null,
+                ]),
             ])),
+            // Banner "Saldo awal masih dibuka" (T-087A): hanya selama saldo awal belum ditutup, bagi yang
+            // boleh menutupnya; nilai rupiah hanya untuk pemegang `stock.view_cost` (SEC-107).
+            'opening_balance' => $user->can('settings.update') && setting('inventory.opening_balance_open') === true
+                ? self::openingBalance($user) : null,
+            // Produk tanpa stok minimum per lokasi (T-087A): tiap baris membuka Stok Minimum lokasi itu, filter "belum diatur".
+            'levels_unset' => $user->can('stock_locations.manage') ? $unsetLevels->for($user) : null,
+            // Grafik stok (T-087A): rentang tren mutasi = rentang grafik presensi (?dari/?sampai).
+            'stock_charts' => $user->can('stock.view')
+                ? $stockCharts->for($user, ...array_slice(AttendanceInsights::range(is_string($from) ? $from : null, is_string($to) ? $to : null), 0, 2))
+                : null,
             // Stok mendekati ED (15 §7.4, T-078): per lokasi stok dalam scope; nilai HPP hanya untuk
             // pemegang `stock.view_cost` (PA-64).
             'near_expiry' => $user->can('stock.view') ? $nearExpiry->for($user) : null,
@@ -135,6 +204,36 @@ class DashboardController extends Controller
             'below_min' => $user->can('stock.view') ? $belowMin->for($user) : null,
             'can' => ['view_attendance' => $user->can('attendance.view')],
         ]);
+    }
+
+    /**
+     * Kartu baru T-087A: buang yang tidak berizin (null) dan yang bernilai 0.
+     *
+     * @param  list<array{key: string, count: int, href: string}|null>  $items
+     * @return list<array{key: string, count: int, href: string}>
+     */
+    private static function nonZero(array $items): array
+    {
+        return array_values(array_filter($items, fn (?array $i) => $i !== null && $i['count'] > 0));
+    }
+
+    /** @return array{count: int, value: string|null, href: string} */
+    private static function openingBalance(User $user): array
+    {
+        $movements = StockMovementListing::base($user)->where('stock_movements.movement_type', MovementType::OpeningBalance->value);
+        $value = null;
+        if ($user->can('stock.view_cost')) {
+            $value = BigDecimal::zero();
+            foreach ((clone $movements)->select(['stock_movements.qty', 'stock_movements.unit_cost'])->cursor() as $m) {
+                $value = $value->plus(BigDecimal::of($m->qty)->multipliedBy($m->unit_cost)->toScale(2, RoundingMode::HalfUp));
+            }
+        }
+
+        return [
+            'count' => (clone $movements)->count(),
+            'value' => $value === null ? null : (string) $value->toScale(2),
+            'href' => route('admin.settings.edit', ['group' => 'inventory']),
+        ];
     }
 
     /**

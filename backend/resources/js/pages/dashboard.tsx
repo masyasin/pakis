@@ -2,13 +2,25 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
     ArrowLeftRight,
+    BadgeDollarSign,
+    CalendarClock,
     CalendarX2,
+    ClipboardList,
     ClipboardPen,
     FileBadge,
+    FileUp,
+    PackageCheck,
+    PackageOpen,
+    Percent,
     RefreshCw,
+    ShieldAlert,
     Smartphone,
     Stamp,
+    Store,
+    Tags,
+    Trash2,
     Truck,
+    Undo2,
     UserX,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -18,6 +30,8 @@ import {
     BarChart,
     CartesianGrid,
     Cell,
+    Line,
+    LineChart,
     Pie,
     PieChart,
     ResponsiveContainer,
@@ -67,7 +81,19 @@ type PendingItem = {
         | 'registrations_expiring'
         | 'po_overdue'
         | 'transfers_unreceived'
-        | 'no_account';
+        | 'no_account'
+        // Kartu tambahan Paket A (T-087A, PA-73); server tidak mengirimnya bila bernilai 0.
+        | 'quarantine_batches'
+        | 'expired_batches'
+        | 'opnames_open'
+        | 'disposals_approved'
+        | 'returns_open'
+        | 'receipts_draft'
+        | 'customers_unverified'
+        | 'price_drafts'
+        | 'promos_ending'
+        | 'imports_pending'
+        | 'products_unpriced';
     count: number;
     href: string;
 };
@@ -97,12 +123,32 @@ type BelowMinimum = {
     }[];
 };
 
+/** Banner "Saldo awal masih dibuka" (T-087A); `value` null bila tanpa `stock.view_cost`. */
+type OpeningBalance = { count: number; value: string | null; href: string };
+
+/** Produk aktif tanpa stok minimum per lokasi (T-087A). */
+type LevelsUnset = {
+    total: number;
+    items: { location_id: number; location: string; missing: number }[];
+};
+
+/** Grafik stok (T-087A): nilai per lokasi (null tanpa `stock.view_cost`), mutasi per hari, ED per bulan. */
+type StockCharts = {
+    value: { location_id: number; location: string; value: string }[] | null;
+    flow: { date: string; in: number; out: number }[];
+    expiry: { month: string; batches: number; value: string | null }[];
+    expiry_days: number;
+};
+
 type Props = {
     attendance: Summary | null;
     charts: Charts | null;
     pending: PendingItem[];
     near_expiry?: NearExpiry | null;
     below_min?: BelowMinimum | null;
+    opening_balance?: OpeningBalance | null;
+    levels_unset?: LevelsUnset | null;
+    stock_charts?: StockCharts | null;
     refresh_seconds: number;
 };
 
@@ -154,6 +200,62 @@ const PENDING: Record<
         note: 'Belum bisa masuk ke Pakis Pro',
         icon: UserX,
     },
+    // Kartu tambahan Paket A (T-087A, PA-73).
+    quarantine_batches: {
+        title: 'Batch di karantina',
+        note: 'Perlu dilepas, diretur, atau dimusnahkan',
+        icon: ShieldAlert,
+    },
+    expired_batches: {
+        title: 'Batch kedaluwarsa masih ada stok',
+        note: 'Karantinakan atau ajukan pemusnahan',
+        icon: CalendarClock,
+    },
+    opnames_open: {
+        title: 'Opname belum selesai',
+        note: 'Sedang dihitung, ditinjau, atau menunggu persetujuan',
+        icon: ClipboardList,
+    },
+    disposals_approved: {
+        title: 'Pemusnahan belum dilaksanakan',
+        note: 'Berita acara sudah disetujui',
+        icon: Trash2,
+    },
+    returns_open: {
+        title: 'Retur ke prinsipal belum selesai',
+        note: 'Belum dikirim atau belum dikonfirmasi',
+        icon: Undo2,
+    },
+    receipts_draft: {
+        title: 'Penerimaan barang masih draf',
+        note: 'Belum diperiksa dan diposting',
+        icon: PackageCheck,
+    },
+    customers_unverified: {
+        title: 'Kios menunggu verifikasi',
+        note: 'Prospek yang perlu diverifikasi',
+        icon: Store,
+    },
+    price_drafts: {
+        title: 'Daftar harga punya versi draf',
+        note: 'Belum diajukan untuk terbit',
+        icon: Tags,
+    },
+    promos_ending: {
+        title: 'Promo segera berakhir',
+        note: 'Promo aktif yang hampir habis masa berlakunya',
+        icon: Percent,
+    },
+    imports_pending: {
+        title: 'Impor perlu tindakan',
+        note: 'Sudah divalidasi belum diproses, atau gagal',
+        icon: FileUp,
+    },
+    products_unpriced: {
+        title: 'Produk tanpa harga',
+        note: 'Dijual, tetapi belum ada di daftar harga berlaku',
+        icon: BadgeDollarSign,
+    },
 };
 
 /** Warna seri (token `--viz-*` di app.css, divalidasi untuk buta warna di tema terang & gelap). */
@@ -170,6 +272,9 @@ const DATA_KEYS = [
     'pending',
     'near_expiry',
     'below_min',
+    'opening_balance',
+    'levels_unset',
+    'stock_charts',
 ];
 const WEEKDAY = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
@@ -272,7 +377,7 @@ function Legend({ items }: { items: { label: string; color: string }[] }) {
     );
 }
 
-type TipRow = { name: string; value: number; color: string };
+type TipRow = { name: string; value: number | string; color: string };
 
 /** Isi tooltip: teks memakai warna tinta biasa, warna seri hanya pada tanda di sampingnya. */
 function TipBox({ title, rows }: { title: string; rows: TipRow[] }) {
@@ -923,6 +1028,346 @@ function BelowMinimumList({ data }: { data: BelowMinimum }) {
     );
 }
 
+const STOCK_SERIES = {
+    in: { label: 'Masuk', color: 'var(--viz-series-1)' },
+    out: { label: 'Keluar', color: 'var(--viz-series-2)' },
+} as const;
+const MONTHS = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'Mei',
+    'Jun',
+    'Jul',
+    'Agu',
+    'Sep',
+    'Okt',
+    'Nov',
+    'Des',
+];
+const compact = new Intl.NumberFormat('id-ID', {
+    notation: 'compact',
+    maximumFractionDigits: 1,
+});
+
+function monthLabel(ym: string): string {
+    const [y, m] = ym.split('-').map(Number);
+
+    return `${MONTHS[m - 1]} ${y}`;
+}
+
+/** Nilai stok (HPP) per lokasi: batang mendatar satu seri, diurutkan dari server (terbesar dulu). */
+function StockValueChart({
+    rows,
+    animate,
+}: {
+    rows: NonNullable<StockCharts['value']>;
+    animate: boolean;
+}) {
+    // Angka plot saja; teks selalu dari string kanonik server (tanpa pembulatan float).
+    const data = rows.map((r) => ({ ...r, plot: Number(r.value) }));
+
+    return (
+        <>
+            <div
+                style={{ height: Math.max(120, data.length * 40 + 24) }}
+                aria-hidden="true"
+            >
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        layout="vertical"
+                        margin={{ top: 0, right: 8, bottom: 0, left: 0 }}
+                        barCategoryGap="30%"
+                    >
+                        <CartesianGrid
+                            horizontal={false}
+                            stroke="var(--border)"
+                            strokeDasharray="4 4"
+                        />
+                        <XAxis
+                            type="number"
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                            tickFormatter={(v: number) => compact.format(v)}
+                        />
+                        <YAxis
+                            type="category"
+                            dataKey="location"
+                            width={104}
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <Tooltip
+                            cursor={{ fill: 'var(--muted)', opacity: 0.6 }}
+                            content={tip<(typeof data)[number]>((row) => (
+                                <TipBox
+                                    title={row.location}
+                                    rows={[
+                                        {
+                                            name: 'Nilai stok',
+                                            value: formatRupiah(row.value),
+                                            color: 'var(--viz-series-1)',
+                                        },
+                                    ]}
+                                />
+                            ))}
+                        />
+                        <Bar
+                            dataKey="plot"
+                            fill="var(--viz-series-1)"
+                            radius={[0, 4, 4, 0]}
+                            isAnimationActive={animate}
+                            animationDuration={500}
+                        />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+            <table className="sr-only">
+                <caption>Nilai stok per lokasi</caption>
+                <thead>
+                    <tr>
+                        <th>Lokasi</th>
+                        <th>Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {rows.map((r) => (
+                        <tr key={r.location_id}>
+                            <td>{r.location}</td>
+                            <td>{formatRupiah(r.value)}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
+    );
+}
+
+/** Baris mutasi masuk vs keluar per hari: dua garis 2px, legenda di atas, tooltip per hari. */
+function StockFlowChart({
+    flow,
+    animate,
+}: {
+    flow: StockCharts['flow'];
+    animate: boolean;
+}) {
+    const data = flow.map((d) => {
+        const c = civil(d.date);
+
+        return {
+            ...d,
+            label: `${c.day}/${c.month}`,
+            full: `${c.weekday}, ${c.day}/${c.month}`,
+        };
+    });
+    const keys = ['in', 'out'] as const;
+
+    return (
+        <>
+            <div className="h-56" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                    <LineChart
+                        data={data}
+                        margin={{ top: 8, right: 8, bottom: 0, left: -18 }}
+                    >
+                        <CartesianGrid
+                            vertical={false}
+                            stroke="var(--border)"
+                            strokeDasharray="4 4"
+                        />
+                        <XAxis
+                            dataKey="label"
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={{ stroke: 'var(--border)' }}
+                            interval="preserveStartEnd"
+                            minTickGap={8}
+                        />
+                        <YAxis
+                            allowDecimals={false}
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <Tooltip
+                            cursor={{ stroke: 'var(--border)' }}
+                            content={tip<(typeof data)[number]>((row) => (
+                                <TipBox
+                                    title={row.full}
+                                    rows={keys.map((k) => ({
+                                        name: STOCK_SERIES[k].label,
+                                        value: row[k],
+                                        color: STOCK_SERIES[k].color,
+                                    }))}
+                                />
+                            ))}
+                        />
+                        {keys.map((k) => (
+                            <Line
+                                key={k}
+                                type="monotone"
+                                dataKey={k}
+                                stroke={STOCK_SERIES[k].color}
+                                strokeWidth={2}
+                                dot={false}
+                                activeDot={{
+                                    r: 4,
+                                    stroke: 'var(--card)',
+                                    strokeWidth: 2,
+                                }}
+                                isAnimationActive={animate}
+                                animationDuration={500}
+                            />
+                        ))}
+                    </LineChart>
+                </ResponsiveContainer>
+            </div>
+            <table className="sr-only">
+                <caption>Baris mutasi stok per hari</caption>
+                <thead>
+                    <tr>
+                        <th>Tanggal</th>
+                        <th>Masuk</th>
+                        <th>Keluar</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.map((d) => (
+                        <tr key={d.date}>
+                            <td>{d.full}</td>
+                            <td>{d.in}</td>
+                            <td>{d.out}</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
+    );
+}
+
+/** Batch mendekati ED per bulan (cakrawala = ambang ED terbesar): batang satu seri jumlah batch. */
+function ExpiryMonthChart({
+    rows,
+    animate,
+}: {
+    rows: StockCharts['expiry'];
+    animate: boolean;
+}) {
+    const data = rows.map((r) => ({ ...r, label: monthLabel(r.month) }));
+
+    return (
+        <>
+            <div className="h-56" aria-hidden="true">
+                <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                        data={data}
+                        margin={{ top: 4, right: 4, bottom: 0, left: -18 }}
+                        barCategoryGap="28%"
+                    >
+                        <CartesianGrid
+                            vertical={false}
+                            stroke="var(--border)"
+                            strokeDasharray="4 4"
+                        />
+                        <XAxis
+                            dataKey="label"
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={{ stroke: 'var(--border)' }}
+                        />
+                        <YAxis
+                            allowDecimals={false}
+                            tick={axisTick}
+                            tickLine={false}
+                            axisLine={false}
+                        />
+                        <Tooltip
+                            cursor={{ fill: 'var(--muted)', opacity: 0.6 }}
+                            content={tip<(typeof data)[number]>((row) => (
+                                <TipBox
+                                    title={row.label}
+                                    rows={[
+                                        {
+                                            name: 'Batch',
+                                            value: row.batches,
+                                            color: 'var(--viz-series-1)',
+                                        },
+                                        ...(row.value !== null
+                                            ? [
+                                                  {
+                                                      name: 'Nilai',
+                                                      value: formatRupiah(
+                                                          row.value,
+                                                      ),
+                                                      color: 'transparent',
+                                                  },
+                                              ]
+                                            : []),
+                                    ]}
+                                />
+                            ))}
+                        />
+                        <Bar
+                            dataKey="batches"
+                            fill="var(--viz-series-1)"
+                            radius={[4, 4, 0, 0]}
+                            isAnimationActive={animate}
+                            animationDuration={500}
+                        />
+                    </BarChart>
+                </ResponsiveContainer>
+            </div>
+            <table className="sr-only">
+                <caption>Batch mendekati ED per bulan</caption>
+                <thead>
+                    <tr>
+                        <th>Bulan</th>
+                        <th>Batch</th>
+                        <th>Nilai</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.map((r) => (
+                        <tr key={r.month}>
+                            <td>{r.label}</td>
+                            <td>{r.batches}</td>
+                            <td>
+                                {r.value === null ? '–' : formatRupiah(r.value)}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </>
+    );
+}
+
+function LevelsUnsetList({ data }: { data: LevelsUnset }) {
+    return (
+        <ul className="divide-y text-sm">
+            {data.items.map((item) => (
+                <li key={item.location_id}>
+                    <Link
+                        href={`/stok/minimum?filter[stock_location_id]=${item.location_id}&filter[unset]=1`}
+                        className="flex items-center gap-3 py-2 hover:underline"
+                    >
+                        <span className="min-w-0 flex-1 font-medium break-words">
+                            {item.location}
+                        </span>
+                        <span className="font-semibold tabular-nums">
+                            {item.missing.toLocaleString('id-ID')} produk
+                        </span>
+                    </Link>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 function NoData({ children }: { children: ReactNode }) {
     return (
         <p className="grid flex-1 place-items-center rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
@@ -937,6 +1382,9 @@ export default function Dashboard({
     pending: pendingItems,
     near_expiry: nearExpiry = null,
     below_min: belowMin = null,
+    opening_balance: openingBalance = null,
+    levels_unset: levelsUnset = null,
+    stock_charts: stockCharts = null,
     refresh_seconds: refreshSeconds,
 }: Props) {
     // Item yang belum dikenal build frontend ini (server lebih baru dari aset) dilewati, bukan
@@ -1026,6 +1474,7 @@ export default function Dashboard({
         (charts && charts.locations.length > 0 ? 1 : 0) +
         (nearExpiry ? 1 : 0) +
         (belowMin ? 1 : 0) +
+        (levelsUnset && levelsUnset.items.length > 0 ? 1 : 0) +
         (pending.length > 0 ? 1 : 0);
     const pendingWide = lowerCards % 2 === 1;
     const rangeText = charts ? formatCivilRange(charts.from, charts.to) : '';
@@ -1063,6 +1512,31 @@ export default function Dashboard({
                         <span className="sr-only">, muat ulang sekarang</span>
                     </button>
                 </header>
+
+                {openingBalance && (
+                    <Link
+                        href={openingBalance.href}
+                        className="flex items-start gap-3 rounded-xl border border-status-warning/40 bg-status-warning-bg p-3.5 text-sm transition-colors hover:bg-status-warning-bg/70"
+                    >
+                        <PackageOpen
+                            className="mt-0.5 size-5 shrink-0 text-status-warning"
+                            aria-hidden="true"
+                        />
+                        <span className="min-w-0 flex-1">
+                            <span className="block font-semibold">
+                                Saldo awal stok masih dibuka
+                            </span>
+                            <span className="block text-muted-foreground">
+                                {openingBalance.count.toLocaleString('id-ID')}{' '}
+                                baris saldo awal sudah masuk
+                                {openingBalance.value !== null &&
+                                    `, senilai ${formatRupiah(openingBalance.value)}`}
+                                . Setelah nilainya cocok dengan pembukuan lama,
+                                tutup saldo awal di Pengaturan › Gudang & stok.
+                            </span>
+                        </span>
+                    </Link>
+                )}
 
                 {attendance && (
                     <section aria-label="Ringkasan kehadiran hari ini">
@@ -1132,6 +1606,47 @@ export default function Dashboard({
                         <Card title="Komposisi hari ini">
                             <TodayDonut
                                 summary={attendance}
+                                animate={animate}
+                            />
+                        </Card>
+                    </div>
+                )}
+
+                {stockCharts && (
+                    <div className="grid gap-3.5 lg:grid-cols-2">
+                        {stockCharts.value && stockCharts.value.length > 0 && (
+                            <Card
+                                title="Nilai stok per lokasi"
+                                note="HPP rata-rata × stok di tangan, gudang & toko dalam wilayah Anda."
+                            >
+                                <StockValueChart
+                                    rows={stockCharts.value}
+                                    animate={animate}
+                                />
+                            </Card>
+                        )}
+                        <Card
+                            title="Mutasi stok per hari"
+                            note={
+                                stockCharts.flow.length > 0
+                                    ? `${formatCivilRange(stockCharts.flow[0].date, stockCharts.flow[stockCharts.flow.length - 1].date)}. Jumlah baris mutasi, bukan qty.`
+                                    : undefined
+                            }
+                        >
+                            <div className="mb-2">
+                                <Legend items={Object.values(STOCK_SERIES)} />
+                            </div>
+                            <StockFlowChart
+                                flow={stockCharts.flow}
+                                animate={animate}
+                            />
+                        </Card>
+                        <Card
+                            title="Batch mendekati ED per bulan"
+                            note={`Batch tersedia & karantina yang ED-nya dalam ${stockCharts.expiry_days} hari ke depan.`}
+                        >
+                            <ExpiryMonthChart
+                                rows={stockCharts.expiry}
                                 animate={animate}
                             />
                         </Card>
@@ -1215,6 +1730,15 @@ export default function Dashboard({
                                     Semua produk di atas stok minimum.
                                 </NoData>
                             )}
+                        </Card>
+                    )}
+
+                    {levelsUnset && levelsUnset.items.length > 0 && (
+                        <Card
+                            title="Produk tanpa stok minimum"
+                            note={`${levelsUnset.total.toLocaleString('id-ID')} produk per lokasi belum diatur. Klik lokasi untuk mengaturnya.`}
+                        >
+                            <LevelsUnsetList data={levelsUnset} />
                         </Card>
                     )}
 

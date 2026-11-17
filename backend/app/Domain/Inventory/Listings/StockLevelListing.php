@@ -37,6 +37,9 @@ final class StockLevelListing implements HasListing
                     ->using(fn (Builder $q, mixed $ids) => self::joinLocation($q, (int) ((array) $ids)[0])),
                 RelationFilter::make('category_id', 'Kategori')->source('product_categories')->column('products.product_category_id')
                     ->validIds(fn () => ProductCategory::query()),
+                // T-087A (PA-73): produk yang belum punya stok minimum di lokasi ini.
+                BooleanFilter::make('unset', 'Belum diatur')
+                    ->using(fn (Builder $q, mixed $v) => (bool) $v ? $q->whereNull('lvl.min_qty_base') : $q->whereNotNull('lvl.min_qty_base')),
                 BooleanFilter::make('below_min', 'Di bawah minimum')
                     ->using(fn (Builder $q, mixed $v) => (bool) $v
                         ? $q->whereNotNull('lvl.min_qty_base')->whereRaw('COALESCE(bal.qty_on_hand, 0) < lvl.min_qty_base')

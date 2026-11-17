@@ -17,6 +17,7 @@ use App\Domain\Device\Models\Device;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Inventory\Queries\NearExpirySummary;
 use App\Domain\Purchasing\Listings\PurchaseOrderListing;
 use App\Domain\Purchasing\Models\PurchaseOrder;
 use App\Http\Controllers\Controller;
@@ -36,7 +37,7 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope, ApprovalVisibility $approvals): Response
+    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope, ApprovalVisibility $approvals, NearExpirySummary $nearExpiry): Response
     {
         $user = $request->user();
         abort_unless($user instanceof User, 403);
@@ -115,6 +116,9 @@ class DashboardController extends Controller
                     ['filter' => ['has_account' => '0']],
                 ) : null,
             ])),
+            // Stok mendekati ED (15 §7.4, T-078): per lokasi stok dalam scope; nilai HPP hanya untuk
+            // pemegang `stock.view_cost` (PA-64).
+            'near_expiry' => $user->can('stock.view') ? $nearExpiry->for($user) : null,
             'can' => ['view_attendance' => $user->can('attendance.view')],
         ]);
     }

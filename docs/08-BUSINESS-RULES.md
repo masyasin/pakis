@@ -123,6 +123,8 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `notification.on_registration_expiring` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-071, BR-152) | ❌ |
 | `notification.on_customer_phone_changed` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-074, BR-166(4); penerima pemegang `customers.change_phone_approve`, bukan `super_admin`, nomor termasking) | ❌ |
 | `notification.on_stock_reconcile_mismatch` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-077, BR-154; penerima Owner & `super_admin`) | ❌ |
+| `notification.on_batch_near_expiry` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-078, BR-157; penerima `kepala_gudang` lokasi stok batch, Owner bila lokasi tanpa kepala gudang; sekali per batch per ambang) | ❌ |
+| `notification.on_batch_expired` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-078, BR-157; ringkasan per lokasi stok, penerima sama dengan baris di atas) | ❌ |
 | `notification.whatsapp_daily_limit` | int | 300 | 0–10000 | ❌ |
 | `notification.whatsapp_hourly_per_user` | int | 5 | 1–50 | ❌ |
 | `notification.circuit_failures` | int | 5 | 3–20 | ❌ |
@@ -195,8 +197,10 @@ Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok
 | `inventory.registration_reminder_days` | int | 60 | 7–365 | ❌ |
 | `inventory.negative_stock_allowed` | bool | `false` | Penanda `locked`; hanya boleh `false` (BR-101, T-077) | ❌ |
 | `inventory.reservation_ttl_hours` | int | 72 | 1–720 | ❌ |
+| `inventory.near_expiry_days` | int list | `[90,60,30]` | 1–3 nilai; tiap nilai 1–365, urut menurun (T-078, BR-157) | ❌ |
+| `inventory.min_sell_days_before_expiry` | int | 0 | 0–365 (T-078, BR-102) | ❌ |
 
-Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`). `inventory.negative_stock_allowed` terkunci `false`: `StockLedger` menolak bekerja bila nilainya lain, dan layar Pengaturan menolak `true` (T-077). `inventory.reservation_ttl_hours` = masa berlaku reservasi batch bawaan; reservasi `active` yang lewat `expires_at` dilepas job tiap 15 menit (BR-155).
+Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`). `inventory.negative_stock_allowed` terkunci `false`: `StockLedger` menolak bekerja bila nilainya lain, dan layar Pengaturan menolak `true` (T-077). `inventory.reservation_ttl_hours` = masa berlaku reservasi batch bawaan; reservasi `active` yang lewat `expires_at` dilepas job tiap 15 menit (BR-155). `inventory.near_expiry_days` = ambang peringatan mendekati ED (job 06.00, satu notifikasi per batch per ambang lewat `reminder_logs` kunci `ed<hari>`); ambang terbesar juga batas label oranye "mendekati ED" dan kolom widget dasbor. `inventory.min_sell_days_before_expiry` = batch ber-ED ≤ tanggal alokasi + nilai ini tidak dialokasikan FEFO maupun ditawarkan lookup `available_batches` (BR-102).
 
 ### 2.11 Harga
 

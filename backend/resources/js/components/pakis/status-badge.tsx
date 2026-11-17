@@ -103,6 +103,15 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'bin_zone.quarantine': { label: 'Karantina', tone: 'info' },
     'vehicle.active': { label: 'Aktif', tone: 'success' },
     'vehicle.inactive': { label: 'Nonaktif', tone: 'muted' },
+    // Status batch stok & ED (T-078, 15 §7.2 StockStatusBadge / ExpiryBadge)
+    'stock_batch.available': { label: 'Tersedia', tone: 'success' },
+    'stock_batch.quarantine': { label: 'Karantina', tone: 'info' },
+    'stock_batch.expired': { label: 'Kedaluwarsa', tone: 'danger' },
+    'stock_batch.disposed': { label: 'Dimusnahkan', tone: 'muted' },
+    'expiry.expired': { label: 'Lewat ED', tone: 'danger' },
+    'expiry.near': { label: 'Mendekati ED', tone: 'warning' },
+    'expiry.ok': { label: 'ED aman', tone: 'muted' },
+    'expiry.none': { label: 'Tanpa ED', tone: 'muted' },
     // Purchase order (T-079, 15 §6.6)
     'purchase_order.draft': { label: 'Draf', tone: 'muted' },
     'purchase_order.submitted': {
@@ -153,5 +162,68 @@ export function StatusBadge({ status, label, tone, className }: Props) {
         >
             {label ?? known?.label ?? status}
         </span>
+    );
+}
+
+export type ExpiryState = 'expired' | 'near' | 'ok' | 'none';
+
+/**
+ * Kelompok ED (15 §7.2): merah bila sudah lewat (< 0 hari), oranye bila ≤ ambang terbesar
+ * `inventory.near_expiry_days`, abu lainnya. Server (lookup `available_batches`) mengirim nilai
+ * yang sama di `expiry_state`; fungsi ini untuk layar yang hanya punya sisa hari.
+ */
+export function expiryState(
+    daysToExpiry: number | null,
+    nearDays: number,
+): ExpiryState {
+    if (daysToExpiry === null) {
+        return 'none';
+    }
+
+    if (daysToExpiry < 0) {
+        return 'expired';
+    }
+
+    return daysToExpiry <= nearDays ? 'near' : 'ok';
+}
+
+/** Badge ED: warna dari STATUS_MAP `expiry.*`, teks sisa hari agar tidak hanya bergantung warna. */
+export function ExpiryBadge({
+    state,
+    daysToExpiry,
+    className,
+}: {
+    state: ExpiryState;
+    daysToExpiry: number | null;
+    className?: string;
+}) {
+    const label =
+        daysToExpiry === null
+            ? 'Tanpa ED'
+            : daysToExpiry < 0
+              ? `Lewat ED ${-daysToExpiry} hari`
+              : daysToExpiry === 0
+                ? 'ED hari ini'
+                : `ED ${daysToExpiry} hari lagi`;
+
+    return (
+        <StatusBadge
+            status={`expiry.${state}`}
+            label={label}
+            className={className}
+        />
+    );
+}
+
+/** Status batch stok (`stock_batches.status`). */
+export function StockStatusBadge({
+    status,
+    className,
+}: {
+    status: 'available' | 'quarantine' | 'expired' | 'disposed';
+    className?: string;
+}) {
+    return (
+        <StatusBadge status={`stock_batch.${status}`} className={className} />
     );
 }

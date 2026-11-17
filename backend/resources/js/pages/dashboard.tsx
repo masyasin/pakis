@@ -26,6 +26,7 @@ import {
 } from 'recharts';
 import { Input } from '@/components/ui/input';
 import { formatCivilRange, formatLongDate } from '@/lib/local-date';
+import { formatRupiah } from '@/lib/money';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/admin';
 import { index as attendanceIndex } from '@/routes/admin/attendance';
@@ -68,10 +69,23 @@ type PendingItem = {
     href: string;
 };
 
+/** Widget "Stok mendekati ED" (15 §7.4, T-078); `value` null bila tanpa `stock.view_cost`. */
+type NearExpiry = {
+    thresholds: number[];
+    show_value: boolean;
+    more: number;
+    locations: {
+        id: number;
+        name: string;
+        buckets: { days: number; batches: number; value: string | null }[];
+    }[];
+};
+
 type Props = {
     attendance: Summary | null;
     charts: Charts | null;
     pending: PendingItem[];
+    near_expiry?: NearExpiry | null;
     refresh_seconds: number;
 };
 
@@ -127,7 +141,7 @@ const SERIES = {
 } as const;
 
 const NEUTRAL = 'var(--border)';
-const DATA_KEYS = ['attendance', 'charts', 'pending'];
+const DATA_KEYS = ['attendance', 'charts', 'pending', 'near_expiry'];
 const WEEKDAY = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
 /** Nama hari & tanggal dari tanggal kalender `YYYY-MM-DD` (tanpa zona: tanggal sudah lokal). */
@@ -788,6 +802,68 @@ function RangeFilter({
     );
 }
 
+/**
+ * Tabel per lokasi stok × ambang ED (kumulatif, ED ≤ N hari). Sel = jumlah batch, nilai HPP di
+ * bawahnya bila boleh dilihat. Tabel biasa (bukan grafik) agar angka bisa dibaca persis di HP.
+ */
+function NearExpiryTable({ data }: { data: NearExpiry }) {
+    return (
+        <div className="-mx-1 overflow-x-auto">
+            <table className="w-full min-w-[320px] text-sm">
+                <caption className="sr-only">
+                    Jumlah batch mendekati ED per lokasi stok
+                </caption>
+                <thead>
+                    <tr className="border-b text-left text-[0.78rem] text-muted-foreground">
+                        <th scope="col" className="px-1 py-1.5 font-medium">
+                            Lokasi stok
+                        </th>
+                        {data.thresholds.map((days) => (
+                            <th
+                                key={days}
+                                scope="col"
+                                className="px-1 py-1.5 text-right font-medium whitespace-nowrap"
+                            >
+                                ≤ {days} hari
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody>
+                    {data.locations.map((location) => (
+                        <tr
+                            key={location.id}
+                            className="border-b last:border-0"
+                        >
+                            <th
+                                scope="row"
+                                className="max-w-[12rem] truncate px-1 py-2 text-left font-medium"
+                            >
+                                {location.name}
+                            </th>
+                            {location.buckets.map((bucket) => (
+                                <td
+                                    key={bucket.days}
+                                    className="px-1 py-2 text-right align-top tabular-nums"
+                                >
+                                    <span className="block font-semibold">
+                                        {bucket.batches} batch
+                                    </span>
+                                    {bucket.value !== null && (
+                                        <span className="block text-[0.78rem] text-muted-foreground">
+                                            {formatRupiah(bucket.value)}
+                                        </span>
+                                    )}
+                                </td>
+                            ))}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+}
+
 function NoData({ children }: { children: ReactNode }) {
     return (
         <p className="grid flex-1 place-items-center rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
@@ -800,6 +876,7 @@ export default function Dashboard({
     attendance,
     charts,
     pending: pendingItems,
+    near_expiry: nearExpiry = null,
     refresh_seconds: refreshSeconds,
 }: Props) {
     // Item yang belum dikenal build frontend ini (server lebih baru dari aset) dilewati, bukan
@@ -887,6 +964,7 @@ export default function Dashboard({
     const lowerCards =
         (charts ? 1 : 0) +
         (charts && charts.locations.length > 0 ? 1 : 0) +
+        (nearExpiry ? 1 : 0) +
         (pending.length > 0 ? 1 : 0);
     const pendingWide = lowerCards % 2 === 1;
     const rangeText = charts ? formatCivilRange(charts.from, charts.to) : '';
@@ -1030,6 +1108,25 @@ export default function Dashboard({
                                 locations={charts.locations}
                                 animate={animate}
                             />
+                        </Card>
+                    )}
+
+                    {nearExpiry && (
+                        <Card
+                            title="Stok mendekati ED"
+                            note={
+                                nearExpiry.more > 0
+                                    ? `Batch tersedia per lokasi stok, kumulatif. ${nearExpiry.more} lokasi lain tidak ditampilkan.`
+                                    : 'Batch tersedia per lokasi stok, kumulatif (kolom terbesar memuat yang lebih dekat).'
+                            }
+                        >
+                            {nearExpiry.locations.length > 0 ? (
+                                <NearExpiryTable data={nearExpiry} />
+                            ) : (
+                                <NoData>
+                                    Tidak ada batch yang mendekati ED.
+                                </NoData>
+                            )}
                         </Card>
                     )}
 

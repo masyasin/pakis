@@ -1,6 +1,6 @@
 import { Loader2, X } from 'lucide-react';
 import { useEffect, useId, useRef, useState } from 'react';
-import type { KeyboardEvent } from 'react';
+import type { KeyboardEvent, ReactNode } from 'react';
 import { Input } from '@/components/ui/input';
 import { cachedLabel, fetchLookup, LOOKUP_DEBOUNCE_MS } from '@/lib/lookup';
 import type { LookupOption } from '@/lib/lookup';
@@ -23,6 +23,13 @@ type Props = {
     id?: string;
     placeholder?: string;
     'aria-label'?: string;
+    /**
+     * Opsi lengkap yang baru dipilih (dipanggil sebelum `onChange`). Untuk pemilih yang butuh data
+     * tambahan dari server, mis. BatchPicker membaca `fefo_rank` (T-078).
+     */
+    onPick?: (option: LookupOption) => void;
+    /** Ganti tampilan keterangan kanan opsi (bawaan: `hint`). */
+    renderHint?: (option: LookupOption) => ReactNode;
 };
 
 /**
@@ -44,6 +51,8 @@ export function AsyncSelect({
     id,
     placeholder = 'Ketik untuk mencari…',
     'aria-label': ariaLabel,
+    onPick,
+    renderHint,
 }: Props) {
     const listId = useId();
     const [query, setQuery] = useState('');
@@ -100,6 +109,7 @@ export function AsyncSelect({
         value.map(String).includes(String(option.value));
 
     const pick = (option: LookupOption) => {
+        onPick?.(option);
         if (multiple) {
             onChange(
                 isSelected(option)
@@ -333,11 +343,13 @@ export function AsyncSelect({
                                 <span className="max-w-[70%] shrink-0 truncate">
                                     {option.label}
                                 </span>
-                                {option.hint && (
-                                    <span className="min-w-0 truncate text-right text-xs text-muted-foreground">
-                                        {option.hint}
-                                    </span>
-                                )}
+                                {renderHint
+                                    ? renderHint(option)
+                                    : option.hint && (
+                                          <span className="min-w-0 truncate text-right text-xs text-muted-foreground">
+                                              {option.hint}
+                                          </span>
+                                      )}
                             </li>
                         ))
                     )}

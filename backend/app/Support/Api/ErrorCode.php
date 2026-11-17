@@ -56,6 +56,8 @@ enum ErrorCode: string
     // Khusus web (05 §2.4a), buku stok (BR-101/102, T-077).
     case INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK';
     case BATCH_NOT_AVAILABLE = 'BATCH_NOT_AVAILABLE';
+    // Khusus web (05 §2.4a), FEFO: produk wajib izin tanpa izin berlaku (BR-102/152, T-078).
+    case PRODUCT_REGISTRATION_INACTIVE = 'PRODUCT_REGISTRATION_INACTIVE';
     // Khusus web (05 §2.4a), verifikasi & HP kios (BR-165/166, T-074).
     case CUSTOMER_PHONE_DUPLICATE = 'CUSTOMER_PHONE_DUPLICATE';
     case PHONE_BELONGS_TO_EMPLOYEE = 'PHONE_BELONGS_TO_EMPLOYEE';
@@ -93,6 +95,7 @@ enum ErrorCode: string
             self::VALIDATION_FAILED,
             self::INSUFFICIENT_STOCK,
             self::BATCH_NOT_AVAILABLE,
+            self::PRODUCT_REGISTRATION_INACTIVE,
             self::ATTENDANCE_NO_SCHEDULE,
             self::ATTENDANCE_OUTSIDE_WINDOW,
             self::ATTENDANCE_OUT_OF_RADIUS,
@@ -157,6 +160,7 @@ enum ErrorCode: string
             self::APPROVAL_RULE_MISSING => 'Belum ada aturan persetujuan yang cocok untuk dokumen ini. Hubungi admin.',
             self::INSUFFICIENT_STOCK => 'Stok tersedia tidak cukup. Muat ulang untuk melihat stok terbaru.',
             self::BATCH_NOT_AVAILABLE => 'Batch ini sedang karantina, kedaluwarsa, atau sudah dimusnahkan, jadi tidak bisa dipakai.',
+            self::PRODUCT_REGISTRATION_INACTIVE => 'Produk ini wajib izin edar, tetapi belum punya izin yang berlaku. Stoknya tidak bisa dialokasikan.',
             // SEC-101: maker-checker; pengaju/pembuat dokumen tidak boleh memutuskan sendiri.
             self::APPROVAL_SELF_DECISION => 'Anda tidak boleh memutuskan persetujuan atas dokumen yang Anda ajukan atau buat sendiri.',
             self::APPROVAL_ALREADY_PENDING => 'Dokumen ini sudah punya permintaan persetujuan yang masih berjalan.',

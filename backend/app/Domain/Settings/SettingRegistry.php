@@ -207,6 +207,8 @@ final class SettingRegistry
             $t('notification.on_registration_expiring', SettingType::MultiEnum, [], 'Kanal: izin edar akan habis', 'Penerima: pemegang izin kelola izin edar. Dikirim H-60/30/7/0 sebelum izin habis, sekali per ambang.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.on_customer_phone_changed', SettingType::MultiEnum, [], 'Kanal: HP kios diganti', 'Penerima: pemegang izin menyetujui ganti HP kios (bukan Super Admin). Nomor lama dan baru selalu termasking.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.on_stock_reconcile_mismatch', SettingType::MultiEnum, [], 'Kanal: selisih rekonsiliasi stok', 'Penerima: Owner dan Super Admin. Dikirim bila rekonsiliasi harian 01.00 menemukan saldo batch yang tidak cocok dengan kartu stok.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_batch_near_expiry', SettingType::MultiEnum, [], 'Kanal: batch mendekati ED', 'Penerima: Kepala Gudang lokasi stok batch (Owner bila lokasi itu tanpa Kepala Gudang). Sekali per batch per ambang "Ambang peringatan ED".', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
+            $t('notification.on_batch_expired', SettingType::MultiEnum, [], 'Kanal: batch kedaluwarsa', 'Penerima: Kepala Gudang lokasi stok (Owner bila lokasi itu tanpa Kepala Gudang). Ringkasan per lokasi setelah job 00.15 menandai batch kedaluwarsa.', nullable: true, options: DeliveryChannel::values(), check: self::checkChannelSubset(...)),
             $t('notification.whatsapp_daily_limit', SettingType::Int, 300, 'Batas WhatsApp per hari', 'Lebih dari ini notifikasi dialihkan ke Telegram/Email. 0 = WhatsApp tidak dipakai untuk notifikasi.', min: 0, max: 10000),
             $t('notification.whatsapp_hourly_per_user', SettingType::Int, 5, 'Batas WhatsApp per orang per jam', 'Mencegah nomor dianggap spam dan diblokir.', min: 1, max: 50),
             $t('notification.circuit_failures', SettingType::Int, 5, 'Jeda kanal setelah gagal berturut-turut', 'Kanal yang gagal sebanyak ini dijeda sementara dan notifikasi dialihkan ke cadangan.', min: 3, max: 20),
@@ -254,6 +256,11 @@ final class SettingRegistry
             $t('inventory.negative_stock_allowed', SettingType::Bool, false, 'Izinkan stok minus', 'Terkunci mati: stok tidak pernah boleh minus (BR-101). Ditampilkan agar aturan ini terlihat; nilainya hanya boleh mati.',
                 locked: true, check: fn ($v) => filter_var($v, FILTER_VALIDATE_BOOLEAN) ? 'Stok minus tidak didukung; pengaturan ini hanya boleh mati.' : null),
             $t('inventory.reservation_ttl_hours', SettingType::Int, 72, 'Masa berlaku reservasi stok (jam)', 'Reservasi batch (mutasi draft, retur prinsipal disetujui) yang lewat masa ini dilepas otomatis tiap 15 menit.', min: 1, max: 720),
+            // T-078 FEFO & ED (BR-102, BR-157). Ambang = 1–3 hari menurun; batas jumlah butir lewat min/max,
+            // aturan per butir lewat check (08 §2 tipe int_list).
+            $t('inventory.near_expiry_days', SettingType::IntList, [90, 60, 30], 'Ambang peringatan ED (hari)', 'Satu sampai tiga angka menurun, mis. 90, 60, 30. Kepala Gudang diberi tahu sekali per batch per ambang; ambang terbesar juga menandai label "mendekati ED".',
+                min: 1, max: 3, check: self::checkNearExpiryDays(...)),
+            $t('inventory.min_sell_days_before_expiry', SettingType::Int, 0, 'Sisa umur minimal untuk dialokasikan (hari)', 'Batch yang ED-nya dalam jumlah hari ini (atau sudah lewat) tidak dipilih FEFO untuk jual/mutasi. 0 = batch boleh keluar sampai sehari sebelum ED.', min: 0, max: 365),
 
             // 2.11 Harga (T-075, 15 §9, BR-168).
             $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),
@@ -310,6 +317,27 @@ final class SettingRegistry
     private static function checkChannelSubset(mixed $value, array $group): ?string
     {
         return array_diff((array) $value, DeliveryChannel::values()) === [] ? null : 'Kanal tidak dikenal.';
+    }
+
+    /**
+     * `inventory.near_expiry_days` (15 §9): tiap ambang 1–365 hari, urut menurun tanpa kembar, agar
+     * kunci pengingat `ed<hari>` dan label "mendekati ED" (ambang terbesar) bermakna.
+     *
+     * @param  array<string, mixed>  $group
+     */
+    private static function checkNearExpiryDays(mixed $value, array $group): ?string
+    {
+        $days = array_values((array) $value);
+        foreach ($days as $i => $day) {
+            if (! is_int($day) || $day < 1 || $day > 365) {
+                return 'Tiap ambang harus 1–365 hari.';
+            }
+            if ($i > 0 && $day >= $days[$i - 1]) {
+                return 'Ambang harus diurutkan dari yang terbesar, mis. 90, 60, 30.';
+            }
+        }
+
+        return null;
     }
 
     /**

@@ -27,6 +27,8 @@ enum NotificationKind: string
     case RegistrationExpiring = 'registration_expiring';
     case CustomerPhoneChanged = 'customer_phone_changed';
     case StockReconcileMismatch = 'stock_reconcile_mismatch';
+    case BatchNearExpiry = 'batch_near_expiry';
+    case BatchExpired = 'batch_expired';
 
     public function label(): string
     {
@@ -48,6 +50,8 @@ enum NotificationKind: string
             self::RegistrationExpiring => 'Izin edar akan habis',
             self::CustomerPhoneChanged => 'HP kios diganti',
             self::StockReconcileMismatch => 'Selisih rekonsiliasi stok',
+            self::BatchNearExpiry => 'Batch mendekati ED',
+            self::BatchExpired => 'Batch kedaluwarsa',
         };
     }
 

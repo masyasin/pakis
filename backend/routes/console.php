@@ -97,6 +97,21 @@ Schedule::command('inventory:release-reservations')
     ->onOneServer()
     ->withoutOverlapping();
 
+// FEFO & ED (T-078, BR-157, 15 §11.1), waktu LOKAL agar "hari ini" = tanggal ED di kemasan.
+// 00.15: batch ED ≤ hari ini → kedaluwarsa (reservasi dilepas). 06.00: alert mendekati ED per
+// ambang `inventory.near_expiry_days`, sekali per batch per ambang. Keduanya idempoten.
+Schedule::command('inventory:expire-batches')
+    ->dailyAt('00:15')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();
+
+Schedule::command('inventory:near-expiry-alerts')
+    ->dailyAt('06:00')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();
+
 // Promo (15 §11.1 EndPromotions, T-076): akhiri promo yang lewat waktu selesai/anggaran habis.
 // PromotionEngine sudah mengabaikannya, jadi jeda 15 menit hanya memengaruhi label status.
 Schedule::command('promotions:end')

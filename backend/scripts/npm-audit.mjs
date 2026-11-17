@@ -46,7 +46,7 @@ for (const [name, vulnerability] of Object.entries(
 
 const expired = allowlist.filter((entry) => entry.review_by < today);
 
-for (const line of [...new Set(excused)]) {
+for (const line of new Set(excused)) {
     console.log(`DIKECUALIKAN (lihat npm-audit-allowlist.json): ${line}`);
 }
 for (const entry of expired) {
@@ -54,7 +54,7 @@ for (const entry of expired) {
         `KEDALUWARSA: pengecualian ${entry.advisory} melewati review_by ${entry.review_by}; tinjau ulang.`,
     );
 }
-for (const line of [...new Set(blocking)]) {
+for (const line of new Set(blocking)) {
     console.error(`MEMBLOKIR: ${line}`);
 }
 

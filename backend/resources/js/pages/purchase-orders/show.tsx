@@ -1,22 +1,34 @@
 import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     Ban,
+    CalendarClock,
     ClipboardList,
     History,
+    Hourglass,
     Lock,
+    PackageCheck,
     Pencil,
     Printer,
     ReceiptText,
     Send,
     Stamp,
+    Truck,
+    Wallet,
+    CalendarDays,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { DetailCard, Field, FieldGrid } from '@/components/employee/detail-ui';
 import InputError from '@/components/input-error';
+import { ActionLabel, MoreActionsMenu } from '@/components/pakis/detail-hero';
+import type {
+    DetailHeroHighlight,
+    DetailMenuAction,
+} from '@/components/pakis/detail-hero';
 import { DocumentHeader } from '@/components/pakis/document-header';
 import { DocumentLines } from '@/components/pakis/document-lines';
 import type { DocumentLineColumn } from '@/components/pakis/document-lines';
+import { DocumentTimeline } from '@/components/pakis/document-timeline';
 import { FormDialog } from '@/components/pakis/form-dialog';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
@@ -25,6 +37,7 @@ import { formatDateTimeIn } from '@/lib/approval-format';
 import { formatCivilDate } from '@/lib/local-date';
 import { formatRupiah } from '@/lib/money';
 import { formatQty } from '@/lib/qty';
+import type { Auth } from '@/types';
 
 export type PurchaseOrderLine = {
     id: number;
@@ -40,6 +53,8 @@ export type PurchaseOrderLine = {
     discount_pct: string;
     line_total: string;
     qty_received_base: string;
+    /** Satuan dasar untuk kolom "Diterima" (opsional; disediakan T-080). */
+    base_unit?: string | null;
     note: string | null;
 };
 
@@ -77,14 +92,39 @@ type HistoryEntry = {
     reason: string | null;
 };
 
+/** Penerimaan barang atas PO ini (slot T-080; tampil bila dikirim server & tidak kosong). */
+export type PurchaseOrderReceipt = {
+    id: number;
+    number: string;
+    date: string;
+    status: string;
+    status_label: string;
+    /** Tautan detail penerimaan bila pengguna boleh membukanya. */
+    url?: string | null;
+};
+
 type Props = {
     order: PurchaseOrderDetail;
     history: HistoryEntry[];
-    can: { edit: boolean; submit: boolean; cancel: boolean; close: boolean };
+    can: {
+        edit: boolean;
+        submit: boolean;
+        cancel: boolean;
+        close: boolean;
+        /** Terima barang (T-080); belum dikirim server = tombol tersembunyi. */
+        receive?: boolean;
+    };
+    receipts?: PurchaseOrderReceipt[];
 };
 
 const TEXTAREA =
     'min-h-20 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none';
+
+/** Status PO yang punya arti progres penerimaan barang. */
+const RECEIPT_STATUSES = ['approved', 'partially_received', 'received'];
+
+/** Status yang boleh menerima barang (tombol tetap menunggu `can.receive` dari server). */
+const RECEIVABLE_STATUSES = ['approved', 'partially_received'];
 
 /** "0.0000" → "–", "2.5000" → "2,5%". */
 function percent(value: string): string {
@@ -95,19 +135,22 @@ function percent(value: string): string {
     return trimmed === '0' ? '–' : `${trimmed.replace('.', ',')}%`;
 }
 
+const lineComplete = (l: PurchaseOrderLine) =>
+    Number(l.qty_base) > 0 && Number(l.qty_received_base) >= Number(l.qty_base);
+
 export const PO_LINE_COLUMNS: DocumentLineColumn<PurchaseOrderLine>[] = [
     {
         key: 'product',
         header: 'Produk',
         primary: true,
         cell: (l) => (
-            <span>
-                <span className="block font-medium">{l.name}</span>
-                <span className="block font-mono text-xs text-muted-foreground">
+            <span className="grid gap-0.5">
+                <span className="font-medium break-words">{l.name}</span>
+                <span className="font-mono text-xs text-muted-foreground">
                     {l.sku}
                 </span>
                 {l.note && (
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground">
                         {l.note}
                     </span>
                 )}
@@ -118,7 +161,14 @@ export const PO_LINE_COLUMNS: DocumentLineColumn<PurchaseOrderLine>[] = [
         key: 'qty',
         header: 'Qty',
         numeric: true,
-        cell: (l) => `${formatQty(l.qty)} ${l.unit.toLowerCase()}`,
+        cell: (l) => (
+            <>
+                <span className="font-medium">{formatQty(l.qty)}</span>{' '}
+                <span className="text-muted-foreground">
+                    {l.unit.toLowerCase()}
+                </span>
+            </>
+        ),
     },
     {
         key: 'unit_price',
@@ -136,11 +186,49 @@ export const PO_LINE_COLUMNS: DocumentLineColumn<PurchaseOrderLine>[] = [
         key: 'line_total',
         header: 'Jumlah',
         numeric: true,
-        cell: (l) => (
-            <span className="font-semibold">{formatRupiah(l.line_total)}</span>
-        ),
+        emphasis: true,
+        cell: (l) => formatRupiah(l.line_total),
     },
 ];
+
+/** Kolom progres terima per baris (satuan dasar), disisipkan sebelum "Jumlah". */
+const RECEIVED_COLUMN: DocumentLineColumn<PurchaseOrderLine> = {
+    key: 'received',
+    header: 'Diterima',
+    numeric: true,
+    cell: (l) => {
+        const ordered = Number(l.qty_base);
+        const got = Number(l.qty_received_base);
+        const pct = ordered > 0 ? Math.min(100, (got / ordered) * 100) : 0;
+
+        return (
+            <span className="inline-grid justify-items-end gap-1">
+                <span>
+                    {formatQty(l.qty_received_base)} / {formatQty(l.qty_base)}
+                    {l.base_unit && (
+                        <span className="text-muted-foreground">
+                            {' '}
+                            {l.base_unit.toLowerCase()}
+                        </span>
+                    )}
+                </span>
+                <span
+                    aria-hidden="true"
+                    className="h-1.5 w-20 overflow-hidden rounded-full bg-muted"
+                >
+                    <span
+                        className={
+                            lineComplete(l)
+                                ? 'block h-full bg-status-success'
+                                : 'block h-full bg-status-warning'
+                        }
+                        style={{ width: `${pct}%` }}
+                    />
+                </span>
+            </span>
+        );
+    },
+};
 
 type Dialog = 'submit' | 'cancel' | 'close' | null;
 
@@ -148,10 +236,90 @@ type Dialog = 'submit' | 'cancel' | 'close' | null;
  * Detail PO (15 §7.1 dokumen bergaris, FR-A24). Aksi muncul sesuai status & izin dari server
  * (Policy); server tetap memeriksa ulang setiap aksi.
  */
-export default function PurchaseOrderShow({ order, history, can }: Props) {
-    const timezone = usePage().props.timezone;
+export default function PurchaseOrderShow({
+    order,
+    history,
+    can,
+    receipts = [],
+}: Props) {
+    const { timezone, auth } = usePage<{ timezone: string; auth: Auth }>()
+        .props;
     const [dialog, setDialog] = useState<Dialog>(null);
     const received = order.lines.some((l) => Number(l.qty_received_base) > 0);
+    const showReceipt = RECEIPT_STATUSES.includes(order.status);
+    const completeLines = order.lines.filter(lineComplete).length;
+    const receiptProgress = `${completeLines} dari ${order.lines.length} baris lengkap`;
+    const canReceive =
+        can.receive === true && RECEIVABLE_STATUSES.includes(order.status);
+    // Tautan ke supplier hanya UX; rute detail supplier tetap dijaga `can:suppliers.view`.
+    const canViewSupplier = auth.permissions.includes('suppliers.view');
+    const paymentTerm =
+        order.payment_term_days === 0
+            ? 'Tunai'
+            : `${order.payment_term_days} hari`;
+
+    const columns = showReceipt
+        ? [
+              ...PO_LINE_COLUMNS.slice(0, -1),
+              RECEIVED_COLUMN,
+              ...PO_LINE_COLUMNS.slice(-1),
+          ]
+        : PO_LINE_COLUMNS;
+
+    const highlights: DetailHeroHighlight[] = [
+        {
+            icon: Wallet,
+            label: 'Total',
+            value: formatRupiah(order.grand_total),
+        },
+        {
+            icon: CalendarClock,
+            label: 'Perkiraan datang',
+            value: order.expected_date && formatCivilDate(order.expected_date),
+            tone: order.overdue ? 'danger' : 'default',
+        },
+        showReceipt
+            ? {
+                  icon: PackageCheck,
+                  label: 'Diterima',
+                  value: receiptProgress,
+                  tone:
+                      completeLines === order.lines.length
+                          ? 'success'
+                          : 'warning',
+              }
+            : { icon: Hourglass, label: 'Tempo bayar', value: paymentTerm },
+    ];
+
+    const menu: DetailMenuAction[] = [
+        {
+            key: 'print',
+            label: 'Cetak',
+            icon: Printer,
+            href: `/pembelian/po/${order.id}/pdf`,
+            newTab: true,
+        },
+    ];
+    if (can.close) {
+        menu.push({
+            key: 'close',
+            label: 'Tutup PO',
+            icon: Lock,
+            destructive: true,
+            separatorBefore: true,
+            onSelect: () => setDialog('close'),
+        });
+    }
+    if (can.cancel) {
+        menu.push({
+            key: 'cancel',
+            label: 'Batalkan PO',
+            icon: Ban,
+            destructive: true,
+            separatorBefore: !can.close,
+            onSelect: () => setDialog('cancel'),
+        });
+    }
 
     return (
         <>
@@ -160,9 +328,14 @@ export default function PurchaseOrderShow({ order, history, can }: Props) {
                 <DocumentHeader
                     backHref="/pembelian/po"
                     backLabel="Daftar purchase order"
+                    kind="Purchase order"
+                    icon={ReceiptText}
                     number={order.number}
                     status={`purchase_order.${order.status}`}
                     statusLabel={order.status_label}
+                    muted={['cancelled', 'closed', 'rejected'].includes(
+                        order.status,
+                    )}
                     badges={
                         order.overdue && (
                             <StatusBadge
@@ -172,69 +345,90 @@ export default function PurchaseOrderShow({ order, history, can }: Props) {
                             />
                         )
                     }
-                    meta={
-                        <>
-                            {order.supplier.name} → {order.stock_location.name}{' '}
-                            · {formatCivilDate(order.order_date)}
-                        </>
-                    }
+                    meta={[
+                        {
+                            icon: Truck,
+                            label: 'Supplier ke gudang tujuan',
+                            value: (
+                                <>
+                                    {order.supplier.name} →{' '}
+                                    {order.stock_location.name}
+                                </>
+                            ),
+                        },
+                        {
+                            icon: CalendarDays,
+                            label: 'Tanggal PO',
+                            value: formatCivilDate(order.order_date),
+                        },
+                    ]}
+                    highlights={highlights}
                     actions={
                         <>
+                            <MoreActionsMenu items={menu} />
                             {can.edit && (
-                                <Button variant="outline" asChild>
+                                <Button variant="outline" size="sm" asChild>
                                     <Link
                                         href={`/pembelian/po/${order.id}/ubah`}
+                                        aria-label={`Ubah PO ${order.number}`}
                                     >
                                         <Pencil aria-hidden="true" />
-                                        Ubah
+                                        <ActionLabel>Ubah</ActionLabel>
                                     </Link>
                                 </Button>
                             )}
-                            <Button variant="outline" asChild>
-                                <a
-                                    href={`/pembelian/po/${order.id}/pdf`}
-                                    target="_blank"
-                                    rel="noopener"
-                                >
-                                    <Printer aria-hidden="true" />
-                                    Cetak
-                                </a>
-                            </Button>
-                            {can.cancel && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setDialog('cancel')}
-                                >
-                                    <Ban aria-hidden="true" />
-                                    Batalkan PO
-                                </Button>
-                            )}
-                            {can.close && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setDialog('close')}
-                                >
-                                    <Lock aria-hidden="true" />
-                                    Tutup PO
-                                </Button>
-                            )}
                             {can.submit && (
-                                <Button onClick={() => setDialog('submit')}>
+                                <Button
+                                    size="sm"
+                                    onClick={() => setDialog('submit')}
+                                    aria-label={`Ajukan PO ${order.number}`}
+                                >
                                     <Send aria-hidden="true" />
-                                    Ajukan PO
+                                    <ActionLabel>Ajukan PO</ActionLabel>
+                                </Button>
+                            )}
+                            {canReceive && (
+                                <Button size="sm" asChild>
+                                    <Link
+                                        href={`/penerimaan/baru?po=${order.id}`}
+                                        aria-label={`Terima barang PO ${order.number}`}
+                                    >
+                                        <PackageCheck aria-hidden="true" />
+                                        <ActionLabel>Terima Barang</ActionLabel>
+                                    </Link>
                                 </Button>
                             )}
                         </>
                     }
                 />
 
-                <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
-                    <DetailCard title="Barang dipesan" icon={ClipboardList}>
+                <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1fr)_22rem]">
+                    <DetailCard
+                        title="Barang dipesan"
+                        icon={ClipboardList}
+                        action={
+                            <span className="rounded-full border bg-muted/50 px-2.5 py-0.5 text-xs text-muted-foreground tabular-nums">
+                                {order.lines.length} produk
+                            </span>
+                        }
+                    >
                         <DocumentLines
                             rows={order.lines}
                             rowKey={(l) => l.id}
-                            columns={PO_LINE_COLUMNS}
+                            columns={columns}
                             caption={`Baris PO ${order.number}`}
+                            footer={
+                                received && (
+                                    <p className="inline-flex items-center gap-1.5 text-xs">
+                                        <PackageCheck
+                                            className="size-3.5 shrink-0"
+                                            aria-hidden="true"
+                                        />
+                                        Sebagian barang sudah diterima di
+                                        gudang.
+                                    </p>
+                                )
+                            }
                             totals={[
                                 {
                                     label: 'Subtotal',
@@ -255,11 +449,6 @@ export default function PurchaseOrderShow({ order, history, can }: Props) {
                                 },
                             ]}
                         />
-                        {received && (
-                            <p className="mt-3 text-xs text-muted-foreground">
-                                Sebagian barang sudah diterima di gudang.
-                            </p>
-                        )}
                     </DetailCard>
 
                     <div className="space-y-5">
@@ -267,7 +456,18 @@ export default function PurchaseOrderShow({ order, history, can }: Props) {
                             <FieldGrid>
                                 <Field
                                     label="Supplier"
-                                    value={order.supplier.name}
+                                    value={
+                                        canViewSupplier ? (
+                                            <Link
+                                                href={`/supplier/${order.supplier.id}`}
+                                                className="font-medium text-primary underline-offset-4 hover:underline"
+                                            >
+                                                {order.supplier.name}
+                                            </Link>
+                                        ) : (
+                                            order.supplier.name
+                                        )
+                                    }
                                     hint={order.supplier.code}
                                     wide
                                 />
@@ -289,16 +489,19 @@ export default function PurchaseOrderShow({ order, history, can }: Props) {
                                 />
                                 <Field
                                     label="Tempo bayar"
-                                    value={
-                                        order.payment_term_days === 0
-                                            ? 'Tunai'
-                                            : `${order.payment_term_days} hari`
-                                    }
+                                    value={paymentTerm}
                                 />
                                 <Field
                                     label="Dibuat oleh"
                                     value={order.created_by}
                                 />
+                                {showReceipt && (
+                                    <Field
+                                        label="Penerimaan"
+                                        value={receiptProgress}
+                                        wide
+                                    />
+                                )}
                                 <Field
                                     label="Catatan"
                                     value={order.note}
@@ -323,6 +526,7 @@ export default function PurchaseOrderShow({ order, history, can }: Props) {
                                 </p>
                                 <Button
                                     variant="outline"
+                                    size="sm"
                                     className="mt-3"
                                     asChild
                                 >
@@ -335,34 +539,51 @@ export default function PurchaseOrderShow({ order, history, can }: Props) {
                             </DetailCard>
                         )}
 
-                        <DetailCard title="Riwayat" icon={History}>
-                            {history.length === 0 ? (
-                                <p className="text-sm text-muted-foreground">
-                                    Belum ada riwayat.
-                                </p>
-                            ) : (
-                                <ol className="space-y-3">
-                                    {history.map((h) => (
-                                        <li key={h.id} className="text-sm">
-                                            <span className="block font-medium">
-                                                {h.event_label}
-                                            </span>
-                                            <span className="block text-xs text-muted-foreground">
-                                                {h.actor} ·{' '}
-                                                {formatDateTimeIn(
-                                                    h.occurred_at,
-                                                    timezone,
+                        {receipts.length > 0 && (
+                            <DetailCard title="Penerimaan" icon={PackageCheck}>
+                                <ul className="divide-y">
+                                    {receipts.map((r) => (
+                                        <li
+                                            key={r.id}
+                                            className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm first:pt-0 last:pb-0"
+                                        >
+                                            <span className="grid min-w-0">
+                                                {r.url ? (
+                                                    <Link
+                                                        href={r.url}
+                                                        className="font-mono text-sm font-medium text-primary underline-offset-4 hover:underline"
+                                                    >
+                                                        {r.number}
+                                                    </Link>
+                                                ) : (
+                                                    <span className="font-mono text-sm font-medium">
+                                                        {r.number}
+                                                    </span>
                                                 )}
-                                            </span>
-                                            {h.reason && (
-                                                <span className="mt-0.5 block text-xs">
-                                                    {h.reason}
+                                                <span className="text-xs text-muted-foreground">
+                                                    {formatCivilDate(r.date)}
                                                 </span>
-                                            )}
+                                            </span>
+                                            <StatusBadge
+                                                status={`goods_receipt.${r.status}`}
+                                                label={r.status_label}
+                                            />
                                         </li>
                                     ))}
-                                </ol>
-                            )}
+                                </ul>
+                            </DetailCard>
+                        )}
+
+                        <DetailCard title="Riwayat" icon={History}>
+                            <DocumentTimeline
+                                label={`Riwayat PO ${order.number}`}
+                                items={history.map((h) => ({
+                                    key: h.id,
+                                    title: h.event_label,
+                                    meta: `${h.actor} · ${formatDateTimeIn(h.occurred_at, timezone)}`,
+                                    note: h.reason,
+                                }))}
+                            />
                         </DetailCard>
                     </div>
                 </div>

@@ -74,7 +74,8 @@ const SUMMARY_COLS: Record<number, string> = {
  * merek (ikut Pengaturan branding) bermotif daun pakis, sorotan status di kanan pita, avatar/foto,
  * judul, kode, badge status, meta berikon, slot aksi di kanan avatar, dan baris ringkasan. Dipakai semua halaman detail bertipe
  * "kepala + tab" (pegawai, pengguna, kios, produk, supplier, daftar harga) agar terasa satu aplikasi.
- * Halaman dokumen bergaris (PO, penerimaan) memakai `DocumentHeader`, bukan kartu ini.
+ * Halaman dokumen (PO, penerimaan, persetujuan …) memakai `DocumentHeader`, varian kartu ini dengan
+ * ikon dokumen dan nomor monospace sebagai judul.
  */
 export function DetailHero({
     title,
@@ -87,8 +88,14 @@ export function DetailHero({
     summary = [],
     highlights = [],
     muted = false,
+    monoTitle = false,
+    eyebrow,
 }: {
     title: string;
+    /** Judul berupa nomor dokumen: monospace, angka sejajar, boleh patah di mana saja. */
+    monoTitle?: boolean;
+    /** Label jenis kecil di atas judul (mis. "Purchase order"). */
+    eyebrow?: ReactNode;
     /** Nomor/kode/username, tampil sebagai chip monospace. */
     code?: string | null;
     /** `StatusBadge` dkk. di samping kode. */
@@ -142,8 +149,9 @@ export function DetailHero({
                 )}
             </div>
 
-            <div className="px-4 pb-5 sm:px-6">
-                <div className="relative z-10 -mt-8 flex flex-wrap items-end justify-between gap-3 @3xl:-mt-10">
+            <div className="px-4 pb-4 sm:px-6 sm:pb-5">
+                {/* HP: avatar 64 px dan tombol (ikon saja) sejajar tepi bawah avatar dalam satu baris. */}
+                <div className="relative z-10 -mt-6 flex items-end justify-between gap-3 sm:-mt-8 @3xl:-mt-10">
                     <HeroAvatar
                         // key: tanda gagal-muat foto ikut direset saat URL bertanda tangan berganti.
                         key={avatar.photoUrl ?? 'none'}
@@ -152,14 +160,27 @@ export function DetailHero({
                     />
 
                     {actions && (
-                        <div className="flex flex-wrap justify-end gap-2">
+                        <div className="flex min-w-0 flex-wrap justify-end gap-2">
                             {actions}
                         </div>
                     )}
                 </div>
 
-                <div className="mt-3 space-y-2">
-                    <h1 className="text-[1.5rem] leading-tight font-bold break-words sm:text-[1.75rem]">
+                <div className="mt-3 space-y-2.5 sm:space-y-2">
+                    {eyebrow && (
+                        <p className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+                            {eyebrow}
+                        </p>
+                    )}
+                    <h1
+                        className={cn(
+                            // HP: judul lebih kecil agar nama panjang tidak memakan banyak baris.
+                            'text-lg leading-snug font-bold sm:text-[1.5rem] sm:leading-tight @3xl:text-[1.75rem]',
+                            monoTitle
+                                ? 'font-mono tracking-tight break-all tabular-nums'
+                                : 'break-words',
+                        )}
+                    >
                         {title}
                     </h1>
                     {(code || badges) && (
@@ -175,19 +196,20 @@ export function DetailHero({
                     {marks.length > 0 && (
                         <HighlightList
                             items={marks}
-                            className="flex flex-wrap gap-2 pt-0.5 @3xl:hidden"
+                            className="flex flex-wrap gap-2 @3xl:hidden"
                             itemClassName="bg-muted/50"
                         />
                     )}
                     {visibleMeta.length > 0 && (
-                        <ul className="flex flex-wrap gap-x-5 gap-y-1.5 pt-1 text-sm text-muted-foreground">
+                        // HP: satu kolom agar butir panjang (alamat) tidak patah di tengah baris lain.
+                        <ul className="flex flex-col gap-1.5 text-sm text-muted-foreground sm:flex-row sm:flex-wrap sm:gap-x-5 sm:pt-1">
                             {visibleMeta.map(({ icon: Icon, label, value }) => (
                                 <li
                                     key={label}
-                                    className="inline-flex items-center gap-1.5"
+                                    className="flex min-w-0 items-start gap-1.5"
                                 >
                                     <Icon
-                                        className="size-4 shrink-0"
+                                        className="mt-0.5 size-4 shrink-0"
                                         aria-hidden="true"
                                     />
                                     <span className="sr-only">{label}: </span>
@@ -254,7 +276,7 @@ function HeroAvatar({
                 alt={avatar.photoAlt ?? `Foto ${title}`}
                 onError={() => setFailed(true)}
                 className={cn(
-                    'size-20 bg-card object-cover ring-4 ring-card @3xl:size-24',
+                    'size-16 shrink-0 bg-card object-cover ring-4 ring-card sm:size-20 @3xl:size-24',
                     shape,
                 )}
             />
@@ -265,12 +287,15 @@ function HeroAvatar({
         <span
             aria-hidden="true"
             className={cn(
-                'grid size-20 place-items-center bg-sidebar-accent text-2xl font-bold text-primary ring-4 ring-card @3xl:size-24 @3xl:text-3xl',
+                'grid size-16 shrink-0 place-items-center bg-sidebar-accent text-xl font-bold text-primary ring-4 ring-card sm:size-20 sm:text-2xl @3xl:size-24 @3xl:text-3xl',
                 shape,
             )}
         >
             {Icon ? (
-                <Icon className="size-9 @3xl:size-10" strokeWidth={1.75} />
+                <Icon
+                    className="size-7 sm:size-9 @3xl:size-10"
+                    strokeWidth={1.75}
+                />
             ) : (
                 avatar.initials
             )}
@@ -347,7 +372,12 @@ export type DetailMenuAction = {
     key: string;
     label: string;
     icon: LucideIcon;
-    onSelect: () => void;
+    /** Aksi di halaman (membuka dialog). Abaikan bila memakai `href`. */
+    onSelect?: () => void;
+    /** Butir berupa tautan sungguhan (klik tengah/salin tautan tetap jalan), mis. Cetak PDF. */
+    href?: string;
+    /** Buka `href` di tab baru (berkas cetak), bukan navigasi Inertia. */
+    newTab?: boolean;
     destructive?: boolean;
     /** Garis pemisah sebelum butir ini (memisah aksi data dari aksi status). */
     separatorBefore?: boolean;
@@ -386,15 +416,44 @@ export function MoreActionsMenu({
                             {item.separatorBefore && i > 0 && (
                                 <DropdownMenuSeparator />
                             )}
-                            <DropdownMenuItem
-                                variant={
-                                    item.destructive ? 'destructive' : 'default'
-                                }
-                                onSelect={item.onSelect}
-                            >
-                                <Icon aria-hidden="true" />
-                                {item.label}
-                            </DropdownMenuItem>
+                            {item.href ? (
+                                <DropdownMenuItem
+                                    variant={
+                                        item.destructive
+                                            ? 'destructive'
+                                            : 'default'
+                                    }
+                                    asChild
+                                >
+                                    {item.newTab ? (
+                                        <a
+                                            href={item.href}
+                                            target="_blank"
+                                            rel="noopener"
+                                        >
+                                            <Icon aria-hidden="true" />
+                                            {item.label}
+                                        </a>
+                                    ) : (
+                                        <Link href={item.href}>
+                                            <Icon aria-hidden="true" />
+                                            {item.label}
+                                        </Link>
+                                    )}
+                                </DropdownMenuItem>
+                            ) : (
+                                <DropdownMenuItem
+                                    variant={
+                                        item.destructive
+                                            ? 'destructive'
+                                            : 'default'
+                                    }
+                                    onSelect={item.onSelect}
+                                >
+                                    <Icon aria-hidden="true" />
+                                    {item.label}
+                                </DropdownMenuItem>
+                            )}
                         </Fragment>
                     );
                 })}

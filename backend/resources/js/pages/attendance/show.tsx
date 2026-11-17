@@ -1,17 +1,23 @@
 import { Head, Link } from '@inertiajs/react';
 import {
-    ArrowLeft,
+    CalendarCheck,
+    CalendarDays,
     ClipboardPen,
     CloudOff,
     ImageOff,
     LogIn,
     LogOut,
+    MapPin,
     MapPinned,
     PencilLine,
     TriangleAlert,
+    UserRound,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
+import { ActionLabel } from '@/components/pakis/detail-hero';
+import { DocumentHeader } from '@/components/pakis/document-header';
 import { LocationDiagram } from '@/components/pakis/location-diagram';
 import { ManualAttendanceDialog } from '@/components/pakis/manual-attendance-dialog';
 import type { ManualAttendanceOptions } from '@/components/pakis/manual-attendance-dialog';
@@ -277,90 +283,95 @@ export default function AttendanceShow({
         { title: formatDate(day.work_date), href: '#' },
     ]);
 
-    const marks: [boolean, ReactNode, string][] = [
-        [
-            day.is_offline,
-            <CloudOff key="o" className="size-3.5" aria-hidden="true" />,
-            'Ada presensi offline',
-        ],
-        [
-            day.is_corrected,
-            <PencilLine key="c" className="size-3.5" aria-hidden="true" />,
-            'Dikoreksi',
-        ],
-        [
-            day.has_anomaly,
-            <TriangleAlert key="a" className="size-3.5" aria-hidden="true" />,
-            'Ada anomali',
-        ],
+    const marks: [boolean, LucideIcon, string][] = [
+        [day.is_offline, CloudOff, 'Ada presensi offline'],
+        [day.is_corrected, PencilLine, 'Dikoreksi'],
+        [day.has_anomaly, TriangleAlert, 'Ada anomali'],
     ];
 
     return (
         <>
             <Head title={`Presensi ${name} ${formatDate(day.work_date)}`} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Button variant="ghost" size="sm" className="-ml-2" asChild>
-                    <Link href={index()}>
-                        <ArrowLeft aria-hidden="true" />
-                        Presensi Harian
-                    </Link>
-                </Button>
-
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <h1 className="flex flex-wrap items-center gap-2 text-[1.4rem] leading-tight font-bold">
-                            {name}
-                            <StatusBadge
-                                status={day.status}
-                                label={day.status_label}
-                            />
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            <span className="font-mono">
-                                {day.employee.number}
-                            </span>{' '}
-                            · {formatDate(day.work_date)}
-                            {day.location && ` · ${day.location}`}
-                        </p>
-                        {marks.some(([on]) => on) && (
-                            <p className="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-status-warning">
+                <DocumentHeader
+                    backHref={index()}
+                    backLabel="Presensi Harian"
+                    kind="Presensi harian"
+                    title={name}
+                    number={day.employee.number}
+                    icon={CalendarCheck}
+                    status={day.status}
+                    statusLabel={day.status_label}
+                    meta={[
+                        {
+                            icon: CalendarDays,
+                            label: 'Tanggal',
+                            value: formatDate(day.work_date),
+                        },
+                        {
+                            icon: MapPin,
+                            label: 'Lokasi',
+                            value: day.location,
+                        },
+                    ]}
+                    notice={
+                        marks.some(([on]) => on) && (
+                            <p className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-status-warning">
                                 {marks
                                     .filter(([on]) => on)
-                                    .map(([, iconNode, label]) => (
+                                    .map(([, Icon, label]) => (
                                         <span
                                             key={label}
                                             className="inline-flex items-center gap-1"
                                         >
-                                            {iconNode}
+                                            <Icon
+                                                className="size-3.5"
+                                                aria-hidden="true"
+                                            />
                                             {label}
                                         </span>
                                     ))}
                             </p>
-                        )}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {can.manual && manual && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setManualOpen(true)}
-                            >
-                                <ClipboardPen aria-hidden="true" />
-                                Isi presensi manual
-                            </Button>
-                        )}
-                        {can.view_employee && (
-                            <Button variant="outline" asChild>
-                                <Link
-                                    href={showEmployee(day.employee.id, {
-                                        query: { tab: 'presensi' },
-                                    })}
-                                >
-                                    Lihat pegawai
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </div>
+                        )
+                    }
+                    actions={
+                        (can.manual && manual) || can.view_employee ? (
+                            <>
+                                {can.manual && manual && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setManualOpen(true)}
+                                        aria-label="Isi presensi manual"
+                                    >
+                                        <ClipboardPen aria-hidden="true" />
+                                        <ActionLabel>
+                                            Isi presensi manual
+                                        </ActionLabel>
+                                    </Button>
+                                )}
+                                {can.view_employee && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link
+                                            href={showEmployee(
+                                                day.employee.id,
+                                                {
+                                                    query: { tab: 'presensi' },
+                                                },
+                                            )}
+                                            aria-label="Lihat pegawai"
+                                        >
+                                            <UserRound aria-hidden="true" />
+                                            <ActionLabel>
+                                                Lihat pegawai
+                                            </ActionLabel>
+                                        </Link>
+                                    </Button>
+                                )}
+                            </>
+                        ) : undefined
+                    }
+                />
 
                 <div className="grid gap-4 md:grid-cols-2">
                     <Card title="Jadwal">

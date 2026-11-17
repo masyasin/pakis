@@ -1,13 +1,17 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    ArrowLeft,
     Ban,
+    CalendarClock,
     Check,
     ExternalLink,
     FileText,
+    Hourglass,
     ListChecks,
     LockKeyhole,
+    Stamp,
+    UserRound,
     UserRoundCheck,
+    Wallet,
     X,
 } from 'lucide-react';
 import { useState } from 'react';
@@ -19,6 +23,8 @@ import type {
 } from '@/components/pakis/approval-decision-dialog';
 import { ApprovalTimeline } from '@/components/pakis/approval-timeline';
 import type { ApprovalTimelineStep } from '@/components/pakis/approval-timeline';
+import { ActionLabel } from '@/components/pakis/detail-hero';
+import { DocumentHeader } from '@/components/pakis/document-header';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
@@ -75,74 +81,96 @@ export default function ApprovalShow({ approval, reauthAmount }: Props) {
         <>
             <Head title={`Persetujuan · ${approval.summary}`} />
             <div className="mx-auto w-full max-w-[1440px] space-y-4 p-4 md:px-7 md:py-6">
-                <Button variant="ghost" size="sm" asChild>
-                    <Link href={index()}>
-                        <ArrowLeft aria-hidden="true" />
-                        Kotak persetujuan
-                    </Link>
-                </Button>
-
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="grid min-w-0 gap-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                            <span className="text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-                                {approval.document_type_label}
-                            </span>
+                <DocumentHeader
+                    backHref={index()}
+                    backLabel="Kotak persetujuan"
+                    kind={approval.document_type_label}
+                    title={approval.summary}
+                    icon={Stamp}
+                    status={`approval.${approval.status}`}
+                    statusLabel={approval.status_label}
+                    badges={
+                        approval.escalated && (
                             <StatusBadge
-                                status={`approval.${approval.status}`}
-                                label={approval.status_label}
+                                status="approval.escalated"
+                                label="Dieskalasi"
+                                tone="danger"
                             />
-                            {approval.escalated && (
-                                <StatusBadge
-                                    status="approval.escalated"
-                                    label="Dieskalasi"
-                                    tone="danger"
-                                />
-                            )}
-                        </div>
-                        <h1 className="text-[1.4rem] leading-tight font-bold break-words">
-                            {approval.summary}
-                        </h1>
-                        {approval.amount_label && (
-                            <p className="text-lg font-bold tabular-nums">
-                                {approval.amount_label}
-                            </p>
-                        )}
-                    </div>
-                    {(approval.can.decide || approval.can.cancel) && (
-                        <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                            {approval.can.decide && (
-                                <>
-                                    <Button
-                                        className="flex-1 sm:flex-none"
-                                        onClick={() => decide('approve')}
-                                    >
-                                        <Check aria-hidden="true" />
-                                        Setujui
-                                    </Button>
+                        )
+                    }
+                    meta={[
+                        {
+                            icon: UserRound,
+                            label: 'Pengaju',
+                            value: approval.requester?.name,
+                        },
+                        {
+                            icon: CalendarClock,
+                            label: 'Diajukan',
+                            value: at(approval.created_at),
+                        },
+                    ]}
+                    highlights={[
+                        {
+                            icon: Wallet,
+                            label: 'Nominal',
+                            value: approval.amount_label,
+                        },
+                        {
+                            icon: ListChecks,
+                            label: 'Langkah',
+                            value: `${approval.current_step} dari ${approval.steps_total}`,
+                        },
+                        {
+                            icon: Hourglass,
+                            label: 'Menunggu',
+                            value:
+                                approval.waiting_since &&
+                                formatWaiting(approval.waiting_since),
+                            tone: 'warning',
+                        },
+                    ]}
+                    actions={
+                        approval.can.decide || approval.can.cancel ? (
+                            <>
+                                {approval.can.cancel && (
                                     <Button
                                         variant="outline"
-                                        className="flex-1 sm:flex-none"
-                                        onClick={() => decide('reject')}
+                                        size="sm"
+                                        onClick={() => decide('cancel')}
+                                        aria-label="Batalkan Permintaan"
                                     >
-                                        <X aria-hidden="true" />
-                                        Tolak
+                                        <Ban aria-hidden="true" />
+                                        <ActionLabel>
+                                            Batalkan Permintaan
+                                        </ActionLabel>
                                     </Button>
-                                </>
-                            )}
-                            {approval.can.cancel && (
-                                <Button
-                                    variant="outline"
-                                    className="flex-1 sm:flex-none"
-                                    onClick={() => decide('cancel')}
-                                >
-                                    <Ban aria-hidden="true" />
-                                    Batalkan Permintaan
-                                </Button>
-                            )}
-                        </div>
-                    )}
-                </div>
+                                )}
+                                {approval.can.decide && (
+                                    <>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => decide('reject')}
+                                            aria-label="Tolak"
+                                        >
+                                            <X aria-hidden="true" />
+                                            <ActionLabel>Tolak</ActionLabel>
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            onClick={() => decide('approve')}
+                                            aria-label="Setujui"
+                                        >
+                                            <Check aria-hidden="true" />
+                                            <ActionLabel>Setujui</ActionLabel>
+                                        </Button>
+                                    </>
+                                )}
+                            </>
+                        ) : undefined
+                    }
+                />
 
                 {approval.acting_for && (
                     <p

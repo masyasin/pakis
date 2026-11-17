@@ -1,64 +1,100 @@
-import { Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
+import type { InertiaLinkProps } from '@inertiajs/react';
+import { FileText } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { DetailBackLink, DetailHero } from '@/components/pakis/detail-hero';
+import type {
+    DetailHeroHighlight,
+    DetailHeroMeta,
+    DetailHeroSummary,
+} from '@/components/pakis/detail-hero';
 import { StatusBadge } from '@/components/pakis/status-badge';
 
 /**
- * Kepala "dokumen bergaris" (15 §7.1: PO, penerimaan, mutasi, retur): tautan kembali, nomor
- * dokumen, badge status, baris keterangan singkat, dan tombol aksi di kanan (turun ke bawah di HP).
+ * Kepala halaman dokumen (15 §7.1: PO, penerimaan, mutasi, retur; juga persetujuan, koreksi, audit):
+ * varian `DetailHero` agar halaman dokumen terasa satu aplikasi dengan halaman detail lain — pita
+ * tipis bermotif pakis, ikon dokumen di avatar, nomor dokumen monospace sebagai judul, badge status,
+ * meta berikon, sorotan di kanan pita, dan slot aksi. Generik: isi meta/sorotan/aksi diatur halaman.
+ *
+ * Aksi: tombol utama sesuai status + "Ubah" langsung terlihat, aksi sekunder (Cetak, Batalkan …)
+ * lewat `MoreActionsMenu`. Di HP pakai `ActionLabel` + `aria-label` agar tombol cukup ikon.
  */
 export function DocumentHeader({
     backHref,
     backLabel,
     number,
+    title,
+    kind,
+    icon = FileText,
     status,
     statusLabel,
-    meta,
     badges,
+    meta,
+    highlights,
+    summary,
+    notice,
     actions,
+    muted = false,
 }: {
-    backHref: string;
+    backHref: NonNullable<InertiaLinkProps['href']>;
     backLabel: string;
-    number: string;
-    /** Kunci STATUS_MAP, mis. `purchase_order.approved`. */
-    status: string;
-    statusLabel: string;
-    /** Keterangan di bawah nomor (supplier, gudang, tanggal). */
-    meta?: ReactNode;
+    /**
+     * Nomor dokumen. Tanpa `title`, nomor menjadi judul (monospace besar); dengan `title`, nomor
+     * tampil sebagai chip kode di bawah judul.
+     */
+    number?: string | null;
+    /** Judul teks untuk dokumen yang tidak dikenali dari nomornya (mis. ringkasan persetujuan). */
+    title?: string;
+    /** Jenis dokumen, tampil kecil di atas judul (mis. "Purchase order"). */
+    kind?: ReactNode;
+    /** Ikon di avatar kotak; bawaan ikon berkas. */
+    icon?: LucideIcon;
+    /** Kunci STATUS_MAP, mis. `purchase_order.approved`. Badge tidak tampil bila kosong. */
+    status?: string;
+    statusLabel?: string;
     /** Badge tambahan di samping status (mis. "Terlambat"). */
     badges?: ReactNode;
+    /** Butir berikon di bawah judul (pihak, gudang, tanggal …); nilai kosong disembunyikan. */
+    meta?: DetailHeroMeta[];
+    /** Sorotan (maks. 3) di kanan pita: total, tanggal penting, progres. */
+    highlights?: DetailHeroHighlight[];
+    /** Sel ringkas di dasar kartu (maks. 4). */
+    summary?: DetailHeroSummary;
+    notice?: ReactNode;
+    /** Tombol size="sm"; aksi sekunder lewat `MoreActionsMenu`. */
     actions?: ReactNode;
+    /** Dokumen final/batal: pita diredupkan. */
+    muted?: boolean;
 }) {
+    const statusBadge =
+        status && statusLabel ? (
+            <StatusBadge status={status} label={statusLabel} />
+        ) : null;
+
     return (
-        <div className="space-y-3">
-            <Link
-                href={backHref}
-                className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-            >
-                <ArrowLeft className="size-4" aria-hidden="true" />
-                {backLabel}
-            </Link>
-            <header className="flex flex-wrap items-start gap-4">
-                <div className="min-w-0 flex-1 space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                        <h1 className="font-mono text-[1.4rem] leading-tight font-bold break-all">
-                            {number}
-                        </h1>
-                        <StatusBadge status={status} label={statusLabel} />
-                        {badges}
-                    </div>
-                    {meta && (
-                        <div className="text-sm text-muted-foreground">
-                            {meta}
-                        </div>
-                    )}
-                </div>
-                {actions && (
-                    <div className="flex w-full flex-wrap gap-2 sm:w-auto">
-                        {actions}
-                    </div>
-                )}
-            </header>
-        </div>
+        <>
+            <DetailBackLink href={backHref} label={backLabel} />
+            <DetailHero
+                title={title ?? number ?? ''}
+                monoTitle={title === undefined}
+                code={title !== undefined ? number : undefined}
+                eyebrow={kind}
+                avatar={{ icon, shape: 'square' }}
+                badges={
+                    statusBadge || badges ? (
+                        <>
+                            {statusBadge}
+                            {badges}
+                        </>
+                    ) : undefined
+                }
+                meta={meta}
+                highlights={highlights}
+                summary={summary}
+                notice={notice}
+                actions={actions}
+                muted={muted}
+            />
+        </>
     );
 }

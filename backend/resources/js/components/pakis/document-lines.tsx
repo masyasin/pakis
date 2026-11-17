@@ -9,6 +9,10 @@ export type DocumentLineColumn<T> = {
     numeric?: boolean;
     /** Ditampilkan sebagai judul kartu di HP (satu kolom). */
     primary?: boolean;
+    /** Nilai utama baris (mis. Jumlah): tebal di tabel, baris penutup kartu di HP. */
+    emphasis?: boolean;
+    /** Sembunyikan di kartu HP bila sudah terwakili kolom lain. */
+    hideOnMobile?: boolean;
 };
 
 export type DocumentTotal = {
@@ -19,8 +23,9 @@ export type DocumentTotal = {
 };
 
 /**
- * Tabel baris "dokumen bergaris" (15 §7.1): tabel di layar lebar, kartu per baris di HP (07 §3.2),
- * plus ringkasan total di bawah. Hanya tampilan; penyuntingan baris dilakukan di halaman form.
+ * Tabel baris dokumen (15 §7.1): tabel di layar lebar, kartu per baris di HP tanpa gulir mendatar
+ * (07 §3.2), plus kotak ringkasan total di kanan bawah. Generik untuk PO, penerimaan, mutasi, retur:
+ * kolom dan baris total diatur halaman. Hanya tampilan; penyuntingan baris ada di halaman form.
  */
 export function DocumentLines<T>({
     rows,
@@ -29,6 +34,7 @@ export function DocumentLines<T>({
     totals,
     empty = 'Belum ada baris.',
     caption,
+    footer,
 }: {
     rows: T[];
     rowKey: (row: T) => string | number;
@@ -36,12 +42,16 @@ export function DocumentLines<T>({
     totals?: DocumentTotal[];
     empty?: string;
     caption?: string;
+    /** Catatan di kiri kotak total (mis. status penerimaan). */
+    footer?: ReactNode;
 }) {
     const primary = columns.find((c) => c.primary) ?? columns[0];
-    const rest = columns.filter((c) => c !== primary);
+    const rest = columns.filter((c) => c !== primary && !c.hideOnMobile);
+    const details = rest.filter((c) => !c.emphasis);
+    const closing = rest.filter((c) => c.emphasis);
 
     return (
-        <div className="space-y-3">
+        <div className="space-y-4">
             {rows.length === 0 ? (
                 <p className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
                     {empty}
@@ -53,14 +63,14 @@ export function DocumentLines<T>({
                             {caption && (
                                 <caption className="sr-only">{caption}</caption>
                             )}
-                            <thead className="bg-muted/50 text-left text-xs text-muted-foreground">
+                            <thead className="border-b bg-muted/50 text-left text-xs text-muted-foreground">
                                 <tr>
                                     {columns.map((c) => (
                                         <th
                                             key={c.key}
                                             scope="col"
                                             className={cn(
-                                                'px-3 py-2 font-medium whitespace-nowrap',
+                                                'px-4 py-2.5 font-medium whitespace-nowrap',
                                                 c.numeric && 'text-right',
                                             )}
                                         >
@@ -69,16 +79,21 @@ export function DocumentLines<T>({
                                     ))}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y">
+                            <tbody className="divide-y divide-border/70">
                                 {rows.map((row) => (
-                                    <tr key={rowKey(row)}>
+                                    <tr
+                                        key={rowKey(row)}
+                                        className="transition-colors even:bg-muted/25 hover:bg-muted/40"
+                                    >
                                         {columns.map((c) => (
                                             <td
                                                 key={c.key}
                                                 className={cn(
-                                                    'px-3 py-2 align-top',
+                                                    'px-4 py-3 align-top',
                                                     c.numeric &&
                                                         'text-right whitespace-nowrap tabular-nums',
+                                                    c.emphasis &&
+                                                        'font-semibold',
                                                 )}
                                             >
                                                 {c.cell(row)}
@@ -89,59 +104,102 @@ export function DocumentLines<T>({
                             </tbody>
                         </table>
                     </div>
-                    <ul className="divide-y rounded-lg border md:hidden">
+                    <ul className="grid gap-2.5 md:hidden" aria-label={caption}>
                         {rows.map((row) => (
-                            <li key={rowKey(row)} className="space-y-2 p-3">
-                                <div className="font-medium">
+                            <li
+                                key={rowKey(row)}
+                                className="rounded-lg border bg-card p-3"
+                            >
+                                <div className="min-w-0 text-sm">
                                     {primary.cell(row)}
                                 </div>
-                                <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-sm">
-                                    {rest.map((c) => (
-                                        <div key={c.key} className="contents">
-                                            <dt className="text-muted-foreground">
-                                                {c.header}
-                                            </dt>
-                                            <dd
-                                                className={cn(
-                                                    'min-w-0 text-right',
-                                                    c.numeric && 'tabular-nums',
-                                                )}
+                                {details.length > 0 && (
+                                    <dl className="mt-2.5 grid gap-1.5 border-t border-dashed pt-2.5 text-sm">
+                                        {details.map((c) => (
+                                            <div
+                                                key={c.key}
+                                                className="flex items-baseline justify-between gap-3"
                                             >
-                                                {c.cell(row)}
-                                            </dd>
-                                        </div>
-                                    ))}
-                                </dl>
+                                                <dt className="shrink-0 text-xs text-muted-foreground">
+                                                    {c.header}
+                                                </dt>
+                                                <dd
+                                                    className={cn(
+                                                        'min-w-0 text-right',
+                                                        c.numeric &&
+                                                            'tabular-nums',
+                                                    )}
+                                                >
+                                                    {c.cell(row)}
+                                                </dd>
+                                            </div>
+                                        ))}
+                                    </dl>
+                                )}
+                                {closing.length > 0 && (
+                                    <dl className="mt-2.5 grid gap-1 border-t pt-2.5">
+                                        {closing.map((c) => (
+                                            <div
+                                                key={c.key}
+                                                className="flex items-baseline justify-between gap-3"
+                                            >
+                                                <dt className="text-xs text-muted-foreground">
+                                                    {c.header}
+                                                </dt>
+                                                <dd className="min-w-0 text-right text-sm font-semibold tabular-nums">
+                                                    {c.cell(row)}
+                                                </dd>
+                                            </div>
+                                        ))}
+                                    </dl>
+                                )}
                             </li>
                         ))}
                     </ul>
                 </>
             )}
-            {totals && totals.length > 0 && (
-                <dl className="ml-auto grid w-full max-w-sm grid-cols-[1fr_auto] gap-x-6 gap-y-1.5 text-sm">
-                    {totals.map((t) => (
-                        <div key={t.label} className="contents">
-                            <dt
-                                className={cn(
-                                    'text-muted-foreground',
-                                    t.emphasis &&
-                                        'border-t pt-1.5 font-semibold text-foreground',
-                                )}
-                            >
-                                {t.label}
-                            </dt>
-                            <dd
-                                className={cn(
-                                    'text-right tabular-nums',
-                                    t.emphasis &&
-                                        'border-t pt-1.5 text-base font-bold',
-                                )}
-                            >
-                                {t.value}
-                            </dd>
-                        </div>
-                    ))}
-                </dl>
+            {((totals && totals.length > 0) || footer) && (
+                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                    <div className="min-w-0 flex-1 text-sm text-muted-foreground">
+                        {footer}
+                    </div>
+                    {totals && totals.length > 0 && (
+                        <dl
+                            aria-label="Ringkasan total"
+                            className="grid w-full gap-2 rounded-lg border bg-muted/30 p-4 text-sm md:max-w-sm"
+                        >
+                            {totals.map((t) => (
+                                <div
+                                    key={t.label}
+                                    className={cn(
+                                        'flex items-baseline justify-between gap-6',
+                                        // Garis utuh selebar kotak di atas Total, bukan per sel.
+                                        t.emphasis && 'mt-1 border-t pt-3',
+                                    )}
+                                >
+                                    <dt
+                                        className={cn(
+                                            'text-muted-foreground',
+                                            t.emphasis &&
+                                                'font-semibold text-foreground',
+                                        )}
+                                    >
+                                        {t.label}
+                                    </dt>
+                                    <dd
+                                        className={cn(
+                                            'text-right tabular-nums',
+                                            t.emphasis &&
+                                                'text-lg font-bold text-primary',
+                                        )}
+                                    >
+                                        {t.value}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    )}
+                </div>
             )}
         </div>
     );

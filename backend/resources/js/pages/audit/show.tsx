@@ -1,6 +1,6 @@
-import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Head } from '@inertiajs/react';
+import { Activity, Clock, ScrollText, UserRound } from 'lucide-react';
+import { DocumentHeader } from '@/components/pakis/document-header';
 import {
     Table,
     TableBody,
@@ -57,22 +57,27 @@ export default function AuditShow({ log, changes }: Props) {
     return (
         <>
             <Head title={`Audit #${log.id}`} />
-            <div className="mx-auto w-full max-w-[1440px] space-y-6 p-4 md:px-7 md:py-6">
-                <div className="flex items-center gap-3">
-                    <Button
-                        asChild
-                        variant="ghost"
-                        size="icon"
-                        aria-label="Kembali ke audit log"
-                    >
-                        <Link href="/audit">
-                            <ArrowLeft className="size-4" />
-                        </Link>
-                    </Button>
-                    <h1 className="text-[1.4rem] leading-tight font-bold">
-                        Audit #{log.id}
-                    </h1>
-                </div>
+            <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
+                <DocumentHeader
+                    backHref="/audit"
+                    backLabel="Audit log"
+                    kind="Audit log"
+                    number={`Audit #${log.id}`}
+                    icon={ScrollText}
+                    meta={[
+                        { icon: Clock, label: 'Waktu', value: log.occurred_at },
+                        { icon: UserRound, label: 'Pelaku', value: log.actor },
+                        {
+                            icon: Activity,
+                            label: 'Event',
+                            value: (
+                                <span className="font-mono text-xs">
+                                    {log.event}
+                                </span>
+                            ),
+                        },
+                    ]}
+                />
 
                 <dl className="grid gap-x-6 gap-y-3 rounded-xl border bg-card p-4 text-sm sm:grid-cols-[max-content_1fr]">
                     {meta.map(([label, value]) => (

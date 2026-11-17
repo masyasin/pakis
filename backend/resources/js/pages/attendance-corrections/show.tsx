@@ -1,9 +1,18 @@
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Check, Download, X } from 'lucide-react';
+import {
+    CalendarDays,
+    Check,
+    ClipboardPen,
+    Download,
+    IdCard,
+    X,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { ReactNode } from 'react';
 import { CorrectionDecisionDialog } from '@/components/pakis/correction-decision-dialog';
 import type { CorrectionDecision } from '@/components/pakis/correction-decision-dialog';
+import { ActionLabel } from '@/components/pakis/detail-hero';
+import { DocumentHeader } from '@/components/pakis/document-header';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
@@ -62,58 +71,65 @@ export default function AttendanceCorrectionShow({
         <>
             <Head title={`Koreksi ${c.number}`} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Button variant="ghost" size="sm" className="-ml-2" asChild>
-                    <Link href={index()}>
-                        <ArrowLeft aria-hidden="true" />
-                        Koreksi Presensi
-                    </Link>
-                </Button>
-
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0">
-                        <h1 className="flex flex-wrap items-center gap-2 text-[1.4rem] leading-tight font-bold">
-                            {c.employee.name}
-                            <StatusBadge
-                                status={`correction.${c.status}`}
-                                label={c.status_label}
-                            />
-                        </h1>
-                        <p className="text-sm text-muted-foreground">
-                            <span className="font-mono">{c.number}</span> ·{' '}
-                            <span className="font-mono">
-                                {c.employee.employee_number}
-                            </span>{' '}
-                            · {formatDate(c.work_date)}
-                        </p>
-                    </div>
-                    {can.decide && (
-                        <div className="flex flex-wrap gap-2">
-                            <Button
-                                onClick={() =>
-                                    setDecision({
-                                        kind: 'approve',
-                                        correction: c,
-                                    })
-                                }
-                            >
-                                <Check aria-hidden="true" />
-                                Setujui Koreksi
-                            </Button>
-                            <Button
-                                variant="outline"
-                                onClick={() =>
-                                    setDecision({
-                                        kind: 'reject',
-                                        correction: c,
-                                    })
-                                }
-                            >
-                                <X aria-hidden="true" />
-                                Tolak
-                            </Button>
-                        </div>
-                    )}
-                </div>
+                <DocumentHeader
+                    backHref={index()}
+                    backLabel="Koreksi Presensi"
+                    kind="Koreksi presensi"
+                    title={c.employee.name}
+                    number={c.number}
+                    icon={ClipboardPen}
+                    status={`correction.${c.status}`}
+                    statusLabel={c.status_label}
+                    meta={[
+                        {
+                            icon: IdCard,
+                            label: 'Nomor pegawai',
+                            value: (
+                                <span className="font-mono">
+                                    {c.employee.employee_number}
+                                </span>
+                            ),
+                        },
+                        {
+                            icon: CalendarDays,
+                            label: 'Tanggal',
+                            value: formatDate(c.work_date),
+                        },
+                    ]}
+                    actions={
+                        can.decide ? (
+                            <>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setDecision({
+                                            kind: 'reject',
+                                            correction: c,
+                                        })
+                                    }
+                                    aria-label="Tolak"
+                                >
+                                    <X aria-hidden="true" />
+                                    <ActionLabel>Tolak</ActionLabel>
+                                </Button>
+                                <Button
+                                    size="sm"
+                                    onClick={() =>
+                                        setDecision({
+                                            kind: 'approve',
+                                            correction: c,
+                                        })
+                                    }
+                                    aria-label="Setujui Koreksi"
+                                >
+                                    <Check aria-hidden="true" />
+                                    <ActionLabel>Setujui Koreksi</ActionLabel>
+                                </Button>
+                            </>
+                        ) : undefined
+                    }
+                />
                 {can.own && c.status === 'pending' && (
                     <p className="text-sm text-muted-foreground">
                         Ini koreksi milik Anda sendiri, jadi harus diputuskan

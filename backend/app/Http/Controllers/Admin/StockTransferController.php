@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Access\DataScope;
 use App\Domain\Audit\Models\AuditLog;
+use App\Domain\Fleet\Models\Vehicle;
 use App\Domain\Inventory\Actions\CancelStockTransfer;
 use App\Domain\Inventory\Actions\ReceiveStockTransfer;
 use App\Domain\Inventory\Actions\SaveStockTransfer;
 use App\Domain\Inventory\Actions\ShipStockTransfer;
+use App\Domain\Inventory\Enums\StockLocationType;
 use App\Domain\Inventory\Enums\StockTransferStatus;
 use App\Domain\Inventory\Listings\StockTransferListing;
+use App\Domain\Inventory\Models\StockLocation;
 use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Policies\StockTransferPolicy;
 use App\Domain\Inventory\Resources\StockTransferResource;
@@ -73,9 +77,9 @@ class StockTransferController extends Controller
         ]);
     }
 
-    public function create(): Response
+    public function create(Request $request): Response
     {
-        return Inertia::render('stock-transfers/form', ['transfer' => null]);
+        return Inertia::render('stock-transfers/form', [...self::formOptions($request), 'transfer' => null]);
     }
 
     public function store(StockTransferRequest $request, SaveStockTransfer $action): RedirectResponse
@@ -110,6 +114,7 @@ class StockTransferController extends Controller
         Gate::authorize('update', $transfer);
 
         return Inertia::render('stock-transfers/form', [
+            ...self::formOptions($request),
             'transfer' => (new StockTransferResource($transfer))->resolve($request),
         ]);
     }
@@ -156,6 +161,29 @@ class StockTransferController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => "Mutasi {$transfer->number} dibatalkan."]);
 
         return back();
+    }
+
+    /**
+     * Pilihan form. Asal = lookup `stock_locations` (ber-scope: pengirim hanya dari lokasinya).
+     * Tujuan = semua gudang/toko aktif, karena mutasi lazim ke lokasi di luar scope pengirim; nama
+     * lokasi stok bukan data sensitif. Kendaraan (informasi saja) dibatasi lokasi asal kendaraan
+     * dalam dimensi Stok pengguna, pola VehicleController.
+     *
+     * @return array<string, mixed>
+     */
+    private static function formOptions(Request $request): array
+    {
+        $user = self::user($request);
+
+        return [
+            'destinations' => StockLocation::query()->where('is_active', true)
+                ->whereIn('type', [StockLocationType::Warehouse->value, StockLocationType::Store->value])
+                ->orderBy('code')->get(['id', 'code', 'name', 'type'])
+                ->map(fn (StockLocation $l) => ['value' => $l->id, 'label' => "{$l->code} · {$l->name}", 'type' => $l->type->value])->values(),
+            'vehicles' => app(DataScope::class)->forStockByLocation(Vehicle::query()->where('is_active', true), $user, 'vehicles.home_location_id')
+                ->orderBy('plate_no')->get(['id', 'plate_no', 'name'])
+                ->map(fn (Vehicle $v) => ['value' => $v->id, 'label' => "{$v->plate_no} · {$v->name}"])->values(),
+        ];
     }
 
     /** @return array<int, array<string, mixed>> */

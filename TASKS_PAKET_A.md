@@ -352,12 +352,12 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; sequence `stock_transfer`; `app/Domain/Inventory/{Models/{StockTransfer,StockTransferLine},Enums/StockTransferStatus,Actions/{SaveStockTransfer,ShipStockTransfer,ReceiveStockTransfer,CancelStockTransfer},Approvables/TransferVarianceApproval,Listings/StockTransferListing}`; command `inventory:transfer-reminders`; case `NotificationKind::TransferNotReceived` + kunci `notification.on_transfer_not_received`; controller; pages `Inventory/Transfers/{Index,Form,Show,Receive}.tsx`; tests
 - Deskripsi: Draft (batch dipilih → reservasi, atau FEFO saat kirim) → kirim (asal → TRANSIT) → terima per baris (TRANSIT → tujuan & rak) → selisih via approval. Scope: pengguna asal melihat & mengirim, pengguna tujuan melihat & menerima.
 - Kriteria penerimaan:
-  - [ ] Setelah kirim, stok asal berkurang dan TRANSIT bertambah dengan batch, ED, biaya sama
-  - [ ] Terima 48 dari 50 → status `received_with_variance`, 2 tetap di TRANSIT sampai approval; setelah disetujui `adjustment_out` + outbox `inventory.transfer_variance`
-  - [ ] Terima > kirim → `TRANSFER_OVER_RECEIPT`; penerima = pengirim → `TRANSFER_SAME_PERSON`
-  - [ ] `ReceiveStockTransfer` dan putusan selisih memanggil `PeriodGuard` dengan tanggal bisnis terima/putusan; kirim tidak memancarkan event, terima memancarkan `inventory.transferred` sekali (`refs.from/to_stock_location_id`), selisih memancarkan `inventory.transfer_variance`, bukan `inventory.adjusted` (**15** §11.4)
-  - [ ] Staf lokasi lain (bukan asal/tujuan) → 404
-  - [ ] Pengingat terkirim sekali per hari setelah ambang
+  - [x] Setelah kirim, stok asal berkurang dan TRANSIT bertambah dengan batch, ED, biaya sama
+  - [x] Terima 48 dari 50 → status `received_with_variance`, 2 tetap di TRANSIT sampai approval; setelah disetujui `adjustment_out` + outbox `inventory.transfer_variance`
+  - [x] Terima > kirim → `TRANSFER_OVER_RECEIPT`; penerima = pengirim → `TRANSFER_SAME_PERSON`
+  - [x] `ReceiveStockTransfer` dan putusan selisih memanggil `PeriodGuard` dengan tanggal bisnis terima/putusan; kirim tidak memancarkan event, terima memancarkan `inventory.transferred` sekali (`refs.from/to_stock_location_id`), selisih memancarkan `inventory.transfer_variance`, bukan `inventory.adjusted` (**15** §11.4)
+  - [x] Staf lokasi lain (bukan asal/tujuan) → 404
+  - [x] Pengingat terkirim sekali per hari setelah ambang
 - Verifikasi: `php artisan test --filter=StockTransfer`
 - Di luar lingkup: muat/bongkar canvas (Paket C)
 

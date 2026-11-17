@@ -127,6 +127,16 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'purchase_order.closed': { label: 'Ditutup', tone: 'muted' },
     'purchase_order.rejected': { label: 'Ditolak', tone: 'danger' },
     'purchase_order.cancelled': { label: 'Dibatalkan', tone: 'muted' },
+    // Mutasi antar lokasi (T-082, 15 §6.6)
+    'stock_transfer.draft': { label: 'Draf', tone: 'muted' },
+    'stock_transfer.shipped': { label: 'Dikirim', tone: 'info' },
+    'stock_transfer.received': { label: 'Diterima', tone: 'success' },
+    'stock_transfer.received_with_variance': {
+        label: 'Diterima dengan selisih',
+        tone: 'warning',
+    },
+    'stock_transfer.closed': { label: 'Selesai', tone: 'muted' },
+    'stock_transfer.cancelled': { label: 'Dibatalkan', tone: 'muted' },
     // Penerimaan barang, baris penerimaan, nomor seri (T-080, 15 §6.6)
     'goods_receipt.draft': { label: 'Draf', tone: 'muted' },
     'goods_receipt.checked': { label: 'Diperiksa', tone: 'info' },

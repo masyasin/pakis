@@ -1,6 +1,7 @@
 import { Link, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
+    ArrowLeftRight,
     Building2,
     CalendarClock,
     CalendarDays,
@@ -105,6 +106,7 @@ const ICONS: Record<string, LucideIcon> = {
     product: Package,
     registration: FileBadge,
     purchase_order: ClipboardList,
+    stock_transfer: ArrowLeftRight,
     goods_receipt: PackageCheck,
     serial: ScanBarcode,
     supplier: Handshake,

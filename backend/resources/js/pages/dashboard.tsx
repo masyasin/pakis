@@ -1,6 +1,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
+    ArrowLeftRight,
     CalendarX2,
     ClipboardPen,
     FileBadge,
@@ -64,6 +65,7 @@ type PendingItem = {
         | 'unscheduled'
         | 'registrations_expiring'
         | 'po_overdue'
+        | 'transfers_unreceived'
         | 'no_account';
     count: number;
     href: string;
@@ -125,6 +127,12 @@ const PENDING: Record<
         title: 'PO terlambat',
         note: 'Barang belum datang lewat perkiraan',
         icon: Truck,
+    },
+    // Mutasi belum diterima (15 §7.4, T-082): dikirim ke lokasi saya, lewat batas jam.
+    transfers_unreceived: {
+        title: 'Mutasi belum diterima',
+        note: 'Kiriman ke lokasi Anda lewat batas jam',
+        icon: ArrowLeftRight,
     },
     no_account: {
         title: 'Pegawai tanpa akun',

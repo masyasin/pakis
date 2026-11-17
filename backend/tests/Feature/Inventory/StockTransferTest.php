@@ -378,7 +378,7 @@ test('IDOR admin.stock-transfers.*: staf lokasi lain (bukan asal/tujuan) → 404
     $this->assertOutOfScope404($this->outsider, 'GET', "/mutasi/{$t->id}/ubah");
 
     $this->actingAs($this->shipper)->get("/mutasi/{$t->id}")->assertOk()
-        ->assertInertia(fn (Assert $p) => $p->where('can.receive', false)->where('transfer.number', 'MUT-2611-0001'));
+        ->assertInertia(fn (Assert $p) => $p->component('stock-transfers/show')->where('can.receive', false)->where('transfer.number', 'MUT-2611-0001'));
     $this->actingAs($this->receiver)->get("/mutasi/{$t->id}")->assertOk()
         ->assertInertia(fn (Assert $p) => $p->where('can.receive', true)->where('can.ship', false)
             // Nilai selisih = biaya: staf tanpa stock.view_cost tidak menerimanya.
@@ -433,4 +433,13 @@ test('dasbor "Mutasi belum diterima" untuk pemegang stock_transfers.receive, han
     expect($item($this->receiver)['count'])->toBe(1)
         ->and($item($this->shipper)['count'])->toBe(0)
         ->and($item($this->org->actor('kepala_lokasi', $this->org->employee($this->org->toko))))->toBeNull();
+});
+
+test('halaman form mutasi: tujuan = gudang/toko aktif (termasuk di luar scope), kendaraan dibatasi scope', function () {
+    $this->actingAs($this->shipper)->get('/mutasi/baru')->assertOk()
+        ->assertInertia(fn (Assert $p) => $p->component('stock-transfers/form')
+            ->where('transfer', null)
+            ->where('destinations', fn ($d) => collect($d)->pluck('value')->sort()->values()->all() === collect([$this->src->id, $this->dst->id, $this->far->id])->sort()->values()->all()));
+    $this->actingAs($this->shipper)->get('/mutasi')->assertOk()
+        ->assertInertia(fn (Assert $p) => $p->component('stock-transfers/index')->where('canCreate', true));
 });

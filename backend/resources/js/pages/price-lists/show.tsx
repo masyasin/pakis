@@ -1,5 +1,13 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { CopyPlus, Info, Layers, ListOrdered, Send, Tags } from 'lucide-react';
+import {
+    Clock,
+    CopyPlus,
+    Info,
+    Layers,
+    ListOrdered,
+    Send,
+    Tags,
+} from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { DetailCard, EmptyPanel } from '@/components/employee/detail-ui';
@@ -17,6 +25,7 @@ import type { PriceVersion } from '@/components/pricing/version-ui';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatDateTimeIn } from '@/lib/approval-format';
 import type { PriceListRow } from './index';
 
 type Props = {
@@ -38,6 +47,10 @@ export default function PriceListShow({
     const [creating, setCreating] = useState(false);
     const [submitting, setSubmitting] = useState<PriceVersion | null>(null);
     const current = versions.find((v) => v.id === currentVersionId) ?? null;
+    const pendingCount = versions.filter(
+        (v) => v.status === 'pending_approval',
+    ).length;
+    const timezone = usePage().props.timezone;
 
     return (
         <>
@@ -50,6 +63,25 @@ export default function PriceListShow({
                     code={list.code}
                     avatar={{ icon: Tags }}
                     muted={!list.is_active}
+                    highlights={[
+                        {
+                            icon: Layers,
+                            label: 'Berlaku',
+                            value: current
+                                ? `Versi ${current.version_no}`
+                                : 'Belum ada versi',
+                            tone: current ? 'success' : 'warning',
+                        },
+                        {
+                            icon: Clock,
+                            label: 'Menunggu persetujuan',
+                            value:
+                                pendingCount > 0
+                                    ? `${pendingCount} versi`
+                                    : null,
+                            tone: 'warning',
+                        },
+                    ]}
                     badges={
                         <>
                             <StatusBadge
@@ -77,23 +109,26 @@ export default function PriceListShow({
                             value: list.description,
                         },
                     ]}
+                    // Versi berlaku & antrean persetujuan sudah di sorotan pita.
                     summary={[
-                        {
-                            label: 'Berlaku sekarang',
-                            value: current
-                                ? `Versi ${current.version_no}`
-                                : 'Belum ada',
-                        },
                         {
                             label: 'Baris harga berlaku',
                             value: current ? current.items_count : '–',
                         },
+                        {
+                            label: 'Berlaku sejak',
+                            value: current
+                                ? formatDateTimeIn(
+                                      current.effective_from,
+                                      timezone,
+                                  )
+                                : '–',
+                        },
                         { label: 'Jumlah versi', value: versions.length },
                         {
-                            label: 'Menunggu persetujuan',
-                            value: versions.filter(
-                                (v) => v.status === 'pending_approval',
-                            ).length,
+                            label: 'Draf',
+                            value: versions.filter((v) => v.status === 'draft')
+                                .length,
                         },
                     ]}
                     actions={

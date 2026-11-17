@@ -1,7 +1,9 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowRightLeft,
+    BadgeCheck,
     Camera,
+    Clock,
     Combine,
     CreditCard,
     FileText,
@@ -10,6 +12,7 @@ import {
     MapPin,
     MapPinned,
     Pencil,
+    ShieldAlert,
     ShieldCheck,
     Smartphone,
     Store,
@@ -57,7 +60,10 @@ import {
     DetailHero,
     MoreActionsMenu,
 } from '@/components/pakis/detail-hero';
-import type { DetailMenuAction } from '@/components/pakis/detail-hero';
+import type {
+    DetailHeroHighlight,
+    DetailMenuAction,
+} from '@/components/pakis/detail-hero';
 import { DetailTabs, useQueryTab } from '@/components/pakis/detail-tabs';
 import type { DetailTab } from '@/components/pakis/detail-tabs';
 import { LocationDiagram } from '@/components/pakis/location-diagram';
@@ -166,6 +172,41 @@ const rupiah = new Intl.NumberFormat('id-ID', {
     maximumFractionDigits: 0,
 });
 
+/**
+ * Sorotan pita kepala kios: verifikasi + limit kredit (limit hanya aktif setelah verifikasi), dan
+ * sales penanggung jawab. Keduanya yang paling sering ditanyakan sebelum melayani order.
+ */
+function customerHighlights(
+    customer: Customer,
+    activationPending: boolean,
+): DetailHeroHighlight[] {
+    const verification: DetailHeroHighlight = customer.is_verified
+        ? {
+              icon: BadgeCheck,
+              label: 'Terverifikasi',
+              value: customer.credit_limit_active
+                  ? `Limit ${rupiah.format(Number(customer.credit_limit))}`
+                  : 'Limit belum aktif',
+              tone: 'success',
+          }
+        : {
+              icon: activationPending ? Clock : ShieldAlert,
+              label: 'Verifikasi',
+              value: activationPending ? 'Menunggu' : 'Belum',
+              tone: 'warning',
+          };
+
+    return [
+        verification,
+        {
+            icon: UserRound,
+            label: 'Sales',
+            value: customer.assigned_sales?.name ?? 'Belum ada',
+            tone: customer.assigned_sales ? 'default' : 'warning',
+        },
+    ];
+}
+
 /** Detail kios bertab (15 §7.1/§7.3, FR-A13 data inti, FR-A17 riwayat penugasan). */
 export default function CustomerShow({
     customer,
@@ -232,35 +273,28 @@ export default function CustomerShow({
                 <DetailHero
                     title={customer.store_name}
                     code={customer.code}
-                    avatar={{ icon: Store }}
+                    // Foto toko dari verifikasi (URL bertanda tangan, langsung dari props terbaru).
+                    avatar={{
+                        icon: Store,
+                        photoUrl: customer.photo_url,
+                        photoAlt: `Foto toko ${customer.store_name}`,
+                    }}
+                    highlights={customerHighlights(
+                        customer,
+                        verification.pending?.type === 'activation',
+                    )}
                     // Kios nonaktif/digabung: pita merek diredupkan seperti pegawai nonaktif.
                     muted={
                         customer.status === 'inactive' ||
                         customer.status === 'merged'
                     }
+                    // Status verifikasi tampil di sorotan (bersama limit), bukan badge dobel.
                     badges={
-                        <>
-                            <StatusBadge
-                                status={`customer.${customer.status}`}
-                                label={customer.status_label}
-                                tone={CUSTOMER_STATUS_TONE[customer.status]}
-                            />
-                            <StatusBadge
-                                status={
-                                    customer.is_verified
-                                        ? 'customer.verified'
-                                        : 'customer.unverified'
-                                }
-                                label={
-                                    customer.is_verified
-                                        ? 'Terverifikasi'
-                                        : 'Belum verifikasi'
-                                }
-                                tone={
-                                    customer.is_verified ? 'success' : 'warning'
-                                }
-                            />
-                        </>
+                        <StatusBadge
+                            status={`customer.${customer.status}`}
+                            label={customer.status_label}
+                            tone={CUSTOMER_STATUS_TONE[customer.status]}
+                        />
                     }
                     meta={[
                         {
@@ -289,20 +323,17 @@ export default function CustomerShow({
                                 .join(', '),
                         },
                     ]}
+                    // Sales & limit kredit sudah di sorotan pita; ringkasan memuat ketentuan dagang lain.
                     summary={[
-                        {
-                            label: 'Sales',
-                            value: customer.assigned_sales?.name ?? 'Belum ada',
-                        },
                         {
                             label: 'Tempo standar',
                             value: `${customer.term_days} hari`,
                         },
                         {
-                            label: 'Limit kredit',
-                            value: customer.credit_limit_active
-                                ? rupiah.format(Number(customer.credit_limit))
-                                : 'Belum aktif',
+                            label: 'Tempo panen',
+                            value: customer.harvest_term_allowed
+                                ? `Maks ${customer.harvest_term_max_days ?? '–'} hari`
+                                : 'Tidak',
                         },
                         {
                             label: 'Gudang asal',

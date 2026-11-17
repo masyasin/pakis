@@ -12,7 +12,9 @@ import {
     Pencil,
     Plus,
     Ruler,
+    ShieldAlert,
     ShieldCheck,
+    ShieldX,
     Tag,
     Trash2,
 } from 'lucide-react';
@@ -38,6 +40,7 @@ import {
     DetailBackLink,
     DetailHero,
 } from '@/components/pakis/detail-hero';
+import type { DetailHeroHighlight } from '@/components/pakis/detail-hero';
 import { DetailTabs, useQueryTab } from '@/components/pakis/detail-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
@@ -45,6 +48,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateTimeIn } from '@/lib/approval-format';
+import { formatDate } from '@/lib/listing-query';
 import { formatRupiah } from '@/lib/money';
 import { formatQty } from '@/lib/qty';
 
@@ -153,6 +157,50 @@ type TabKey = (typeof TABS)[number]['key'];
 
 const yesNo = (v: boolean) => (v ? 'Ya' : 'Tidak');
 
+/**
+ * Sorotan izin edar di pita kepala (BR-152): status yang sama dengan tab Izin Edar, diringkas.
+ * Baris berlaku = baris aktif pertama (server mengurutkan aktif dulu, lalu berlaku terjauh).
+ */
+function registrationHighlight(
+    required: boolean,
+    state: RegistrationState,
+    rows: RegistrationRow[],
+): DetailHeroHighlight {
+    const current = rows.find((r) => r.status === 'active');
+    const label = 'Izin edar';
+
+    if (state === 'active' && current) {
+        return {
+            icon: ShieldCheck,
+            label,
+            value: `s/d ${formatDate(current.valid_until)}`,
+            tone: 'success',
+        };
+    }
+
+    if (state === 'expiring' && current) {
+        return {
+            icon: ShieldAlert,
+            label,
+            value: `Akan habis ${formatDate(current.valid_until)}`,
+            tone: 'warning',
+        };
+    }
+
+    if (state === 'expired') {
+        return {
+            icon: ShieldX,
+            label,
+            value: 'Habis',
+            tone: required ? 'danger' : 'warning',
+        };
+    }
+
+    return required
+        ? { icon: ShieldX, label, value: 'Belum ada', tone: 'danger' }
+        : { icon: ShieldCheck, label, value: 'Tidak wajib' };
+}
+
 /** Detail produk bertab (15 §7.3): data, satuan & barcode, lalu tab modul berikutnya. */
 export default function ProductShow({
     product,
@@ -187,6 +235,13 @@ export default function ProductShow({
                         shape: 'square',
                     }}
                     muted={product.status !== 'active'}
+                    highlights={[
+                        registrationHighlight(
+                            product.requires_registration,
+                            registrationState,
+                            registrations,
+                        ),
+                    ]}
                     badges={
                         <>
                             <StatusBadge

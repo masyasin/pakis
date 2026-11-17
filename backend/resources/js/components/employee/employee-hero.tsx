@@ -10,7 +10,10 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { ActionLabel, DetailHero } from '@/components/pakis/detail-hero';
-import type { DetailHeroSummary } from '@/components/pakis/detail-hero';
+import type {
+    DetailHeroHighlight,
+    DetailHeroSummary,
+} from '@/components/pakis/detail-hero';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/employee-format';
@@ -31,6 +34,7 @@ export function EmployeeHero({
     department,
     joinDate,
     summary,
+    highlights,
     editHref,
     onDelete,
     extraActions,
@@ -45,6 +49,8 @@ export function EmployeeHero({
     department: string | null;
     joinDate: string;
     summary: HeroSummary;
+    /** Sorotan status di pita kepala (masa kerja, status kerja). */
+    highlights?: DetailHeroHighlight[];
     editHref: NonNullable<InertiaLinkProps['href']> | null;
     onDelete: (() => void) | null;
     /** Aksi tambahan (Nonaktifkan / Aktifkan kembali, T-026). */
@@ -79,6 +85,7 @@ export function EmployeeHero({
             ]}
             notice={notice}
             summary={summary}
+            highlights={highlights}
             actions={
                 hasActions ? (
                     <>

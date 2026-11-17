@@ -1,9 +1,11 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/react';
 import {
+    BadgeCheck,
     BriefcaseBusiness,
     Contact,
     Fingerprint,
     History,
+    Hourglass,
     Info,
     KeyRound,
     MapPin,
@@ -263,12 +265,16 @@ export default function EmployeeShow(props: Props) {
                             </p>
                         ) : undefined
                     }
-                    summary={[
-                        { label: 'Masa kerja', value: tenure },
+                    // Masa kerja & status kerja di sorotan pita; ringkasan memuat atasan dan akun login.
+                    highlights={[
                         {
+                            icon: BadgeCheck,
                             label: 'Status kerja',
-                            value: employee.employment_status ?? '–',
+                            value: employee.employment_status,
                         },
+                        { icon: Hourglass, label: 'Masa kerja', value: tenure },
+                    ]}
+                    summary={[
                         {
                             label: 'Atasan langsung',
                             value: primary?.supervisor?.name ?? 'Tidak ada',
@@ -276,6 +282,14 @@ export default function EmployeeShow(props: Props) {
                         {
                             label: 'Akun login',
                             value: account ? account.username : 'Belum ada',
+                        },
+                        {
+                            label: 'Login terakhir',
+                            value: account
+                                ? account.last_login_at
+                                    ? formatRelativeTime(account.last_login_at)
+                                    : 'Belum pernah'
+                                : '–',
                         },
                     ]}
                 />

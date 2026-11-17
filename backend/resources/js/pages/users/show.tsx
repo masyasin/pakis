@@ -1,6 +1,7 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/react';
 import {
     BadgeCheck,
+    Clock,
     History,
     KeyRound,
     Lock,
@@ -561,6 +562,14 @@ function UserHero({
     notice: ReactNode;
 }) {
     const roleLabels = user.roles.map((r) => r.label).join(', ');
+    // Cakupan unik lintas role (dua role bercakupan sama cukup ditulis sekali).
+    const scopeLabels = [
+        ...new Set(
+            user.roles
+                .map((r) => r.data_scope_label)
+                .filter((s): s is string => Boolean(s)),
+        ),
+    ].join(', ');
     // Inisial sama dengan avatar di header (kata pertama + terakhir).
     const getInitials = useInitials();
 
@@ -600,41 +609,29 @@ function UserHero({
             ]}
             notice={notice ? <div className="pt-2">{notice}</div> : undefined}
             actions={actions}
-            summary={[
-                { label: 'Role', value: roleLabels || 'Belum ada' },
+            // MFA & login terakhir di sorotan pita: dua hal yang dicek pertama saat ada keluhan akun.
+            highlights={[
                 {
+                    icon: user.mfa_enabled ? ShieldCheck : ShieldOff,
                     label: 'MFA',
-                    value: (
-                        <span
-                            className={
-                                user.mfa_enabled
-                                    ? 'inline-flex items-center gap-1 text-status-success'
-                                    : user.mfa_required
-                                      ? 'inline-flex items-center gap-1 text-status-warning'
-                                      : 'inline-flex items-center gap-1'
-                            }
-                        >
-                            {user.mfa_enabled ? (
-                                <ShieldCheck
-                                    className="size-4"
-                                    aria-hidden="true"
-                                />
-                            ) : (
-                                <ShieldOff
-                                    className="size-4"
-                                    aria-hidden="true"
-                                />
-                            )}
-                            {mfaLabel(user)}
-                        </span>
-                    ),
+                    value: mfaLabel(user),
+                    tone: user.mfa_enabled
+                        ? 'success'
+                        : user.mfa_required
+                          ? 'warning'
+                          : 'default',
                 },
                 {
+                    icon: Clock,
                     label: 'Login terakhir',
                     value: user.last_login_at
                         ? formatRelativeTime(user.last_login_at)
                         : 'Belum pernah',
                 },
+            ]}
+            summary={[
+                { label: 'Role', value: roleLabels || 'Belum ada' },
+                { label: 'Cakupan data', value: scopeLabels || '–' },
                 {
                     label: 'Dibuat',
                     value: user.created_at
@@ -647,7 +644,7 @@ function UserHero({
 }
 
 function ProfileTab({ user }: { user: UserDetail }) {
-    // Status, MFA, login terakhir, dan tanggal dibuat sudah ada di ringkasan hero; kartu ini hanya
+    // Status, MFA, login terakhir, dan tanggal dibuat sudah ada di kepala (sorotan/ringkasan); kartu ini hanya
     // memuat detail yang tidak tampil di sana agar tidak ada informasi ganda.
     const mfaRequiredBy = user.roles
         .filter((r) => r.mfa_required)

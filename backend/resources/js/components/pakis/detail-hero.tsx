@@ -2,8 +2,9 @@ import { Link } from '@inertiajs/react';
 import type { InertiaLinkProps } from '@inertiajs/react';
 import { ArrowLeft, ChevronDown } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { Fragment } from 'react';
+import { Fragment, useState } from 'react';
 import type { ReactNode } from 'react';
+import { FernMotif } from '@/components/pakis/fern-motif';
 import { Button } from '@/components/ui/button';
 import {
     DropdownMenu,
@@ -35,6 +36,32 @@ export type DetailHeroAvatar = {
     shape?: 'circle' | 'square';
 };
 
+export type DetailHeroHighlightTone =
+    | 'default'
+    | 'success'
+    | 'warning'
+    | 'danger';
+
+/**
+ * Sorotan status di pita kepala (maks. 3): hal yang paling sering dicari sekilas (izin edar,
+ * verifikasi + limit, MFA …). Jangan menggandakan sel `summary`; nilai kosong disembunyikan.
+ */
+export type DetailHeroHighlight = {
+    icon?: LucideIcon;
+    label: string;
+    value: ReactNode;
+    tone?: DetailHeroHighlightTone;
+};
+
+const MAX_HIGHLIGHTS = 3;
+
+const HIGHLIGHT_TONE: Record<DetailHeroHighlightTone, string> = {
+    default: 'text-primary',
+    success: 'text-status-success',
+    warning: 'text-status-warning',
+    danger: 'text-status-danger',
+};
+
 const SUMMARY_COLS: Record<number, string> = {
     1: 'grid-cols-1',
     2: 'grid-cols-2',
@@ -43,9 +70,9 @@ const SUMMARY_COLS: Record<number, string> = {
 };
 
 /**
- * Kartu identitas di atas halaman detail (pola profil pegawai, 07 §1): pita gradien warna merek
- * (token `brand-panel-*`, ikut Pengaturan branding), avatar/ikon, judul, kode, badge status, meta
- * berikon, slot aksi di kanan avatar, dan baris ringkasan. Dipakai semua halaman detail bertipe
+ * Kartu identitas di atas halaman detail (pola profil pegawai, 07 §1): pita tipis gradien warna
+ * merek (ikut Pengaturan branding) bermotif daun pakis, sorotan status di kanan pita, avatar/foto,
+ * judul, kode, badge status, meta berikon, slot aksi di kanan avatar, dan baris ringkasan. Dipakai semua halaman detail bertipe
  * "kepala + tab" (pegawai, pengguna, kios, produk, supplier, daftar harga) agar terasa satu aplikasi.
  * Halaman dokumen bergaris (PO, penerimaan) memakai `DocumentHeader`, bukan kartu ini.
  */
@@ -58,6 +85,7 @@ export function DetailHero({
     actions,
     notice,
     summary = [],
+    highlights = [],
     muted = false,
 }: {
     title: string;
@@ -72,6 +100,8 @@ export function DetailHero({
     /** Pita info di bawah identitas (mis. "Nonaktif sejak …"). */
     notice?: ReactNode;
     summary?: DetailHeroSummary;
+    /** Sorotan status (maks. 3). Kartu lebar: di kanan pita; kartu sempit (HP): di bawah judul. */
+    highlights?: DetailHeroHighlight[];
     /** Data nonaktif: pita merek diredupkan agar statusnya terbaca sekilas. */
     muted?: boolean;
 }) {
@@ -79,23 +109,47 @@ export function DetailHero({
         (m) => m.value !== null && m.value !== undefined && m.value !== '',
     );
     const cells = summary.slice(0, 4);
+    const marks = highlights
+        .filter(
+            (h) => h.value !== null && h.value !== undefined && h.value !== '',
+        )
+        .slice(0, MAX_HIGHLIGHTS);
 
     return (
-        <section className="overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]">
-            <div
-                aria-hidden="true"
-                className={cn(
-                    'relative h-20 bg-gradient-to-r from-primary via-primary/85 to-primary-strong sm:h-24',
-                    muted && 'opacity-60 grayscale',
+        // @container: letak sorotan mengikuti lebar kartu (sidebar terbuka/tertutup), bukan layar.
+        <section className="@container overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]">
+            {/* Pita sengaja tipis agar tidak terasa kosong pada data tanpa foto (keluhan T-074). */}
+            <div className="relative h-12 @3xl:h-14">
+                <div
+                    aria-hidden="true"
+                    className={cn(
+                        'absolute inset-0 overflow-hidden bg-gradient-to-r from-primary via-primary/85 to-primary-strong',
+                        // Hanya latar yang diredupkan; sorotan di atasnya tetap terbaca.
+                        muted && 'opacity-60 grayscale',
+                    )}
+                >
+                    {/* Kilau halus agar pita tidak datar. */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_-30%,rgb(255_255_255/0.22),transparent_50%),radial-gradient(circle_at_10%_130%,rgb(255_255_255/0.10),transparent_45%)]" />
+                    <FernMotif className="absolute inset-y-0 right-0 h-full w-[min(36rem,75%)] text-white opacity-[0.09] dark:opacity-[0.12]" />
+                </div>
+
+                {marks.length > 0 && (
+                    <HighlightList
+                        items={marks}
+                        className="relative hidden h-full items-center justify-end gap-2 pr-6 pl-36 @3xl:flex"
+                        itemClassName="border-white/40 bg-card/95 shadow-sm"
+                    />
                 )}
-            >
-                {/* Kilau halus agar pita tidak datar. */}
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_-30%,rgb(255_255_255/0.22),transparent_50%),radial-gradient(circle_at_10%_130%,rgb(255_255_255/0.10),transparent_45%)]" />
             </div>
 
             <div className="px-4 pb-5 sm:px-6">
-                <div className="relative z-10 -mt-10 flex flex-wrap items-end justify-between gap-3 sm:-mt-12">
-                    <HeroAvatar avatar={avatar} title={title} />
+                <div className="relative z-10 -mt-8 flex flex-wrap items-end justify-between gap-3 @3xl:-mt-10">
+                    <HeroAvatar
+                        // key: tanda gagal-muat foto ikut direset saat URL bertanda tangan berganti.
+                        key={avatar.photoUrl ?? 'none'}
+                        avatar={avatar}
+                        title={title}
+                    />
 
                     {actions && (
                         <div className="flex flex-wrap justify-end gap-2">
@@ -117,6 +171,13 @@ export function DetailHero({
                             )}
                             {badges}
                         </div>
+                    )}
+                    {marks.length > 0 && (
+                        <HighlightList
+                            items={marks}
+                            className="flex flex-wrap gap-2 pt-0.5 @3xl:hidden"
+                            itemClassName="bg-muted/50"
+                        />
                     )}
                     {visibleMeta.length > 0 && (
                         <ul className="flex flex-wrap gap-x-5 gap-y-1.5 pt-1 text-sm text-muted-foreground">
@@ -153,6 +214,10 @@ export function DetailHero({
                                 i % 2 === 1 && 'border-l',
                                 i >= 2 && 'border-t sm:border-t-0',
                                 i > 0 && i % 2 === 0 && 'sm:border-l',
+                                // Tiga sel di HP: sel terakhir selebar kartu, bukan sel yatim setengah.
+                                cells.length === 3 &&
+                                    i === 2 &&
+                                    'col-span-2 sm:col-span-1',
                             )}
                         >
                             <dt className="text-xs text-muted-foreground">
@@ -178,14 +243,18 @@ function HeroAvatar({
 }) {
     const shape = avatar.shape === 'square' ? 'rounded-2xl' : 'rounded-full';
     const Icon = avatar.icon;
+    // URL foto bertanda tangan bisa kedaluwarsa/ditolak: jatuh ke ikon/inisial, bukan gambar rusak.
+    // Yang disimpan hanya tanda gagal; URL-nya sendiri tidak pernah ditaruh di state.
+    const [failed, setFailed] = useState(false);
 
-    if (avatar.photoUrl) {
+    if (avatar.photoUrl && !failed) {
         return (
             <img
                 src={avatar.photoUrl}
                 alt={avatar.photoAlt ?? `Foto ${title}`}
+                onError={() => setFailed(true)}
                 className={cn(
-                    'size-20 bg-card object-cover ring-4 ring-card sm:size-24',
+                    'size-20 bg-card object-cover ring-4 ring-card @3xl:size-24',
                     shape,
                 )}
             />
@@ -196,16 +265,63 @@ function HeroAvatar({
         <span
             aria-hidden="true"
             className={cn(
-                'grid size-20 place-items-center bg-sidebar-accent text-2xl font-bold text-primary ring-4 ring-card sm:size-24 sm:text-3xl',
+                'grid size-20 place-items-center bg-sidebar-accent text-2xl font-bold text-primary ring-4 ring-card @3xl:size-24 @3xl:text-3xl',
                 shape,
             )}
         >
             {Icon ? (
-                <Icon className="size-9 sm:size-10" strokeWidth={1.75} />
+                <Icon className="size-9 @3xl:size-10" strokeWidth={1.75} />
             ) : (
                 avatar.initials
             )}
         </span>
+    );
+}
+
+function HighlightList({
+    items,
+    className,
+    itemClassName,
+}: {
+    items: DetailHeroHighlight[];
+    className: string;
+    itemClassName: string;
+}) {
+    return (
+        <ul aria-label="Sorotan" className={className}>
+            {items.map(({ icon: Icon, label, value, tone = 'default' }) => (
+                <li
+                    key={label}
+                    data-tone={tone}
+                    className={cn(
+                        'inline-flex h-7 max-w-full min-w-0 items-center gap-1.5 rounded-full border px-2.5 text-xs text-card-foreground @3xl:max-w-[20rem]',
+                        itemClassName,
+                    )}
+                >
+                    {Icon && (
+                        <Icon
+                            className={cn(
+                                'size-3.5 shrink-0',
+                                HIGHLIGHT_TONE[tone],
+                            )}
+                            aria-hidden="true"
+                        />
+                    )}
+                    <span className="shrink-0 text-muted-foreground">
+                        {label}
+                        <span className="sr-only">: </span>
+                    </span>
+                    <span
+                        className={cn(
+                            'truncate font-semibold',
+                            tone !== 'default' && HIGHLIGHT_TONE[tone],
+                        )}
+                    >
+                        {value}
+                    </span>
+                </li>
+            ))}
+        </ul>
     );
 }
 

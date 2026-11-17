@@ -2,6 +2,7 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import {
     Banknote,
     Boxes,
+    CalendarClock,
     Factory,
     Handshake,
     MapPin,
@@ -84,6 +85,22 @@ export default function SupplierShow({ supplier, products, can }: Props) {
                     code={supplier.code}
                     avatar={{ icon: Handshake }}
                     muted={!supplier.is_active}
+                    highlights={[
+                        {
+                            icon: CalendarClock,
+                            label: 'Tempo bayar',
+                            value:
+                                supplier.payment_term_days === 0
+                                    ? 'Tunai'
+                                    : `${supplier.payment_term_days} hari`,
+                        },
+                        {
+                            icon: Boxes,
+                            label: 'Memasok',
+                            value: `${products.length} produk`,
+                            tone: products.length === 0 ? 'warning' : 'default',
+                        },
+                    ]}
                     badges={
                         <StatusBadge
                             status={supplier.is_active ? 'active' : 'inactive'}
@@ -108,20 +125,15 @@ export default function SupplierShow({ supplier, products, can }: Props) {
                             value: supplier.village_label,
                         },
                     ]}
+                    // Tempo bayar & jumlah produk sudah di sorotan pita; ringkasan memuat kontak & bank.
                     summary={[
                         {
-                            label: 'Tempo bayar',
-                            value:
-                                supplier.payment_term_days === 0
-                                    ? 'Tunai'
-                                    : `${supplier.payment_term_days} hari`,
-                        },
-                        {
-                            label: 'Produk dipasok',
-                            value: `${products.length} produk`,
+                            label: 'Supplier utama untuk',
+                            value: `${products.filter((p) => p.is_preferred).length} produk`,
                         },
                         { label: 'Bank', value: supplier.bank_name ?? '–' },
                         { label: 'Telepon', value: supplier.phone ?? '–' },
+                        { label: 'Email', value: supplier.email ?? '–' },
                     ]}
                     actions={
                         can.manage ? (

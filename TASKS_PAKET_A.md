@@ -19,8 +19,8 @@ Revisi 16 Nov 2026 (repo): menerapkan keputusan PA-1, PA-3, PA-5–PA-8, PA-10�
 
 | Ringkasan | Nilai |
 |---|---|
-| Task | 22 (T-067–T-087 + T-085A) |
-| Estimasi | 172 jam (rentang 147–212) |
+| Task | 23 (T-067–T-087 + T-085A + T-087A) |
+| Estimasi | 180 jam (rentang 154–222) |
 | Exit gate | **15** §10.2 checklist rilis + UAT-A01–A21 lulus + `ReconcileStockLedger` = 0 selisih di data UAT |
 
 ## Urutan & dependensi
@@ -465,6 +465,33 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - Verifikasi: `php artisan test` · `./vendor/bin/phpstan` · `npm run lint && npm run types` · `npx playwright test tests/e2e/paket-a`
 - Di luar lingkup: laporan penjualan & margin (Paket B)
 
+### T-087A — Kartu dasbor tambahan Paket A
+- Paket: A | Prioritas: P1 | Estimasi: 8 jam
+- Memenuhi: **15** §7.4 (widget tambahan, keputusan Mas 18 Nov 2026, PA-73)
+- Dependensi: T-087 (dasbor & widget "Stok di bawah minimum" milik T-087 di-commit dulu; berkas `DashboardController`/`dashboard.tsx` sama)
+- Konteks wajib: **15** §7.4; pola kartu `pending` + `self::item()` di `Admin/DashboardController` (hitungan memakai Listing ber-scope yang sama dengan halaman tujuan); `NearExpirySummary`/`BelowMinimumSummary` untuk kartu berdaftar; `07` §6–§7
+- File: `app/Http/Controllers/Admin/DashboardController.php`; `app/Domain/Inventory/Queries/*Summary.php` bila kartu butuh agregat (karantina, kedaluwarsa); `resources/js/pages/dashboard.tsx`; filter listing tujuan bila belum ada (mis. `status` draf, `expired`); `tests/Feature/DashboardTest.php` (atau `tests/Feature/Dashboard/PaketACardsTest.php`)
+- Deskripsi: Kartu baru, masing-masing hanya untuk pemegang izinnya, angka = jumlah di halaman tujuan dengan filter yang sama, klik membuka halaman itu:
+  1. **Saldo awal masih dibuka** (Owner/`settings.update`, hanya selama `inventory.opening_balance_open` menyala): jumlah mutasi `opening_balance` + total nilai (nilai hanya `stock.view_cost`), tautan ke Pengaturan › Gudang & stok.
+  2. **Batch di karantina** (`stock.view`): jumlah batch & qty per lokasi dalam scope Stok (nilai hanya `stock.view_cost`) + permintaan lepas karantina `pending`.
+  3. **Opname & BA tertunda** (`stock_opnames.view` / `stock_disposals.manage`): opname `counting`/`review`/`pending_approval`, BA pemusnahan `approved` belum dilaksanakan.
+  4. **Retur & penerimaan tertunda** (`purchase_returns.manage` / `goods_receipts.view`): retur prinsipal disetujui belum dikirim atau dikirim belum dikonfirmasi; penerimaan barang draf.
+  5. **Kios menunggu verifikasi** (`customers.verify`): kios prospek di antrean Verifikasi Kios, tertua dulu.
+  6. **Batch kedaluwarsa masih ada stok** (`stock.view`): batch `expired` qty > 0 per lokasi (kandidat karantina/pemusnahan).
+  7. **Harga & promo perlu tindakan** (`prices.manage` / `promotions.manage`): versi harga draf belum terbit; promo aktif yang berakhir dalam N hari (N dari setting baru, lihat di bawah).
+  8. **Impor tertunda/gagal** (izin tipe impor, `ImportRegistry::allowedFor`): batch `validated` belum diproses atau `failed`.
+  9. **Produk aktif tanpa harga** (`prices.manage`): produk dijual yang tidak punya baris di versi terbit daftar harga aktif mana pun (kesiapan Paket B).
+  10. **Produk tanpa stok minimum** (`stock_locations.manage`): pasangan produk aktif × gudang/toko dalam scope yang belum punya `product_stock_levels` (kesiapan peringatan stok).
+- Diputuskan di plan mode T-087A (aturan berhenti CLAUDE.md §5): kunci setting ambang promo (usulan `promotions.ending_soon_days`, int 7, 1–60, `08` §2), urutan & pengelompokan kartu di layar, dan apakah kartu 9–10 cukup angka (tanpa daftar).
+- Kriteria penerimaan:
+  - [ ] Tiap kartu tampil hanya untuk pemegang izinnya; pengguna tanpa izin tidak menerima prop-nya (test per kartu)
+  - [ ] Angka kartu = jumlah baris halaman tujuan dengan filter tautannya (scope sama; test membandingkan keduanya)
+  - [ ] Nilai rupiah hanya untuk `stock.view_cost` (SEC-107)
+  - [ ] Kartu saldo awal hilang setelah saldo awal ditutup
+  - [ ] Dasbor tetap ringan: tiap kartu satu query agregat ber-index (tanpa N+1), dicek dengan data volume T-087
+- Verifikasi: `php artisan test --filter=Dashboard` · `npm run lint && npm run types`
+- Di luar lingkup: kartu Paket B (piutang, limit kredit, penjualan)
+
 ---
 
 ## Ringkasan estimasi
@@ -478,7 +505,8 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 | Operasi gudang | T-082–T-084 | 21 |
 | Impor & cutover (+ kerangka impor generik) | T-085A, T-085–T-086 | 22 |
 | Laporan, hardening, UAT | T-087 | 13 |
-| **Total** | 22 task | **172** |
+| Kartu dasbor tambahan | T-087A | 8 |
+| **Total** | 23 task | **180** |
 
 Revisi 16 Nov 2026: +8 jam T-085A (PA-15), +2 jam T-070 untuk `app/Support/Upload/` (PA-22).
 

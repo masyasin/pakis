@@ -1507,6 +1507,8 @@ Total listing setelah Paket A: listing Fase 0 + 29 listing baru (jumlah Fase 0 b
 ### 8.1 Aturan konsep yang diimplementasikan di Paket A
 
 | ID | Aturan (konsep v1.4) | Implementasi wajib |
+**Widget tambahan (T-087A, PA-73, keputusan Mas 18 Nov 2026):** saldo awal masih dibuka (Owner, selama `inventory.opening_balance_open`), batch di karantina, opname & BA tertunda, retur & penerimaan tertunda, kios menunggu verifikasi, batch kedaluwarsa masih ada stok, harga & promo perlu tindakan, impor tertunda/gagal, produk aktif tanpa harga, produk tanpa stok minimum. Rincian izin & isi di `TASKS_PAKET_A.md` T-087A; tiap kartu = jumlah halaman tujuan dengan filter yang sama, nilai rupiah hanya `stock.view_cost`.
+
 |---|---|---|
 | BR-101 | Stok tidak boleh minus, reservasi atomik | Semua perubahan `qty_on_hand`/`qty_reserved` hanya lewat `StockLedger` di dalam transaksi DB dengan `SELECT … FOR UPDATE` pada baris `stock_batches` yang disentuh, dikunci **urut `id` naik** agar tidak deadlock. CHECK constraint DB sebagai lapis kedua. Deadlock (SQLSTATE 40001/1213) di-retry maks 3 kali dengan jeda acak 50–200 ms, lalu gagal `409 STATE_CONFLICT` |
 | BR-102 | FEFO; batch karantina/ED/izin habis tidak dialokasikan | `FefoAllocator::allocate(product, stockLocation, qtyBase, asOf)` mengembalikan daftar `(batch, qty)` dari batch `status='available'`, `expiry_date IS NULL OR expiry_date > asOf + inventory.min_sell_days_before_expiry`, urut `expiry_date` asc (NULL terakhir), `received_date` asc, `id` asc. Bila produk `requires_registration` dan tidak ada izin `active` pada `asOf` → `422 PRODUCT_REGISTRATION_INACTIVE`. Stok kurang → `422 INSUFFICIENT_STOCK` berisi qty tersedia |

@@ -26,7 +26,7 @@ Semua daftar memakai standar paging, pencarian, filter, dan sort yang ditegakkan
 | **0,5 Absensi** | Absen selfie+GPS, offline, koreksi, rekap | T-033–T-045 | Absen dari HP (online & offline), rekap, koreksi, dasbor | BR-060–BR-070 teruji. MOB-01–MOB-09 lulus. Retensi selfie jalan |
 | **H Hardening & rilis** | Siap dipakai Pakis | T-046–T-048 | Staging + produksi, UAT, manual | Checklist `09` §7.2 lengkap. Uji restore tercatat. UAT diparaf. OQ-002/006/009/012 terjawab |
 | **HR Kepegawaian lengkap** | Produk Sintech: riwayat kepegawaian + cuti, lembur, kasbon, payroll, slip gaji, penilaian kinerja; modul bisa dinyalakan per perusahaan (`13`) | T-049–T-066 | Detail pegawai lengkap, cetak CV PDF, cuti dari Pakis Pro, proses payroll + slip gaji | Modul mati = tidak tampil & 404. Data kelas C terenkripsi + persetujuan + retensi teruji. Payroll cocok dengan contoh perhitungan resmi. Semua daftar lolos test kontrak |
-| **A Master & Gudang** | Produk, kios, harga, stok batch/ED yang benar sebelum penjualan (`15`, `TASKS_PAKET_A.md`) | T-067–T-087 + T-085A (22 task, ±172 jam) | Approval berjenjang, master produk/kios/harga/promo, PO → penerimaan → stok, mutasi, opname hitung buta, pemusnahan, impor master & saldo awal | Checklist `15` §10.2 + UAT-A01–A21 lulus + `inventory:reconcile` = 0 selisih di data UAT. Uji konkurensi stok lulus. 58 listing lolos test kontrak |
+| **A Master & Gudang** | Produk, kios, harga, stok batch/ED yang benar sebelum penjualan (`15`, `TASKS_PAKET_A.md`) | T-067–T-087 + T-085A + T-087A (23 task, ±180 jam) | Approval berjenjang, master produk/kios/harga/promo, PO → penerimaan → stok, mutasi, opname hitung buta, pemusnahan, impor master & saldo awal | Checklist `15` §10.2 + UAT-A01–A21 lulus + `inventory:reconcile` = 0 selisih di data UAT. Uji konkurensi stok lulus. 58 listing lolos test kontrak |
 | **B Penjualan & Uang Aman** | Pesanan sampai uang masuk, kontrol anti-penggelapan, POS (`16`, `TASKS_PAKET_B.md`) | T-088–T-113 (26 task, ±211 jam) | Pesanan + kredit, surat jalan, bukti terima → faktur, pembayaran & alokasi, kwitansi digital, setoran, konfirmasi saldo, kas kecil, POS PWA offline | Checklist `16` §10.2 + UAT-B01–B30 lulus + `receivables:reconcile` & `inventory:reconcile` = 0 selisih + pilot 1 gudang, 1 toko, 1 area sales selama 2 minggu |
 | **C Lapangan & Mitra** | Semua peran lapangan dari Pakis Pro (offline-first), kios memesan & membayar dari Pakis Mitra (`17`, `TASKS_PAKET_C.md`) | T-114–T-140 (27 task, ±251 jam) | Sinkron offline, mode Sales/Canvas/Driver/Gudang/Owner, kwitansi blok nomor offline, WhatsApp/push/QRIS, red flag & investigasi, insentif, promosi, servis, Pakis Mitra (`mobile-mitra/` + `mobile-shared/`) | Checklist `17` §10.2 + UAT-C01–C24 + pilot lapangan 2 minggu |
 | **D Armada & BBM** | Setiap liter BBM & kilometer terhubung ke trip nyata (`18`, `TASKS_PAKET_D.md`) | T-141–T-153 (13 task, ±110 jam) | Kendaraan & dokumen, P2H, trip & uang jalan, BBM + cek wajar, km/l & red flag, GPS ponsel & tracker, geofence, servis & ban | Checklist `18` §10.2 + UAT-D01–D12 + uji tracker 1 minggu |
@@ -109,14 +109,14 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | 0,5 | 14 | 13 | 1 | 0 |
 | H | 3 | 0 | 0 | 0 |
 | HR | 18 | 0 | 0 | 0 |
-| A | 22 | 21 | 1 | 0 |
+| A | 23 | 21 | 1 | 0 |
 | B | 26 | 0 | 0 | 0 |
 | C | 27 | 0 | 0 | 0 |
 | D | 13 | 0 | 0 | 0 |
 | E (pelengkap) | 8 | 0 | 0 | 0 |
 | F | 20 | 0 | 0 | 0 |
 | G | 14 | 0 | 0 | 0 |
-| **Total** | **197** | **66** | **2** | **0** |
+| **Total** | **198** | **66** | **2** | **0** |
 
 ### 6.2 Sedang dikerjakan
 - **Paket A per 17 Nov 2026 (20.30).** Selesai (21): T-067, T-085A, T-068, T-069, T-070, T-071, T-072, T-073, T-074, T-075, T-076, T-077, T-078 (a8de8f1), T-079, T-080 (ef2e969), T-081 (2d90418, PA-68), **T-082** (c067a6b + 12ba810, PA-66), **T-083** (025f8c2 + 88f8288 + 5ac6ebf, PA-67), **T-084** (karantina & pemusnahan, PA-69), **T-085** (impor master produk/kios/harga/stok minimum, PA-70, d3f9c3d), **T-086** (saldo awal stok & runbook cutover, PA-71). Sedang: **T-087** laporan stok, hardening & UAT (sesi pakis-a1, bagian yang tidak bergantung T-086 dimulai lebih awal). **Jalur 1 selesai** (T-068 → T-084); berikutnya **T-087** laporan stok & telusur batch bersama jalur 2 (plan mode + persetujuan Mas; termasuk laporan pelanggaran FEFO PA-64 b, laporan selisih per penghitung & penampil foto opname PA-67 a/k). Grup menu **Persediaan**: Mutasi Stok, Stock Opname, Karantina, Pemusnahan, Nomor Seri. CI penuh hijau di 5ac6ebf (T-080–T-083). Susulan selesai: `price_list_id` kios (36b8a72, PA-61), UI konsisten (DetailHero/DocumentHeader, banner bermotif, HP), rupiah `Rp. 72.633`, masking HP `081•••••789`.

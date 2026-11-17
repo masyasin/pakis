@@ -1644,6 +1644,13 @@ export default function Dashboard({
                         <Card
                             title="Batch mendekati ED per bulan"
                             note={`Batch tersedia & karantina yang ED-nya dalam ${stockCharts.expiry_days} hari ke depan.`}
+                            // Grafik nilai hanya untuk pemegang izin biaya: bila ada, kartu ini
+                            // ketiga (ganjil) dan dibuat selebar penuh agar tidak ada sel kosong.
+                            className={cn(
+                                stockCharts.value &&
+                                    stockCharts.value.length > 0 &&
+                                    'lg:col-span-2',
+                            )}
                         >
                             <ExpiryMonthChart
                                 rows={stockCharts.expiry}

@@ -1043,6 +1043,23 @@ CREATE TABLE disposal_report_lines (
   CONSTRAINT bapl_batch_fk FOREIGN KEY (stock_batch_id) REFERENCES stock_batches(id),
   CONSTRAINT bapl_qty_chk CHECK (qty_base > 0)
 );
+-- Permintaan lepas karantina (T-084, keputusan Mas 17 Nov 2026, PA-69): rak tujuan & qty disimpan
+-- selama menunggu approval `stock_quarantine_release` (BR-164).
+CREATE TABLE stock_quarantine_releases (
+  id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
+  stock_batch_id BIGINT UNSIGNED NOT NULL,       -- batch berstatus quarantine (bukan expired)
+  qty_base DECIMAL(18,3) NOT NULL,
+  target_bin_id BIGINT UNSIGNED NOT NULL,        -- rak non-karantina di lokasi yang sama
+  reason VARCHAR(255) NOT NULL,
+  status ENUM('pending','approved','rejected','cancelled') NOT NULL DEFAULT 'pending',
+  released_batch_id BIGINT UNSIGNED NULL,        -- batch tujuan setelah dilepas
+  approval_request_id BIGINT UNSIGNED NULL,
+  [audit],
+  KEY sqr_batch_status_idx (stock_batch_id, status),
+  CONSTRAINT sqr_batch_fk FOREIGN KEY (stock_batch_id) REFERENCES stock_batches(id),
+  CONSTRAINT sqr_bin_fk FOREIGN KEY (target_bin_id) REFERENCES stock_bins(id),
+  CONSTRAINT sqr_qty_chk CHECK (qty_base > 0)
+);
 ```
 
 ### 4.11 Index ↔ query penting
@@ -1138,6 +1155,7 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.stock.trace` | GET | `/stok/telusur` | `stock.view` | Input produk + batch → lokasi tersisa, mutasi, (Paket B: kios penerima) |
 | `admin.stock.quarantine` / `release` | POST | `/stok/karantina` · `/stok/karantina/{batch}/lepas` | `stock_quarantine.manage` | Lepas → approval `stock_quarantine_release` |
 | `admin.stock.bin-move` | POST | `/stok/pindah-rak` | `stock_quarantine.manage` | Pindah antar rak dalam lokasi yang sama |
+| `admin.stock-batches.index` | GET | `/stok/karantina` | `stock_quarantine.manage` | Halaman Karantina: daftar batch + aksi karantina/pindah rak/lepas (PA-69) |
 | `admin.stock-transfers.index`/`create`/`store`/`show` | | `/mutasi/...` | `stock_transfers.view` / `.create` | |
 | `admin.stock-transfers.edit` / `update` | GET · PUT | `/mutasi/{transfer}/ubah` · `/mutasi/{transfer}` | `.create` | Hanya draf (PA-66) |
 | `admin.stock-transfers.ship` / `receive` / `cancel` | POST | `/mutasi/{transfer}/kirim` · `/terima` · `/batal` | `.create` / `.receive` | Penerima ≠ pengirim |
@@ -1148,6 +1166,7 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.stock-opnames.lines.store` | POST | `/opname/{opname}/baris` | `stock_opnames.manage` | Batch ditemukan saat hitung (BR-162(7), PA-67) |
 | `admin.disposal-reports.index`/`create`/`store`/`show` | | `/pemusnahan/...` | `stock_disposals.manage` | |
 | `admin.disposal-reports.submit`/`execute` | POST | `/pemusnahan/{report}/ajukan` · `/laksanakan` | `stock_disposals.manage` | Laksanakan wajib unggah berita acara + foto |
+| `admin.disposal-reports.cancel` / `print` | POST · GET | `/pemusnahan/{report}/batal` · `/cetak` | `stock_disposals.manage` | Batal melepas reservasi BA; cetak = HTML siap cetak (PA-69) |
 | `admin.serials.index` | GET | `/nomor-seri` | `stock.view` | |
 | `admin.serials.export` | GET | `/nomor-seri/ekspor` | `stock.view` | Listing `serial_numbers`; didaftarkan sebelum `{serial}` |
 | `admin.serials.swap` | POST | `/nomor-seri/{serial}/tukar` | `serials.manage` | → approval `serial_swap` |
@@ -1465,6 +1484,7 @@ flowchart LR
 | `stock_opnames` | `admin.stock-opnames.index` | nomor | `status`, `stock_location_id`, `scope` | `created_at` desc | Stok |
 | `stock_opname_lines` | `admin.stock-opnames.lines.index` | SKU, nama, batch | `stock_opname_id` (wajib), `stock_bin_id`, `counted` (ya/tidak), `has_variance` (ya, tidak tersedia saat blind & `counting`) | `stock_bin.code`, `product.name` | Stok |
 | `disposal_reports` | `admin.disposal-reports.index` | nomor | `status`, `method`, `stock_location_id` | `created_at` desc | Stok |
+| `stock_batches` | `admin.stock-batches.index` | SKU, nama, batch | `stock_location_id`, `status`, `stock_bin_id` | `expiry_date` asc | Stok (halaman Karantina, PA-69) |
 | `serial_numbers` | `admin.serials.index` | nomor seri (exact & prefix), SKU | `product_id`, `status`, `stock_location_id` | `created_at` desc | Stok |
 | `stock_levels` | `admin.stock-levels.index` | SKU, nama | `stock_location_id` (wajib), `category_id`, `below_min` (ya) | `product.name` | Stok |
 | `stock_batches_trace` | `admin.stock.trace` | — | `product_id` + `batch_no` (wajib) | `stock_location.code` | Stok (`all` untuk Owner) |

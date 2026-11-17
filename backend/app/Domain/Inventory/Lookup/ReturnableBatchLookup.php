@@ -27,7 +27,8 @@ final class ReturnableBatchLookup extends LookupSource
 
     public function authorize(User $user): bool
     {
-        return $user->can('purchase_returns.manage');
+        // T-084: form berita acara pemusnahan memakai lookup yang sama (batch karantina/ED).
+        return $user->can('purchase_returns.manage') || $user->can('stock_disposals.manage');
     }
 
     public function rules(): array

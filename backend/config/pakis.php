@@ -18,7 +18,9 @@ use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Listings\AssignmentListing;
 use App\Domain\Employee\Listings\EmployeeListing;
+use App\Domain\Inventory\Approvables\DisposalApproval;
 use App\Domain\Inventory\Approvables\OpnameVarianceApproval;
+use App\Domain\Inventory\Approvables\QuarantineReleaseApproval;
 use App\Domain\Inventory\Approvables\TransferVarianceApproval;
 use App\Domain\Inventory\Listings\SerialNumberListing;
 use App\Domain\Organization\Listings\DepartmentListing;
@@ -108,8 +110,9 @@ return [
         'stock_transfer_variance' => ['label' => 'Selisih mutasi stok', 'model' => TransferVarianceApproval::class, 'conditions' => []],
         // T-083: dokumen = baris stock_opnames (nominal = variance_value Σ |selisih| × HPP, BR-162).
         'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => OpnameVarianceApproval::class, 'conditions' => []],
-        'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => null, 'conditions' => []],
-        'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => null, 'conditions' => []],
+        // T-084: dokumen = berita acara (nominal = total_cost HPP) & permintaan lepas karantina (tanpa nominal).
+        'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => DisposalApproval::class, 'conditions' => []],
+        'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => QuarantineReleaseApproval::class, 'conditions' => []],
         // T-081: dokumen = baris purchase_returns (nominal = nilai HPP saat diajukan).
         'purchase_return' => ['label' => 'Retur ke prinsipal', 'model' => PurchaseReturnApproval::class, 'conditions' => []],
         // T-074: aktivasi & ganti HP = baris customer_verifications; limit & gabung = baris customers (PA-49).

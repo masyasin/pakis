@@ -69,6 +69,21 @@ class ReferenceSeeder extends Seeder
             'unrecorded_transaction' => 'Transaksi belum dicatat',
             'other' => 'Lainnya',
         ],
+        // Paket A (15 §2, T-084): alasan karantina manual (BR-164) & pemusnahan (BR-163).
+        'quarantine_reason' => [
+            'damaged' => 'Rusak',
+            'leaking' => 'Bocor/rembes',
+            'suspect' => 'Diduga tidak sesuai',
+            'expired' => 'Kedaluwarsa',
+            'recall' => 'Penarikan',
+            'other' => 'Lainnya',
+        ],
+        'disposal_reason' => [
+            'expired' => 'Kedaluwarsa',
+            'damaged' => 'Rusak',
+            'recall' => 'Penarikan',
+            'other' => 'Lainnya',
+        ],
         // Paket A (15 §4.1, T-069).
         'unit' => [
             'bottle' => 'Botol',

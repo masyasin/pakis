@@ -23,6 +23,9 @@ enum ReferenceGroup: string
     case PurchaseReturnReason = 'purchase_return_reason';
     // Paket A (15 §2, T-083): alasan selisih stock opname (BR-162(5)).
     case OpnameVarianceReason = 'opname_variance_reason';
+    // Paket A (15 §2, T-084): alasan karantina manual (BR-164) & alasan pemusnahan (BR-163).
+    case QuarantineReason = 'quarantine_reason';
+    case DisposalReason = 'disposal_reason';
 
     public function label(): string
     {
@@ -37,6 +40,8 @@ enum ReferenceGroup: string
             self::ReceiptRejectReason => 'Alasan tolak penerimaan',
             self::PurchaseReturnReason => 'Alasan retur ke prinsipal',
             self::OpnameVarianceReason => 'Alasan selisih opname',
+            self::QuarantineReason => 'Alasan karantina',
+            self::DisposalReason => 'Alasan pemusnahan',
         };
     }
 
@@ -59,6 +64,8 @@ enum ReferenceGroup: string
             self::ReceiptRejectReason => [['goods_receipt_lines', 'reject_reason_id']],
             self::PurchaseReturnReason => [['purchase_returns', 'reason_id']],
             self::OpnameVarianceReason => [['stock_opname_lines', 'variance_reason_id']],
+            self::QuarantineReason => [['stock_batches', 'quarantine_reason_id']],
+            self::DisposalReason => [['disposal_reports', 'reason_id']],
         };
     }
 }

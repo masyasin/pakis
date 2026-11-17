@@ -75,8 +75,8 @@ test('daftar default grup pertama, urut sort_order, item sistem ditandai', funct
             ->component('references/index')
             ->where('group', 'location_type')
             // 4 grup Fase 0 + unit & formulation (T-069) + customer_type (T-073) + receipt_reject_reason (T-080)
-            // + purchase_return_reason (T-081) + opname_variance_reason (T-083).
-            ->has('groups', 10)
+            // + purchase_return_reason (T-081) + opname_variance_reason (T-083) + quarantine_reason & disposal_reason (T-084).
+            ->has('groups', 12)
             ->has('rows', 4)
             ->where('rows.0.code', 'office')
             ->where('rows.0.name', 'Kantor')

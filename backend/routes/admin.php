@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\CustomerFileController;
 use App\Http\Controllers\Admin\CustomerVerificationController;
 use App\Http\Controllers\Admin\DepartmentController;
 use App\Http\Controllers\Admin\DeviceController;
+use App\Http\Controllers\Admin\DisposalReportController;
 use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\FieldTripController;
@@ -40,6 +41,7 @@ use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PromotionController;
 use App\Http\Controllers\Admin\PurchaseOrderController;
 use App\Http\Controllers\Admin\PurchaseReturnController;
+use App\Http\Controllers\Admin\QuarantineController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\RoleController;
@@ -650,6 +652,28 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     });
     Route::get('opname/{opname}', [StockOpnameController::class, 'show'])->whereNumber('opname')
         ->middleware('can:stock_opnames.view')->name('stock-opnames.show');
+
+    // Karantina & pindah rak (15 §5 `admin.stock.quarantine` / `release` / `bin-move`, BR-164, T-084) +
+    // halaman Karantina `admin.stock-batches.index` (PA-69). Batch di luar scope Stok → 404 di controller.
+    Route::middleware('can:stock_quarantine.manage')->group(function () {
+        Route::get('stok/karantina', [QuarantineController::class, 'index'])->name('stock-batches.index');
+        Route::post('stok/karantina', [QuarantineController::class, 'quarantine'])->name('stock.quarantine');
+        Route::post('stok/karantina/{batch}/lepas', [QuarantineController::class, 'release'])->whereNumber('batch')->name('stock.release');
+        Route::post('stok/pindah-rak', [QuarantineController::class, 'move'])->name('stock.bin-move');
+    });
+
+    // Berita acara pemusnahan (15 §5 `admin.disposal-reports.*`, FR-A29, BR-163, T-084). `baru` sebelum
+    // `{report}`; `batal` & `cetak` melengkapi 15 §5 (PA-69). Scope Stok lokasi dicek controller (→ 404).
+    Route::middleware('can:stock_disposals.manage')->group(function () {
+        Route::get('pemusnahan', [DisposalReportController::class, 'index'])->name('disposal-reports.index');
+        Route::get('pemusnahan/baru', [DisposalReportController::class, 'create'])->name('disposal-reports.create');
+        Route::post('pemusnahan', [DisposalReportController::class, 'store'])->name('disposal-reports.store');
+        Route::get('pemusnahan/{report}', [DisposalReportController::class, 'show'])->whereNumber('report')->name('disposal-reports.show');
+        Route::get('pemusnahan/{report}/cetak', [DisposalReportController::class, 'print'])->whereNumber('report')->name('disposal-reports.print');
+        Route::post('pemusnahan/{report}/ajukan', [DisposalReportController::class, 'submit'])->whereNumber('report')->name('disposal-reports.submit');
+        Route::post('pemusnahan/{report}/laksanakan', [DisposalReportController::class, 'execute'])->whereNumber('report')->name('disposal-reports.execute');
+        Route::post('pemusnahan/{report}/batal', [DisposalReportController::class, 'cancel'])->whereNumber('report')->name('disposal-reports.cancel');
+    });
 
     // Kendaraan minimal (15 §5 `admin.vehicles.*`, FR-A05, T-068). Centang canvas → lokasi stok
     // `vehicle` otomatis. Di luar scope lokasi asal → 404.

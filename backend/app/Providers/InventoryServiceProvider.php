@@ -8,10 +8,12 @@ use App\Domain\Inventory\Lookup\AvailableBatchLookup;
 use App\Domain\Inventory\Lookup\ReturnableBatchLookup;
 use App\Domain\Inventory\Lookup\StockBinLookup;
 use App\Domain\Inventory\Lookup\StockLocationLookup;
+use App\Domain\Inventory\Models\DisposalReport;
 use App\Domain\Inventory\Models\StockBin;
 use App\Domain\Inventory\Models\StockLocation;
 use App\Domain\Inventory\Models\StockOpname;
 use App\Domain\Inventory\Models\StockTransfer;
+use App\Domain\Inventory\Policies\DisposalReportPolicy;
 use App\Domain\Inventory\Policies\StockBinPolicy;
 use App\Domain\Inventory\Policies\StockLocationPolicy;
 use App\Domain\Inventory\Policies\StockOpnamePolicy;
@@ -53,5 +55,6 @@ class InventoryServiceProvider extends ServiceProvider
         Gate::policy(Vehicle::class, VehiclePolicy::class);
         Gate::policy(StockTransfer::class, StockTransferPolicy::class);
         Gate::policy(StockOpname::class, StockOpnamePolicy::class);
+        Gate::policy(DisposalReport::class, DisposalReportPolicy::class);
     }
 }

@@ -2,6 +2,8 @@ import { Link, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
     ArrowLeftRight,
+    Biohazard,
+    Flame,
     Building2,
     CalendarClock,
     CalendarDays,
@@ -109,6 +111,8 @@ const ICONS: Record<string, LucideIcon> = {
     purchase_order: ClipboardList,
     stock_transfer: ArrowLeftRight,
     stock_opname: ClipboardCheck,
+    quarantine: Biohazard,
+    disposal: Flame,
     goods_receipt: PackageCheck,
     purchase_return: PackageX,
     serial: ScanBarcode,

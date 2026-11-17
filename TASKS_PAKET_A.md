@@ -387,13 +387,13 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; sequence `disposal_report`; `app/Domain/Inventory/{Actions/{QuarantineStock,ReleaseQuarantine,MoveBin,SaveDisposalReport,SubmitDisposalReport,ExecuteDisposalReport},Approvables/{QuarantineReleaseApproval,DisposalApproval},Models/{DisposalReport,DisposalReportLine},Listings/DisposalReportListing}`; template cetak berita acara (HTML print); scan BA & foto pemusnahan lewat `app/Support/Upload/` (T-070); controller; pages `Inventory/Quarantine/*`, `Inventory/Disposals/*`; tests
 - Deskripsi: Karantina sebagian qty → bin karantina (batch baru berstatus `quarantine`). Lepas → approval → bin pilihan. Berita acara: draft dengan batch karantina/ED → approval → cetak BA (daftar batch, qty, nilai, kolom tanda tangan saksi) → eksekusi dengan unggah scan + foto + saksi.
 - Kriteria penerimaan:
-  - [ ] Batch di bin zona karantina tidak pernah dialokasikan FEFO
-  - [ ] Batch `expired` tidak bisa dilepas karantina
-  - [ ] Eksekusi tanpa scan BA / tanpa foto / < 2 saksi ditolak; CHECK `bap_exec_chk` di DB; berkas selain JPG/PNG/WEBP/PDF (menurut isi) ditolak
-  - [ ] Saksi tidak menerima field NIK (validasi menolak kunci tak dikenal)
-  - [ ] Eksekusi → qty 0, status `disposed`, outbox `inventory.written_off`
-  - [ ] Metode `return_to_principal` membuat retur prinsipal (T-081), bukan mutasi `disposal`
-  - [ ] `ExecuteDisposalReport` memanggil `PeriodGuard` dengan tanggal bisnis eksekusi; karantina, lepas karantina & pindah rak (`bin_move_*`) tidak memancarkan event apa pun; `return_to_principal` tidak memancarkan `inventory.written_off` (**15** §11.4)
+  - [x] Batch di bin zona karantina tidak pernah dialokasikan FEFO
+  - [x] Batch `expired` tidak bisa dilepas karantina
+  - [x] Eksekusi tanpa scan BA / tanpa foto / < 2 saksi ditolak; CHECK `bap_exec_chk` di DB; berkas selain JPG/PNG/WEBP/PDF (menurut isi) ditolak
+  - [x] Saksi tidak menerima field NIK (validasi menolak kunci tak dikenal)
+  - [x] Eksekusi → qty 0, status `disposed`, outbox `inventory.written_off`
+  - [x] Metode `return_to_principal` membuat retur prinsipal (T-081), bukan mutasi `disposal`
+  - [x] `ExecuteDisposalReport` memanggil `PeriodGuard` dengan tanggal bisnis eksekusi; karantina, lepas karantina & pindah rak (`bin_move_*`) tidak memancarkan event apa pun; `return_to_principal` tidak memancarkan `inventory.written_off` (**15** §11.4)
 - Verifikasi: `php artisan test --filter='Quarantine|Disposal'`
 - Di luar lingkup: prosedur resmi dinas (OQ-115) — template BA generik dulu
 

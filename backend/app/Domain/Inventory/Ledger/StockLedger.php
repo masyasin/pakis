@@ -56,7 +56,7 @@ final class StockLedger
      *
      * @var list<string>
      */
-    public const RESERVE_ANY_STATUS_SOURCES = ['purchase_return'];
+    public const RESERVE_ANY_STATUS_SOURCES = ['purchase_return', 'disposal_report'];
 
     public function __construct(private readonly CostCalculator $costs) {}
 
@@ -414,6 +414,12 @@ final class StockLedger
         $row = $this->lockBatches([$batch->id])[$batch->id];
         $from = StockBatchStatus::from((string) $row->status);
         if ($from === $status) {
+            // Batch tujuan karantina manual sudah `quarantine` sejak `move()` ke rak karantina; alasannya
+            // tetap dicatat di sini (T-084, BR-164) tanpa log status baru.
+            if ($status === StockBatchStatus::Quarantine && $reasonId !== null && (int) $row->quarantine_reason_id !== $reasonId) {
+                $this->writeBatch($batch->id, ['quarantine_reason_id' => $reasonId]);
+            }
+
             return StockBatch::query()->findOrFail($batch->id);
         }
 

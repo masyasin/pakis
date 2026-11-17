@@ -147,6 +147,16 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     },
     'stock_opname.posted': { label: 'Diposting', tone: 'success' },
     'stock_opname.cancelled': { label: 'Dibatalkan', tone: 'muted' },
+    // Berita acara pemusnahan (T-084, 15 §6.6)
+    'disposal_report.draft': { label: 'Draf', tone: 'muted' },
+    'disposal_report.pending_approval': {
+        label: 'Menunggu persetujuan',
+        tone: 'warning',
+    },
+    'disposal_report.approved': { label: 'Disetujui', tone: 'info' },
+    'disposal_report.executed': { label: 'Dilaksanakan', tone: 'success' },
+    'disposal_report.rejected': { label: 'Ditolak', tone: 'danger' },
+    'disposal_report.cancelled': { label: 'Dibatalkan', tone: 'muted' },
     // Penerimaan barang, baris penerimaan, nomor seri (T-080, 15 §6.6)
     'goods_receipt.draft': { label: 'Draf', tone: 'muted' },
     'goods_receipt.checked': { label: 'Diperiksa', tone: 'info' },

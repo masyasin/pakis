@@ -23,7 +23,17 @@
         <testsuite name="Concurrency">
             <directory>tests/Concurrency</directory>
         </testsuite>
+        <!-- Uji volume (T-077, 1 juta mutasi): hanya dijalankan manual dengan opsi group=volume -->
+        <testsuite name="Volume">
+            <directory>tests/Volume</directory>
+        </testsuite>
     </testsuites>
+    <!-- Grup volume dikecualikan dari run biasa & CI; opsi group=volume di baris perintah membatalkan pengecualian ini. -->
+    <groups>
+        <exclude>
+            <group>volume</group>
+        </exclude>
+    </groups>
     <source>
         <include>
             <directory>app</directory>

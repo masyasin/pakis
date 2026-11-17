@@ -159,6 +159,15 @@ test('T-075 data demo harga: daftar bawaan & grosir terbit + versi draf; harga b
         ->and((string) app(PriceResolver::class)->resolve(null, $unit->product, $unit, Qty::of('10'))->price)->toBe('82450.00');
 });
 
+test('T-076 data demo promo: tiga aktif + satu draf; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    expect(DB::table('promotions')->orderBy('code')->pluck('status', 'code')->all())->toBe([
+        'DEMO-B10G1' => 'active', 'DEMO-BUNDEL' => 'draft', 'DEMO-FUNTIER' => 'active', 'DEMO-INS5' => 'active',
+    ]);
+});
+
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {
     app()->detectEnvironment(fn () => 'production');
 

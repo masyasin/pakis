@@ -82,3 +82,10 @@ Schedule::command('pricing:activate-versions')
     ->everyFiveMinutes()
     ->onOneServer()
     ->withoutOverlapping();
+
+// Promo (15 §11.1 EndPromotions, T-076): akhiri promo yang lewat waktu selesai/anggaran habis.
+// PromotionEngine sudah mengabaikannya, jadi jeda 15 menit hanya memengaruhi label status.
+Schedule::command('promotions:end')
+    ->everyFifteenMinutes()
+    ->onOneServer()
+    ->withoutOverlapping();

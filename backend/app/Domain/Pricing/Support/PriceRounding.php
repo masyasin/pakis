@@ -15,7 +15,15 @@ final class PriceRounding
 {
     public static function apply(Money $price): Money
     {
-        $mode = (string) setting('pricing.rounding');
+        return self::roundUp($price, (string) setting('pricing.rounding'));
+    }
+
+    /**
+     * Versi murni (tanpa membaca setting) untuk PromotionEngine & fixture lintas platform:
+     * `none` = apa adanya (sudah 2 desimal), selain itu ke ATAS ke kelipatan 100/500/1000.
+     */
+    public static function roundUp(Money $price, string $mode): Money
+    {
         if ($mode === 'none' || $price->isZero()) {
             return $price;
         }

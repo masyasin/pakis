@@ -28,6 +28,7 @@ import {
     UsersRound,
     BadgeCheck,
     BadgeDollarSign,
+    BadgePercent,
     BriefcaseBusiness,
     CircleDot,
     Factory,
@@ -109,6 +110,7 @@ const ICONS: Record<string, LucideIcon> = {
     customer_verification: BadgeCheck,
     sales_area: MapPinned,
     price_list: BadgeDollarSign,
+    promotion: BadgePercent,
 };
 
 /**

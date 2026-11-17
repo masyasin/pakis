@@ -22,6 +22,7 @@ use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 use App\Domain\Organization\Listings\PositionListing;
 use App\Domain\Pricing\Approvables\PriceListPublish;
+use App\Domain\Pricing\Approvables\PromotionActivate;
 use App\Domain\Pricing\Listings\PriceListItemListing;
 
 /*
@@ -102,7 +103,8 @@ return [
         'customer_merge' => ['label' => 'Gabung kios duplikat', 'model' => CustomerMerge::class, 'conditions' => []],
         // T-075: dokumen = baris price_list_versions.
         'price_list_publish' => ['label' => 'Terbit daftar harga', 'model' => PriceListPublish::class, 'conditions' => []],
-        'promotion_activate' => ['label' => 'Aktivasi promo', 'model' => null, 'conditions' => []],
+        // T-076: dokumen = baris promotions (nominal = anggaran).
+        'promotion_activate' => ['label' => 'Aktivasi promo', 'model' => PromotionActivate::class, 'conditions' => []],
         'serial_swap' => ['label' => 'Tukar nomor seri', 'model' => null, 'conditions' => []],
     ],
 

@@ -6,8 +6,10 @@ use App\Domain\Pricing\Lookup\PriceListLookup;
 use App\Domain\Pricing\Lookup\PriceListVersionLookup;
 use App\Domain\Pricing\Models\PriceList;
 use App\Domain\Pricing\Models\PriceListVersion;
+use App\Domain\Pricing\Models\Promotion;
 use App\Domain\Pricing\Policies\PriceListPolicy;
 use App\Domain\Pricing\Policies\PriceListVersionPolicy;
+use App\Domain\Pricing\Policies\PromotionPolicy;
 use App\Support\Lookup\LookupRegistry;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
@@ -29,5 +31,6 @@ class PricingServiceProvider extends ServiceProvider
     {
         Gate::policy(PriceList::class, PriceListPolicy::class);
         Gate::policy(PriceListVersion::class, PriceListVersionPolicy::class);
+        Gate::policy(Promotion::class, PromotionPolicy::class);
     }
 }

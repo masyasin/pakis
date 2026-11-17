@@ -1,0 +1,183 @@
+{
+    "_doc": "Kasus uji PromotionEngine (BR-169, PA-60, T-076). Dipakai PHP (tests/Unit/Pricing/PromotionEngineTest) dan kelak Dart (Paket C) agar hasil promo identik. Uang string 2 desimal, qty string. Bawaan tiap promo: periode 2026-11-01..2026-12-01, kanal office+sales, cakupan all, prioritas 100, tidak bisa digabung. Konteks bawaan: at 2026-11-16T03:00:00Z, kanal office, tanpa kios.",
+    "defaults": {
+        "promotion": {
+            "priority": 100,
+            "is_stackable": false,
+            "channels": ["office", "sales"],
+            "starts_at": "2026-11-01T00:00:00Z",
+            "ends_at": "2026-12-01T00:00:00Z",
+            "budget_amount": null,
+            "budget_used": "0",
+            "scopes": [{ "type": "all", "id": null }]
+        },
+        "context": { "customer_id": null, "price_list_id": null, "sales_area_id": null, "channel": "office", "at": "2026-11-16T03:00:00Z" },
+        "rounding": "none"
+    },
+    "cases": [
+        {
+            "name": "diskon persen dasar",
+            "promotions": [{ "id": 1, "code": "P10", "type": "percent_discount", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "2", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "18000.00", "discount": "2000.00", "applied": ["P10"] }], "bonus": [], "total": "18000.00" }
+        },
+        {
+            "name": "pembulatan ke atas 500 tidak boleh menaikkan harga",
+            "rounding": "500",
+            "promotions": [{ "id": 1, "code": "P1", "type": "percent_discount", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "1" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10120" }],
+            "expected": { "lines": [{ "key": "A", "total": "10120.00", "discount": "0.00", "applied": [] }], "bonus": [], "total": "10120.00" }
+        },
+        {
+            "name": "pembulatan ke atas 500 pada diskon 10%",
+            "rounding": "500",
+            "promotions": [{ "id": 1, "code": "P10", "type": "percent_discount", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10120" }],
+            "expected": { "lines": [{ "key": "A", "total": "9500.00", "discount": "620.00", "applied": ["P10"] }], "bonus": [], "total": "9500.00" }
+        },
+        {
+            "name": "diskon nominal per satuan dasar pada satuan dus",
+            "promotions": [{ "id": 1, "code": "N500", "type": "amount_discount", "targets": [{ "type": "product", "id": 2 }], "tiers": [{ "min_qty_base": "1", "discount_amount": "500" }] }],
+            "lines": [{ "key": "B", "product_id": 2, "category_id": 10, "principal_id": 200, "qty": "1", "factor": "24", "unit_price": "200000" }],
+            "expected": { "lines": [{ "key": "B", "total": "188000.00", "discount": "12000.00", "applied": ["N500"] }], "bonus": [], "total": "188000.00" }
+        },
+        {
+            "name": "harga tidak pernah negatif",
+            "promotions": [{ "id": 1, "code": "N1500", "type": "amount_discount", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_amount": "1500" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "3", "factor": "1", "unit_price": "1000" }],
+            "expected": { "lines": [{ "key": "A", "total": "0.00", "discount": "3000.00", "applied": ["N1500"] }], "bonus": [], "total": "0.00" }
+        },
+        {
+            "name": "ambang qty belum terpenuhi",
+            "promotions": [{ "id": 1, "code": "P5", "type": "percent_discount", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "10", "discount_pct": "5" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "2", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "20000.00", "discount": "0.00", "applied": [] }], "bonus": [], "total": "20000.00" }
+        },
+        {
+            "name": "ambang nominal terpenuhi",
+            "promotions": [{ "id": 1, "code": "P5", "type": "percent_discount", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_amount": "15000", "discount_pct": "5" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "2", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "19000.00", "discount": "1000.00", "applied": ["P5"] }], "bonus": [], "total": "19000.00" }
+        },
+        {
+            "name": "diskon bertingkat qty 49 memakai tingkat 10",
+            "promotions": [{ "id": 1, "code": "TIER", "type": "tiered_discount", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "2" }, { "min_qty_base": "50", "discount_pct": "8" }, { "min_qty_base": "10", "discount_pct": "5" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "49", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "465500.00", "discount": "24500.00", "applied": ["TIER"] }], "bonus": [], "total": "465500.00" }
+        },
+        {
+            "name": "diskon bertingkat dihitung dalam satuan dasar (1 dus = 24)",
+            "promotions": [{ "id": 1, "code": "TIER", "type": "tiered_discount", "targets": [{ "type": "product", "id": 2 }], "tiers": [{ "min_qty_base": "12", "discount_pct": "1" }, { "min_qty_base": "24", "discount_pct": "3" }] }],
+            "lines": [{ "key": "B", "product_id": 2, "category_id": 10, "principal_id": 200, "qty": "1", "factor": "24", "unit_price": "200000" }],
+            "expected": { "lines": [{ "key": "B", "total": "194000.00", "discount": "6000.00", "applied": ["TIER"] }], "bonus": [], "total": "194000.00" }
+        },
+        {
+            "name": "beli 10 gratis 1 per kelipatan",
+            "promotions": [{ "id": 1, "code": "B10G1", "type": "buy_x_get_y", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "10", "free_product_id": 1, "free_qty_base": "1" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "25", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "250000.00", "discount": "0.00", "applied": ["B10G1"] }], "bonus": [{ "code": "B10G1", "product_id": 1, "qty_base": "2.000" }], "total": "250000.00" }
+        },
+        {
+            "name": "harga bundel satu baris (3 untuk 25.000)",
+            "promotions": [{ "id": 1, "code": "BND", "type": "bundle_price", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "3", "bundle_price": "25000" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "7", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "60000.00", "discount": "10000.00", "applied": ["BND"] }], "bonus": [], "total": "60000.00" }
+        },
+        {
+            "name": "harga bundel lintas baris dibagi proporsional",
+            "promotions": [{ "id": 1, "code": "BND", "type": "bundle_price", "targets": [{ "type": "category", "id": 10 }], "tiers": [{ "min_qty_base": "3", "bundle_price": "30000" }] }],
+            "lines": [
+                { "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "2", "factor": "1", "unit_price": "10000" },
+                { "key": "D", "product_id": 4, "category_id": 10, "principal_id": 100, "qty": "2", "factor": "1", "unit_price": "12000" }
+            ],
+            "expected": {
+                "lines": [
+                    { "key": "A", "total": "18750.00", "discount": "1250.00", "applied": ["BND"] },
+                    { "key": "D", "total": "23250.00", "discount": "750.00", "applied": ["BND"] }
+                ],
+                "bonus": [],
+                "total": "42000.00"
+            }
+        },
+        {
+            "name": "promo bisa digabung dihitung berurutan dari harga setelah promo sebelumnya",
+            "promotions": [
+                { "id": 1, "code": "P10", "type": "percent_discount", "priority": 10, "is_stackable": true, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] },
+                { "id": 2, "code": "N500", "type": "amount_discount", "priority": 20, "is_stackable": true, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_amount": "500" }] }
+            ],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "8500.00", "discount": "1500.00", "applied": ["P10", "N500"] }], "bonus": [], "total": "8500.00" }
+        },
+        {
+            "name": "promo tidak bisa digabung mengunci baris dari promo berikutnya",
+            "promotions": [
+                { "id": 1, "code": "SOLO", "type": "percent_discount", "priority": 10, "is_stackable": false, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] },
+                { "id": 2, "code": "P5", "type": "percent_discount", "priority": 20, "is_stackable": true, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "5" }] }
+            ],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "9000.00", "discount": "1000.00", "applied": ["SOLO"] }], "bonus": [], "total": "9000.00" }
+        },
+        {
+            "name": "promo tidak bisa digabung tidak mengenai baris yang sudah berpromo",
+            "promotions": [
+                { "id": 1, "code": "N1000", "type": "amount_discount", "priority": 10, "is_stackable": true, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_amount": "1000" }] },
+                { "id": 2, "code": "HALF", "type": "percent_discount", "priority": 20, "is_stackable": false, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "50" }] }
+            ],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "9000.00", "discount": "1000.00", "applied": ["N1000"] }], "bonus": [], "total": "9000.00" }
+        },
+        {
+            "name": "prioritas lebih kecil diproses lebih dulu",
+            "promotions": [
+                { "id": 1, "code": "LOW", "type": "percent_discount", "priority": 50, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] },
+                { "id": 2, "code": "HIGH", "type": "percent_discount", "priority": 5, "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "20" }] }
+            ],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "8000.00", "discount": "2000.00", "applied": ["HIGH"] }], "bonus": [], "total": "8000.00" }
+        },
+        {
+            "name": "kanal tidak cocok",
+            "promotions": [{ "id": 1, "code": "POS", "type": "percent_discount", "channels": ["pos"], "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "10000.00", "discount": "0.00", "applied": [] }], "bonus": [], "total": "10000.00" }
+        },
+        {
+            "name": "cakupan kios cocok, cakupan area lain tidak",
+            "context": { "customer_id": 7, "price_list_id": 3, "sales_area_id": 5, "channel": "sales", "at": "2026-11-16T03:00:00Z" },
+            "promotions": [
+                { "id": 1, "code": "KIOS7", "type": "percent_discount", "is_stackable": true, "scopes": [{ "type": "customer", "id": 7 }], "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] },
+                { "id": 2, "code": "AREA99", "type": "percent_discount", "is_stackable": true, "scopes": [{ "type": "sales_area", "id": 99 }], "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "50" }] }
+            ],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "9000.00", "discount": "1000.00", "applied": ["KIOS7"] }], "bonus": [], "total": "9000.00" }
+        },
+        {
+            "name": "anggaran habis tidak berlaku",
+            "promotions": [{ "id": 1, "code": "BUDGET", "type": "percent_discount", "budget_amount": "100000", "budget_used": "100000", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "10000.00", "discount": "0.00", "applied": [] }], "bonus": [], "total": "10000.00" }
+        },
+        {
+            "name": "periode belum mulai",
+            "promotions": [{ "id": 1, "code": "DES", "type": "percent_discount", "starts_at": "2026-12-01T00:00:00Z", "ends_at": "2026-12-31T00:00:00Z", "targets": [{ "type": "product", "id": 1 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "10" }] }],
+            "lines": [{ "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" }],
+            "expected": { "lines": [{ "key": "A", "total": "10000.00", "discount": "0.00", "applied": [] }], "bonus": [], "total": "10000.00" }
+        },
+        {
+            "name": "target prinsipal hanya mengenai produk prinsipal itu",
+            "promotions": [{ "id": 1, "code": "PRIN", "type": "percent_discount", "targets": [{ "type": "principal", "id": 200 }], "tiers": [{ "min_qty_base": "1", "discount_pct": "5" }] }],
+            "lines": [
+                { "key": "A", "product_id": 1, "category_id": 10, "principal_id": 100, "qty": "1", "factor": "1", "unit_price": "10000" },
+                { "key": "B", "product_id": 2, "category_id": 10, "principal_id": 200, "qty": "1", "factor": "24", "unit_price": "200000" }
+            ],
+            "expected": {
+                "lines": [
+                    { "key": "A", "total": "10000.00", "discount": "0.00", "applied": [] },
+                    { "key": "B", "total": "190000.00", "discount": "10000.00", "applied": ["PRIN"] }
+                ],
+                "bonus": [],
+                "total": "200000.00"
+            }
+        }
+    ]
+}

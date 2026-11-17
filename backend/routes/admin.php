@@ -36,6 +36,7 @@ use App\Http\Controllers\Admin\ProductController;
 use App\Http\Controllers\Admin\ProductRegistrationController;
 use App\Http\Controllers\Admin\ProductUnitController;
 use App\Http\Controllers\Admin\ProfileController;
+use App\Http\Controllers\Admin\PromotionController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\RoleController;
@@ -459,6 +460,21 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::post('daftar-harga/versi/{version}/ajukan', [PriceListController::class, 'submitVersion'])->whereNumber('version')->name('price-lists.versions.submit');
     });
 
+    // Promo (15 §5 `admin.promotions.*`, FR-A20, BR-169, T-076). Halaman ubah = detail hanya-baca bila
+    // bukan draf. Simulasi hanya membaca (POST karena membawa daftar baris).
+    Route::middleware('can:promotions.view')->group(function () {
+        Route::get('promo', [PromotionController::class, 'index'])->name('promotions.index');
+        Route::post('promo/simulasi', [PromotionController::class, 'simulate'])->middleware('throttle:60,1')->name('promotions.simulate');
+        Route::get('promo/{promo}/ubah', [PromotionController::class, 'edit'])->whereNumber('promo')->name('promotions.edit');
+    });
+    Route::middleware('can:promotions.manage')->group(function () {
+        Route::get('promo/baru', [PromotionController::class, 'create'])->name('promotions.create');
+        Route::post('promo', [PromotionController::class, 'store'])->name('promotions.store');
+        Route::put('promo/{promo}', [PromotionController::class, 'update'])->whereNumber('promo')->name('promotions.update');
+        Route::post('promo/{promo}/ajukan', [PromotionController::class, 'submit'])->whereNumber('promo')->name('promotions.submit');
+        Route::post('promo/{promo}/akhiri', [PromotionController::class, 'end'])->whereNumber('promo')->name('promotions.end');
+    });
+
     // Area penjualan (15 §5 `admin.sales-areas.*`, FR-A12, T-073): tambah/ubah lewat dialog di halaman
     // daftar. Tanpa hapus: area dinonaktifkan.
     Route::get('area-penjualan', [SalesAreaController::class, 'index'])->middleware('can:sales_areas.view')->name('sales-areas.index');
@@ -487,22 +503,6 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         // Batas kirim/percobaan OTP dari setting `customer.otp_*` di CustomerOtpService (SEC-105).
         Route::post('pelanggan/{customer}/otp', [CustomerVerificationController::class, 'sendOtp'])->whereNumber('customer')->name('customers.otp.send');
         Route::post('pelanggan/{customer}/otp/cek', [CustomerVerificationController::class, 'checkOtp'])->whereNumber('customer')->name('customers.otp.check');
-    });
-    Route::get('pelanggan/verifikasi', [CustomerVerificationController::class, 'index'])->middleware('can:customers.verify')->name('customer-verifications.index');
-    Route::get('pelanggan/{customer}', [CustomerController::class, 'show'])->whereNumber('customer')->middleware('can:customers.view')->name('customers.show');
-
-    // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).
-    // `baru` & `rak` didaftarkan sebelum `{stockLocation}`; di luar dimensi Stok (15 §6.2) → 404 lewat
-    // route binding ber-scope. Tanpa hapus: lokasi stok & rak dinonaktifkan. TRANSIT → 403 (Policy).
-    Route::middleware('can:stock_locations.view')->group(function () {
-        Route::get('lokasi-stok', [StockLocationController::class, 'index'])->name('stock-locations.index');
-        Route::get('lokasi-stok/rak', [StockBinController::class, 'index'])->name('stock-bins.index');
-    });
-    Route::middleware('can:stock_locations.manage')->group(function () {
-        Route::get('lokasi-stok/baru', [StockLocationController::class, 'create'])->name('stock-locations.create');
-        Route::post('lokasi-stok', [StockLocationController::class, 'store'])->name('stock-locations.store');
-        Route::post('lokasi-stok/rak', [StockBinController::class, 'store'])->name('stock-bins.store');
-        Route::put('lokasi-stok/rak/{bin}', [StockBinController::class, 'update'])->whereNumber('bin')->name('stock-bins.update');
         // Limit kredit, gabung, status, kontak (15 §5, BR-125, BR-166(5), §6.6, T-074 bagian 2).
         Route::post('pelanggan/{customer}/limit', [CustomerChangeController::class, 'creditLimit'])->whereNumber('customer')
             ->middleware('throttle:30,1')->name('customers.credit-limit');
@@ -529,6 +529,22 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('pelanggan/{customer}/foto', [CustomerFileController::class, 'photo'])->whereNumber('customer')->name('customers.photo');
         Route::get('pelanggan/{customer}/dokumen-pembeli-terbatas', [CustomerFileController::class, 'restrictedDocument'])->whereNumber('customer')->name('customers.restricted-document');
         Route::get('pelanggan/verifikasi/{verification}/foto', [CustomerFileController::class, 'verificationPhoto'])->whereNumber('verification')->name('customer-verifications.photo');
+    });
+    Route::get('pelanggan/verifikasi', [CustomerVerificationController::class, 'index'])->middleware('can:customers.verify')->name('customer-verifications.index');
+    Route::get('pelanggan/{customer}', [CustomerController::class, 'show'])->whereNumber('customer')->middleware('can:customers.view')->name('customers.show');
+
+    // Lokasi stok & rak (15 §5 `admin.stock-locations.*`, `admin.stock-bins.*`, FR-A03/A04, T-068).
+    // `baru` & `rak` didaftarkan sebelum `{stockLocation}`; di luar dimensi Stok (15 §6.2) → 404 lewat
+    // route binding ber-scope. Tanpa hapus: lokasi stok & rak dinonaktifkan. TRANSIT → 403 (Policy).
+    Route::middleware('can:stock_locations.view')->group(function () {
+        Route::get('lokasi-stok', [StockLocationController::class, 'index'])->name('stock-locations.index');
+        Route::get('lokasi-stok/rak', [StockBinController::class, 'index'])->name('stock-bins.index');
+    });
+    Route::middleware('can:stock_locations.manage')->group(function () {
+        Route::get('lokasi-stok/baru', [StockLocationController::class, 'create'])->name('stock-locations.create');
+        Route::post('lokasi-stok', [StockLocationController::class, 'store'])->name('stock-locations.store');
+        Route::post('lokasi-stok/rak', [StockBinController::class, 'store'])->name('stock-bins.store');
+        Route::put('lokasi-stok/rak/{bin}', [StockBinController::class, 'update'])->whereNumber('bin')->name('stock-bins.update');
         Route::get('lokasi-stok/{stockLocation}/ubah', [StockLocationController::class, 'edit'])->whereNumber('stockLocation')->name('stock-locations.edit');
         Route::put('lokasi-stok/{stockLocation}', [StockLocationController::class, 'update'])->whereNumber('stockLocation')->name('stock-locations.update');
     });

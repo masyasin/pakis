@@ -55,6 +55,7 @@ final class MenuBuilder
         ['Penjualan', 'Verifikasi Kios', 'customer_verification', 'customers.verify', 'admin.customer-verifications.index'],
         ['Penjualan', 'Area Penjualan', 'sales_area', 'sales_areas.view', 'admin.sales-areas.index'],
         ['Penjualan', 'Daftar Harga', 'price_list', 'prices.view', 'admin.price-lists.index'],
+        ['Penjualan', 'Promo', 'promotion', 'promotions.view', 'admin.promotions.index'],
         ['Pembelian', 'Supplier', 'supplier', 'suppliers.view', 'admin.suppliers.index'],
         ['Pembelian', 'Prinsipal', 'principal', 'suppliers.view', 'admin.principals.index'],
         ['Master', 'Produk', 'product', 'products.view', 'admin.products.index'],

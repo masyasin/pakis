@@ -32,9 +32,12 @@ use App\Domain\Organization\Models\Position;
 use App\Domain\Pricing\Actions\CreatePriceVersion;
 use App\Domain\Pricing\Actions\PublishPriceVersion;
 use App\Domain\Pricing\Actions\SavePriceList;
+use App\Domain\Pricing\Actions\SavePromotion;
 use App\Domain\Pricing\Actions\UpsertPriceItems;
 use App\Domain\Pricing\Enums\PriceListKind;
+use App\Domain\Pricing\Enums\PromotionStatus;
 use App\Domain\Pricing\Models\PriceList;
+use App\Domain\Pricing\Models\Promotion;
 use App\Domain\Pricing\Support\PriceRounding;
 use App\Domain\Purchasing\Actions\SavePrincipal;
 use App\Domain\Purchasing\Actions\SaveSupplier;
@@ -181,6 +184,7 @@ class DemoSeeder extends Seeder
         $this->call(CustomerDemoSeeder::class);
         $this->seedPurchasing();
         $this->seedPricing();
+        $this->seedPromotions();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -556,6 +560,49 @@ class DemoSeeder extends Seeder
                     'effective_from' => CarbonImmutable::now(DisplayTime::timezone())->addMonthNoOverflow()->startOfMonth()->format('Y-m-d\TH:i'),
                     'note' => 'Rencana kenaikan 5% (demo, draf)',
                 ], null);
+            }
+        }
+    }
+
+    /**
+     * Promo demo T-076 (fiktif): tiga aktif (diskon % kategori Insektisida, beli 10 gratis 1, diskon
+     * bertingkat Fungisida) + satu draf (harga bundel) untuk dicoba diajukan. Periode: awal bulan ini
+     * sampai akhir bulan depan. Promo yang sudah ada (kode sama) dilewati.
+     */
+    private function seedPromotions(): void
+    {
+        $tz = DisplayTime::timezone();
+        $from = CarbonImmutable::now($tz)->startOfMonth()->format('Y-m-d\TH:i');
+        $to = CarbonImmutable::now($tz)->addMonthNoOverflow()->endOfMonth()->startOfDay()->format('Y-m-d\TH:i');
+        $category = fn (string $code) => ProductCategory::query()->where('code', $code)->value('id');
+        $product = fn (string $sku) => Product::query()->where('sku', $sku)->value('id');
+        if ($category('INSEKTISIDA') === null || $product('DM-INS-001') === null) {
+            return;
+        }
+
+        $promos = [
+            'DEMO-INS5' => ['Diskon 5% Insektisida', 'percent_discount', 'active', 100, false,
+                [['type' => 'category', 'id' => $category('INSEKTISIDA')]], [['min_qty_base' => '1', 'discount_pct' => '5']]],
+            'DEMO-B10G1' => ['Beli 10 Gratis 1 Abamektin', 'buy_x_get_y', 'active', 50, false,
+                [['type' => 'product', 'id' => $product('DM-INS-001')]], [['min_qty_base' => '10', 'free_product_id' => $product('DM-INS-001'), 'free_qty_base' => '1']]],
+            'DEMO-FUNTIER' => ['Diskon Bertingkat Fungisida', 'tiered_discount', 'active', 100, true,
+                [['type' => 'category', 'id' => $category('FUNGISIDA')]], [['min_qty_base' => '5', 'discount_pct' => '2'], ['min_qty_base' => '20', 'discount_pct' => '4']]],
+            'DEMO-BUNDEL' => ['Bundel 3 Perekat', 'bundle_price', 'draft', 100, false,
+                [['type' => 'product', 'id' => $product('DM-PER-001')]], [['min_qty_base' => '3', 'bundle_price' => '90000']]],
+        ];
+
+        foreach ($promos as $code => [$name, $type, $status, $priority, $stackable, $targets, $tiers]) {
+            if (Promotion::query()->where('code', $code)->exists()) {
+                continue;
+            }
+            $promo = app(SavePromotion::class)->handle(null, [
+                'code' => $code, 'name' => $name, 'type' => $type, 'starts_at' => $from, 'ends_at' => $to,
+                'priority' => $priority, 'is_stackable' => $stackable, 'channels' => ['office', 'sales', 'mitra'],
+                'budget_amount' => null, 'funded_by' => 'company', 'principal_id' => null, 'principal_share_pct' => null,
+                'description' => 'Data demo', 'targets' => $targets, 'scopes' => [['type' => 'all', 'id' => null]], 'tiers' => $tiers,
+            ], null);
+            if ($status === 'active') {
+                $promo->forceFill(['status' => PromotionStatus::Active])->save();
             }
         }
     }

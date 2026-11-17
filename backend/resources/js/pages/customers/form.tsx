@@ -2,6 +2,11 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ArrowLeft, Lock } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
+import {
+    DuplicateDialog,
+    DuplicateNotice,
+    useDuplicateCheck,
+} from '@/components/customer/duplicate-check';
 import { FormStatus } from '@/components/form-status';
 import InputError from '@/components/input-error';
 import { AsyncSelect } from '@/components/pakis/async-select';
@@ -95,8 +100,35 @@ export default function CustomerForm({
         home_stock_location_id: idString(customer?.home_stock_location_id),
         latitude: customer?.latitude ?? '',
         longitude: customer?.longitude ?? '',
+        not_duplicate: false,
+        duplicate_reason: '',
     });
     const errors = form.errors as Record<string, string | undefined>;
+
+    // Cek kios mirip & HP bentrok sambil mengisi (BR-166, T-074); server memeriksa ulang saat simpan.
+    const duplicateCheck = useDuplicateCheck({
+        store_name: form.data.store_name,
+        owner_phone: form.data.owner_phone,
+        latitude: form.data.latitude,
+        longitude: form.data.longitude,
+        village_code: form.data.village_code,
+        customer_id: customer?.id ?? null,
+    });
+    const candidates = duplicateCheck.result?.candidates ?? [];
+    const candidateKey = candidates.map((c) => c.code).join(',');
+    // Konfirmasi "bukan duplikat" hanya berlaku untuk daftar kandidat yang dilihat; daftar berubah →
+    // harus diperiksa ulang.
+    const [confirmedKey, setConfirmedKey] = useState<string | null>(null);
+    const confirmed =
+        form.data.not_duplicate &&
+        confirmedKey === candidateKey &&
+        form.data.duplicate_reason.trim().length >= 5;
+    const [duplicateOpen, setDuplicateOpen] = useState(false);
+    const phoneError =
+        errors.owner_phone ??
+        (phoneLocked
+            ? undefined
+            : duplicateCheck.result?.phone_conflict?.message);
 
     // Mengganti wilayah induk mengosongkan turunannya (pola filter berjenjang T-012).
     const setRegion = (
@@ -116,6 +148,15 @@ export default function CustomerForm({
 
     const submit = (event: FormEvent) => {
         event.preventDefault();
+        if (candidates.length > 0 && !confirmed) {
+            setDuplicateOpen(true);
+
+            return;
+        }
+        send();
+    };
+
+    const send = () => {
         // Provinsi–kecamatan hanya alat bantu memilih desa. Kode hanya dikirim saat mode manual;
         // area & sales hanya saat tambah (setelahnya lewat Alihkan, BR-167).
         form.transform(
@@ -126,14 +167,19 @@ export default function CustomerForm({
                 code,
                 sales_area_id,
                 assigned_sales_employee_id,
+                not_duplicate,
+                duplicate_reason,
                 ...data
             }) => {
                 void province;
                 void regency;
                 void district;
+                const sure = not_duplicate && confirmedKey === candidateKey;
 
                 return {
                     ...data,
+                    not_duplicate: sure,
+                    duplicate_reason: sure ? duplicate_reason.trim() : null,
                     ...(manualCode ? { code } : {}),
                     ...(creating
                         ? { sales_area_id, assigned_sales_employee_id }
@@ -143,6 +189,13 @@ export default function CustomerForm({
         );
         form.submit(customer ? update(customer.id) : store(), {
             preserveScroll: true,
+            onSuccess: () => setDuplicateOpen(false),
+            onError: (errs) => {
+                // Server menemukan kandidat yang belum dikonfirmasi (mis. pemeriksaan layar belum
+                // selesai): tampilkan dialognya bila daftarnya sudah ada.
+                const dup = errs.not_duplicate ?? errs.duplicate_reason;
+                setDuplicateOpen(Boolean(dup) && candidates.length > 0);
+            },
         });
     };
 
@@ -270,7 +323,7 @@ export default function CustomerForm({
                         <Field
                             id="owner_phone"
                             label="HP pemilik (WhatsApp)"
-                            error={errors.owner_phone}
+                            error={phoneError}
                             hint={
                                 phoneLocked ? (
                                     <span className="inline-flex items-center gap-1">
@@ -298,9 +351,7 @@ export default function CustomerForm({
                                 onChange={(e) =>
                                     form.setData('owner_phone', e.target.value)
                                 }
-                                aria-invalid={
-                                    errors.owner_phone ? true : undefined
-                                }
+                                aria-invalid={phoneError ? true : undefined}
                             />
                         </Field>
                         <Field
@@ -527,6 +578,19 @@ export default function CustomerForm({
                     />
                 </SettingsSection>
 
+                <DuplicateNotice
+                    count={candidates.length}
+                    confirmed={confirmed}
+                    checking={duplicateCheck.checking}
+                    notice={duplicateCheck.notice}
+                    error={
+                        candidates.length === 0
+                            ? (errors.not_duplicate ?? errors.duplicate_reason)
+                            : undefined
+                    }
+                    onReview={() => setDuplicateOpen(true)}
+                />
+
                 <div className="flex justify-end gap-2">
                     <Button variant="outline" asChild>
                         <Link href={backHref}>Batal</Link>
@@ -537,6 +601,30 @@ export default function CustomerForm({
                     </Button>
                 </div>
             </form>
+
+            <DuplicateDialog
+                open={duplicateOpen && candidates.length > 0}
+                onOpenChange={setDuplicateOpen}
+                candidates={candidates}
+                notDuplicate={
+                    form.data.not_duplicate && confirmedKey === candidateKey
+                }
+                reason={form.data.duplicate_reason}
+                onConfirmChange={({ notDuplicate, reason }) => {
+                    setConfirmedKey(candidateKey);
+                    form.setData({
+                        ...form.data,
+                        not_duplicate: notDuplicate,
+                        duplicate_reason: reason,
+                    });
+                }}
+                errors={{
+                    not_duplicate: errors.not_duplicate,
+                    duplicate_reason: errors.duplicate_reason,
+                }}
+                onSave={send}
+                saving={form.processing}
+            />
         </>
     );
 }

@@ -80,6 +80,8 @@ const REPRESENTATIVE = [
     'stock_locations.manage' => ['GET', '/lokasi-stok/baru'],
     'vehicles.view' => ['GET', '/kendaraan'],
     'vehicles.manage' => ['GET', '/kendaraan/baru'],
+    // T-074: antrean verifikasi kios (scope Pelanggan; tanpa kios dalam scope tetap 200).
+    'customers.verify' => ['GET', '/pelanggan/verifikasi'],
 ];
 
 /** Permission yang modulnya belum dibangun → task pembuatnya (ditambahkan ke REPRESENTATIVE di sana). */
@@ -92,7 +94,7 @@ const PENDING = [
     'suppliers.view' => 'T-072', 'suppliers.manage' => 'T-072',
     'sales_areas.view' => 'T-073', 'sales_areas.manage' => 'T-073',
     'customers.view' => 'T-073', 'customers.export' => 'T-073', 'customers.manage' => 'T-073',
-    'customers.verify' => 'T-074', 'customers.merge' => 'T-074', 'customers.change_phone' => 'T-074',
+    'customers.merge' => 'T-074', 'customers.change_phone' => 'T-074',
     'customers.change_phone_approve' => 'T-074', 'credit_limits.set' => 'T-074', 'credit_limits.set_high' => 'T-074',
     'prices.view' => 'T-075', 'prices.manage' => 'T-075', 'prices.publish' => 'T-075',
     'promotions.view' => 'T-076', 'promotions.manage' => 'T-076', 'promotions.approve' => 'T-076',

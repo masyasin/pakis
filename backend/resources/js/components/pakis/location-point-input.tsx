@@ -32,6 +32,8 @@ type Props = {
     idPrefix?: string;
     /** Nama titik di diagram, mis. "Titik kios". */
     label?: string;
+    /** Teks saat belum ada titik (bawaan: titik boleh diisi nanti saat verifikasi kios). */
+    emptyText?: string;
 };
 
 /**
@@ -63,6 +65,7 @@ export function LocationPointInput({
     errors = {},
     idPrefix = 'point',
     label = 'Titik lokasi',
+    emptyText = 'Belum ada titik. Titik bisa diisi nanti saat verifikasi kios.',
 }: Props) {
     const helpId = useId();
     const [mapsLink, setMapsLink] = useState('');
@@ -276,10 +279,7 @@ export function LocationPointInput({
                     </div>
                 </div>
             ) : (
-                <p className="text-sm text-muted-foreground">
-                    Belum ada titik. Titik bisa diisi nanti saat verifikasi
-                    kios.
-                </p>
+                <p className="text-sm text-muted-foreground">{emptyText}</p>
             )}
         </div>
     );

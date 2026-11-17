@@ -26,6 +26,7 @@ import {
     Smartphone,
     UserRound,
     UsersRound,
+    BadgeCheck,
     BadgeDollarSign,
     BriefcaseBusiness,
     CircleDot,
@@ -105,6 +106,7 @@ const ICONS: Record<string, LucideIcon> = {
     warehouse: Warehouse,
     vehicle: Truck,
     customer: Store,
+    customer_verification: BadgeCheck,
     sales_area: MapPinned,
     price_list: BadgeDollarSign,
 };

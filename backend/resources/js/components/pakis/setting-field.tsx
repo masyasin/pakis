@@ -1,5 +1,9 @@
 import { Lock, RotateCcw } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId } from 'react';
+import {
+    groupRupiah as formatRupiah,
+    MoneyInput,
+} from '@/components/pakis/money-input';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -74,113 +78,10 @@ type Props = {
 const textareaClass =
     'min-h-24 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30';
 
-/**
- * Rupiah kanonik ("50000000.5") → teks id-ID ("50.000.000,5"). String diproses per digit, bukan
- * lewat Number, agar nominal besar tidak dibulatkan float.
- */
-export function formatRupiah(canonical: string): string {
-    const negative = canonical.startsWith('-');
-    const [intPart, frac] = canonical.replace('-', '').split('.');
-    const grouped = (intPart || '0').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    const text = frac !== undefined ? `${grouped},${frac}` : grouped;
-
-    return negative ? `-${text}` : text;
-}
-
-/**
- * Teks ketikan rupiah id-ID ("50.000.000,50") → nilai kanonik untuk server ("50000000.50").
- * Titik = pemisah ribuan, koma = desimal (maks 2 digit). Teks kosong → ''.
- */
-export function parseRupiah(text: string): string {
-    const negative = text.trim().startsWith('-');
-    const [intRaw, ...rest] = text.split(',');
-    const intDigits = intRaw.replace(/\D/g, '').replace(/^0+(?=\d)/, '');
-    const frac = rest.join('').replace(/\D/g, '').slice(0, 2);
-
-    if (intDigits === '' && frac === '') {
-        return '';
-    }
-
-    const value = frac !== '' ? `${intDigits || '0'}.${frac}` : intDigits;
-
-    return negative ? `-${value}` : value;
-}
-
-/** "50000000.00" → "50000000", "7.50" → "7.5": bentuk pembanding & tampilan tanpa sen nol. */
-function trimZeroFraction(canonical: string): string {
-    return canonical.includes('.')
-        ? canonical.replace(/0+$/, '').replace(/\.$/, '')
-        : canonical;
-}
-
-/** Rapikan teks ketikan: ribuan diberi titik, koma desimal yang sedang diketik dipertahankan. */
-function reformatRupiahInput(text: string): string {
-    const canonical = parseRupiah(text);
-    if (canonical === '') {
-        return '';
-    }
-    const [intPart, frac] = canonical.split('.');
-
-    return text.includes(',')
-        ? `${formatRupiah(intPart)},${frac ?? ''}`
-        : formatRupiah(intPart);
-}
-
-/**
- * Input rupiah berformat id-ID. Teks ketikan disimpan lokal (agar "50.000," tidak hilang saat
- * mengetik), nilai yang dikirim ke induk selalu kanonik ("50000000.5") sesuai validasi server.
- */
-export function MoneyInput({
-    id,
-    value,
-    onChange,
-    disabled,
-    describedBy,
-    invalid,
-    placeholder,
-}: {
-    id: string;
-    value: SettingValue;
-    onChange: (value: SettingValue) => void;
-    disabled?: boolean;
-    describedBy?: string;
-    invalid?: boolean;
-    placeholder?: string;
-}) {
-    const canonical = typeof value === 'string' ? value : '';
-    const [text, setText] = useState('');
-    // Teks lokal dipakai selama masih mewakili nilai induk; bila induk berubah (mis. nilai awal),
-    // tampilan diturunkan ulang dari nilai kanonik.
-    const display =
-        trimZeroFraction(parseRupiah(text)) === trimZeroFraction(canonical)
-            ? text
-            : canonical === ''
-              ? ''
-              : formatRupiah(trimZeroFraction(canonical));
-
-    return (
-        <div className="flex w-56 items-center rounded-md border border-input shadow-xs focus-within:border-ring focus-within:ring-[3px] focus-within:ring-ring/50 dark:bg-input/30">
-            <span className="pl-3 text-sm text-muted-foreground" aria-hidden>
-                Rp
-            </span>
-            <Input
-                id={id}
-                inputMode="decimal"
-                className="border-0 text-right shadow-none focus-visible:ring-0 dark:bg-transparent"
-                value={display}
-                disabled={disabled}
-                aria-describedby={describedBy}
-                aria-invalid={invalid ? true : undefined}
-                placeholder={placeholder}
-                onChange={(e) => {
-                    const next = reformatRupiahInput(e.target.value);
-                    setText(next);
-                    onChange(parseRupiah(next));
-                }}
-            />
-        </div>
-    );
-}
+// Rupiah dipindah ke `money-input.tsx` (T-074, dipakai juga di luar Pengaturan); nama lama tetap
+// diekspor dari sini agar impor yang sudah ada tidak berubah.
+export { parseRupiah } from '@/components/pakis/money-input';
+export { formatRupiah, MoneyInput };
 
 /** Nilai untuk teks "Default: …". */
 export function describeSetting(
@@ -394,7 +295,7 @@ export function SettingField({
                 return (
                     <MoneyInput
                         id={id}
-                        value={value}
+                        value={typeof value === 'string' ? value : ''}
                         disabled={disabled}
                         describedBy={describedBy}
                         onChange={onChange}

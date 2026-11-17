@@ -51,6 +51,8 @@ final class MenuBuilder
         // T-073: Pelanggan & Area Penjualan (Verifikasi Kios T-074, Daftar Harga T-075, Promo T-076 menyusul
         // di antaranya sesuai urutan 15 §6.5). Menu ini juga membuka login web pemegang `customers.view` (BR-017).
         ['Penjualan', 'Pelanggan', 'customer', 'customers.view', 'admin.customers.index'],
+        // T-074: antrean verifikasi kios untuk penyetuju (`customers.verify`, 15 §6.5).
+        ['Penjualan', 'Verifikasi Kios', 'customer_verification', 'customers.verify', 'admin.customer-verifications.index'],
         ['Penjualan', 'Area Penjualan', 'sales_area', 'sales_areas.view', 'admin.sales-areas.index'],
         ['Penjualan', 'Daftar Harga', 'price_list', 'prices.view', 'admin.price-lists.index'],
         ['Pembelian', 'Supplier', 'supplier', 'suppliers.view', 'admin.suppliers.index'],

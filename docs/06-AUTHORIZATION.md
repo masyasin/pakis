@@ -214,6 +214,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | — | — | Dasbor | `dashboard.view` | ✅ | ✅ | ✅ | ✅ | ✅ |
 | — | — | Persetujuan (angka = menunggu keputusan saya) | `approvals.view`, atau ada yang menunggu keputusannya (PA-27) | ✅ | ❌ | ❌ | ✅ | ✅ |
 | Distribusi | Penjualan | Pelanggan (T-073; role Paket A: `15` §6.4) | `customers.view` | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Distribusi | Penjualan | Verifikasi Kios (T-074; antrean verifikasi; role Paket A: `15` §6.4) | `customers.verify` | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Distribusi | Penjualan | Area Penjualan (T-073; role Paket A: `15` §6.4) | `sales_areas.view` | ✅ | ✅ | ❌ | ❌ | ✅ |
 | Distribusi | Penjualan | Daftar Harga (T-075; role Paket A: `15` §6.4) | `prices.view` | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Distribusi | Pembelian | Supplier (T-072; role Paket A: `15` §6.4) | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -250,7 +251,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 
 Persetujuan & Aturan Persetujuan (T-067, `15` §6.5): role Paket A pemegang `approvals.view` (admin_penjualan, kepala_gudang, purchasing) juga melihat menu Persetujuan; staf_gudang tidak. Calon penyetuju tanpa `approvals.view` (mis. atasan langsung atau kepala lokasi ber-role HRD) boleh membuka tab "Menunggu saya" (PA-27), jadi menu Persetujuan juga tampil baginya **selama ada permintaan yang menunggu keputusannya**; tanpa itu menu tersembunyi. Angka menu dihitung `ApprovalVisibility::pendingCountFor`, sama dengan isi tab itu.
 
-Penjualan (T-073, `15` §6.5): Pelanggan dan Area Penjualan juga tampil untuk `admin_penjualan`; Verifikasi Kios (T-074), Daftar Harga (T-075), dan Promo (T-076) disisipkan di grup ini oleh task masing-masing. Karena menu Pelanggan ada, pemegang `customers.view` tanpa izin menu lain boleh masuk web (BR-017).
+Penjualan (T-073, `15` §6.5): Pelanggan, Verifikasi Kios (T-074), dan Area Penjualan juga tampil untuk `admin_penjualan`; Daftar Harga (T-075) dan Promo (T-076) disisipkan di grup ini oleh task masing-masing. Karena menu Pelanggan ada, pemegang `customers.view` tanpa izin menu lain boleh masuk web (BR-017).
 
 Role `pegawai` saja **tidak** bisa masuk web admin. Login web ditolak dengan pesan "Akun Anda hanya untuk aplikasi Pakis Pro" bila pengguna tidak punya satu pun permission yang membuka menu di atas (BR-017).
 

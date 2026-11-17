@@ -8,6 +8,7 @@ import {
     MapPin,
     MapPinned,
     Pencil,
+    ShieldCheck,
     Store,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
@@ -18,6 +19,8 @@ import {
 } from '@/components/customer/customer-ui';
 import type { CustomerStatus } from '@/components/customer/customer-ui';
 import { ReassignDialog } from '@/components/customer/reassign-dialog';
+import { VerificationTab } from '@/components/customer/verification-tab';
+import type { VerificationState } from '@/components/customer/verification-tab';
 import {
     DetailCard,
     EmptyPanel,
@@ -85,17 +88,19 @@ type Props = {
     customer: Customer;
     assignments: Assignment[];
     phoneMasked: boolean;
+    verification: VerificationState;
     can: { update: boolean; reassign: boolean };
     today: string;
     maxReassign: number;
 };
 
 /**
- * Tab detail kios (`?tab=`, 15 §7.1). T-074 menambah Kontak, Verifikasi, dan Limit cukup dengan
- * menambah baris di sini + panelnya di `TabPanel`.
+ * Tab detail kios (`?tab=`, 15 §7.1). Verifikasi dari T-074 bagian 3a; Kontak, Limit, dan Riwayat
+ * perubahan menyusul (bagian 3b) cukup dengan menambah baris di sini + panelnya di bawah.
  */
 const TABS: { key: string; label: string; icon: LucideIcon }[] = [
     { key: 'ringkasan', label: 'Ringkasan', icon: Info },
+    { key: 'verifikasi', label: 'Verifikasi', icon: ShieldCheck },
     { key: 'penugasan', label: 'Penugasan', icon: History },
 ];
 
@@ -116,6 +121,7 @@ export default function CustomerShow({
     customer,
     assignments,
     phoneMasked,
+    verification,
     can,
     today,
     maxReassign,
@@ -146,7 +152,8 @@ export default function CustomerShow({
                     <span className="grid size-14 shrink-0 place-items-center rounded-xl border bg-muted text-muted-foreground">
                         <Store className="size-6" aria-hidden="true" />
                     </span>
-                    <div className="min-w-0 flex-1 space-y-1.5">
+                    {/* basis-48: di HP tombol aksi turun ke baris baru, nama toko tidak terjepit. */}
+                    <div className="min-w-0 flex-1 basis-48 space-y-1.5">
                         <h1 className="text-[1.4rem] leading-tight font-bold break-words">
                             {customer.store_name}
                         </h1>
@@ -214,6 +221,15 @@ export default function CustomerShow({
 
                 {active === 'ringkasan' && (
                     <SummaryTab customer={customer} phoneMasked={phoneMasked} />
+                )}
+                {active === 'verifikasi' && (
+                    <VerificationTab
+                        customerId={customer.id}
+                        status={customer.status}
+                        isVerified={customer.is_verified}
+                        verifiedAt={customer.verified_at}
+                        state={verification}
+                    />
                 )}
                 {active === 'penugasan' && (
                     <AssignmentsTab rows={assignments} />

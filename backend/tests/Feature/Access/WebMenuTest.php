@@ -39,7 +39,7 @@ function menuOf(string $role): array
 test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
-        'Penjualan' => ['Pelanggan', 'Area Penjualan', 'Daftar Harga'],
+        'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga'],
         'Pembelian' => ['Supplier', 'Prinsipal'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
@@ -67,14 +67,14 @@ test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Penjualan' => ['Pelanggan', 'Area Penjualan', 'Daftar Harga'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
 });
 
 test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › Pelanggan & Area Penjualan (T-073) + Master › Produk (T-070), Izin Edar (T-071), Kategori (T-069), Lokasi Stok & Kendaraan (T-068)', function (string $role, array $top, array $sales, array $master) {
     // Grup Pembelian (T-072) diuji terpisah di bawah.
     expect(Arr::except(menuOf($role), 'Pembelian'))->toBe(array_filter(['' => $top, 'Penjualan' => $sales, 'Master' => $master]));
 })->with([
-    'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan'], ['Pelanggan', 'Area Penjualan', 'Daftar Harga'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
+    'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan'], ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
     'kepala_gudang' => ['kepala_gudang', ['Dasbor', 'Persetujuan'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
     'staf_gudang' => ['staf_gudang', ['Dasbor'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
     'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan'], ['Daftar Harga'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],

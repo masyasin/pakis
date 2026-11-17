@@ -123,3 +123,61 @@ describe('penanda locked & one_way (PA-19)', () => {
         expect(screen.getByText(/tidak bisa diaktifkan lagi/)).toBeTruthy();
     });
 });
+
+describe('tipe date (T-077)', () => {
+    it('input tanggal mengirim YYYY-MM-DD dan bisa dikosongkan', () => {
+        const onChange = vi.fn();
+        const { container } = render(
+            <SettingField
+                def={def({
+                    type: 'date',
+                    value: '2026-10-31',
+                    default: null,
+                    nullable: true,
+                    locked: true,
+                })}
+                value="2026-10-31"
+                canChangeLocked
+                onChange={onChange}
+                onFile={noop}
+                onReset={noop}
+            />,
+        );
+
+        const input =
+            container.querySelector<HTMLInputElement>('input[type="date"]');
+        expect(input?.value).toBe('2026-10-31');
+        expect(input?.hasAttribute('disabled')).toBeFalsy();
+
+        fireEvent.change(input!, { target: { value: '2026-11-30' } });
+        expect(onChange).toHaveBeenLastCalledWith('2026-11-30');
+
+        fireEvent.change(input!, { target: { value: '' } });
+        expect(onChange).toHaveBeenLastCalledWith('');
+    });
+
+    it('tanggal kosong tampil "kosong" dan terkunci untuk selain super_admin', () => {
+        const { container } = render(
+            <SettingField
+                def={def({
+                    type: 'date',
+                    value: null,
+                    default: null,
+                    nullable: true,
+                    locked: true,
+                })}
+                value={null}
+                onChange={noop}
+                onFile={noop}
+                onReset={noop}
+            />,
+        );
+
+        const input =
+            container.querySelector<HTMLInputElement>('input[type="date"]');
+        expect(input?.value).toBe('');
+        expect(input?.hasAttribute('disabled')).toBeTruthy();
+        expect(screen.getByText('Default: kosong')).toBeTruthy();
+        expect(describeSetting('2026-10-31', 'date')).toBe('31 Okt 2026');
+    });
+});

@@ -36,6 +36,7 @@ final class SettingRegistry
         'customer' => 'Pelanggan',
         'inventory' => 'Gudang & stok',
         'pricing' => 'Harga',
+        'accounting' => 'Akuntansi',
     ];
 
     /** Grup yang perubahannya butuh konfirmasi ulang password (06 §1.6, 07 §4). */
@@ -250,6 +251,11 @@ final class SettingRegistry
             // 2.11 Harga (T-075, 15 §9, BR-168).
             $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),
             $t('pricing.allow_backdated_publish', SettingType::Bool, false, 'Izinkan versi harga berlaku surut', 'Bila aktif, pemegang izin terbit harga boleh menerbitkan versi yang mulai berlaku di masa lalu dengan alasan tertulis. Bawaan: tidak boleh.'),
+
+            // 2.13 Akuntansi (T-077, 15 §9, ADR-115). Terkunci selama Paket A; aksi ubah tanggal kunci
+            // dengan aturan maju/mundur (BR-229, izin accounting.lock) menggantikannya di T-096.
+            $t('accounting.lock_date', SettingType::Date, null, 'Tanggal kunci akuntansi', 'Dokumen stok ber-jurnal (penerimaan, retur prinsipal, mutasi, opname, pemusnahan, saldo awal) bertanggal pada atau sebelum tanggal ini ditolak. Kosong = tidak ada periode terkunci.',
+                nullable: true, locked: true),
         ];
     }
 

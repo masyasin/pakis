@@ -15,6 +15,10 @@
         <testsuite name="Contract">
             <directory>tests/Contract</directory>
         </testsuite>
+        <!-- Penjaga arsitektur lintas domain berbasis pemindaian statis (PeriodGuard, StockLedger; T-077) -->
+        <testsuite name="Arch">
+            <directory>tests/Arch</directory>
+        </testsuite>
         <!-- Proses paralel sungguhan, tanpa RefreshDatabase (ADR-009) -->
         <testsuite name="Concurrency">
             <directory>tests/Concurrency</directory>

@@ -95,6 +95,7 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 | `CUSTOMER_NOT_VERIFIED` | 422 | Limit kredit diminta untuk kios yang belum terverifikasi (BR-125). Ditambah 17 Nov 2026 (T-074) |
 | `OTP_INVALID` | 422 | Kode OTP kios salah (bukan `MFA_INVALID` 401 yang berarti login). Percobaan melebihi `customer.otp_max_attempts` → `RATE_LIMITED` 429. Ditambah 17 Nov 2026 (T-074) |
 | `OTP_EXPIRED` | 422 | Kode OTP kios lewat `customer.otp_minutes`, sudah dipakai, atau belum pernah dikirim; kirim ulang. Ditambah 17 Nov 2026 (T-074) |
+| `PERIOD_LOCKED` | 422 | Tanggal bisnis dokumen ber-outbox (penerimaan, retur prinsipal, mutasi & selisih mutasi, opname, pemusnahan, saldo awal) ≤ `accounting.lock_date` (ADR-115, `15` §11.4); dilempar `PeriodGuard::assertOpen()` sebelum mutasi ditulis, jadi transaksi batal utuh. Pesan menyebut tanggal kunci. Ditambah 17 Nov 2026 (T-077); task Paket B pertama yang mengembalikannya lewat API memindahkannya ke §2.3 + `api_error.dart` |
 
 ## 3. Standar Daftar (Listing) — Web & API
 

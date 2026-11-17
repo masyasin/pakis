@@ -128,3 +128,24 @@ test('tidak ada kunci yang tampak seperti secret di registri (SEC-060)', functio
         expect($key)->not->toMatch('/password$|secret|api_key|smtp|token$/');
     }
 });
+
+test('PA-19 penanda locked & one_way sama dengan kolom Validasi 08 §2 (dua arah)', function () {
+    foreach (documentedSettings() as $key => $doc) {
+        $definition = SettingRegistry::get($key);
+
+        expect($definition->locked)->toBe(str_contains($doc['validation'], '`locked`'), "Penanda locked {$key}")
+            ->and($definition->oneWay)->toBe(str_contains($doc['validation'], '`one_way`'), "Penanda one_way {$key}");
+    }
+});
+
+test('T-077 accounting.lock_date bertipe date, default kosong, terkunci, dan tidak publik', function () {
+    $definition = SettingRegistry::get('accounting.lock_date');
+
+    expect(SettingRegistry::GROUPS['accounting'] ?? null)->toBe('Akuntansi')
+        ->and($definition->type)->toBe(SettingType::Date)
+        ->and($definition->default)->toBeNull()
+        ->and($definition->nullable)->toBeTrue()
+        ->and($definition->locked)->toBeTrue()
+        ->and($definition->isPublic)->toBeFalse()
+        ->and(SettingRegistry::hasLocked('accounting'))->toBeTrue();
+});

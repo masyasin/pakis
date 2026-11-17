@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { formatDate } from '@/lib/employee-format';
 import { cn } from '@/lib/utils';
 
 /** Label tampilan untuk nilai opsi setting (nilai tersimpan tetap kode huruf kecil). */
@@ -44,7 +45,8 @@ export type SettingFieldDef = {
         | 'email_list'
         | 'decimal'
         | 'int_list'
-        | 'money';
+        | 'money'
+        | 'date';
     label: string;
     help: string;
     value: SettingValue;
@@ -99,6 +101,9 @@ export function describeSetting(
     }
     if (type === 'decimal' && typeof value === 'string') {
         return value.replace('.', ',');
+    }
+    if (type === 'date' && typeof value === 'string') {
+        return formatDate(value);
     }
     if (typeof value === 'boolean') {
         return value ? 'Ya' : 'Tidak';
@@ -314,6 +319,20 @@ export function SettingField({
                         onChange={(e) =>
                             onChange(e.target.value.replace(',', '.'))
                         }
+                    />
+                );
+            case 'date':
+                // Input tanggal browser selalu mengirim YYYY-MM-DD (bentuk yang divalidasi server);
+                // dikosongkan = '' → server menyimpan null.
+                return (
+                    <Input
+                        id={id}
+                        type="date"
+                        className="w-48"
+                        value={typeof value === 'string' ? value : ''}
+                        disabled={disabled}
+                        aria-describedby={describedBy}
+                        onChange={(e) => onChange(e.target.value)}
                     />
                 );
             case 'int_list':

@@ -23,6 +23,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 - `int_list`: daftar bilangan bulat unik (beda dari `multi enum` yang berisi string). Batas min–max = jumlah butir; aturan per butir (rentang, urutan) memakai validasi khusus kunci.
 - Penanda **`locked`**: hanya `super_admin` yang bisa mengubah (selain itu `403`; field tampil terkunci), wajib konfirmasi password, perubahan tercatat audit `setting.updated`. Berbeda dari grup `security`/`auth` yang hanya butuh konfirmasi password.
 - Penanda **`one_way`** (khusus `bool`): hanya boleh `true → false`; `false → true` (termasuk lewat "Kembalikan default") ditolak `422` pada field itu.
+- `date` (T-077): tanggal kalender `YYYY-MM-DD` disimpan sebagai string, boleh kosong (= null); tanggal mustahil (mis. 2026-02-30) ditolak. Form memakai input tanggal.
 - Penanda dicatat di kolom Validasi kunci yang memakainya (mis. `inventory.opening_balance_open`, T-086).
 
 ### 2.1 Umum & Branding
@@ -204,6 +205,16 @@ Grup `pricing` (tab "Harga"), dipakai daftar harga berversi (T-075, `15` §9) da
 | `pricing.allow_backdated_publish` | bool | `false` | — | ❌ |
 
 Catatan: `pricing.rounding` membulatkan ke atas harga hasil salin versi ±% (dan promo T-076) ke kelipatan nilai itu; `none` = dua desimal half-up. `pricing.allow_backdated_publish` mati = versi baru tidak boleh berlaku surut (BR-168); hidup = pemegang `prices.publish` boleh menerbitkan versi berlaku surut dengan alasan.
+
+### 2.13 Akuntansi
+
+Grup `accounting` (tab "Akuntansi"), dipakai `PeriodGuard` untuk dokumen ber-outbox (T-077, `15` §9 & §11.4, ADR-115).
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `accounting.lock_date` | date | kosong | Penanda `locked`; tanggal `YYYY-MM-DD` atau kosong | ❌ |
+
+Catatan: dokumen ber-outbox (penerimaan, retur prinsipal, mutasi & selisih mutasi, opname, pemusnahan, saldo awal) dengan tanggal bisnis ≤ nilai ini ditolak `422 PERIOD_LOCKED`; kosong = tidak ada periode terkunci. Selama Paket A kunci ini berpenanda `locked` (hanya `super_admin`, konfirmasi password, audit `setting.updated`); aturan maju/mundur (BR-229), izin `accounting.lock`, dan layar khusus dibuat T-096.
 
 ## 3. Grup Referensi
 

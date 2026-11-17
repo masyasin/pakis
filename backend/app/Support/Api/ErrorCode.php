@@ -59,6 +59,8 @@ enum ErrorCode: string
     case CUSTOMER_NOT_VERIFIED = 'CUSTOMER_NOT_VERIFIED';
     case OTP_INVALID = 'OTP_INVALID';
     case OTP_EXPIRED = 'OTP_EXPIRED';
+    // Khusus web (05 §2.4a), tanggal kunci akuntansi dokumen ber-outbox (ADR-115, T-077).
+    case PERIOD_LOCKED = 'PERIOD_LOCKED';
 
     public function status(): int
     {
@@ -100,7 +102,8 @@ enum ErrorCode: string
             self::PHONE_BELONGS_TO_EMPLOYEE,
             self::CUSTOMER_NOT_VERIFIED,
             self::OTP_INVALID,
-            self::OTP_EXPIRED => 422,
+            self::OTP_EXPIRED,
+            self::PERIOD_LOCKED => 422,
             self::ACCOUNT_LOCKED => 423,
             self::APP_UPDATE_REQUIRED => 426,
             self::RATE_LIMITED => 429,
@@ -160,6 +163,8 @@ enum ErrorCode: string
             self::CUSTOMER_NOT_VERIFIED => 'Kios ini belum terverifikasi. Limit kredit baru bisa diatur setelah verifikasi disetujui.',
             self::OTP_INVALID => 'Kode OTP salah.',
             self::OTP_EXPIRED => 'Kode OTP sudah tidak berlaku. Kirim ulang kode.',
+            // PeriodGuard mengirim pesan yang menyebut tanggal; ini cadangan generiknya.
+            self::PERIOD_LOCKED => 'Tanggal dokumen masuk periode akuntansi yang sudah dikunci. Pakai tanggal sesudah tanggal kunci.',
         };
     }
 }

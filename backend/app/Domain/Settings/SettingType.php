@@ -21,6 +21,8 @@ enum SettingType: string
     case Decimal = 'decimal';
     case IntList = 'int_list';
     case Money = 'money';
+    // T-077 (15 §9): tanggal kalender `Y-m-d` (mis. accounting.lock_date); kosong = null.
+    case Date = 'date';
 
     /**
      * Konversi nilai tersimpan (JSON) ke tipe PHP yang benar (BR-022).
@@ -67,6 +69,8 @@ enum SettingType: string
             // DECIMAL(18,2): maksimal 16 digit bulat, 2 digit sen.
             self::Money => ['string', 'regex:/^-?\d{1,16}(\.\d{1,2})?$/'],
             self::IntList => ['array'],
+            // date_format juga menolak tanggal mustahil (31 Februari).
+            self::Date => ['string', 'date_format:Y-m-d'],
         };
     }
 

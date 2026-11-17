@@ -66,7 +66,19 @@ final class SettingStore
 
         foreach ($values as $key => $value) {
             $definition = SettingRegistry::get($key);
-            Setting::query()->updateOrCreate(['key' => $key], ['value' => $value, 'updated_by' => $userId]);
+            if ($value === null) {
+                // Cast json Eloquent meneruskan null sebagai NULL SQL, padahal kolom `value` NOT NULL;
+                // "kosong" disimpan sebagai JSON `null` agar setting nullable (mis. accounting.lock_date,
+                // T-077) bisa dikosongkan lagi lewat form.
+                $now = now();
+                Setting::query()->upsert(
+                    [['key' => $key, 'value' => 'null', 'updated_by' => $userId, 'created_at' => $now, 'updated_at' => $now]],
+                    ['key'],
+                    ['value', 'updated_by', 'updated_at'],
+                );
+            } else {
+                Setting::query()->updateOrCreate(['key' => $key], ['value' => $value, 'updated_by' => $userId]);
+            }
             $groups[$definition->group()] = true;
         }
 

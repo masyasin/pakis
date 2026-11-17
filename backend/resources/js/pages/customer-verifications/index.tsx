@@ -1,6 +1,7 @@
 import { Head, Link } from '@inertiajs/react';
 import {
     CustomerPhone,
+    SignedPhoto,
     VERIFICATION_STATUS_TONE,
 } from '@/components/customer/customer-ui';
 import type { VerificationRow } from '@/components/customer/customer-ui';
@@ -61,6 +62,21 @@ export default function CustomerVerificationsIndex({
                             {r.customer.code}
                         </span>
                     </span>
+                ) : (
+                    <span className="text-muted-foreground">–</span>
+                ),
+        },
+        {
+            key: 'photo',
+            header: 'Foto',
+            // Tautan bertanda tangan 5 menit dari props render ini (SEC-108); klik = tab baru.
+            cell: (r) =>
+                r.photo_url ? (
+                    <SignedPhoto
+                        url={r.photo_url}
+                        alt={`Foto toko ${r.customer?.store_name ?? ''}`.trim()}
+                        className="aspect-square w-14"
+                    />
                 ) : (
                     <span className="text-muted-foreground">–</span>
                 ),

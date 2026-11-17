@@ -2,22 +2,45 @@ import { Head, Link, usePage } from '@inertiajs/react';
 import {
     ArrowLeft,
     ArrowRightLeft,
+    Camera,
+    ChevronDown,
+    Combine,
     CreditCard,
+    FileText,
     History,
     Info,
     MapPin,
     MapPinned,
     Pencil,
     ShieldCheck,
+    Smartphone,
     Store,
+    UsersRound,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
+import { ContactsTab } from '@/components/customer/contacts-tab';
+import {
+    CustomerNotices,
+    MergeDialog,
+    STATUS_ACTION_COPY,
+    StatusDialog,
+} from '@/components/customer/customer-actions';
 import {
     CUSTOMER_STATUS_TONE,
     CustomerPhone,
+    SignedPhoto,
 } from '@/components/customer/customer-ui';
-import type { CustomerStatus } from '@/components/customer/customer-ui';
+import type {
+    ChangeState,
+    CustomerStatus,
+    StatusActionValue,
+} from '@/components/customer/customer-ui';
+import { LimitTab } from '@/components/customer/limit-tab';
+import {
+    PhoneChangeCard,
+    PhoneChangeDialog,
+} from '@/components/customer/phone-change';
 import { ReassignDialog } from '@/components/customer/reassign-dialog';
 import { VerificationTab } from '@/components/customer/verification-tab';
 import type { VerificationState } from '@/components/customer/verification-tab';
@@ -33,6 +56,13 @@ import { LocationDiagram } from '@/components/pakis/location-diagram';
 import { PageTabs } from '@/components/pakis/page-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 import { formatDateTimeIn } from '@/lib/approval-format';
 import { formatDate } from '@/lib/listing-query';
@@ -72,6 +102,15 @@ type Customer = {
     credit_limit_active: boolean;
     verified_at: string | null;
     created_at: string | null;
+    /** URL bertanda tangan 5 menit (SEC-108); null = belum ada foto toko. */
+    photo_url: string | null;
+    hold_reason: string | null;
+    harvest_term_allowed: boolean;
+    harvest_term_max_days: number | null;
+    restricted_buyer_eligible: boolean;
+    restricted_buyer_note: string | null;
+    restricted_buyer_valid_until: string | null;
+    restricted_buyer_document_url: string | null;
 };
 
 type Assignment = {
@@ -89,18 +128,29 @@ type Props = {
     assignments: Assignment[];
     phoneMasked: boolean;
     verification: VerificationState;
-    can: { update: boolean; reassign: boolean };
+    changes: ChangeState;
+    can: {
+        update: boolean;
+        reassign: boolean;
+        change_phone: boolean;
+        credit_limit: boolean;
+        merge: boolean;
+        change_status: boolean;
+        manage_contacts: boolean;
+    };
     today: string;
     maxReassign: number;
 };
 
 /**
- * Tab detail kios (`?tab=`, 15 §7.1). Verifikasi dari T-074 bagian 3a; Kontak, Limit, dan Riwayat
- * perubahan menyusul (bagian 3b) cukup dengan menambah baris di sini + panelnya di bawah.
+ * Tab detail kios (`?tab=`, 15 §7.1; T-074). Riwayat perubahan kios belum punya prop sendiri: riwayat
+ * yang ada adalah penugasan (tab Penugasan) dan verifikasi/ganti HP (tab Verifikasi).
  */
 const TABS: { key: string; label: string; icon: LucideIcon }[] = [
     { key: 'ringkasan', label: 'Ringkasan', icon: Info },
     { key: 'verifikasi', label: 'Verifikasi', icon: ShieldCheck },
+    { key: 'limit', label: 'Limit', icon: CreditCard },
+    { key: 'kontak', label: 'Kontak', icon: UsersRound },
     { key: 'penugasan', label: 'Penugasan', icon: History },
 ];
 
@@ -122,11 +172,13 @@ export default function CustomerShow({
     assignments,
     phoneMasked,
     verification,
+    changes,
     can,
     today,
     maxReassign,
 }: Props) {
     const page = usePage();
+    const timezone = page.props.timezone;
     const requested = new URLSearchParams(page.url.split('?')[1] ?? '').get(
         'tab',
     );
@@ -134,6 +186,17 @@ export default function CustomerShow({
         ? (requested as string)
         : 'ringkasan';
     const [reassignOpen, setReassignOpen] = useState(false);
+    const [phoneOpen, setPhoneOpen] = useState(false);
+    const [mergeOpen, setMergeOpen] = useState(false);
+    const [statusAction, setStatusAction] = useState<{
+        value: StatusActionValue;
+        label: string;
+    } | null>(null);
+    const statusActions = changes.status.actions;
+    const hasMoreActions =
+        changes.phone_change.can_request ||
+        changes.merge.can_request ||
+        statusActions.length > 0;
     useBreadcrumbTail([{ title: customer.store_name, href: '#' }]);
 
     return (
@@ -184,6 +247,62 @@ export default function CustomerShow({
                         </div>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                        {hasMoreActions && (
+                            // modal={false}: menu tertutup tanpa mengunci halaman sebelum dialog terbuka.
+                            <DropdownMenu modal={false}>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline">
+                                        Aksi lain
+                                        <ChevronDown aria-hidden="true" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    {changes.phone_change.can_request && (
+                                        <DropdownMenuItem
+                                            onSelect={() => setPhoneOpen(true)}
+                                        >
+                                            <Smartphone aria-hidden="true" />
+                                            Ganti HP
+                                        </DropdownMenuItem>
+                                    )}
+                                    {changes.merge.can_request && (
+                                        <DropdownMenuItem
+                                            onSelect={() => setMergeOpen(true)}
+                                        >
+                                            <Combine aria-hidden="true" />
+                                            Gabung ke kios lain
+                                        </DropdownMenuItem>
+                                    )}
+                                    {statusActions.length > 0 &&
+                                        (changes.phone_change.can_request ||
+                                            changes.merge.can_request) && (
+                                            <DropdownMenuSeparator />
+                                        )}
+                                    {statusActions.map((a) => {
+                                        const copy =
+                                            STATUS_ACTION_COPY[a.value];
+                                        const Icon = copy.icon;
+
+                                        return (
+                                            <DropdownMenuItem
+                                                key={a.value}
+                                                variant={
+                                                    copy.danger
+                                                        ? 'destructive'
+                                                        : 'default'
+                                                }
+                                                onSelect={() =>
+                                                    setStatusAction(a)
+                                                }
+                                            >
+                                                <Icon aria-hidden="true" />
+                                                {a.label}
+                                            </DropdownMenuItem>
+                                        );
+                                    })}
+                                </DropdownMenuContent>
+                            </DropdownMenu>
+                        )}
                         {can.reassign && (
                             <Button
                                 variant="outline"
@@ -203,6 +322,13 @@ export default function CustomerShow({
                         )}
                     </div>
                 </header>
+
+                <CustomerNotices
+                    status={customer.status}
+                    merge={changes.merge}
+                    holdReason={changes.status.hold_reason}
+                    timezone={timezone}
+                />
 
                 <PageTabs
                     label="Bagian kios"
@@ -229,6 +355,33 @@ export default function CustomerShow({
                         isVerified={customer.is_verified}
                         verifiedAt={customer.verified_at}
                         state={verification}
+                        phoneCard={
+                            <PhoneChangeCard
+                                customerId={customer.id}
+                                ownerPhone={customer.owner_phone}
+                                phoneMasked={phoneMasked}
+                                state={changes.phone_change}
+                                allowed={can.change_phone}
+                                timezone={timezone}
+                            />
+                        }
+                    />
+                )}
+                {active === 'limit' && (
+                    <LimitTab
+                        customerId={customer.id}
+                        current={customer.credit_limit}
+                        active={customer.credit_limit_active}
+                        termDays={customer.term_days}
+                        state={changes.credit_limit}
+                        timezone={timezone}
+                    />
+                )}
+                {active === 'kontak' && (
+                    <ContactsTab
+                        customerId={customer.id}
+                        state={changes.contacts}
+                        phoneMasked={phoneMasked}
                     />
                 )}
                 {active === 'penugasan' && (
@@ -244,6 +397,29 @@ export default function CustomerShow({
                     targetLabel={`${customer.store_name} · sekarang di ${customer.sales_area?.name ?? 'tanpa area'}${customer.assigned_sales ? `, sales ${customer.assigned_sales.name}` : ''}.`}
                     today={today}
                     maxReassign={maxReassign}
+                />
+            )}
+            {changes.phone_change.can_request && phoneOpen && (
+                <PhoneChangeDialog
+                    customerId={customer.id}
+                    currentPhone={phoneMasked ? null : customer.owner_phone}
+                    state={changes.phone_change}
+                    onOpenChange={setPhoneOpen}
+                />
+            )}
+            {changes.merge.can_request && mergeOpen && (
+                <MergeDialog
+                    customerId={customer.id}
+                    storeName={customer.store_name}
+                    onOpenChange={setMergeOpen}
+                />
+            )}
+            {statusAction && (
+                <StatusDialog
+                    customerId={customer.id}
+                    storeName={customer.store_name}
+                    action={statusAction}
+                    onOpenChange={(open) => !open && setStatusAction(null)}
                 />
             )}
         </>
@@ -357,6 +533,54 @@ function SummaryTab({
                         </p>
                     )}
                 </DetailCard>
+                <DetailCard title="Ketentuan dagang" icon={FileText}>
+                    <FieldGrid>
+                        <Field
+                            label="Tempo panen"
+                            value={
+                                customer.harvest_term_allowed
+                                    ? `Boleh, maks ${customer.harvest_term_max_days ?? '–'} hari`
+                                    : 'Tidak'
+                            }
+                        />
+                        <Field
+                            label="Pembeli pestisida terbatas"
+                            value={
+                                customer.restricted_buyer_eligible
+                                    ? customer.restricted_buyer_valid_until
+                                        ? `Layak sampai ${formatDate(customer.restricted_buyer_valid_until)}`
+                                        : 'Layak'
+                                    : 'Tidak'
+                            }
+                        />
+                        {customer.restricted_buyer_note && (
+                            <Field
+                                label="Catatan pembeli terbatas"
+                                value={customer.restricted_buyer_note}
+                                wide
+                            />
+                        )}
+                        {customer.restricted_buyer_document_url && (
+                            <Field
+                                label="Dokumen kelayakan"
+                                value={
+                                    <a
+                                        href={
+                                            customer.restricted_buyer_document_url
+                                        }
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="font-medium text-primary hover:underline"
+                                    >
+                                        Buka dokumen
+                                    </a>
+                                }
+                                hint="tautan berlaku 5 menit"
+                                wide
+                            />
+                        )}
+                    </FieldGrid>
+                </DetailCard>
             </div>
             <div className="space-y-5">
                 <DetailCard title="Alamat" icon={MapPin}>
@@ -364,6 +588,19 @@ function SummaryTab({
                         <Field label="Alamat jalan" value={customer.address} />
                         <Field label="Wilayah" value={region || null} />
                     </FieldGrid>
+                </DetailCard>
+                <DetailCard title="Foto toko" icon={Camera}>
+                    <SignedPhoto
+                        url={customer.photo_url}
+                        alt={`Foto toko ${customer.store_name}`}
+                        emptyText="Foto toko diambil saat verifikasi."
+                    />
+                    {customer.photo_url && (
+                        <p className="mt-2 text-xs text-muted-foreground">
+                            Klik foto untuk membuka ukuran penuh. Tautan berlaku
+                            5 menit.
+                        </p>
+                    )}
                 </DetailCard>
                 <DetailCard title="Titik lokasi" icon={MapPin}>
                     {hasPoint ? (

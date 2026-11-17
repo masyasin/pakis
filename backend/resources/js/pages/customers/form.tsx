@@ -7,6 +7,12 @@ import {
     DuplicateNotice,
     useDuplicateCheck,
 } from '@/components/customer/duplicate-check';
+import {
+    TradeTermsSection,
+    tradeTermsInitial,
+    tradeTermsPayload,
+} from '@/components/customer/trade-terms-section';
+import type { TradeTermsSource } from '@/components/customer/trade-terms-section';
 import { FormStatus } from '@/components/form-status';
 import InputError from '@/components/input-error';
 import { AsyncSelect } from '@/components/pakis/async-select';
@@ -22,7 +28,7 @@ import { rememberLabels } from '@/lib/lookup';
 import type { LookupOption } from '@/lib/lookup';
 import { index, show, store, update } from '@/routes/admin/customers';
 
-type CustomerData = {
+type CustomerData = TradeTermsSource & {
     id: number;
     code: string;
     store_name: string;
@@ -43,6 +49,8 @@ type CustomerData = {
     status: string;
     is_verified: boolean;
     phone_editable: boolean;
+    /** Tautan dokumen kelayakan pembeli terbatas (bertanda tangan 5 menit), null = belum ada. */
+    restricted_buyer_document_url: string | null;
 };
 
 type Props = {
@@ -102,6 +110,7 @@ export default function CustomerForm({
         longitude: customer?.longitude ?? '',
         not_duplicate: false,
         duplicate_reason: '',
+        ...tradeTermsInitial(customer),
     });
     const errors = form.errors as Record<string, string | undefined>;
 
@@ -169,15 +178,35 @@ export default function CustomerForm({
                 assigned_sales_employee_id,
                 not_duplicate,
                 duplicate_reason,
+                harvest_term_allowed,
+                harvest_term_max_days,
+                restricted_buyer_eligible,
+                restricted_buyer_note,
+                restricted_buyer_valid_until,
+                restricted_buyer_document,
                 ...data
             }) => {
                 void province;
                 void regency;
                 void district;
                 const sure = not_duplicate && confirmedKey === candidateKey;
+                // Ketentuan dagang hanya ada di form ubah (CustomerRequest menerimanya saat ubah).
+                const terms = creating
+                    ? null
+                    : tradeTermsPayload({
+                          harvest_term_allowed,
+                          harvest_term_max_days,
+                          restricted_buyer_eligible,
+                          restricted_buyer_note,
+                          restricted_buyer_valid_until,
+                          restricted_buyer_document,
+                      });
 
                 return {
                     ...data,
+                    ...terms?.data,
+                    // Berkas: PHP tidak membaca multipart PUT, jadi dikirim POST + `_method`.
+                    ...(terms?.multipart ? { _method: 'put' } : {}),
                     not_duplicate: sure,
                     duplicate_reason: sure ? duplicate_reason.trim() : null,
                     ...(manualCode ? { code } : {}),
@@ -187,16 +216,25 @@ export default function CustomerForm({
                 };
             },
         );
-        form.submit(customer ? update(customer.id) : store(), {
+        const options = {
             preserveScroll: true,
             onSuccess: () => setDuplicateOpen(false),
-            onError: (errs) => {
+            onError: (errs: Record<string, string>) => {
                 // Server menemukan kandidat yang belum dikonfirmasi (mis. pemeriksaan layar belum
                 // selesai): tampilkan dialognya bila daftarnya sudah ada.
                 const dup = errs.not_duplicate ?? errs.duplicate_reason;
                 setDuplicateOpen(Boolean(dup) && candidates.length > 0);
             },
-        });
+        };
+        if (customer && form.data.restricted_buyer_document !== null) {
+            form.post(update(customer.id).url, {
+                ...options,
+                forceFormData: true,
+            });
+
+            return;
+        }
+        form.submit(customer ? update(customer.id) : store(), options);
     };
 
     const title = customer ? `Ubah kios ${customer.store_name}` : 'Tambah kios';
@@ -577,6 +615,30 @@ export default function CustomerForm({
                         }
                     />
                 </SettingsSection>
+
+                {customer && (
+                    <TradeTermsSection
+                        value={{
+                            harvest_term_allowed:
+                                form.data.harvest_term_allowed,
+                            harvest_term_max_days:
+                                form.data.harvest_term_max_days,
+                            restricted_buyer_eligible:
+                                form.data.restricted_buyer_eligible,
+                            restricted_buyer_note:
+                                form.data.restricted_buyer_note,
+                            restricted_buyer_valid_until:
+                                form.data.restricted_buyer_valid_until,
+                            restricted_buyer_document:
+                                form.data.restricted_buyer_document,
+                        }}
+                        onChange={(next) =>
+                            form.setData({ ...form.data, ...next })
+                        }
+                        errors={errors}
+                        documentUrl={customer.restricted_buyer_document_url}
+                    />
+                )}
 
                 <DuplicateNotice
                     count={candidates.length}

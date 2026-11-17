@@ -155,6 +155,24 @@ describe('AsyncSelect (T-011, BR-006)', () => {
             screen.getByText('Gagal memuat pilihan. Coba lagi.'),
         ).toBeTruthy();
     });
+
+    it('exclude menyembunyikan nilai tertentu dari pilihan (kios sendiri saat gabung, T-074)', async () => {
+        render(
+            <AsyncSelect
+                source="users"
+                value={[]}
+                exclude={[1]}
+                onChange={() => {}}
+                aria-label="Tujuan"
+            />,
+        );
+        fireEvent.focus(screen.getByRole('combobox', { name: 'Tujuan' }));
+        await flush();
+
+        expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual(
+            ['Siti Aminahsiti@pakis-demo.test'],
+        );
+    });
 });
 
 describe('chip filter relasi', () => {

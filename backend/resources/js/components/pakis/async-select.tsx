@@ -17,6 +17,8 @@ type Props = {
     multiple?: boolean;
     /** Parameter khusus sumber (mis. `{ level: 'district', parent: '33.19' }`). */
     params?: Record<string, string | undefined>;
+    /** Nilai yang tidak boleh dipilih (mis. kios itu sendiri saat memilih kios tujuan gabung). */
+    exclude?: Array<number | string>;
     disabled?: boolean;
     id?: string;
     placeholder?: string;
@@ -37,6 +39,7 @@ export function AsyncSelect({
     onChange,
     multiple = false,
     params,
+    exclude,
     disabled = false,
     id,
     placeholder = 'Ketik untuk mencari…',
@@ -52,6 +55,7 @@ export function AsyncSelect({
     const inputRef = useRef<HTMLInputElement>(null);
     // String stabil untuk dependensi effect (objek params baru tiap render).
     const paramKey = JSON.stringify(params ?? {});
+    const excludeKey = JSON.stringify((exclude ?? []).map(String));
 
     // Ambil opsi saat terbuka / kata kunci berubah (ditunda agar tidak tiap ketukan).
     useEffect(() => {
@@ -71,7 +75,10 @@ export function AsyncSelect({
                 controller.signal,
             )
                 .then((result) => {
-                    setOptions(result);
+                    const skip = JSON.parse(excludeKey) as string[];
+                    setOptions(
+                        result.filter((o) => !skip.includes(String(o.value))),
+                    );
                     setFailed(false);
                     setActive(0);
                 })
@@ -87,7 +94,7 @@ export function AsyncSelect({
             window.clearTimeout(timer);
             controller.abort();
         };
-    }, [open, query, source, paramKey]);
+    }, [open, query, source, paramKey, excludeKey]);
 
     const isSelected = (option: LookupOption) =>
         value.map(String).includes(String(option.value));

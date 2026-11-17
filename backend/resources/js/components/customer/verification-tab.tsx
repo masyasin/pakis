@@ -11,8 +11,11 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { FormEvent } from 'react';
-import { VERIFICATION_STATUS_TONE } from '@/components/customer/customer-ui';
+import type { FormEvent, ReactNode } from 'react';
+import {
+    SignedPhoto,
+    VERIFICATION_STATUS_TONE,
+} from '@/components/customer/customer-ui';
 import type {
     CustomerStatus,
     VerificationRow,
@@ -74,6 +77,8 @@ type Props = {
     isVerified: boolean;
     verifiedAt: string | null;
     state: VerificationState;
+    /** Kartu ganti HP pemilik (T-074 bagian 3b), di kolom kiri di bawah verifikasi. */
+    phoneCard?: ReactNode;
 };
 
 /**
@@ -88,6 +93,7 @@ export function VerificationTab({
     isVerified,
     verifiedAt,
     state,
+    phoneCard,
 }: Props) {
     const timezone = usePage().props.timezone;
     const draft = state.office_call_draft;
@@ -133,6 +139,7 @@ export function VerificationTab({
                         />
                     )
                 )}
+                {phoneCard}
             </div>
             <HistoryCard rows={state.history} timezone={timezone} />
         </div>
@@ -753,10 +760,12 @@ function HistoryCard({
                                         }
                                     />
                                 </div>
-                                <p className="text-sm">
-                                    Limit diminta{' '}
-                                    {formatRupiah(r.requested_credit_limit)}
-                                </p>
+                                {r.type === 'activation' && (
+                                    <p className="text-sm">
+                                        Limit diminta{' '}
+                                        {formatRupiah(r.requested_credit_limit)}
+                                    </p>
+                                )}
                                 <p className="text-xs text-muted-foreground">
                                     {r.submitted_by?.name ??
                                         'Pengguna terhapus'}
@@ -772,6 +781,13 @@ function HistoryCard({
                                         />
                                         {r.office_call_note}
                                     </p>
+                                )}
+                                {r.photo_url && (
+                                    <SignedPhoto
+                                        url={r.photo_url}
+                                        alt={`Foto verifikasi ${r.created_at ? formatDateTimeIn(r.created_at, timezone) : ''}`.trim()}
+                                        className="max-w-40"
+                                    />
                                 )}
                                 {r.approval_request_id !== null && (
                                     <Link

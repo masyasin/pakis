@@ -1,6 +1,5 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/react';
 import {
-    ArrowLeft,
     BriefcaseBusiness,
     Contact,
     Fingerprint,
@@ -41,6 +40,7 @@ import {
 import type { OffboardImpact } from '@/components/employee/offboard-dialogs';
 import type { EmployeeTab } from '@/components/employee/employee-tabs';
 import InputError from '@/components/input-error';
+import { DetailBackLink } from '@/components/pakis/detail-hero';
 import { MaskedValue } from '@/components/pakis/masked-value';
 import { DeviceSummaryList } from '@/components/pakis/device-summary-list';
 import type { DeviceSummary } from '@/components/pakis/device-summary-list';
@@ -205,12 +205,7 @@ export default function EmployeeShow(props: Props) {
         <>
             <Head title={employee.full_name} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Button variant="ghost" size="sm" className="-ml-2" asChild>
-                    <Link href={index()}>
-                        <ArrowLeft aria-hidden="true" />
-                        Daftar pegawai
-                    </Link>
-                </Button>
+                <DetailBackLink href={index()} label="Daftar pegawai" />
 
                 <EmployeeHero
                     name={employee.full_name}

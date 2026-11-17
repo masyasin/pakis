@@ -1,5 +1,13 @@
 import { Head, Link, usePage } from '@inertiajs/react';
-import { ArrowLeft, Banknote, Boxes, Handshake, Pencil } from 'lucide-react';
+import {
+    Banknote,
+    Boxes,
+    Factory,
+    Handshake,
+    MapPin,
+    Pencil,
+    UserRound,
+} from 'lucide-react';
 import { revealAccount } from '@/actions/App/Http/Controllers/Admin/SupplierController';
 import {
     DetailCard,
@@ -7,6 +15,11 @@ import {
     Field,
     FieldGrid,
 } from '@/components/employee/detail-ui';
+import {
+    ActionLabel,
+    DetailBackLink,
+    DetailHero,
+} from '@/components/pakis/detail-hero';
 import { MaskedValue } from '@/components/pakis/masked-value';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
@@ -64,39 +77,68 @@ export default function SupplierShow({ supplier, products, can }: Props) {
         <>
             <Head title={supplier.name} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Link
-                    href="/supplier"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                    <ArrowLeft className="size-4" aria-hidden="true" />
-                    Daftar supplier
-                </Link>
+                <DetailBackLink href="/supplier" label="Daftar supplier" />
 
-                <header className="flex flex-wrap items-start gap-4">
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                        <h1 className="text-[1.4rem] leading-tight font-bold break-words">
-                            {supplier.name}
-                        </h1>
-                        <p className="font-mono text-sm text-muted-foreground">
-                            {supplier.code}
-                        </p>
+                <DetailHero
+                    title={supplier.name}
+                    code={supplier.code}
+                    avatar={{ icon: Handshake }}
+                    muted={!supplier.is_active}
+                    badges={
                         <StatusBadge
                             status={supplier.is_active ? 'active' : 'inactive'}
                             label={supplier.is_active ? 'Aktif' : 'Nonaktif'}
                             tone={supplier.is_active ? 'success' : 'muted'}
                         />
-                    </div>
-                    {can.manage && (
-                        <Button variant="outline" asChild>
-                            <Link href={`/supplier/${supplier.id}/ubah`}>
-                                <Pencil aria-hidden="true" />
-                                Ubah Supplier
-                            </Link>
-                        </Button>
-                    )}
-                </header>
+                    }
+                    meta={[
+                        {
+                            icon: Factory,
+                            label: 'Prinsipal',
+                            value: supplier.principal,
+                        },
+                        {
+                            icon: UserRound,
+                            label: 'Nama kontak',
+                            value: supplier.contact_name,
+                        },
+                        {
+                            icon: MapPin,
+                            label: 'Wilayah',
+                            value: supplier.village_label,
+                        },
+                    ]}
+                    summary={[
+                        {
+                            label: 'Tempo bayar',
+                            value:
+                                supplier.payment_term_days === 0
+                                    ? 'Tunai'
+                                    : `${supplier.payment_term_days} hari`,
+                        },
+                        {
+                            label: 'Produk dipasok',
+                            value: `${products.length} produk`,
+                        },
+                        { label: 'Bank', value: supplier.bank_name ?? '–' },
+                        { label: 'Telepon', value: supplier.phone ?? '–' },
+                    ]}
+                    actions={
+                        can.manage ? (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link
+                                    href={`/supplier/${supplier.id}/ubah`}
+                                    aria-label={`Ubah supplier ${supplier.name}`}
+                                >
+                                    <Pencil aria-hidden="true" />
+                                    <ActionLabel>Ubah Supplier</ActionLabel>
+                                </Link>
+                            </Button>
+                        ) : undefined
+                    }
+                />
 
-                <div className="grid gap-5 lg:grid-cols-2">
+                <div className="grid gap-4 lg:grid-cols-2">
                     <DetailCard title="Identitas & kontak" icon={Handshake}>
                         <FieldGrid>
                             <Field

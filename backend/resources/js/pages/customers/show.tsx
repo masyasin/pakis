@@ -1,9 +1,7 @@
 import { Head, Link, usePage } from '@inertiajs/react';
 import {
-    ArrowLeft,
     ArrowRightLeft,
     Camera,
-    ChevronDown,
     Combine,
     CreditCard,
     FileText,
@@ -15,9 +13,10 @@ import {
     ShieldCheck,
     Smartphone,
     Store,
+    Tag,
+    UserRound,
     UsersRound,
 } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { ContactsTab } from '@/components/customer/contacts-tab';
 import {
@@ -52,17 +51,18 @@ import {
     Timeline,
     TimelineItem,
 } from '@/components/employee/detail-ui';
+import {
+    ActionLabel,
+    DetailBackLink,
+    DetailHero,
+    MoreActionsMenu,
+} from '@/components/pakis/detail-hero';
+import type { DetailMenuAction } from '@/components/pakis/detail-hero';
+import { DetailTabs, useQueryTab } from '@/components/pakis/detail-tabs';
+import type { DetailTab } from '@/components/pakis/detail-tabs';
 import { LocationDiagram } from '@/components/pakis/location-diagram';
-import { PageTabs } from '@/components/pakis/page-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 import { formatDateTimeIn } from '@/lib/approval-format';
 import { formatDate } from '@/lib/listing-query';
@@ -146,7 +146,7 @@ type Props = {
  * Tab detail kios (`?tab=`, 15 §7.1; T-074). Riwayat perubahan kios belum punya prop sendiri: riwayat
  * yang ada adalah penugasan (tab Penugasan) dan verifikasi/ganti HP (tab Verifikasi).
  */
-const TABS: { key: string; label: string; icon: LucideIcon }[] = [
+const TABS: DetailTab[] = [
     { key: 'ringkasan', label: 'Ringkasan', icon: Info },
     { key: 'verifikasi', label: 'Verifikasi', icon: ShieldCheck },
     { key: 'limit', label: 'Limit', icon: CreditCard },
@@ -177,14 +177,11 @@ export default function CustomerShow({
     today,
     maxReassign,
 }: Props) {
-    const page = usePage();
-    const timezone = page.props.timezone;
-    const requested = new URLSearchParams(page.url.split('?')[1] ?? '').get(
-        'tab',
+    const timezone = usePage().props.timezone;
+    const active = useQueryTab(
+        TABS.map((t) => t.key),
+        'ringkasan',
     );
-    const active = TABS.some((t) => t.key === requested)
-        ? (requested as string)
-        : 'ringkasan';
     const [reassignOpen, setReassignOpen] = useState(false);
     const [phoneOpen, setPhoneOpen] = useState(false);
     const [mergeOpen, setMergeOpen] = useState(false);
@@ -193,37 +190,56 @@ export default function CustomerShow({
         label: string;
     } | null>(null);
     const statusActions = changes.status.actions;
-    const hasMoreActions =
-        changes.phone_change.can_request ||
-        changes.merge.can_request ||
-        statusActions.length > 0;
+    // Aksi sekunder masuk menu "Aksi lain"; aksi status dipisah garis dari aksi data.
+    const menuItems: DetailMenuAction[] = [
+        ...(changes.phone_change.can_request
+            ? [
+                  {
+                      key: 'phone',
+                      label: 'Ganti HP',
+                      icon: Smartphone,
+                      onSelect: () => setPhoneOpen(true),
+                  },
+              ]
+            : []),
+        ...(changes.merge.can_request
+            ? [
+                  {
+                      key: 'merge',
+                      label: 'Gabung ke kios lain',
+                      icon: Combine,
+                      onSelect: () => setMergeOpen(true),
+                  },
+              ]
+            : []),
+        ...statusActions.map((a, i) => ({
+            key: a.value,
+            label: a.label,
+            icon: STATUS_ACTION_COPY[a.value].icon,
+            destructive: STATUS_ACTION_COPY[a.value].danger,
+            separatorBefore: i === 0,
+            onSelect: () => setStatusAction(a),
+        })),
+    ];
     useBreadcrumbTail([{ title: customer.store_name, href: '#' }]);
 
     return (
         <>
             <Head title={customer.store_name} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Link
-                    href={index()}
-                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                    <ArrowLeft className="size-4" aria-hidden="true" />
-                    Daftar pelanggan
-                </Link>
+                <DetailBackLink href={index()} label="Daftar pelanggan" />
 
-                <header className="flex flex-wrap items-start gap-4">
-                    <span className="grid size-14 shrink-0 place-items-center rounded-xl border bg-muted text-muted-foreground">
-                        <Store className="size-6" aria-hidden="true" />
-                    </span>
-                    {/* basis-48: di HP tombol aksi turun ke baris baru, nama toko tidak terjepit. */}
-                    <div className="min-w-0 flex-1 basis-48 space-y-1.5">
-                        <h1 className="text-[1.4rem] leading-tight font-bold break-words">
-                            {customer.store_name}
-                        </h1>
-                        <p className="font-mono text-sm text-muted-foreground">
-                            {customer.code}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
+                <DetailHero
+                    title={customer.store_name}
+                    code={customer.code}
+                    avatar={{ icon: Store }}
+                    // Kios nonaktif/digabung: pita merek diredupkan seperti pegawai nonaktif.
+                    muted={
+                        customer.status === 'inactive' ||
+                        customer.status === 'merged'
+                    }
+                    badges={
+                        <>
                             <StatusBadge
                                 status={`customer.${customer.status}`}
                                 label={customer.status_label}
@@ -244,84 +260,87 @@ export default function CustomerShow({
                                     customer.is_verified ? 'success' : 'warning'
                                 }
                             />
-                        </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                        {hasMoreActions && (
-                            // modal={false}: menu tertutup tanpa mengunci halaman sebelum dialog terbuka.
-                            <DropdownMenu modal={false}>
-                                <DropdownMenuTrigger asChild>
-                                    <Button variant="outline">
-                                        Aksi lain
-                                        <ChevronDown aria-hidden="true" />
+                        </>
+                    }
+                    meta={[
+                        {
+                            icon: UserRound,
+                            label: 'Pemilik',
+                            value: customer.owner_name,
+                        },
+                        {
+                            icon: Tag,
+                            label: 'Jenis',
+                            value: customer.customer_type,
+                        },
+                        {
+                            icon: MapPinned,
+                            label: 'Area penjualan',
+                            value: customer.sales_area?.name,
+                        },
+                        {
+                            icon: MapPin,
+                            label: 'Wilayah',
+                            value: [
+                                customer.region.district,
+                                customer.region.regency,
+                            ]
+                                .filter(Boolean)
+                                .join(', '),
+                        },
+                    ]}
+                    summary={[
+                        {
+                            label: 'Sales',
+                            value: customer.assigned_sales?.name ?? 'Belum ada',
+                        },
+                        {
+                            label: 'Tempo standar',
+                            value: `${customer.term_days} hari`,
+                        },
+                        {
+                            label: 'Limit kredit',
+                            value: customer.credit_limit_active
+                                ? rupiah.format(Number(customer.credit_limit))
+                                : 'Belum aktif',
+                        },
+                        {
+                            label: 'Gudang asal',
+                            value:
+                                customer.home_stock_location?.name ??
+                                'Ikut gudang area',
+                        },
+                    ]}
+                    actions={
+                        menuItems.length > 0 || can.reassign || can.update ? (
+                            <>
+                                <MoreActionsMenu items={menuItems} />
+                                {can.reassign && (
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setReassignOpen(true)}
+                                        aria-label={`Alihkan ${customer.store_name}`}
+                                    >
+                                        <ArrowRightLeft aria-hidden="true" />
+                                        <ActionLabel>Alihkan</ActionLabel>
                                     </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                    {changes.phone_change.can_request && (
-                                        <DropdownMenuItem
-                                            onSelect={() => setPhoneOpen(true)}
+                                )}
+                                {can.update && (
+                                    <Button variant="outline" size="sm" asChild>
+                                        <Link
+                                            href={edit(customer.id)}
+                                            aria-label={`Ubah kios ${customer.store_name}`}
                                         >
-                                            <Smartphone aria-hidden="true" />
-                                            Ganti HP
-                                        </DropdownMenuItem>
-                                    )}
-                                    {changes.merge.can_request && (
-                                        <DropdownMenuItem
-                                            onSelect={() => setMergeOpen(true)}
-                                        >
-                                            <Combine aria-hidden="true" />
-                                            Gabung ke kios lain
-                                        </DropdownMenuItem>
-                                    )}
-                                    {statusActions.length > 0 &&
-                                        (changes.phone_change.can_request ||
-                                            changes.merge.can_request) && (
-                                            <DropdownMenuSeparator />
-                                        )}
-                                    {statusActions.map((a) => {
-                                        const copy =
-                                            STATUS_ACTION_COPY[a.value];
-                                        const Icon = copy.icon;
-
-                                        return (
-                                            <DropdownMenuItem
-                                                key={a.value}
-                                                variant={
-                                                    copy.danger
-                                                        ? 'destructive'
-                                                        : 'default'
-                                                }
-                                                onSelect={() =>
-                                                    setStatusAction(a)
-                                                }
-                                            >
-                                                <Icon aria-hidden="true" />
-                                                {a.label}
-                                            </DropdownMenuItem>
-                                        );
-                                    })}
-                                </DropdownMenuContent>
-                            </DropdownMenu>
-                        )}
-                        {can.reassign && (
-                            <Button
-                                variant="outline"
-                                onClick={() => setReassignOpen(true)}
-                            >
-                                <ArrowRightLeft aria-hidden="true" />
-                                Alihkan
-                            </Button>
-                        )}
-                        {can.update && (
-                            <Button variant="outline" asChild>
-                                <Link href={edit(customer.id)}>
-                                    <Pencil aria-hidden="true" />
-                                    Ubah Kios
-                                </Link>
-                            </Button>
-                        )}
-                    </div>
-                </header>
+                                            <Pencil aria-hidden="true" />
+                                            <ActionLabel>Ubah Kios</ActionLabel>
+                                        </Link>
+                                    </Button>
+                                )}
+                            </>
+                        ) : undefined
+                    }
+                />
 
                 <CustomerNotices
                     status={customer.status}
@@ -330,19 +349,15 @@ export default function CustomerShow({
                     timezone={timezone}
                 />
 
-                <PageTabs
-                    label="Bagian kios"
+                <DetailTabs
+                    tabs={TABS}
                     active={active}
-                    tabs={TABS.map((t) => ({
-                        key: t.key,
-                        label: t.label,
-                        icon: t.icon,
-                        href:
-                            t.key === 'ringkasan'
-                                ? show(customer.id).url
-                                : show(customer.id, { query: { tab: t.key } })
-                                      .url,
-                    }))}
+                    label="Bagian kios"
+                    hrefFor={(key) =>
+                        key === 'ringkasan'
+                            ? show(customer.id).url
+                            : show(customer.id, { query: { tab: key } }).url
+                    }
                 />
 
                 {active === 'ringkasan' && (
@@ -447,8 +462,8 @@ function SummaryTab({
     const hasPoint = Number.isFinite(lat) && Number.isFinite(lng);
 
     return (
-        <div className="grid gap-5 lg:grid-cols-2">
-            <div className="space-y-5">
+        <div className="grid gap-4 lg:grid-cols-2">
+            <div className="space-y-4">
                 <DetailCard title="Identitas kios" icon={Store}>
                     <FieldGrid>
                         <Field label="Kode" value={customer.code} mono />
@@ -582,7 +597,7 @@ function SummaryTab({
                     </FieldGrid>
                 </DetailCard>
             </div>
-            <div className="space-y-5">
+            <div className="space-y-4">
                 <DetailCard title="Alamat" icon={MapPin}>
                     <FieldGrid columns={1}>
                         <Field label="Alamat jalan" value={customer.address} />

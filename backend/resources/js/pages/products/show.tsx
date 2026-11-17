@@ -1,11 +1,13 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
 import {
-    ArrowLeft,
     Barcode,
     BadgeCheck,
     Boxes,
+    Factory,
+    FlaskConical,
     History,
     Info,
+    Layers,
     Package,
     Pencil,
     Plus,
@@ -31,7 +33,12 @@ import {
 import InputError from '@/components/input-error';
 import { FormDialog } from '@/components/pakis/form-dialog';
 import { NativeSelect } from '@/components/pakis/native-select';
-import { PageTabs } from '@/components/pakis/page-tabs';
+import {
+    ActionLabel,
+    DetailBackLink,
+    DetailHero,
+} from '@/components/pakis/detail-hero';
+import { DetailTabs, useQueryTab } from '@/components/pakis/detail-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -157,47 +164,31 @@ export default function ProductShow({
     prices,
     can,
 }: Props) {
-    const page = usePage();
-    const query = new URLSearchParams(page.url.split('?')[1] ?? '');
-    const requested = query.get('tab');
     // Tab Harga hanya untuk pemegang prices.view (server mengirim prices = null bila tidak berhak).
     const tabs = TABS.filter((t) => t.key !== 'harga' || prices !== null);
-    const active: TabKey = tabs.some((t) => t.key === requested)
-        ? (requested as TabKey)
-        : 'data';
+    const active = useQueryTab<TabKey>(
+        tabs.map((t) => t.key),
+        'data',
+    );
 
     return (
         <>
             <Head title={product.name} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Link
-                    href="/produk"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                    <ArrowLeft className="size-4" aria-hidden="true" />
-                    Daftar produk
-                </Link>
+                <DetailBackLink href="/produk" label="Daftar produk" />
 
-                <header className="flex flex-wrap items-start gap-4">
-                    {product.photo_url ? (
-                        <img
-                            src={product.photo_url}
-                            alt={`Foto ${product.name}`}
-                            className="size-20 shrink-0 rounded-xl border object-cover"
-                        />
-                    ) : (
-                        <span className="grid size-20 shrink-0 place-items-center rounded-xl border bg-muted text-muted-foreground">
-                            <Package className="size-8" aria-hidden="true" />
-                        </span>
-                    )}
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                        <h1 className="text-[1.4rem] leading-tight font-bold break-words">
-                            {product.name}
-                        </h1>
-                        <p className="font-mono text-sm text-muted-foreground">
-                            {product.sku}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
+                <DetailHero
+                    title={product.name}
+                    code={product.sku}
+                    avatar={{
+                        photoUrl: product.photo_url,
+                        photoAlt: `Foto ${product.name}`,
+                        icon: Package,
+                        shape: 'square',
+                    }}
+                    muted={product.status !== 'active'}
+                    badges={
+                        <>
                             <StatusBadge
                                 status={product.status}
                                 label={product.status_label}
@@ -210,37 +201,64 @@ export default function ProductShow({
                                     tone="danger"
                                 />
                             )}
-                            {product.category && (
-                                <StatusBadge
-                                    status="category"
-                                    label={`${product.category}${product.kind_label ? ` · ${product.kind_label}` : ''}`}
-                                    tone="info"
-                                />
-                            )}
-                        </div>
-                    </div>
-                    {can.manage && (
-                        <Button variant="outline" asChild>
-                            <Link href={`/produk/${product.id}/ubah`}>
-                                <Pencil aria-hidden="true" />
-                                Ubah Produk
-                            </Link>
-                        </Button>
-                    )}
-                </header>
+                        </>
+                    }
+                    meta={[
+                        {
+                            icon: Layers,
+                            label: 'Kategori',
+                            value: product.category
+                                ? `${product.category}${product.kind_label ? ` · ${product.kind_label}` : ''}`
+                                : null,
+                        },
+                        {
+                            icon: Factory,
+                            label: 'Prinsipal',
+                            value: product.principal,
+                        },
+                        { icon: Tag, label: 'Merek', value: product.brand },
+                        {
+                            icon: FlaskConical,
+                            label: 'Bahan aktif',
+                            value: product.active_ingredient,
+                        },
+                    ]}
+                    summary={[
+                        { label: 'Satuan dasar', value: product.base_unit },
+                        {
+                            label: 'Ukuran kemasan',
+                            value: product.package_size ?? '–',
+                        },
+                        { label: 'Dijual', value: yesNo(product.is_sellable) },
+                        {
+                            label: 'Dibeli',
+                            value: yesNo(product.is_purchasable),
+                        },
+                    ]}
+                    actions={
+                        can.manage ? (
+                            <Button variant="outline" size="sm" asChild>
+                                <Link
+                                    href={`/produk/${product.id}/ubah`}
+                                    aria-label={`Ubah produk ${product.name}`}
+                                >
+                                    <Pencil aria-hidden="true" />
+                                    <ActionLabel>Ubah Produk</ActionLabel>
+                                </Link>
+                            </Button>
+                        ) : undefined
+                    }
+                />
 
-                <PageTabs
-                    label="Bagian produk"
+                <DetailTabs
+                    tabs={[...tabs]}
                     active={active}
-                    tabs={tabs.map((t) => ({
-                        key: t.key,
-                        label: t.label,
-                        icon: t.icon,
-                        href:
-                            t.key === 'data'
-                                ? `/produk/${product.id}`
-                                : `/produk/${product.id}?tab=${t.key}`,
-                    }))}
+                    label="Bagian produk"
+                    hrefFor={(key) =>
+                        key === 'data'
+                            ? `/produk/${product.id}`
+                            : `/produk/${product.id}?tab=${key}`
+                    }
                 />
 
                 {active === 'data' && <DataTab product={product} />}
@@ -281,7 +299,7 @@ function DataTab({ product }: { product: Product }) {
     const flags = Object.keys(FLAG_LABELS) as FlagKey[];
 
     return (
-        <div className="grid gap-5 lg:grid-cols-2">
+        <div className="grid gap-4 lg:grid-cols-2">
             <DetailCard title="Identitas" icon={Package}>
                 <FieldGrid>
                     <Field label="SKU" value={product.sku} mono />
@@ -308,7 +326,7 @@ function DataTab({ product }: { product: Product }) {
                     />
                 </FieldGrid>
             </DetailCard>
-            <div className="space-y-5">
+            <div className="space-y-4">
                 <DetailCard title="Penanda perilaku" icon={BadgeCheck}>
                     <ul className="space-y-2.5">
                         {flags.map((key) => {

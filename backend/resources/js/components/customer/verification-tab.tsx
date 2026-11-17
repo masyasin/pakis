@@ -102,8 +102,8 @@ export function VerificationTab({
     const showForm = state.can_submit && (draft === null || resubmit);
 
     return (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-            <div className="space-y-5">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <div className="space-y-4">
                 {isVerified && (
                     <FormStatus
                         tone="success"

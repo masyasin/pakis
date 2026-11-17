@@ -54,7 +54,7 @@ export function RegistrationsPanel({
         requiresRegistration && (state === 'expired' || state === 'none');
 
     return (
-        <div className="space-y-5">
+        <div className="space-y-4">
             {blocked && (
                 <div
                     role="alert"

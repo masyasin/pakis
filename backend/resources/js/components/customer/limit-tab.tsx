@@ -63,8 +63,8 @@ export function LimitTab({
     const pending = state.pending;
 
     return (
-        <div className="grid gap-5 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
-            <div className="space-y-5">
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+            <div className="space-y-4">
                 <DetailCard title="Limit sekarang" icon={CreditCard}>
                     <FieldGrid>
                         <Field
@@ -142,7 +142,7 @@ export function LimitTab({
                     </DetailCard>
                 )}
             </div>
-            <div className="space-y-5">
+            <div className="space-y-4">
                 {state.blocked_reason === 'not_verified' ? (
                     <div className="flex items-start gap-3 rounded-xl border border-dashed bg-card/60 p-4 text-sm sm:p-5">
                         <ShieldAlert

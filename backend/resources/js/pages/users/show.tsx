@@ -1,6 +1,5 @@
 import { Head, Link, router, useHttp, usePage } from '@inertiajs/react';
 import {
-    ArrowLeft,
     BadgeCheck,
     History,
     KeyRound,
@@ -26,8 +25,14 @@ import { DeviceSummaryList } from '@/components/pakis/device-summary-list';
 import type { DeviceSummary } from '@/components/pakis/device-summary-list';
 import { FormDialog, FormDialogFooter } from '@/components/pakis/form-dialog';
 import { OneTimeSecretDialog } from '@/components/pakis/one-time-secret-dialog';
-import { PageTabs } from '@/components/pakis/page-tabs';
-import type { PageTab } from '@/components/pakis/page-tabs';
+import {
+    ActionLabel,
+    DetailBackLink,
+    DetailHero,
+    MoreActionsMenu,
+} from '@/components/pakis/detail-hero';
+import { DetailTabs, detailTabLabel } from '@/components/pakis/detail-tabs';
+import type { DetailTab } from '@/components/pakis/detail-tabs';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import PasswordInput from '@/components/password-input';
 import { Badge } from '@/components/ui/badge';
@@ -138,6 +143,14 @@ const PROTECTED_MESSAGE: Record<'self' | 'owner' | 'beyond', string> = {
 
 type Pending = 'toggle' | 'reset-mfa' | 'revoke' | 'reset-password' | null;
 
+const TABS: DetailTab<Tab>[] = [
+    { key: 'profil', label: 'Profil', icon: UserRound },
+    { key: 'role', label: 'Role', icon: UsersRound },
+    { key: 'sesi', label: 'Sesi', icon: Monitor },
+    { key: 'perangkat', label: 'Perangkat', icon: Smartphone },
+    { key: 'riwayat', label: 'Riwayat', icon: History },
+];
+
 /** Detail pengguna (05 §4.4 `admin.users.show`: tab profil, role, sesi, perangkat, riwayat). */
 export default function UserShow(props: Props) {
     const { user, tab, can, protectedReason } = props;
@@ -149,22 +162,10 @@ export default function UserShow(props: Props) {
     const [processing, setProcessing] = useState(false);
     const [temporary, setTemporary] = useState<string | null>(null);
 
-    const tabs: PageTab[] = [
-        { key: 'profil', label: 'Profil', icon: UserRound },
-        { key: 'role', label: 'Role', icon: UsersRound },
-        { key: 'sesi', label: 'Sesi', icon: Monitor },
-        { key: 'perangkat', label: 'Perangkat', icon: Smartphone },
-        { key: 'riwayat', label: 'Riwayat', icon: History },
-    ].map((t) => ({
-        ...t,
-        href: show(user.id, { query: { tab: t.key } }),
-    }));
+    const hrefFor = (key: Tab) => show(user.id, { query: { tab: key } }).url;
     useBreadcrumbTail([
         { title: user.name, href: show(user.id).url },
-        {
-            title: tabs.find((t) => t.key === tab)?.label ?? tab,
-            href: show(user.id, { query: { tab } }).url,
-        },
+        { title: detailTabLabel(TABS, tab) || tab, href: hrefFor(tab) },
     ]);
 
     const post = (
@@ -195,76 +196,90 @@ export default function UserShow(props: Props) {
         <>
             <Head title={user.name} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Button variant="ghost" size="sm" asChild>
-                    <Link href={index()}>
-                        <ArrowLeft aria-hidden="true" />
-                        Daftar pengguna
-                    </Link>
-                </Button>
+                <DetailBackLink href={index()} label="Daftar pengguna" />
 
                 <UserHero
                     user={user}
                     photoUrl={photoUrl}
                     actions={
                         hasActions ? (
-                            <div className="flex flex-wrap justify-end gap-2">
+                            <>
+                                <MoreActionsMenu
+                                    items={[
+                                        ...(can.resetPassword
+                                            ? [
+                                                  {
+                                                      key: 'reset-password',
+                                                      label: 'Reset Password',
+                                                      icon: KeyRound,
+                                                      onSelect: () =>
+                                                          setPending(
+                                                              'reset-password',
+                                                          ),
+                                                  },
+                                              ]
+                                            : []),
+                                        ...(can.resetMfa && user.mfa_enabled
+                                            ? [
+                                                  {
+                                                      key: 'reset-mfa',
+                                                      label: 'Reset MFA',
+                                                      icon: ShieldOff,
+                                                      onSelect: () =>
+                                                          setPending(
+                                                              'reset-mfa',
+                                                          ),
+                                                  },
+                                              ]
+                                            : []),
+                                        ...(can.revokeSessions
+                                            ? [
+                                                  {
+                                                      key: 'revoke',
+                                                      label: 'Cabut Semua Sesi',
+                                                      icon: LogOut,
+                                                      onSelect: () =>
+                                                          setPending('revoke'),
+                                                  },
+                                              ]
+                                            : []),
+                                    ]}
+                                />
+                                {can.toggle &&
+                                    (user.is_active ? (
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                                            onClick={() => setPending('toggle')}
+                                            aria-label={`Nonaktifkan akun ${user.username}`}
+                                        >
+                                            <Power aria-hidden="true" />
+                                            <ActionLabel>
+                                                Nonaktifkan
+                                            </ActionLabel>
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            size="sm"
+                                            onClick={() => setPending('toggle')}
+                                        >
+                                            <Power aria-hidden="true" />
+                                            Aktifkan
+                                        </Button>
+                                    ))}
                                 {can.update && (
                                     <Button variant="outline" size="sm" asChild>
-                                        <Link href={edit(user.id)}>
+                                        <Link
+                                            href={edit(user.id)}
+                                            aria-label={`Ubah akun ${user.username}`}
+                                        >
                                             <Pencil aria-hidden="true" />
-                                            Ubah
+                                            <ActionLabel>Ubah</ActionLabel>
                                         </Link>
                                     </Button>
                                 )}
-                                {can.resetPassword && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            setPending('reset-password')
-                                        }
-                                    >
-                                        <KeyRound aria-hidden="true" />
-                                        Reset Password
-                                    </Button>
-                                )}
-                                {can.resetMfa && user.mfa_enabled && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPending('reset-mfa')}
-                                    >
-                                        <ShieldOff aria-hidden="true" />
-                                        Reset MFA
-                                    </Button>
-                                )}
-                                {can.revokeSessions && (
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => setPending('revoke')}
-                                    >
-                                        <LogOut aria-hidden="true" />
-                                        Cabut Semua Sesi
-                                    </Button>
-                                )}
-                                {can.toggle && (
-                                    <Button
-                                        variant={
-                                            user.is_active
-                                                ? 'destructive'
-                                                : 'default'
-                                        }
-                                        size="sm"
-                                        onClick={() => setPending('toggle')}
-                                    >
-                                        <Power aria-hidden="true" />
-                                        {user.is_active
-                                            ? 'Nonaktifkan'
-                                            : 'Aktifkan'}
-                                    </Button>
-                                )}
-                            </div>
+                            </>
                         ) : null
                     }
                     notice={
@@ -282,13 +297,14 @@ export default function UserShow(props: Props) {
                     }
                 />
 
-                <PageTabs
-                    tabs={tabs}
+                <DetailTabs
+                    tabs={TABS}
                     active={tab}
                     label="Bagian detail pengguna"
+                    hrefFor={hrefFor}
                 />
 
-                <section aria-label={tabs.find((t) => t.key === tab)?.label}>
+                <section aria-label={detailTabLabel(TABS, tab)}>
                     {tab === 'profil' && <ProfileTab user={user} />}
                     {tab === 'role' && <RolesTab user={user} />}
                     {tab === 'sesi' && (
@@ -530,8 +546,8 @@ function mfaLabel(user: UserDetail): string {
 }
 
 /**
- * Kartu identitas akun, seragam dengan `EmployeeHero` (pita warna merek, avatar, ringkasan) agar dua
- * halaman detail terasa satu aplikasi. Pita diredupkan bila akun nonaktif supaya statusnya terbaca sekilas.
+ * Kartu identitas akun memakai `DetailHero` bersama (sama dengan profil pegawai) agar dua halaman
+ * detail terasa satu aplikasi. Pita diredupkan bila akun nonaktif supaya statusnya terbaca sekilas.
  */
 function UserHero({
     user,
@@ -549,129 +565,84 @@ function UserHero({
     const getInitials = useInitials();
 
     return (
-        <section className="overflow-hidden rounded-xl border bg-card shadow-[0_1px_2px_rgb(0_0_0/0.04),0_8px_24px_-12px_rgb(0_0_0/0.12)]">
-            <div
-                aria-hidden="true"
-                className={[
-                    'relative h-20 bg-gradient-to-r from-primary via-primary/85 to-primary-strong sm:h-24',
-                    user.is_active ? '' : 'opacity-60 grayscale',
-                ].join(' ')}
-            >
-                <div className="absolute inset-0 bg-[radial-gradient(circle_at_88%_-30%,rgb(255_255_255/0.22),transparent_50%),radial-gradient(circle_at_10%_130%,rgb(255_255_255/0.10),transparent_45%)]" />
-            </div>
-
-            <div className="px-4 pb-5 sm:px-6">
-                <div className="relative z-10 -mt-10 flex flex-wrap items-end justify-between gap-3 sm:-mt-12">
-                    {photoUrl ? (
-                        <img
-                            src={photoUrl}
-                            alt={`Foto ${user.name}`}
-                            className="size-20 rounded-full object-cover ring-4 ring-card sm:size-24"
-                        />
-                    ) : (
-                        <span
-                            aria-hidden="true"
-                            className="grid size-20 place-items-center rounded-full bg-sidebar-accent text-2xl font-bold text-primary ring-4 ring-card sm:size-24 sm:text-3xl"
-                        >
-                            {getInitials(user.name)}
-                        </span>
-                    )}
-                    {actions}
-                </div>
-
-                <div className="mt-3 space-y-2">
-                    <h1 className="text-[1.5rem] leading-tight font-bold break-words sm:text-[1.75rem]">
-                        {user.name}
-                    </h1>
-                    <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-md border bg-muted px-2 py-0.5 font-mono text-xs">
-                            {user.username}
-                        </span>
-                        <StatusBadge
-                            status={
-                                user.is_active ? 'user.active' : 'user.inactive'
-                            }
-                        />
-                        {user.must_change_password && (
-                            <Badge variant="outline">
-                                Wajib ganti password
-                            </Badge>
-                        )}
-                        {user.is_locked && (
-                            <Badge variant="destructive">
-                                Terkunci sementara
-                            </Badge>
-                        )}
-                    </div>
-                </div>
-
-                {notice && <div className="mt-4">{notice}</div>}
-            </div>
-
-            <dl className="grid grid-cols-2 border-t sm:grid-cols-4">
-                <Summary label="Role" index={0}>
-                    {roleLabels || 'Belum ada'}
-                </Summary>
-                <Summary label="MFA" index={1}>
-                    <span
-                        className={
-                            user.mfa_enabled
-                                ? 'inline-flex items-center gap-1 text-status-success'
-                                : user.mfa_required
-                                  ? 'inline-flex items-center gap-1 text-status-warning'
-                                  : 'inline-flex items-center gap-1'
+        <DetailHero
+            title={user.name}
+            code={user.username}
+            avatar={{
+                photoUrl,
+                photoAlt: `Foto ${user.name}`,
+                initials: getInitials(user.name),
+            }}
+            muted={!user.is_active}
+            badges={
+                <>
+                    <StatusBadge
+                        status={
+                            user.is_active ? 'user.active' : 'user.inactive'
                         }
-                    >
-                        {user.mfa_enabled ? (
-                            <ShieldCheck
-                                className="size-4"
-                                aria-hidden="true"
-                            />
-                        ) : (
-                            <ShieldOff className="size-4" aria-hidden="true" />
-                        )}
-                        {mfaLabel(user)}
-                    </span>
-                </Summary>
-                <Summary label="Login terakhir" index={2}>
-                    {user.last_login_at
+                    />
+                    {user.must_change_password && (
+                        <Badge variant="outline">Wajib ganti password</Badge>
+                    )}
+                    {user.is_locked && (
+                        <Badge variant="destructive">Terkunci sementara</Badge>
+                    )}
+                </>
+            }
+            meta={[
+                {
+                    icon: UserRound,
+                    label: 'Pegawai',
+                    value: user.employee
+                        ? `${user.employee.name} · ${user.employee.number}`
+                        : null,
+                },
+            ]}
+            notice={notice ? <div className="pt-2">{notice}</div> : undefined}
+            actions={actions}
+            summary={[
+                { label: 'Role', value: roleLabels || 'Belum ada' },
+                {
+                    label: 'MFA',
+                    value: (
+                        <span
+                            className={
+                                user.mfa_enabled
+                                    ? 'inline-flex items-center gap-1 text-status-success'
+                                    : user.mfa_required
+                                      ? 'inline-flex items-center gap-1 text-status-warning'
+                                      : 'inline-flex items-center gap-1'
+                            }
+                        >
+                            {user.mfa_enabled ? (
+                                <ShieldCheck
+                                    className="size-4"
+                                    aria-hidden="true"
+                                />
+                            ) : (
+                                <ShieldOff
+                                    className="size-4"
+                                    aria-hidden="true"
+                                />
+                            )}
+                            {mfaLabel(user)}
+                        </span>
+                    ),
+                },
+                {
+                    label: 'Login terakhir',
+                    value: user.last_login_at
                         ? formatRelativeTime(user.last_login_at)
-                        : 'Belum pernah'}
-                </Summary>
-                <Summary label="Dibuat" index={3}>
-                    {user.created_at
+                        : 'Belum pernah',
+                },
+                {
+                    label: 'Dibuat',
+                    value: user.created_at
                         ? formatRelativeTime(user.created_at)
-                        : '–'}
-                </Summary>
-            </dl>
-        </section>
-    );
-}
-
-/** Sel ringkasan di dasar hero: 2 kolom di HP (garis tengah & atas baris kedua), 4 kolom di layar lebar. */
-function Summary({
-    label,
-    index,
-    children,
-}: {
-    label: string;
-    index: 0 | 1 | 2 | 3;
-    children: ReactNode;
-}) {
-    return (
-        <div
-            className={[
-                'min-w-0 px-4 py-3 sm:px-6',
-                index % 2 === 1 ? 'border-l' : '',
-                index >= 2 ? 'border-t sm:border-t-0' : '',
-                index === 2 ? 'sm:border-l' : '',
-            ].join(' ')}
-        >
-            <dt className="text-xs text-muted-foreground">{label}</dt>
-            <dd className="mt-0.5 truncate text-sm font-semibold">
-                {children}
-            </dd>
-        </div>
+                        : '–',
+                },
+            ]}
+        />
     );
 }
 

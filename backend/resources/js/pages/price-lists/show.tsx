@@ -1,9 +1,10 @@
 import { Head, Link, router, usePage } from '@inertiajs/react';
-import { ArrowLeft, CopyPlus, Layers, ListOrdered, Send } from 'lucide-react';
+import { CopyPlus, Info, Layers, ListOrdered, Send, Tags } from 'lucide-react';
 import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { DetailCard, EmptyPanel } from '@/components/employee/detail-ui';
 import InputError from '@/components/input-error';
+import { DetailBackLink, DetailHero } from '@/components/pakis/detail-hero';
 import { FormDialog } from '@/components/pakis/form-dialog';
 import { NativeSelect } from '@/components/pakis/native-select';
 import { StatusBadge } from '@/components/pakis/status-badge';
@@ -42,23 +43,15 @@ export default function PriceListShow({
         <>
             <Head title={list.name} />
             <div className="mx-auto w-full max-w-[1440px] space-y-5 p-4 md:px-7 md:py-6">
-                <Link
-                    href="/daftar-harga"
-                    className="inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
-                >
-                    <ArrowLeft className="size-4" aria-hidden="true" />
-                    Daftar harga
-                </Link>
+                <DetailBackLink href="/daftar-harga" label="Daftar harga" />
 
-                <header className="flex flex-wrap items-start gap-4">
-                    <div className="min-w-0 flex-1 space-y-1.5">
-                        <h1 className="text-[1.4rem] leading-tight font-bold">
-                            {list.name}
-                        </h1>
-                        <p className="font-mono text-sm text-muted-foreground">
-                            {list.code}
-                        </p>
-                        <div className="flex flex-wrap gap-1.5">
+                <DetailHero
+                    title={list.name}
+                    code={list.code}
+                    avatar={{ icon: Tags }}
+                    muted={!list.is_active}
+                    badges={
+                        <>
                             <StatusBadge
                                 status={list.kind}
                                 label={
@@ -75,15 +68,43 @@ export default function PriceListShow({
                                     tone="muted"
                                 />
                             )}
-                        </div>
-                    </div>
-                    {can.manage && (
-                        <Button onClick={() => setCreating(true)}>
-                            <CopyPlus aria-hidden="true" />
-                            Versi Baru
-                        </Button>
-                    )}
-                </header>
+                        </>
+                    }
+                    meta={[
+                        {
+                            icon: Info,
+                            label: 'Keterangan',
+                            value: list.description,
+                        },
+                    ]}
+                    summary={[
+                        {
+                            label: 'Berlaku sekarang',
+                            value: current
+                                ? `Versi ${current.version_no}`
+                                : 'Belum ada',
+                        },
+                        {
+                            label: 'Baris harga berlaku',
+                            value: current ? current.items_count : '–',
+                        },
+                        { label: 'Jumlah versi', value: versions.length },
+                        {
+                            label: 'Menunggu persetujuan',
+                            value: versions.filter(
+                                (v) => v.status === 'pending_approval',
+                            ).length,
+                        },
+                    ]}
+                    actions={
+                        can.manage ? (
+                            <Button size="sm" onClick={() => setCreating(true)}>
+                                <CopyPlus aria-hidden="true" />
+                                Versi Baru
+                            </Button>
+                        ) : undefined
+                    }
+                />
 
                 <DetailCard title="Berlaku sekarang" icon={Layers}>
                     {current ? (

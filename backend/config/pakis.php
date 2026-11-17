@@ -150,4 +150,11 @@ return [
             : 'report-only',
     ],
 
+    // Akun uji E2E Playwright (T-087, E2eUserSeeder): hanya lokal/staging, kosong di produksi. Nilai
+    // dari env agar password & rahasia TOTP tidak pernah ada di kode (CLAUDE.md §6).
+    'e2e' => [
+        'password' => (string) env('E2E_PASSWORD', ''),
+        'totp_secret' => (string) env('E2E_TOTP_SECRET', ''),
+    ],
+
 ];

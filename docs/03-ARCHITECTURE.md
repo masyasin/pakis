@@ -144,6 +144,8 @@ Versi di bawah sudah diverifikasi per 3 November 2026. Versi patch dikunci di `c
 
 **Grafik dasbor (disetujui Mas 16 Nov 2026):** `recharts` 3.10.1 (versi dikunci, tanpa `^`). Hanya dimuat di chunk halaman dasbor (±117 KB gzip), tidak menambah bundel halaman lain.
 
+**E2E web (T-087, disetujui Mas 18 Nov 2026):** devDependency `@playwright/test` 1.64.1 (dikunci tanpa `^`; 1.65.x belum dua minggu saat dipilih) + browser Chromium (`npx playwright install chromium`). Config `backend/playwright.config.ts` (proyek `setup` login sekali → `storageState`, karena Fortify menolak kode TOTP dipakai ulang), test di `backend/tests/e2e/`. Berjalan terhadap app lokal + data demo (`migrate:fresh --seed`) dan akun `E2eUserSeeder` (password & rahasia TOTP dari `E2E_PASSWORD`/`E2E_TOTP_SECRET` di `.env` lokal, tidak di kode). Belum di CI.
+
 **Test frontend (T-005, disetujui 14 Nov 2026):** Vitest 5.0.5 (sudah dibawa `vite-plus`, dijalankan `vp test`), devDependency `happy-dom` 21.0.4 dan `@testing-library/react` 16.3.3. Tanpa `jest-dom`/`user-event` langsung (memakai assertion Vitest & `fireEvent`).
 
 Dibawa starter kit `laravel/react-starter-kit` (dev-main, Laravel 13): `laravel/wayfinder` (route TS bertipe), `laravel/chisel` 0.1.1, `laravel/pao` 1.1.5 (output alat dev ringkas untuk agent), dan `laravel/passkeys` 0.2.1 (dependency wajib Fortify; **fitur passkey dimatikan**, lihat `12` log 14 Nov 2026). Laravel Boost tidak dipasang.

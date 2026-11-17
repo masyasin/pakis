@@ -44,3 +44,8 @@ yarn-error.log
 /opencode.json
 /opencode.jsonc
 /.integrity-manifest.json
+
+# Playwright (T-087)
+/test-results/
+/playwright-report/
+/tests/e2e/.auth/

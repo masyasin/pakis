@@ -73,6 +73,7 @@ import { useBreadcrumbTail } from '@/hooks/use-breadcrumb-tail';
 import { formatDateTimeIn } from '@/lib/approval-format';
 import { formatDate } from '@/lib/listing-query';
 import { googleMapsUrl } from '@/lib/maps-link';
+import { formatRupiah } from '@/lib/money';
 import { edit, index, show } from '@/routes/admin/customers';
 
 type Ref = { id: number; code: string; name: string };
@@ -166,12 +167,6 @@ const ASSIGNMENT_STATE = {
     ended: { label: 'Selesai', tone: 'muted' },
 } as const;
 
-const rupiah = new Intl.NumberFormat('id-ID', {
-    style: 'currency',
-    currency: 'IDR',
-    maximumFractionDigits: 0,
-});
-
 /**
  * Sorotan pita kepala kios: verifikasi + limit kredit (limit hanya aktif setelah verifikasi), dan
  * sales penanggung jawab. Keduanya yang paling sering ditanyakan sebelum melayani order.
@@ -185,7 +180,7 @@ function customerHighlights(
               icon: BadgeCheck,
               label: 'Terverifikasi',
               value: customer.credit_limit_active
-                  ? `Limit ${rupiah.format(Number(customer.credit_limit))}`
+                  ? `Limit ${formatRupiah(customer.credit_limit)}`
                   : 'Limit belum aktif',
               tone: 'success',
           }
@@ -565,9 +560,7 @@ function SummaryTab({
                             label="Limit kredit"
                             value={
                                 customer.credit_limit_active
-                                    ? rupiah.format(
-                                          Number(customer.credit_limit),
-                                      )
+                                    ? formatRupiah(customer.credit_limit)
                                     : 'Belum aktif'
                             }
                         />

@@ -13,7 +13,7 @@ describe('DetailHero', () => {
                     {
                         icon: ShieldCheck,
                         label: 'Terverifikasi',
-                        value: 'Limit Rp 5.000.000',
+                        value: 'Limit Rp. 5.000.000',
                         tone: 'success',
                     },
                     { label: 'Kosong', value: null },
@@ -31,7 +31,7 @@ describe('DetailHero', () => {
         for (const list of lists) {
             const items = within(list).getAllByRole('listitem');
             expect(items.map((li) => li.textContent)).toEqual([
-                'Terverifikasi: Limit Rp 5.000.000',
+                'Terverifikasi: Limit Rp. 5.000.000',
                 'Sales: Budi Demo',
                 'Tempo: 30 hari',
             ]);

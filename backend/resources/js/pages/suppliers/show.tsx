@@ -25,6 +25,7 @@ import { MaskedValue } from '@/components/pakis/masked-value';
 import { StatusBadge } from '@/components/pakis/status-badge';
 import { Button } from '@/components/ui/button';
 import { formatDateTimeIn } from '@/lib/approval-format';
+import { formatRupiah } from '@/lib/money';
 
 type Supplier = {
     id: number;
@@ -61,14 +62,6 @@ type Props = {
     products: SuppliedProduct[];
     can: { manage: boolean };
 };
-
-/** "12500.00" → "Rp12.500" tanpa float (ADR-101): pisah ribuan dari string. */
-function rupiah(value: string): string {
-    const [whole, cents = '00'] = value.split('.');
-    const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-
-    return cents === '00' ? `Rp${grouped}` : `Rp${grouped},${cents}`;
-}
 
 /** Detail supplier (15 §5, FR-A11). Rekening termasking; "Lihat" tercatat (SEC-108). */
 export default function SupplierShow({ supplier, products, can }: Props) {
@@ -272,7 +265,9 @@ export default function SupplierShow({ supplier, products, can }: Props) {
                                             <td className="py-2.5 pr-3">
                                                 {p.last_price !== null ? (
                                                     <span>
-                                                        {rupiah(p.last_price)}
+                                                        {formatRupiah(
+                                                            p.last_price,
+                                                        )}
                                                         {p.last_price_unit &&
                                                             ` / ${p.last_price_unit.toLowerCase()}`}
                                                         {p.updated_at && (

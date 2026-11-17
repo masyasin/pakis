@@ -13,6 +13,7 @@ use App\Domain\Catalog\Models\ProductBarcode;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductRegistration;
 use App\Domain\Catalog\Models\ProductUnit;
+use App\Domain\Catalog\Queries\ActiveRegistration;
 use App\Domain\Customer\Models\SalesArea;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Enums\Gender;
@@ -40,13 +41,18 @@ use App\Domain\Pricing\Enums\PromotionStatus;
 use App\Domain\Pricing\Models\PriceList;
 use App\Domain\Pricing\Models\Promotion;
 use App\Domain\Pricing\Support\PriceRounding;
+use App\Domain\Purchasing\Actions\CheckGoodsReceipt;
+use App\Domain\Purchasing\Actions\PostGoodsReceipt;
+use App\Domain\Purchasing\Actions\SaveGoodsReceipt;
 use App\Domain\Purchasing\Actions\SavePrincipal;
 use App\Domain\Purchasing\Actions\SavePurchaseOrder;
 use App\Domain\Purchasing\Actions\SaveSupplier;
 use App\Domain\Purchasing\Actions\SubmitPurchaseOrder;
 use App\Domain\Purchasing\Enums\PurchaseOrderStatus;
+use App\Domain\Purchasing\Models\GoodsReceipt;
 use App\Domain\Purchasing\Models\Principal;
 use App\Domain\Purchasing\Models\PurchaseOrder;
+use App\Domain\Purchasing\Models\PurchaseOrderLine;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
@@ -191,6 +197,7 @@ class DemoSeeder extends Seeder
         $this->seedPricing();
         $this->seedPromotions();
         $this->seedPurchaseOrders();
+        $this->seedGoodsReceipts();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -662,6 +669,51 @@ class DemoSeeder extends Seeder
                 // Jalan pintas khusus demo (pola promo demo): langsung disetujui tanpa antrean.
                 $order->forceFill(['status' => PurchaseOrderStatus::Approved, 'submitted_at' => now(), 'approved_at' => now()])->save();
             }
+        }
+    }
+
+    /**
+     * Penerimaan demo T-080 atas PO demo yang sudah disetujui: satu penerimaan sebagian yang sudah
+     * diposting (diperiksa staf gudang, diposting kepala gudang — dua orang, SEC-104) dan satu draf
+     * sisa barang. Lewat Action resmi agar batch, HPP, status PO, dan outbox sama seperti dari layar.
+     * Dilewati bila sudah ada penerimaan (idempoten).
+     */
+    private function seedGoodsReceipts(): void
+    {
+        $order = PurchaseOrder::query()->where('status', PurchaseOrderStatus::Approved)->where('note', 'Data demo')->orderBy('id')->first();
+        $checker = User::query()->where('name', 'Slamet Riyadi')->first();
+        $poster = User::query()->where('name', 'Joko Susilo')->first();
+        if ($order === null || $checker === null || $poster === null || GoodsReceipt::query()->exists()) {
+            return;
+        }
+
+        $bin = StockBin::query()->where('stock_location_id', $order->stock_location_id)->where('code', 'R1-01')->value('id');
+        $lines = $order->lines()->with('product')->get();
+        $line = function (PurchaseOrderLine $l, string $qty, string $batch) use ($bin): array {
+            $registration = $l->product->requires_registration ? ActiveRegistration::for($l->product)?->registration_no : null;
+
+            return [
+                'id' => null, 'purchase_order_line_id' => $l->id, 'product_unit_id' => null, 'qty_received' => $qty, 'qty_rejected' => '0',
+                'reject_reason_id' => null, 'batch_no' => $l->product->tracks_batch ? $batch : null,
+                'expiry_date' => $l->product->tracks_expiry ? CarbonImmutable::now(DisplayTime::timezone())->addMonths(20)->toDateString() : null,
+                'registration_no_seen' => $registration, 'stock_bin_id' => $bin === null ? null : (int) $bin, 'unit_cost' => null,
+            ];
+        };
+        $header = fn (string $sj, int $daysAgo) => [
+            'purchase_order_id' => $order->id,
+            'received_at' => CarbonImmutable::now(DisplayTime::timezone())->subDays($daysAgo)->setTime(9, 30)->format('Y-m-d\TH:i'),
+            'supplier_delivery_no' => $sj, 'vehicle_plate' => 'K 9300 DM', 'note' => 'Data demo',
+        ];
+
+        $first = array_values($lines->values()->map(fn (PurchaseOrderLine $l, int $i) => $line($l, $i === 0 ? '60' : (string) $l->qty, 'DM-B'.($i + 1)))->all());
+        $posted = app(SaveGoodsReceipt::class)->handle(null, $header('SJ-DEMO-001', 2), $first, $checker);
+        app(CheckGoodsReceipt::class)->handle($posted, $checker);
+        app(PostGoodsReceipt::class)->handle($posted, $poster);
+
+        // Sisa baris pertama datang belakangan: masih draf.
+        $rest = $lines->first();
+        if ($rest !== null) {
+            app(SaveGoodsReceipt::class)->handle(null, $header('SJ-DEMO-002', 0), [$line($rest, '40', 'DM-B9')], $checker);
         }
     }
 

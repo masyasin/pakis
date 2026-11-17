@@ -66,6 +66,13 @@ enum ErrorCode: string
     case OTP_EXPIRED = 'OTP_EXPIRED';
     // Khusus web (05 §2.4a), tanggal kunci akuntansi dokumen ber-outbox (ADR-115, T-077).
     case PERIOD_LOCKED = 'PERIOD_LOCKED';
+    // T-080 penerimaan barang & nomor seri (BR-103, BR-144, BR-158, SEC-104).
+    case BATCH_EXPIRED_ON_RECEIPT = 'BATCH_EXPIRED_ON_RECEIPT';
+    case OVER_RECEIPT = 'OVER_RECEIPT';
+    case PO_NOT_APPROVED = 'PO_NOT_APPROVED';
+    case RECEIPT_SAME_PERSON = 'RECEIPT_SAME_PERSON';
+    case SERIAL_COUNT_MISMATCH = 'SERIAL_COUNT_MISMATCH';
+    case SERIAL_DUPLICATE = 'SERIAL_DUPLICATE';
     // T-082 mutasi antar lokasi (BR-161).
     case TRANSFER_OVER_RECEIPT = 'TRANSFER_OVER_RECEIPT';
     case TRANSFER_SAME_PERSON = 'TRANSFER_SAME_PERSON';
@@ -85,6 +92,7 @@ enum ErrorCode: string
             self::FORBIDDEN,
             self::CORRECTION_SELF_APPROVAL,
             self::APPROVAL_SELF_DECISION,
+            self::RECEIPT_SAME_PERSON,
             self::TRANSFER_SAME_PERSON => 403,
             self::NOT_FOUND => 404,
             self::METHOD_NOT_ALLOWED => 405,
@@ -116,6 +124,11 @@ enum ErrorCode: string
             self::OTP_INVALID,
             self::OTP_EXPIRED,
             self::PERIOD_LOCKED,
+            self::BATCH_EXPIRED_ON_RECEIPT,
+            self::OVER_RECEIPT,
+            self::PO_NOT_APPROVED,
+            self::SERIAL_COUNT_MISMATCH,
+            self::SERIAL_DUPLICATE,
             self::TRANSFER_OVER_RECEIPT => 422,
             self::ACCOUNT_LOCKED => 423,
             self::APP_UPDATE_REQUIRED => 426,
@@ -181,6 +194,12 @@ enum ErrorCode: string
             self::OTP_EXPIRED => 'Kode OTP sudah tidak berlaku. Kirim ulang kode.',
             // PeriodGuard mengirim pesan yang menyebut tanggal; ini cadangan generiknya.
             self::PERIOD_LOCKED => 'Tanggal dokumen masuk periode akuntansi yang sudah dikunci. Pakai tanggal sesudah tanggal kunci.',
+            self::BATCH_EXPIRED_ON_RECEIPT => 'Tanggal kedaluwarsa batch sudah lewat atau jatuh pada tanggal terima. Batch ini tidak boleh diterima.',
+            self::OVER_RECEIPT => 'Jumlah diterima melebihi sisa PO (ditambah toleransi). Periksa qty atau PO-nya.',
+            self::PO_NOT_APPROVED => 'PO ini belum disetujui atau sudah ditutup, jadi belum bisa menerima barang.',
+            self::RECEIPT_SAME_PERSON => 'Posting harus dilakukan orang lain, bukan yang memeriksa penerimaan ini.',
+            self::SERIAL_COUNT_MISMATCH => 'Jumlah nomor seri harus sama dengan jumlah unit yang diterima.',
+            self::SERIAL_DUPLICATE => 'Nomor seri ini sudah pernah dicatat untuk produk yang sama.',
             self::TRANSFER_OVER_RECEIPT => 'Jumlah diterima melebihi jumlah yang dikirim. Hitung ulang barangnya.',
             // BR-161: dua orang berbeda di dua ujung mutasi.
             self::TRANSFER_SAME_PERSON => 'Penerimaan harus dicatat orang lain, bukan pengirim mutasi ini.',

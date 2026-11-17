@@ -168,6 +168,19 @@ test('T-076 data demo promo: tiga aktif + satu draf; idempoten', function () {
     ]);
 });
 
+test('T-080 data demo penerimaan: satu terposting sebagian (dua orang) + satu draf, stok & PO berubah; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    expect(DB::table('goods_receipts')->orderBy('id')->pluck('status')->all())->toBe(['posted', 'draft']);
+    $posted = DB::table('goods_receipts')->where('status', 'posted')->first();
+    expect($posted->checked_by)->not->toBe($posted->posted_by)
+        ->and(DB::table('purchase_orders')->where('id', $posted->purchase_order_id)->value('status'))->toBe('partially_received')
+        ->and(DB::table('stock_movements')->where('source_type', 'goods_receipt')->count())->toBe(2)
+        ->and(DB::table('stock_batches')->where('status', 'quarantine')->count())->toBe(0)
+        ->and(DB::table('accounting_events')->where('event_code', 'inventory.goods_received')->count())->toBe(1);
+});
+
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {
     app()->detectEnvironment(fn () => 'production');
 

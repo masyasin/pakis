@@ -316,16 +316,16 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; sequence `goods_receipt`; `app/Domain/Purchasing/{Models/{GoodsReceipt,GoodsReceiptLine},Actions/{SaveGoodsReceipt,CheckGoodsReceipt,PostGoodsReceipt,SaveReceiptSerials},Approvables/ShortShelfLifeApproval,Listings/GoodsReceiptListing (implements ExportableListing)}`; `app/Domain/Inventory/{Models/SerialNumber,Enums/SerialStatus,Listings/SerialNumberListing (implements ExportableListing)}`; kunci `goods_receipts` & `serial_numbers` di `config/pakis.php` `exports` (rute `admin.goods-receipts.export` → `goods_receipts.view`, `admin.serials.export` → `stock.view`); foto SJ & label nomor seri lewat `app/Support/Upload/` (T-070); controllers; pages `Purchasing/GoodsReceipts/{Index,Form,Show}.tsx`, `Inventory/Serials/Index.tsx`; `components/pakis/{ScanField,PhotoCapture}.tsx`; tests
 - Deskripsi: Alur `draft → checked → (pending_approval) → posted`. Saat periksa: hitung sisa umur, cocokkan nomor pendaftaran, tentukan `line_status`. Posting: satu transaksi per **15** BR-158(6) termasuk perbarui `supplier_products.last_price`. Baris `registration_mismatch` diposting ke bin karantina dengan status `quarantine`. Nomor seri: scan satu per satu atau tempel daftar (satu per baris); input manual wajib foto label.
 - Kriteria penerimaan:
-  - [ ] ED ≤ tanggal terima → `422 BATCH_EXPIRED_ON_RECEIPT`
-  - [ ] Sisa umur 4 bulan, batas 6 → approval; ditolak → penerimaan `rejected`, stok tidak berubah
-  - [ ] Over-receipt di atas toleransi → `422 OVER_RECEIPT`; `PO_NOT_APPROVED` untuk PO belum disetujui
-  - [ ] Pemeriksa = pemosting saat `receipt_two_person=true` → `403 RECEIPT_SAME_PERSON`
-  - [ ] Klik posting dua kali (dua request bersamaan) → satu posting, satu `409 STATE_CONFLICT`
-  - [ ] Jumlah nomor seri ≠ qty → `SERIAL_COUNT_MISMATCH`; duplikat → `SERIAL_DUPLICATE`
-  - [ ] Outbox `inventory.goods_received` berisi D `inventory` = K `goods_received_not_invoiced` = Σ qty × biaya
-  - [ ] `PostGoodsReceipt` memanggil `PeriodGuard` dengan tanggal bisnis penerimaan (≤ lock date → `PERIOD_LOCKED`, stok tidak berubah); payload membawa `stock_location_id` & `product_id` per baris + `refs.supplier_id`; baris `registration_mismatch` ikut event yang sama, tanpa event terpisah (**15** §11.4)
-  - [ ] Harga beli hanya tampil untuk pemegang `purchase_orders.view` / `stock.view_cost` (SEC-107)
-  - [ ] 2 listing + ekspor `goods_receipts` & `serial_numbers` (`ExportableListing`) lulus kontrak
+  - [x] ED ≤ tanggal terima → `422 BATCH_EXPIRED_ON_RECEIPT`
+  - [x] Sisa umur 4 bulan, batas 6 → approval; ditolak → penerimaan `rejected`, stok tidak berubah
+  - [x] Over-receipt di atas toleransi → `422 OVER_RECEIPT`; `PO_NOT_APPROVED` untuk PO belum disetujui
+  - [x] Pemeriksa = pemosting saat `receipt_two_person=true` → `403 RECEIPT_SAME_PERSON`
+  - [x] Klik posting dua kali (dua request bersamaan) → satu posting, satu `409 STATE_CONFLICT` (status dicek di bawah kunci `FOR UPDATE`; test mengirim dua request berurutan)
+  - [x] Jumlah nomor seri ≠ qty → `SERIAL_COUNT_MISMATCH`; duplikat → `SERIAL_DUPLICATE`
+  - [x] Outbox `inventory.goods_received` berisi D `inventory` = K `goods_received_not_invoiced` = Σ qty × biaya
+  - [x] `PostGoodsReceipt` memanggil `PeriodGuard` dengan tanggal bisnis penerimaan (≤ lock date → `PERIOD_LOCKED`, stok tidak berubah); payload membawa `stock_location_id` & `product_id` per baris + `refs.supplier_id`; baris `registration_mismatch` ikut event yang sama, tanpa event terpisah (**15** §11.4)
+  - [x] Harga beli hanya tampil untuk pemegang `purchase_orders.view` / `stock.view_cost` (SEC-107)
+  - [x] 2 listing + ekspor `goods_receipts` & `serial_numbers` (`ExportableListing`) lulus kontrak
 - Verifikasi: `php artisan test --filter='GoodsReceipt|Serial'`
 - Di luar lingkup: faktur pembelian (Paket F), nomor seri saat jual (Paket B)
 

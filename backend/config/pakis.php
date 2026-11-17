@@ -19,6 +19,7 @@ use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Listings\AssignmentListing;
 use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Inventory\Approvables\TransferVarianceApproval;
+use App\Domain\Inventory\Listings\SerialNumberListing;
 use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 use App\Domain\Organization\Listings\PositionListing;
@@ -26,6 +27,8 @@ use App\Domain\Pricing\Approvables\PriceListPublish;
 use App\Domain\Pricing\Approvables\PromotionActivate;
 use App\Domain\Pricing\Listings\PriceListItemListing;
 use App\Domain\Purchasing\Approvables\PurchaseOrderApproval;
+use App\Domain\Purchasing\Approvables\ShortShelfLifeApproval;
+use App\Domain\Purchasing\Listings\GoodsReceiptListing;
 use App\Domain\Purchasing\Listings\PurchaseOrderListing;
 
 /*
@@ -76,6 +79,8 @@ return [
         'products' => ProductListing::class, // T-070 (15 §5, izin products.view)
         'price_list_items' => PriceListItemListing::class, // T-075 (15 §5, izin prices.view)
         'purchase_orders' => PurchaseOrderListing::class, // T-079 (15 §5, izin purchase_orders.view, scope Stok)
+        'goods_receipts' => GoodsReceiptListing::class, // T-080 (15 §5, izin goods_receipts.view, scope Stok; tanpa kolom biaya, SEC-107)
+        'serial_numbers' => SerialNumberListing::class, // T-080 (15 §5, izin stock.view, scope Stok lewat batch)
         'customers' => CustomerListing::class, // T-073 (15 §5, izin customers.export; HP selalu termasking, SEC-108)
     ],
 
@@ -95,7 +100,8 @@ return [
     'approvables' => [
         // T-079: dokumen = baris purchase_orders (nominal = grand_total).
         'purchase_order' => ['label' => 'Purchase order', 'model' => PurchaseOrderApproval::class, 'conditions' => []],
-        'goods_receipt_short_shelf_life' => ['label' => 'Penerimaan sisa umur pendek', 'model' => null, 'conditions' => []],
+        // T-080: dokumen = baris goods_receipts (tanpa nominal, BR-103).
+        'goods_receipt_short_shelf_life' => ['label' => 'Penerimaan sisa umur pendek', 'model' => ShortShelfLifeApproval::class, 'conditions' => []],
         // T-082: dokumen = baris stock_transfers (nominal = Σ selisih × HPP rata-rata, BR-161).
         'stock_transfer_variance' => ['label' => 'Selisih mutasi stok', 'model' => TransferVarianceApproval::class, 'conditions' => []],
         'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => null, 'conditions' => []],

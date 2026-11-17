@@ -25,6 +25,7 @@ final class MenuBuilder
      */
     public const SECTIONS = [
         'Penjualan' => 'Distribusi',
+        'Persediaan' => 'Distribusi',
         'Pembelian' => 'Distribusi',
         'Master' => 'Distribusi',
         'Unit Kerja' => 'HRIS',
@@ -56,7 +57,10 @@ final class MenuBuilder
         ['Penjualan', 'Area Penjualan', 'sales_area', 'sales_areas.view', 'admin.sales-areas.index'],
         ['Penjualan', 'Daftar Harga', 'price_list', 'prices.view', 'admin.price-lists.index'],
         ['Penjualan', 'Promo', 'promotion', 'promotions.view', 'admin.promotions.index'],
+        // Persediaan (15 §6.5): Nomor Seri T-080; Mutasi Stok (T-082), opname, karantina menyusul di atasnya.
+        ['Persediaan', 'Nomor Seri', 'serial', 'stock.view', 'admin.serials.index'],
         ['Pembelian', 'Purchase Order', 'purchase_order', 'purchase_orders.view', 'admin.purchase-orders.index'],
+        ['Pembelian', 'Penerimaan Barang', 'goods_receipt', 'goods_receipts.view', 'admin.goods-receipts.index'],
         ['Pembelian', 'Supplier', 'supplier', 'suppliers.view', 'admin.suppliers.index'],
         ['Pembelian', 'Prinsipal', 'principal', 'suppliers.view', 'admin.principals.index'],
         ['Master', 'Produk', 'product', 'products.view', 'admin.products.index'],

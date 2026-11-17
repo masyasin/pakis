@@ -127,6 +127,34 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'purchase_order.closed': { label: 'Ditutup', tone: 'muted' },
     'purchase_order.rejected': { label: 'Ditolak', tone: 'danger' },
     'purchase_order.cancelled': { label: 'Dibatalkan', tone: 'muted' },
+    // Penerimaan barang, baris penerimaan, nomor seri (T-080, 15 §6.6)
+    'goods_receipt.draft': { label: 'Draf', tone: 'muted' },
+    'goods_receipt.checked': { label: 'Diperiksa', tone: 'info' },
+    'goods_receipt.pending_approval': {
+        label: 'Menunggu persetujuan',
+        tone: 'warning',
+    },
+    'goods_receipt.posted': { label: 'Diposting', tone: 'success' },
+    'goods_receipt.rejected': { label: 'Ditolak', tone: 'danger' },
+    'receipt_line.ok': { label: 'Sesuai', tone: 'success' },
+    'receipt_line.short_shelf_life': {
+        label: 'Sisa umur pendek',
+        tone: 'warning',
+    },
+    'receipt_line.registration_mismatch': {
+        label: 'Izin edar tidak cocok',
+        tone: 'danger',
+    },
+    'serial.in_stock': { label: 'Di stok', tone: 'success' },
+    'serial.reserved': { label: 'Dipesan', tone: 'info' },
+    'serial.sold': { label: 'Terjual', tone: 'muted' },
+    'serial.returned': { label: 'Retur pelanggan', tone: 'warning' },
+    'serial.in_service': { label: 'Servis', tone: 'info' },
+    'serial.returned_to_principal': {
+        label: 'Retur ke prinsipal',
+        tone: 'muted',
+    },
+    'serial.scrapped': { label: 'Dimusnahkan', tone: 'danger' },
 };
 
 const TONE_CLASS: Record<StatusTone, string> = {

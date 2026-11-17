@@ -261,6 +261,8 @@ final class SettingRegistry
             // aturan per butir lewat check (08 §2 tipe int_list).
             $t('inventory.near_expiry_days', SettingType::IntList, [90, 60, 30], 'Ambang peringatan ED (hari)', 'Satu sampai tiga angka menurun, mis. 90, 60, 30. Kepala Gudang diberi tahu sekali per batch per ambang; ambang terbesar juga menandai label "mendekati ED".',
                 min: 1, max: 3, check: self::checkNearExpiryDays(...)),
+            // T-080 penerimaan (BR-103): batas sisa umur bawaan; produk boleh menetapkan sendiri (`products.min_shelf_life_months`).
+            $t('inventory.min_shelf_life_months', SettingType::Int, 6, 'Sisa umur minimal saat terima (bulan)', 'Batch yang sisa umurnya di bawah ini saat diterima butuh persetujuan Kepala Gudang. Produk bisa punya batas sendiri. 0 = tanpa batas.', min: 0, max: 60),
             $t('inventory.min_sell_days_before_expiry', SettingType::Int, 0, 'Sisa umur minimal untuk dialokasikan (hari)', 'Batch yang ED-nya dalam jumlah hari ini (atau sudah lewat) tidak dipilih FEFO untuk jual/mutasi. 0 = batch boleh keluar sampai sehari sebelum ED.', min: 0, max: 365),
             // T-082 mutasi (BR-161): ambang pengingat terima, juga batas filter "terlambat" & widget dasbor.
             $t('inventory.transfer_receive_reminder_hours', SettingType::Int, 24, 'Pengingat terima mutasi (jam)', 'Mutasi yang dikirim lebih lama dari ini dan belum diterima diingatkan ke penerima di lokasi tujuan, sekali per hari, dan ditandai terlambat.', min: 1, max: 168),
@@ -269,8 +271,11 @@ final class SettingRegistry
             $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),
             $t('pricing.allow_backdated_publish', SettingType::Bool, false, 'Izinkan versi harga berlaku surut', 'Bila aktif, pemegang izin terbit harga boleh menerbitkan versi yang mulai berlaku di masa lalu dengan alasan tertulis. Bawaan: tidak boleh.'),
 
-            // 2.12 Pembelian (T-079, 15 §9). Kunci penerimaan (`purchasing.*`) ditambah T-080.
+            // 2.12 Pembelian (T-079 PO, T-080 penerimaan; 15 §9, BR-158, SEC-104).
             $t('purchasing.default_payment_term_days', SettingType::Int, 30, 'Tempo bayar bawaan PO (hari)', 'Bawaan di form PO sebelum supplier dipilih. Bila dikosongkan, PO memakai tempo supplier. 0 = tunai.', min: 0, max: 365),
+            $t('purchasing.allow_receipt_without_po', SettingType::Bool, false, 'Izinkan penerimaan tanpa PO', 'Bila aktif, pemegang izin buat PO boleh mencatat penerimaan tanpa PO (biaya diketik manual). Bawaan: setiap penerimaan harus merujuk PO yang disetujui.'),
+            $t('purchasing.over_receipt_tolerance_pct', SettingType::Decimal, '0', 'Toleransi terima lebih dari PO (%)', 'Qty diterima kumulatif per baris PO boleh melebihi PO sebesar persen ini. 0 = tidak boleh lebih sama sekali.', min: 0, max: 20),
+            $t('purchasing.receipt_two_person', SettingType::Bool, true, 'Posting penerimaan oleh orang lain', 'Bila aktif, yang memposting penerimaan harus berbeda dari yang memeriksa (dua orang).'),
 
             // 2.13 Akuntansi (T-077, 15 §9, ADR-115). Terkunci selama Paket A; aksi ubah tanggal kunci
             // dengan aturan maju/mundur (BR-229, izin accounting.lock) menggantikannya di T-096.

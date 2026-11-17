@@ -21,7 +21,7 @@ class PurchaseOrderResource extends JsonResource
     {
         /** @var PurchaseOrder $po */
         $po = $this->resource;
-        $po->loadMissing(['supplier:id,code,name,payment_term_days', 'stockLocation:id,code,name', 'creator:id,name', 'lines.product:id,sku,name', 'lines.productUnit.unit:id,name']);
+        $po->loadMissing(['supplier:id,code,name,payment_term_days', 'stockLocation:id,code,name', 'creator:id,name', 'lines.product:id,sku,name,base_unit_id', 'lines.product.baseUnit:id,name', 'lines.productUnit.unit:id,name']);
 
         return [
             'id' => $po->id,
@@ -61,6 +61,7 @@ class PurchaseOrderResource extends JsonResource
                 'discount_pct' => $l->discount_pct,
                 'line_total' => $l->line_total,
                 'qty_received_base' => $l->qty_received_base,
+                'base_unit' => $l->product->baseUnit->name,
                 'note' => $l->note,
             ])->values(),
         ];

@@ -55,6 +55,8 @@ return [
     'price_list_items', // T-075
     'promotions', // T-076
     'purchase_orders', // T-079
+    'goods_receipts', // T-080
+    'serial_numbers', // T-080
     'stock_locations', // T-068
     'stock_bins', // T-068
     'stock_transfers', // T-082

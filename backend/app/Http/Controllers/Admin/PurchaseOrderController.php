@@ -10,6 +10,7 @@ use App\Domain\Purchasing\Actions\SavePurchaseOrder;
 use App\Domain\Purchasing\Actions\SubmitPurchaseOrder;
 use App\Domain\Purchasing\Enums\PurchaseOrderStatus;
 use App\Domain\Purchasing\Listings\PurchaseOrderListing;
+use App\Domain\Purchasing\Models\GoodsReceipt;
 use App\Domain\Purchasing\Models\PurchaseOrder;
 use App\Domain\Purchasing\Models\SupplierProduct;
 use App\Domain\Purchasing\Resources\PurchaseOrderResource;
@@ -103,7 +104,10 @@ class PurchaseOrderController extends Controller
                 'submit' => Gate::forUser($user)->allows('update', $po),
                 'cancel' => Gate::forUser($user)->allows('cancel', $po),
                 'close' => Gate::forUser($user)->allows('close', $po),
+                // T-080: terima barang = goods_receipts.create + PO terbuka (form penerimaan mengecek scope lagi).
+                'receive' => $user->can('goods_receipts.create') && $po->status->isOpen(),
             ],
+            'receipts' => self::receipts($po, $user),
         ]);
     }
 
@@ -195,6 +199,26 @@ class PurchaseOrderController extends Controller
                     'lead_time_days' => $p->lead_time_days,
                 ]])->all()),
         ];
+    }
+
+    /**
+     * Penerimaan atas PO ini (T-080), terbaru dulu. Tautan hanya bila pengguna boleh membuka penerimaan.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function receipts(PurchaseOrder $po, User $user): array
+    {
+        $canView = $user->can('goods_receipts.view');
+
+        return array_values(GoodsReceipt::query()->where('purchase_order_id', $po->id)->orderByDesc('received_at')->orderByDesc('id')->limit(50)->get()
+            ->map(fn (GoodsReceipt $r) => [
+                'id' => $r->id,
+                'number' => $r->number,
+                'date' => $r->businessDate(),
+                'status' => $r->status->value,
+                'status_label' => $r->status->label(),
+                'url' => $canView ? '/penerimaan/'.$r->id : null,
+            ])->all());
     }
 
     /** @return array<int, array<string, mixed>> */

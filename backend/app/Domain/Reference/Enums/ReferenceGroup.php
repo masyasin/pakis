@@ -17,6 +17,8 @@ enum ReferenceGroup: string
     case Formulation = 'formulation';
     // Paket A (15 §4.1, T-073): jenis pelanggan (kios, toko eceran, kelompok tani, ...).
     case CustomerType = 'customer_type';
+    // Paket A (15 §4.9, T-080): alasan barang ditolak saat penerimaan (klaim ke supplier, BR-158(7)).
+    case ReceiptRejectReason = 'receipt_reject_reason';
 
     public function label(): string
     {
@@ -28,6 +30,7 @@ enum ReferenceGroup: string
             self::Unit => 'Satuan',
             self::Formulation => 'Formulasi',
             self::CustomerType => 'Jenis pelanggan',
+            self::ReceiptRejectReason => 'Alasan tolak penerimaan',
         };
     }
 
@@ -47,6 +50,7 @@ enum ReferenceGroup: string
             self::Unit => [['product_units', 'unit_id'], ['products', 'base_unit_id']],
             self::Formulation => [['products', 'formulation_id']],
             self::CustomerType => [['customers', 'customer_type_id']],
+            self::ReceiptRejectReason => [['goods_receipt_lines', 'reject_reason_id']],
         };
     }
 }

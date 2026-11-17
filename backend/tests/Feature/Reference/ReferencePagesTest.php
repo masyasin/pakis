@@ -74,8 +74,8 @@ test('daftar default grup pertama, urut sort_order, item sistem ditandai', funct
         ->assertInertia(fn (Assert $page) => $page
             ->component('references/index')
             ->where('group', 'location_type')
-            // 4 grup Fase 0 + unit & formulation (T-069) + customer_type (T-073).
-            ->has('groups', 7)
+            // 4 grup Fase 0 + unit & formulation (T-069) + customer_type (T-073) + receipt_reject_reason (T-080).
+            ->has('groups', 8)
             ->has('rows', 4)
             ->where('rows.0.code', 'office')
             ->where('rows.0.name', 'Kantor')

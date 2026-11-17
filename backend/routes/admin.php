@@ -20,6 +20,7 @@ use App\Http\Controllers\Admin\EmployeeController;
 use App\Http\Controllers\Admin\ExportController;
 use App\Http\Controllers\Admin\FieldTripController;
 use App\Http\Controllers\Admin\ForcePasswordChangeController;
+use App\Http\Controllers\Admin\GoodsReceiptController;
 use App\Http\Controllers\Admin\HolidayController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ImportProfileController;
@@ -46,6 +47,7 @@ use App\Http\Controllers\Admin\ScheduleController;
 use App\Http\Controllers\Admin\ScheduleOverrideController;
 use App\Http\Controllers\Admin\SecurityEventController;
 use App\Http\Controllers\Admin\SequenceController;
+use App\Http\Controllers\Admin\SerialNumberController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\StockBinController;
@@ -496,6 +498,29 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     Route::middleware('can:purchase_orders.view')->group(function () {
         Route::get('pembelian/po/{po}', [PurchaseOrderController::class, 'show'])->whereNumber('po')->name('purchase-orders.show');
         Route::get('pembelian/po/{po}/pdf', [PurchaseOrderController::class, 'pdf'])->whereNumber('po')->name('purchase-orders.pdf');
+    });
+
+    // Penerimaan barang (15 §5 `admin.goods-receipts.*`, FR-A25, BR-103/144/158, T-080). `ekspor` & `baru`
+    // sebelum `{gr}`. Scope Stok lokasi penerimaan dicek controller (di luar scope → 404).
+    Route::middleware('can:goods_receipts.view')->group(function () {
+        Route::get('penerimaan', [GoodsReceiptController::class, 'index'])->name('goods-receipts.index');
+        Route::get('penerimaan/ekspor', [GoodsReceiptController::class, 'export'])->name('goods-receipts.export');
+    });
+    Route::middleware('can:goods_receipts.create')->group(function () {
+        Route::get('penerimaan/baru', [GoodsReceiptController::class, 'create'])->name('goods-receipts.create');
+        Route::post('penerimaan', [GoodsReceiptController::class, 'store'])->name('goods-receipts.store');
+        Route::get('penerimaan/{gr}/ubah', [GoodsReceiptController::class, 'edit'])->whereNumber('gr')->name('goods-receipts.edit');
+        Route::put('penerimaan/{gr}', [GoodsReceiptController::class, 'update'])->whereNumber('gr')->name('goods-receipts.update');
+        Route::post('penerimaan/{gr}/periksa', [GoodsReceiptController::class, 'check'])->whereNumber('gr')->name('goods-receipts.check');
+        Route::post('penerimaan/{gr}/posting', [GoodsReceiptController::class, 'post'])->whereNumber('gr')->middleware('throttle:30,1')->name('goods-receipts.post');
+        Route::put('penerimaan/{gr}/baris/{line}/seri', [GoodsReceiptController::class, 'serials'])->whereNumber(['gr', 'line'])->middleware('throttle:60,1')->name('goods-receipts.serials');
+    });
+    Route::get('penerimaan/{gr}', [GoodsReceiptController::class, 'show'])->whereNumber('gr')->middleware('can:goods_receipts.view')->name('goods-receipts.show');
+
+    // Nomor seri (15 §5 `admin.serials.*`, BR-144, T-080): hanya yang sudah masuk stok. `serials.swap` di luar lingkup.
+    Route::middleware('can:stock.view')->group(function () {
+        Route::get('nomor-seri', [SerialNumberController::class, 'index'])->name('serials.index');
+        Route::get('nomor-seri/ekspor', [SerialNumberController::class, 'export'])->name('serials.export');
     });
 
     // Area penjualan (15 §5 `admin.sales-areas.*`, FR-A12, T-073): tambah/ubah lewat dialog di halaman

@@ -85,6 +85,7 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 |---|---|---|
 | `APPROVAL_RULE_MISSING` | 422 | Tidak ada aturan approval yang cocok untuk dokumen (BR-153). Ditambah 16 Nov 2026 (T-067) |
 | `APPROVAL_SELF_DECISION` | 403 | Pengaju/pembuat dokumen mencoba memutuskan persetujuannya sendiri (SEC-101). Ditambah 16 Nov 2026 (T-067) |
+| `RECEIPT_SAME_PERSON` | 403 | Posting penerimaan oleh pengguna yang sama dengan pemeriksanya saat `purchasing.receipt_two_person` aktif (BR-158(5), SEC-104). Ditambah 17 Nov 2026 (T-080) |
 | `APPROVAL_ALREADY_PENDING` | 409 | Dokumen sudah punya permintaan persetujuan aktif. Ditambah 16 Nov 2026 (T-067) |
 | `QTY_NOT_INTEGER` | 422 | Qty pecahan untuk satuan yang hanya menerima bilangan bulat (meta `integer_only`, BR-150). Ditambah 16 Nov 2026 (T-069); pindah ke §2.3 bila dipakai API mobile (B/C) |
 | `UNIT_FACTOR_LOCKED` | 409 | Faktor satuan produk sudah dipakai dokumen (harga, PO, mutasi, …) sehingga tidak bisa diubah; buat satuan baru (BR-150). Ditambah 16 Nov 2026 (T-070) |
@@ -98,6 +99,11 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 | `INSUFFICIENT_STOCK` | 422 | Stok tersedia batch (`qty_on_hand − qty_reserved`) kurang dari yang diminta (BR-101). `details.available_base` = qty tersedia satuan dasar (string desimal), `details.stock_batch_id`. Ditambah 17 Nov 2026 (T-077) |
 | `BATCH_NOT_AVAILABLE` | 422 | Batch karantina/kedaluwarsa/dimusnahkan dipakai untuk jual, kirim, muat canvas, atau reservasi (BR-102). `details.stock_batch_id`. Ditambah 17 Nov 2026 (T-077) |
 | `PRODUCT_REGISTRATION_INACTIVE` | 422 | Produk `requires_registration` tanpa izin edar `active` pada tanggal alokasi, sehingga tidak bisa dialokasikan FEFO untuk jual/mutasi ke toko (BR-102, BR-152). `details.product_id`. Ditambah 17 Nov 2026 (T-078) |
+| `BATCH_EXPIRED_ON_RECEIPT` | 422 | ED batch ≤ tanggal terima saat memeriksa/posting penerimaan (BR-103); tidak bisa disetujui siapa pun. `details.lines.<i>.expiry_date`. Ditambah 17 Nov 2026 (T-080) |
+| `OVER_RECEIPT` | 422 | Qty diterima kumulatif per baris PO (penerimaan terposting + yang ini) > `qty_base × (1 + purchasing.over_receipt_tolerance_pct)` (BR-158(1), SEC-104). `details.lines.<i>.qty_received` berisi sisa yang boleh (string desimal, satuan dasar). Ditambah 17 Nov 2026 (T-080) |
+| `PO_NOT_APPROVED` | 422 | Penerimaan merujuk PO yang bukan `approved`/`partially_received` (BR-158, SEC-104). Ditambah 17 Nov 2026 (T-080) |
+| `SERIAL_COUNT_MISMATCH` | 422 | Produk `tracks_serial`: jumlah nomor seri baris ≠ `qty_received_base`, atau qty bukan bilangan bulat (BR-144). `details.lines.<i>.serials` = jumlah yang diharapkan. Ditambah 17 Nov 2026 (T-080) |
+| `SERIAL_DUPLICATE` | 422 | Nomor seri sudah tercatat untuk produk yang sama (`serial_product_no_unique`, BR-144) atau kembar dalam satu kiriman. `details.serials` = daftar nomor yang bentrok. Ditambah 17 Nov 2026 (T-080) |
 | `TRANSFER_SAME_PERSON` | 403 | Penerimaan mutasi dicatat oleh pengguna yang sama dengan pengirimnya (BR-161). Ditambah 17 Nov 2026 (T-082) |
 | `TRANSFER_OVER_RECEIPT` | 422 | Qty diterima (total hitung per baris) > qty dikirim (BR-161). `details["lines.<i>.qty_received"]` = pesan field yang menyebut qty maksimal. Ditambah 17 Nov 2026 (T-082) |
 | `PERIOD_LOCKED` | 422 | Tanggal bisnis dokumen ber-outbox (penerimaan, retur prinsipal, mutasi & selisih mutasi, opname, pemusnahan, saldo awal) ≤ `accounting.lock_date` (ADR-115, `15` §11.4); dilempar `PeriodGuard::assertOpen()` sebelum mutasi ditulis, jadi transaksi batal utuh. Pesan menyebut tanggal kunci. Ditambah 17 Nov 2026 (T-077); task Paket B pertama yang mengembalikannya lewat API memindahkannya ke §2.3 + `api_error.dart` |

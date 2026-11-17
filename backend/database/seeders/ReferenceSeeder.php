@@ -45,6 +45,14 @@ class ReferenceSeeder extends Seeder
             'deceased' => 'Meninggal dunia',
             'other' => 'Lainnya',
         ],
+        // Paket A (15 §4.9, T-080): alasan barang ditolak di penerimaan (klaim ke supplier).
+        'receipt_reject_reason' => [
+            'damaged' => 'Rusak / bocor',
+            'wrong_product' => 'Salah produk',
+            'packaging' => 'Kemasan tidak sesuai',
+            'short_delivery' => 'Jumlah kurang dari surat jalan',
+            'other' => 'Lainnya',
+        ],
         // Paket A (15 §4.1, T-069).
         'unit' => [
             'bottle' => 'Botol',

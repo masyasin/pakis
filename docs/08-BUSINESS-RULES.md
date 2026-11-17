@@ -200,6 +200,7 @@ Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok
 | `inventory.reservation_ttl_hours` | int | 72 | 1–720 | ❌ |
 | `inventory.near_expiry_days` | int list | `[90,60,30]` | 1–3 nilai; tiap nilai 1–365, urut menurun (T-078, BR-157) | ❌ |
 | `inventory.min_sell_days_before_expiry` | int | 0 | 0–365 (T-078, BR-102) | ❌ |
+| `inventory.min_shelf_life_months` | int | 6 | 0–60 (T-080, BR-103; produk boleh menetapkan `min_shelf_life_months` sendiri) | ❌ |
 | `inventory.transfer_receive_reminder_hours` | int | 24 | 1–168 (T-082, BR-161; ambang pengingat terima, filter "terlambat", widget "Mutasi belum diterima") | ❌ |
 
 Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`). `inventory.negative_stock_allowed` terkunci `false`: `StockLedger` menolak bekerja bila nilainya lain, dan layar Pengaturan menolak `true` (T-077). `inventory.reservation_ttl_hours` = masa berlaku reservasi batch bawaan; reservasi `active` yang lewat `expires_at` dilepas job tiap 15 menit (BR-155). `inventory.near_expiry_days` = ambang peringatan mendekati ED (job 06.00, satu notifikasi per batch per ambang lewat `reminder_logs` kunci `ed<hari>`); ambang terbesar juga batas label oranye "mendekati ED" dan kolom widget dasbor. `inventory.min_sell_days_before_expiry` = batch ber-ED ≤ tanggal alokasi + nilai ini tidak dialokasikan FEFO maupun ditawarkan lookup `available_batches` (BR-102).
@@ -217,13 +218,16 @@ Catatan: `pricing.rounding` membulatkan ke atas harga hasil salin versi ±% (dan
 
 ### 2.12 Pembelian
 
-Grup `purchasing` (tab "Pembelian"), dipakai purchase order (T-079, `15` §9); kunci penerimaan barang ditambah T-080.
+Grup `purchasing` (tab "Pembelian"), dipakai purchase order (T-079) dan penerimaan barang (T-080), `15` §9.
 
 | Kunci | Tipe | Default | Validasi | Publik |
 |---|---|---|---|---|
 | `purchasing.default_payment_term_days` | int | 30 | 0–365 | ❌ |
+| `purchasing.allow_receipt_without_po` | bool | `false` | — (T-080, BR-158(2)) | ❌ |
+| `purchasing.over_receipt_tolerance_pct` | decimal | `0` | 0–20 (T-080, BR-158(1)) | ❌ |
+| `purchasing.receipt_two_person` | bool | `true` | — (T-080, BR-158(5), SEC-104) | ❌ |
 
-Catatan: tempo PO baru diambil dari supplier (`suppliers.payment_term_days`); nilai ini dipakai bila supplier belum dipilih.
+Catatan: tempo PO baru diambil dari supplier (`suppliers.payment_term_days`); `default_payment_term_days` dipakai bila supplier belum dipilih. `allow_receipt_without_po` mati = setiap penerimaan wajib merujuk PO `approved`/`partially_received`; hidup = pemegang `purchase_orders.create` boleh menerima tanpa PO dengan biaya diketik. `over_receipt_tolerance_pct` = batas qty diterima kumulatif per baris PO di atas `qty_base` (lebih → `OVER_RECEIPT`). `receipt_two_person` hidup = pemosting ≠ pemeriksa (`RECEIPT_SAME_PERSON`).
 
 ### 2.13 Akuntansi
 

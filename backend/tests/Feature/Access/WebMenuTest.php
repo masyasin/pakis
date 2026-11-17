@@ -40,7 +40,8 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
         'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'],
-        'Pembelian' => ['Purchase Order', 'Supplier', 'Prinsipal'],
+        'Persediaan' => ['Nomor Seri'],
+        'Pembelian' => ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
@@ -63,16 +64,16 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan Umum, Penomoran, Audit', funct
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Persediaan' => ['Nomor Seri'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'], 'Persediaan' => ['Nomor Seri'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
 });
 
 test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › Pelanggan & Area Penjualan (T-073) + Master › Produk (T-070), Izin Edar (T-071), Kategori (T-069), Lokasi Stok & Kendaraan (T-068)', function (string $role, array $top, array $sales, array $master) {
-    // Grup Pembelian (T-072) diuji terpisah di bawah.
-    expect(Arr::except(menuOf($role), 'Pembelian'))->toBe(array_filter(['' => $top, 'Penjualan' => $sales, 'Master' => $master]));
+    // Grup Pembelian (T-072) & Persediaan (T-080) diuji terpisah di bawah.
+    expect(Arr::except(menuOf($role), ['Pembelian', 'Persediaan']))->toBe(array_filter(['' => $top, 'Penjualan' => $sales, 'Master' => $master]));
 })->with([
     'admin_penjualan' => ['admin_penjualan', ['Dasbor', 'Persetujuan'], ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
     'kepala_gudang' => ['kepala_gudang', ['Dasbor', 'Persetujuan'], [], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan']],
@@ -80,15 +81,30 @@ test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › 
     'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan'], ['Daftar Harga', 'Promo'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
 ]);
 
-test('T-072/T-079 menu Pembelian › Purchase Order, Supplier & Prinsipal sesuai izin (15 §6.4)', function (string $role, ?array $expected) {
+test('T-072/T-079/T-080 menu Pembelian › Purchase Order, Penerimaan Barang, Supplier & Prinsipal sesuai izin (15 §6.4)', function (string $role, ?array $expected) {
     expect(menuOf($role)['Pembelian'] ?? null)->toBe($expected);
 })->with([
-    'owner' => ['owner', ['Purchase Order', 'Supplier', 'Prinsipal']],
-    'purchasing' => ['purchasing', ['Purchase Order', 'Supplier', 'Prinsipal']],
-    'kepala_gudang' => ['kepala_gudang', ['Purchase Order', 'Supplier', 'Prinsipal']],
+    'owner' => ['owner', ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal']],
+    'purchasing' => ['purchasing', ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal']],
+    'kepala_gudang' => ['kepala_gudang', ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal']],
     'admin_penjualan' => ['admin_penjualan', null],
-    'staf_gudang' => ['staf_gudang', null],
+    'staf_gudang' => ['staf_gudang', ['Penerimaan Barang']],
     'supervisor' => ['supervisor', null],
+]);
+
+test('T-080 menu Persediaan › Nomor Seri untuk pemegang stock.view (15 §6.5), sebelum Pembelian', function (string $role, ?array $expected) {
+    $menu = menuOf($role);
+    expect($menu['Persediaan'] ?? null)->toBe($expected);
+    if ($expected !== null && isset($menu['Pembelian'])) {
+        $keys = array_keys($menu);
+        expect(array_search('Persediaan', $keys, true))->toBeLessThan(array_search('Pembelian', $keys, true));
+    }
+})->with([
+    'owner' => ['owner', ['Nomor Seri']],
+    'kepala_gudang' => ['kepala_gudang', ['Nomor Seri']],
+    'staf_gudang' => ['staf_gudang', ['Nomor Seri']],
+    'purchasing' => ['purchasing', ['Nomor Seri']],
+    'hrd' => ['hrd', null],
 ]);
 
 test('T-073 administrator melihat Area Penjualan (sales_areas.view) tanpa Pelanggan', function () {
@@ -123,7 +139,7 @@ test('06 §8 setiap grup menu punya seksi sidebar (Distribusi / HRIS / Sistem), 
         ->assertInertia(function (Assert $page) {
             $sections = array_column($page->toArray()['props']['auth']['menu'], 'section', 'title');
             expect($sections)->toMatchArray([
-                '' => null, 'Penjualan' => 'Distribusi', 'Pembelian' => 'Distribusi', 'Master' => 'Distribusi', 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
+                '' => null, 'Penjualan' => 'Distribusi', 'Persediaan' => 'Distribusi', 'Pembelian' => 'Distribusi', 'Master' => 'Distribusi', 'Unit Kerja' => 'HRIS', 'Kepegawaian' => 'HRIS', 'Presensi' => 'HRIS',
                 'Pengguna & Akses' => 'Sistem', 'Pengaturan' => 'Sistem', 'Audit' => 'Sistem',
             ]);
         });

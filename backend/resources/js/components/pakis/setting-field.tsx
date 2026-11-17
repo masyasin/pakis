@@ -97,7 +97,7 @@ export function describeSetting(
         const [intPart, frac] = value.split('.');
         const sen = frac && /[1-9]/.test(frac) ? `,${frac}` : '';
 
-        return `Rp ${formatRupiah(intPart)}${sen}`;
+        return `Rp. ${formatRupiah(intPart)}${sen}`;
     }
     if (type === 'decimal' && typeof value === 'string') {
         return value.replace('.', ',');

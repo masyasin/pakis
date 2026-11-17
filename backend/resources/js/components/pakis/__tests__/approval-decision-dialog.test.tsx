@@ -18,7 +18,7 @@ const approval = (
     id: 7,
     document_type_label: 'Purchase order',
     summary: 'PO-2611-0042 · PT Uji',
-    amount_label: 'Rp 48.500.000',
+    amount_label: 'Rp. 48.500.000',
     current_step: 2,
     steps_total: 3,
     requires_password: false,
@@ -30,7 +30,7 @@ function open(decision: ApprovalDecision) {
         <ApprovalDecisionDialog
             pending={decision}
             onClose={() => {}}
-            reauthAmount="Rp 25.000.000"
+            reauthAmount="Rp. 25.000.000"
         />,
     );
 }
@@ -54,7 +54,7 @@ describe('ApprovalDecisionDialog (T-067, SEC-101)', () => {
         });
 
         const password = screen.getByLabelText('Password Anda');
-        expect(screen.getByText(/≥ Rp 25\.000\.000/)).toBeTruthy();
+        expect(screen.getByText(/≥ Rp\. 25\.000\.000/)).toBeTruthy();
         fireEvent.change(password, { target: { value: 'rahasia-uji' } });
         fireEvent.click(screen.getByRole('button', { name: 'Setujui' }));
 

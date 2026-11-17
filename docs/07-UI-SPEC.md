@@ -200,7 +200,7 @@ Struktur dan gaya mengikuti prototipe (header hijau, kartu, tab bawah). Teks bes
 
 ## 7. Format & Copy
 
-- Tanggal: `3 Nov 2026`, panjang `Selasa, 3 November 2026`. Jam: `07.41` (format Indonesia). Angka: `1.250`. Rupiah (fase berikutnya): `Rp 1.250.000`.
+- Tanggal: `3 Nov 2026`, panjang `Selasa, 3 November 2026`. Jam: `07.41` (format Indonesia). Angka: `1.250`. Rupiah: `Rp. 1.250.000` (titik setelah "Rp" + spasi; sen `Rp. 12.500,50`; keputusan Mas 17 Nov 2026), dari `formatRupiah` (`lib/money.ts`) di web dan `Rupiah::format` di server.
 - Tombol memakai kata kerja jelas: "Simpan Pegawai", "Nonaktifkan Pegawai", "Setujui Koreksi", "Masuk" / "Pulang" (presensi).
 - Galat validasi menjelaskan cara memperbaiki: "NIK harus 16 digit angka (sekarang 15)."
 - Pesan sukses singkat (toast 3 detik) + tetap di halaman yang masuk akal.

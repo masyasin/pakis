@@ -99,7 +99,7 @@ export function MoneyInput({
             )}
         >
             <span className="pl-3 text-sm text-muted-foreground" aria-hidden>
-                Rp
+                Rp.
             </span>
             <Input
                 id={id}

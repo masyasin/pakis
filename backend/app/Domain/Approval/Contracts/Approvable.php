@@ -23,7 +23,7 @@ interface Approvable
     /** Nominal yang dibandingkan dengan rentang aturan (string desimal, 2 digit), atau null. */
     public function approvalAmount(): ?string;
 
-    /** Ringkasan satu baris untuk kotak masuk, mis. `PO-2611-0042 · PT Agro · Rp 48.500.000`. */
+    /** Ringkasan satu baris untuk kotak masuk, mis. `PO-2611-0042 · PT Agro · Rp. 48.500.000`. */
     public function approvalSummary(): string;
 
     /**

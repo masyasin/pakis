@@ -37,7 +37,7 @@ export type ApprovalDecision = {
 type Props = {
     pending: ApprovalDecision | null;
     onClose: () => void;
-    /** Label `approval.reauth_amount` ("Rp 25.000.000") untuk menjelaskan kenapa password diminta. */
+    /** Label `approval.reauth_amount` ("Rp. 25.000.000") untuk menjelaskan kenapa password diminta. */
     reauthAmount: string | null;
 };
 

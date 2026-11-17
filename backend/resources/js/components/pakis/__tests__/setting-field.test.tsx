@@ -44,7 +44,7 @@ describe('rupiah setting (PA-19)', () => {
         expect(parseRupiah('9.999.999.999.999.999,99')).toBe(
             '9999999999999999.99',
         );
-        expect(describeSetting('50000000.00', 'money')).toBe('Rp 50.000.000');
+        expect(describeSetting('50000000.00', 'money')).toBe('Rp. 50.000.000');
         expect(describeSetting('0.8', 'decimal')).toBe('0,8');
     });
 

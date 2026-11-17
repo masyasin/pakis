@@ -6,8 +6,9 @@ use App\Domain\Approval\Models\ApprovalRequest;
 use App\Domain\Settings\DecimalString;
 
 /**
- * Tampilan rupiah id-ID dari string DECIMAL(18,2) tanpa float (`Rp 24.999.999,99`, `Rp 25.000.000`),
- * dan kalimat alasan aturan untuk kartu kotak masuk (15 §7.1: "Nilai Rp 32.000.000 ≥ Rp 25.000.000").
+ * Tampilan rupiah id-ID dari string DECIMAL(18,2) tanpa float (`Rp. 24.999.999,99`, `Rp. 25.000.000`;
+ * format baku keputusan Mas 17 Nov 2026, 07 §6), dan kalimat alasan aturan untuk kartu kotak masuk
+ * (15 §7.1: "Nilai Rp. 32.000.000 ≥ Rp. 25.000.000").
  */
 final class Rupiah
 {
@@ -21,7 +22,7 @@ final class Rupiah
         $negative = str_starts_with($value, '-');
         [$int, $frac] = explode('.', ltrim($value, '-'));
         $grouped = strrev(implode('.', str_split(strrev($int), 3)));
-        $text = 'Rp '.($negative ? '-' : '').$grouped;
+        $text = 'Rp. '.($negative ? '-' : '').$grouped;
 
         return $frac === '00' ? $text : $text.','.$frac;
     }

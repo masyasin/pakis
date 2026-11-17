@@ -6,6 +6,7 @@ use App\Domain\Access\DataScope;
 use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Inventory\Models\StockLocation;
+use App\Domain\Pricing\Models\PriceList;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Domain\Region\Models\Village;
 use App\Models\User;
@@ -71,7 +72,7 @@ class Customer extends Model
     use SoftDeletes;
 
     /** Kolom profil yang diubah form T-073 dan diaudit (tanpa cache penugasan, limit, verifikasi). */
-    public const PROFILE = ['store_name', 'owner_name', 'owner_phone', 'customer_type_id', 'address', 'village_code', 'latitude', 'longitude', 'home_stock_location_id', 'term_days'];
+    public const PROFILE = ['store_name', 'owner_name', 'owner_phone', 'customer_type_id', 'address', 'village_code', 'latitude', 'longitude', 'home_stock_location_id', 'term_days', 'price_list_id'];
 
     /**
      * Ketentuan dagang yang diubah lewat form ubah kios (T-074, `customers.update`): tempo panen dan
@@ -128,6 +129,12 @@ class Customer extends Model
     public function assignedSales(): BelongsTo
     {
         return $this->belongsTo(Employee::class, 'assigned_sales_employee_id')->withTrashed();
+    }
+
+    /** @return BelongsTo<PriceList, $this> */
+    public function priceList(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class, 'price_list_id');
     }
 
     /** @return BelongsTo<StockLocation, $this> */

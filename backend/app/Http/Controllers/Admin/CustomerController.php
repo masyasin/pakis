@@ -166,7 +166,7 @@ class CustomerController extends Controller
     public function edit(Customer $customer): Response
     {
         Gate::authorize('update', $customer);
-        $customer->load(['village.district.regency.province', 'homeStockLocation:id,code,name']);
+        $customer->load(['village.district.regency.province', 'homeStockLocation:id,code,name', 'priceList:id,code,name,kind']);
 
         return Inertia::render('customers/form', [
             ...self::formOptions($customer),
@@ -227,6 +227,7 @@ class CustomerController extends Controller
             'sales_area_id' => $c->sales_area_id,
             'assigned_sales_employee_id' => $c->assigned_sales_employee_id,
             'term_days' => $c->term_days,
+            'price_list_id' => $c->price_list_id,
             'status' => $c->status->value,
             'is_verified' => $c->verified_at !== null,
             // Ketentuan dagang (T-074, `customers.update`).
@@ -248,6 +249,7 @@ class CustomerController extends Controller
             ->orderBy('sort_order')->get(['id', 'name']);
         $village = $customer?->village;
         $home = $customer?->homeStockLocation;
+        $priceList = $customer?->priceList;
 
         return [
             'customerTypes' => $types->map(fn (ReferenceItem $r) => ['value' => $r->id, 'label' => $r->name])->all(),
@@ -261,6 +263,7 @@ class CustomerController extends Controller
                 $village ? ['value' => $village->code, 'label' => $village->name] : null,
             ])),
             'homeStockLocationLabel' => $home !== null ? ['value' => $home->id, 'label' => $home->name, 'hint' => $home->code] : null,
+            'priceListLabel' => $priceList !== null ? ['value' => $priceList->id, 'label' => "{$priceList->code} · {$priceList->name}", 'hint' => $priceList->kind->label()] : null,
         ];
     }
 

@@ -6,6 +6,7 @@ use App\Domain\Access\DataScope;
 use App\Domain\Customer\Enums\CustomerStatus;
 use App\Domain\Customer\Models\Customer;
 use App\Domain\Customer\Models\SalesArea;
+use App\Domain\Pricing\Models\PriceList;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Domain\Region\Models\District;
@@ -28,7 +29,7 @@ use Illuminate\Database\Eloquent\Builder;
  * berbeda. HP pemilik di ekspor SELALU termasking (SEC-108, keputusan Mas T-073).
  *
  * Sort default `store_name` (07 menyebut `name`; kolomnya bernama `store_name`, diselaraskan pola
- * PA-30). Filter `price_list_id` ditambah T-075 bersama tabel daftar harga.
+ * PA-30). Filter `price_list_id` (15 §7.3) hanya daftar harga jenis `tier` (PA-61).
  */
 final class CustomerListing implements ExportableListing
 {
@@ -63,6 +64,11 @@ final class CustomerListing implements ExportableListing
                     ->column('customer_type_id')
                     ->options(ReferenceItem::query()->forGroup(ReferenceGroup::CustomerType)->orderBy('sort_order')
                         ->get(['id', 'name'])->mapWithKeys(fn (ReferenceItem $r) => [(string) $r->id => $r->name])->all()),
+                RelationFilter::make('price_list_id', 'Daftar harga')
+                    ->source('price_lists')
+                    ->params(['kind' => 'tier'])
+                    ->column('price_list_id')
+                    ->validIds(fn () => PriceList::query()->where('kind', 'tier')),
                 BooleanFilter::make('verified', 'Terverifikasi')
                     ->using(fn (Builder $q, bool $on) => $on ? $q->whereNotNull('customers.verified_at') : $q->whereNull('customers.verified_at')),
                 // Kode desa hierarkis (`33.19.04.2001`): kecamatan = awalan kode desa (pola LocationListing).

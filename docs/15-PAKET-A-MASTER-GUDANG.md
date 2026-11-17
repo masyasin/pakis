@@ -456,7 +456,7 @@ CREATE TABLE customers (
   photo_path VARCHAR(255) NULL,                  -- foto toko
   sales_area_id BIGINT UNSIGNED NOT NULL,
   assigned_sales_employee_id BIGINT UNSIGNED NULL,
-  price_list_id BIGINT UNSIGNED NULL,            -- NULL = price list default
+  price_list_id BIGINT UNSIGNED NULL,            -- NULL = harga area kios lalu default; hanya kind tier (PA-61)
   home_stock_location_id BIGINT UNSIGNED NULL,   -- NULL = gudang asal area
   credit_limit DECIMAL(18,2) NOT NULL DEFAULT 0,
   credit_limit_active BOOLEAN NOT NULL DEFAULT FALSE,

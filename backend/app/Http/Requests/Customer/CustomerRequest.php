@@ -53,6 +53,7 @@ class CustomerRequest extends FormRequest
             'latitude' => $trim('latitude'),
             'longitude' => $trim('longitude'),
             'home_stock_location_id' => $int('home_stock_location_id'),
+            'price_list_id' => $int('price_list_id'),
             'sales_area_id' => $int('sales_area_id'),
             'assigned_sales_employee_id' => $int('assigned_sales_employee_id'),
             'term_days' => is_numeric($this->input('term_days')) ? (int) $this->input('term_days') : $this->input('term_days'),
@@ -93,6 +94,15 @@ class CustomerRequest extends FormRequest
                         ->when($current?->home_stock_location_id !== null, fn (Builder $o) => $o->orWhere('id', $current?->home_stock_location_id)))),
             ],
             'term_days' => ['required', 'integer', 'min:0', 'max:365'],
+            // Daftar harga khusus kios (BR-168 urutan 2): hanya jenis `tier` — daftar harga area & default
+            // sudah berlaku otomatis, `store` khusus POS (keputusan Mas 17 Nov 2026, PA-61). Nilai lama
+            // yang kini nonaktif tetap sah agar kios bisa disimpan tanpa memaksa ganti.
+            'price_list_id' => [
+                'nullable', 'integer',
+                Rule::exists('price_lists', 'id')->where('kind', 'tier')
+                    ->where(fn (Builder $q) => $q->where('is_active', true)
+                        ->when($current?->price_list_id !== null, fn (Builder $o) => $o->orWhere('id', $current?->price_list_id))),
+            ],
             'not_duplicate' => ['sometimes', 'boolean'],
             'duplicate_reason' => ['nullable', 'string', 'min:5', 'max:255'],
             ...$creating ? [

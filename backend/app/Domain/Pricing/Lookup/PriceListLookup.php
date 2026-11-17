@@ -2,12 +2,14 @@
 
 namespace App\Domain\Pricing\Lookup;
 
+use App\Domain\Pricing\Enums\PriceListKind;
 use App\Domain\Pricing\Models\PriceList;
 use App\Models\User;
 use App\Support\Listing\Search\TextSearch;
 use App\Support\Lookup\LookupSource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rule;
 use LogicException;
 
 /**
@@ -21,9 +23,17 @@ final class PriceListLookup extends LookupSource
         return $user->can('prices.view') || $user->can('customers.view');
     }
 
+    /** @return array<string, mixed> */
+    public function rules(): array
+    {
+        // `kind=tier` dipakai form & filter kios (PA-61): kios hanya bisa diberi daftar harga tier.
+        return ['kind' => ['nullable', Rule::enum(PriceListKind::class)]];
+    }
+
     public function query(array $params): Builder
     {
-        return PriceList::query()->where('is_active', true);
+        return PriceList::query()->where('is_active', true)
+            ->when(! empty($params['kind']), fn (Builder $q) => $q->where('kind', $params['kind']));
     }
 
     public function search(): TextSearch

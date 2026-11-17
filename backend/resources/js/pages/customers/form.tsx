@@ -46,6 +46,7 @@ type CustomerData = TradeTermsSource & {
     sales_area_id: number;
     assigned_sales_employee_id: number | null;
     term_days: number;
+    price_list_id: number | null;
     status: string;
     is_verified: boolean;
     phone_editable: boolean;
@@ -60,6 +61,7 @@ type Props = {
     defaultTermDays: number;
     regionLabels: LookupOption[];
     homeStockLocationLabel: LookupOption | null;
+    priceListLabel: LookupOption | null;
 };
 
 const one = (value: string) => (value === '' ? [] : [value]);
@@ -75,6 +77,7 @@ export default function CustomerForm({
     defaultTermDays,
     regionLabels,
     homeStockLocationLabel,
+    priceListLabel,
 }: Props) {
     const creating = customer === null;
     const manualCode = creating && codeMode === 'manual';
@@ -87,6 +90,7 @@ export default function CustomerForm({
             'stock_locations',
             homeStockLocationLabel ? [homeStockLocationLabel] : [],
         );
+        rememberLabels('price_lists', priceListLabel ? [priceListLabel] : []);
     });
 
     const form = useForm({
@@ -98,6 +102,7 @@ export default function CustomerForm({
             customer?.customer_type_id ?? customerTypes[0]?.value,
         ),
         term_days: String(customer?.term_days ?? defaultTermDays),
+        price_list_id: idString(customer?.price_list_id),
         sales_area_id: '',
         assigned_sales_employee_id: '',
         province: customer?.province_code ?? '',
@@ -432,6 +437,25 @@ export default function CustomerForm({
                                 }
                                 aria-invalid={
                                     errors.term_days ? true : undefined
+                                }
+                            />
+                        </Field>
+                        {/* Daftar harga khusus (BR-168 urutan 2, PA-61): hanya jenis tier. Kosong =
+                            harga area kios, lalu harga default. */}
+                        <Field
+                            id="price_list_id"
+                            label="Daftar harga khusus (opsional)"
+                            error={errors.price_list_id}
+                            hint="Kosongkan agar kios memakai daftar harga area-nya, lalu daftar harga default."
+                        >
+                            <AsyncSelect
+                                id="price_list_id"
+                                source="price_lists"
+                                params={{ kind: 'tier' }}
+                                value={one(form.data.price_list_id)}
+                                placeholder="Cari kode atau nama daftar harga"
+                                onChange={(v) =>
+                                    form.setData('price_list_id', first(v))
                                 }
                             />
                         </Field>

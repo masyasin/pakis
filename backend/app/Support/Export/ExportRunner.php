@@ -40,7 +40,8 @@ final class ExportRunner
         $path = 'exports/'.Str::ulid().'.xlsx';
         $rows = $this->exporter->write(
             self::rebuild($file, $user)->query(),
-            $listing->exportColumns(),
+            // SEC-107: kolom biaya mengikuti izin pembuat ekspor, juga saat dijalankan di antrean.
+            $listing instanceof UserScopedExportColumns ? $listing->exportColumnsFor($user) : $listing->exportColumns(),
             Storage::disk(self::DISK)->path($path),
         );
 

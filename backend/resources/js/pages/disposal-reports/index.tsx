@@ -16,7 +16,8 @@ export type DisposalReportRow = {
     method: string;
     method_label: string;
     lines_count: number;
-    total_cost: string;
+    /** Hanya ada bila `stock.view_cost` (SEC-107). */
+    total_cost?: string;
     status: string;
     status_label: string;
     planned_date: string | null;
@@ -30,7 +31,8 @@ export type DisposalReportRow = {
 export default function DisposalReportsIndex({
     rows,
     listing,
-}: ListingProps<DisposalReportRow>) {
+    canViewCost,
+}: ListingProps<DisposalReportRow> & { canViewCost: boolean }) {
     const { timezone } = usePage<{ timezone: string }>().props;
 
     const columns: DataTableColumn<DisposalReportRow>[] = [
@@ -56,13 +58,18 @@ export default function DisposalReportsIndex({
             className: 'text-right tabular-nums',
             cell: (r) => r.lines_count,
         },
-        {
-            key: 'total_cost',
-            header: 'Nilai',
-            sortKey: 'total_cost',
-            className: 'text-right tabular-nums',
-            cell: (r) => formatRupiah(r.total_cost),
-        },
+        ...(canViewCost
+            ? [
+                  {
+                      key: 'total_cost',
+                      header: 'Nilai',
+                      sortKey: 'total_cost',
+                      className: 'text-right tabular-nums',
+                      cell: (r: DisposalReportRow) =>
+                          formatRupiah(r.total_cost ?? '0'),
+                  },
+              ]
+            : []),
         {
             key: 'when',
             header: 'Rencana / dilaksanakan',

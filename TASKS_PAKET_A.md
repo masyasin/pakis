@@ -454,12 +454,12 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: `app/Domain/Inventory/{Listings/{StockPositionListing,StockMovementListing (keduanya implements ExportableListing),StockLevelListing},Queries/{StockTrace,StockCard}.php,Actions/UpsertStockLevels}`; kunci `stock_positions` & `stock_movements` di `config/pakis.php` `exports` (rute `admin.stock.export` & `admin.stock-movements.export` → izin `stock.export`); controller `Admin/StockReportController`, `Admin/StockLevelController`; pages `Inventory/{Positions,Card,Levels,Trace}.tsx`; tab "Stok" di `Products/Show.tsx` & tab "Harga" (versi berlaku); widget dashboard sisa; `tests/Feature/Security/PaketAIdorTest.php`, `tests/Feature/Security/CostVisibilityTest.php`, `tests/Feature/Audit/PaketAAuditTest.php`; `docs/uat/UAT-PAKET-A.xlsx` (dari **15** §12.2, format `10` §4); update `09` §6 checklist
 - Deskripsi: Posisi stok per produk/per batch, kartu stok, stok minimum, telusur batch, **laporan pelanggaran FEFO** untuk Owner (baris dokumen `fefo_override=true`, BR-156, dipindah dari T-078 — PA-64). Kolom biaya mengikuti SEC-107 di resource & ekspor. Jalankan seeder volume, ukur p95 listing (NFR-A04), perbaiki index bila perlu (catat di **15** §4.11). Sapu IDOR untuk semua route Paket A ber-scope. Siapkan data UAT dummy dan berkas UAT.
 - Kriteria penerimaan:
-  - [ ] `PaketAIdorTest` mencakup setiap route `show/edit/update/aksi` ber-scope stok & pelanggan (daftar route diambil dari router, bukan manual — route baru tanpa test membuat test merah)
-  - [ ] Admin Penjualan tidak menerima kolom biaya di posisi stok & kartu stok, dan ekspor stok ditolak (`stock.export` ❌, 403); Kepala Gudang (`stock.export` tanpa `stock.view_cost`) mengekspor tanpa kolom biaya
-  - [ ] Semua ekspor Paket A lewat `ExportableListing` + `StartExport` (tidak ada kelas `*Export` di `app/Domain`); ekspor > `export.mass_export_alert_rows` mencatat `mass_export`
+  - [x] `PaketAIdorTest` mencakup setiap route `show/edit/update/aksi` ber-scope stok & pelanggan (daftar route diambil dari router, bukan manual — route baru tanpa test membuat test merah)
+  - [x] Admin Penjualan tidak menerima kolom biaya di posisi stok & kartu stok, dan ekspor stok ditolak (`stock.export` ❌, 403); Kepala Gudang (`stock.export` tanpa `stock.view_cost`) mengekspor tanpa kolom biaya
+  - [x] Semua ekspor Paket A lewat `ExportableListing` + `StartExport` (tidak ada kelas `*Export` di `app/Domain`); ekspor > `export.mass_export_alert_rows` mencatat `mass_export`
   - [ ] Kartu stok 1 juta mutasi, filter 1 produk 1 lokasi 1 bulan: p95 < 500 ms (lokal, dicatat di PR)
-  - [ ] Semua aksi SEC-110 tercatat audit (test data-driven)
-  - [ ] Semua listing lulus `ListingContractTest` (listing Fase 0 + 29 listing baru; tanpa angka total tetap)
+  - [x] Semua aksi SEC-110 tercatat audit (test data-driven)
+  - [x] Semua listing lulus `ListingContractTest` (listing Fase 0 + 29 listing baru; tanpa angka total tetap)
   - [ ] Checklist rilis **15** §10.2 dicentang di `Implementasi_Plan.md`
   - [ ] UAT-A01–A21 dijalankan bersama Pakis, hasil di berkas UAT, temuan P0/P1 diperbaiki
 - Verifikasi: `php artisan test` · `./vendor/bin/phpstan` · `npm run lint && npm run types` · `npx playwright test tests/e2e/paket-a`

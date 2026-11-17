@@ -2,6 +2,11 @@ import { Link, usePage } from '@inertiajs/react';
 import type { LucideIcon } from 'lucide-react';
 import {
     ArrowLeftRight,
+    Boxes,
+    FileSearch,
+    Gauge,
+    ScrollText,
+    ShieldCheck,
     Biohazard,
     Flame,
     Building2,
@@ -109,6 +114,11 @@ const ICONS: Record<string, LucideIcon> = {
     product: Package,
     registration: FileBadge,
     purchase_order: ClipboardList,
+    stock_position: Boxes,
+    stock_card: ScrollText,
+    stock_level: Gauge,
+    stock_trace: FileSearch,
+    stock_audit: ShieldCheck,
     stock_transfer: ArrowLeftRight,
     stock_opname: ClipboardCheck,
     quarantine: Biohazard,

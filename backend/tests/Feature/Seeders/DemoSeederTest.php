@@ -177,7 +177,9 @@ test('T-080 data demo penerimaan: satu terposting sebagian (dua orang) + satu dr
     expect($posted->checked_by)->not->toBe($posted->posted_by)
         ->and(DB::table('purchase_orders')->where('id', $posted->purchase_order_id)->value('status'))->toBe('partially_received')
         ->and(DB::table('stock_movements')->where('source_type', 'goods_receipt')->count())->toBe(2)
-        ->and(DB::table('stock_batches')->where('status', 'quarantine')->count())->toBe(0)
+        // Batch hasil penerimaan tidak dikarantina (karantina demo gudang T-087 berasal dari saldo awal).
+        ->and(DB::table('stock_batches')->where('status', 'quarantine')
+            ->whereIn('id', DB::table('stock_movements')->where('source_type', 'goods_receipt')->select('stock_batch_id'))->count())->toBe(0)
         ->and(DB::table('accounting_events')->where('event_code', 'inventory.goods_received')->count())->toBe(1);
 });
 
@@ -189,6 +191,23 @@ test('T-081 data demo retur ke prinsipal: satu terkirim (disetujui owner) + satu
         ->and(DB::table('stock_movements')->where('source_type', 'purchase_return')->count())->toBe(1)
         ->and(DB::table('accounting_events')->where('event_code', 'inventory.purchase_returned')->count())->toBe(1)
         ->and(DB::table('stock_reservations')->where('source_type', 'purchase_return')->value('status'))->toBe('consumed');
+});
+
+test('T-087 data demo gudang: saldo awal ber-outbox, stok minimum, mutasi diterima/dikirim (FEFO dilanggar)/draf, opname dihitung, karantina & BA; idempoten', function () {
+    $this->seed(DemoSeeder::class);
+    $this->seed(DemoSeeder::class);
+
+    $opening = DB::table('stock_movements')->where('movement_type', 'opening_balance');
+    expect($opening->count())->toBeGreaterThan(30)
+        ->and(DB::table('accounting_events')->where('event_code', 'inventory.opening_balance')->count())->toBe($opening->count())
+        ->and(DB::table('product_stock_levels')->count())->toBe(8)
+        ->and(DB::table('stock_transfers')->orderBy('id')->pluck('status')->all())->toBe(['received', 'shipped', 'draft'])
+        ->and(DB::table('stock_transfer_lines')->where('fefo_override', true)->count())->toBe(1)
+        ->and(DB::table('stock_opnames')->value('status'))->toBe('counting')
+        ->and(DB::table('stock_opname_lines')->whereNotNull('counted_by')->count())->toBe(8)
+        ->and(DB::table('stock_batches')->where('status', 'quarantine')->count())->toBe(1)
+        ->and(DB::table('stock_batches')->where('status', 'expired')->count())->toBe(1)
+        ->and(DB::table('disposal_reports')->value('status'))->toBe('draft');
 });
 
 test('CLAUDE.md §6 seeder demo ditolak di produksi', function () {

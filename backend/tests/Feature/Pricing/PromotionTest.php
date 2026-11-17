@@ -2,6 +2,7 @@
 
 use App\Domain\Approval\ApprovalEngine;
 use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductUnit;
@@ -107,7 +108,9 @@ test('FR-A20 validasi aturan per tipe promo', function () {
 test('PA-60 pemegang promotions.approve langsung mengaktifkan; pengguna lain lewat approval; ditolak kembali draf', function () {
     $own = makePromo($this->owner, ['code' => 'OWN']);
     $this->actingAs($this->owner)->post("/promo/{$own->id}/ajukan")->assertSessionHasNoErrors();
-    expect($own->fresh()->status)->toBe(PromotionStatus::Active);
+    expect($own->fresh()->status)->toBe(PromotionStatus::Active)
+        // SEC-110: aktivasi promo tercatat audit (PaketAAuditTest).
+        ->and(AuditLog::query()->where('event', 'promotion.activated')->where('auditable_id', $own->id)->exists())->toBeTrue();
 
     $promo = makePromo($this->manager);
     $this->actingAs($this->manager)->post("/promo/{$promo->id}/ajukan")->assertSessionHasNoErrors();

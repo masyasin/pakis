@@ -5,6 +5,7 @@ namespace App\Domain\Inventory\Models;
 use App\Domain\Inventory\Ledger\MovementType;
 use App\Domain\Inventory\Models\Concerns\LedgerOnlyBuilder;
 use App\Domain\Inventory\Models\Concerns\WrittenByLedgerOnly;
+use App\Models\User;
 use App\Support\Money\Qty;
 use App\Support\Money\UnitCost;
 use Carbon\Carbon;
@@ -74,5 +75,15 @@ class StockMovement extends Model
     public function batch(): BelongsTo
     {
         return $this->belongsTo(StockBatch::class, 'stock_batch_id');
+    }
+
+    /**
+     * Pelaku mutasi (kartu stok, T-087); null = proses sistem.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
     }
 }

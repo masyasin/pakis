@@ -65,6 +65,12 @@ return [
     'stock_opname_lines', // T-083
     'stock_batches', // T-084
     'disposal_reports', // T-084
+    'stock_positions', // T-087
+    'stock_movements', // T-087
+    'stock_levels', // T-087
+    'stock_batches_trace', // T-087
+    'stock_fefo_violations', // T-087 (PA-72)
+    'stock_opname_counters', // T-087 (PA-72)
     'vehicles', // T-068
     'sales_areas', // T-073
     'customers', // T-073

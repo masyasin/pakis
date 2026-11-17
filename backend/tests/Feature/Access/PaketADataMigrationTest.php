@@ -73,7 +73,7 @@ test('PA-11 PA-12 migrasi data: hanya menambah sel Paket A, membuat 4 role baru,
     $second = rolePermissionSnapshot();
 
     expect($second)->toBe($first)
-        ->and(Permission::query()->count())->toBe(109);
+        ->and(Permission::query()->count())->toBe(110);
 
     // Role yang sudah ada: tepat = sebelum ∪ sel Paket A role itu (tidak ada yang dicabut).
     foreach ($before as $role => $permissions) {
@@ -86,8 +86,8 @@ test('PA-11 PA-12 migrasi data: hanya menambah sel Paket A, membuat 4 role baru,
     expect($first['hrd'])->not->toContain('holidays.manage')
         ->and($first['supervisor'])->toContain('devices.view', 'customers.verify', 'credit_limits.set')
         ->and($first['kasir_khusus'])->toBe(['dashboard.view'])
-        ->and($first['owner'])->toHaveCount(109)
-        ->and($first['super_admin'])->toHaveCount(109)
+        ->and($first['owner'])->toHaveCount(110)
+        ->and($first['super_admin'])->toHaveCount(110)
         ->and($first)->not->toHaveKey('kepala_lokasi')
         ->and(Role::findByName('administrator', 'web')->label)->toBe('Admin TI')
         ->and(Role::findByName('administrator', 'web')->data_scope)->toBe(DataScope::Location)

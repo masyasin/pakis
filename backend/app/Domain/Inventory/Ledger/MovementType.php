@@ -29,6 +29,30 @@ enum MovementType: string
     case CanvasUnload = 'canvas_unload';
     case PromoIssue = 'promo_issue';
 
+    /** Label kartu stok (T-087). */
+    public function label(): string
+    {
+        return match ($this) {
+            self::OpeningBalance => 'Saldo awal',
+            self::Receipt => 'Penerimaan',
+            self::PurchaseReturn => 'Retur ke prinsipal',
+            self::TransferOut => 'Mutasi keluar',
+            self::TransferIn => 'Mutasi masuk',
+            self::AdjustmentIn => 'Penyesuaian masuk',
+            self::AdjustmentOut => 'Penyesuaian keluar',
+            self::Disposal => 'Pemusnahan',
+            self::BinMoveOut => 'Pindah rak keluar',
+            self::BinMoveIn => 'Pindah rak masuk',
+            self::Sale => 'Penjualan',
+            self::SalesReturn => 'Retur penjualan',
+            self::PosSale => 'Penjualan toko',
+            self::PosReturn => 'Retur toko',
+            self::CanvasLoad => 'Muat canvas',
+            self::CanvasUnload => 'Bongkar canvas',
+            self::PromoIssue => 'Bonus promo',
+        };
+    }
+
     /** Boleh menambah saldo. */
     public function isInbound(): bool
     {

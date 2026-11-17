@@ -28,6 +28,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { formatCivilRange, formatLongDate } from '@/lib/local-date';
 import { formatRupiah } from '@/lib/money';
+import { formatQty } from '@/lib/qty';
 import { cn } from '@/lib/utils';
 import { dashboard } from '@/routes/admin';
 import { index as attendanceIndex } from '@/routes/admin/attendance';
@@ -83,11 +84,25 @@ type NearExpiry = {
     }[];
 };
 
+type BelowMinimum = {
+    total: number;
+    items: {
+        product_id: number;
+        sku: string;
+        name: string;
+        location_id: number;
+        location: string;
+        qty_on_hand: string;
+        min_qty_base: string;
+    }[];
+};
+
 type Props = {
     attendance: Summary | null;
     charts: Charts | null;
     pending: PendingItem[];
     near_expiry?: NearExpiry | null;
+    below_min?: BelowMinimum | null;
     refresh_seconds: number;
 };
 
@@ -149,7 +164,13 @@ const SERIES = {
 } as const;
 
 const NEUTRAL = 'var(--border)';
-const DATA_KEYS = ['attendance', 'charts', 'pending', 'near_expiry'];
+const DATA_KEYS = [
+    'attendance',
+    'charts',
+    'pending',
+    'near_expiry',
+    'below_min',
+];
 const WEEKDAY = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
 
 /** Nama hari & tanggal dari tanggal kalender `YYYY-MM-DD` (tanpa zona: tanggal sudah lokal). */
@@ -872,6 +893,36 @@ function NearExpiryTable({ data }: { data: NearExpiry }) {
     );
 }
 
+function BelowMinimumList({ data }: { data: BelowMinimum }) {
+    return (
+        <ul className="divide-y text-sm">
+            {data.items.map((item) => (
+                <li
+                    key={`${item.product_id}-${item.location_id}`}
+                    className="flex items-start gap-3 py-2"
+                >
+                    <span className="grid min-w-0 flex-1 gap-0.5">
+                        <span className="font-medium break-words">
+                            {item.name}
+                        </span>
+                        <span className="text-[0.78rem] text-muted-foreground">
+                            {item.sku} · {item.location}
+                        </span>
+                    </span>
+                    <span className="text-right tabular-nums">
+                        <span className="block font-semibold text-destructive">
+                            {formatQty(item.qty_on_hand)}
+                        </span>
+                        <span className="block text-[0.78rem] text-muted-foreground">
+                            min {formatQty(item.min_qty_base)}
+                        </span>
+                    </span>
+                </li>
+            ))}
+        </ul>
+    );
+}
+
 function NoData({ children }: { children: ReactNode }) {
     return (
         <p className="grid flex-1 place-items-center rounded-lg border border-dashed px-4 py-8 text-center text-sm text-muted-foreground">
@@ -885,6 +936,7 @@ export default function Dashboard({
     charts,
     pending: pendingItems,
     near_expiry: nearExpiry = null,
+    below_min: belowMin = null,
     refresh_seconds: refreshSeconds,
 }: Props) {
     // Item yang belum dikenal build frontend ini (server lebih baru dari aset) dilewati, bukan
@@ -973,6 +1025,7 @@ export default function Dashboard({
         (charts ? 1 : 0) +
         (charts && charts.locations.length > 0 ? 1 : 0) +
         (nearExpiry ? 1 : 0) +
+        (belowMin ? 1 : 0) +
         (pending.length > 0 ? 1 : 0);
     const pendingWide = lowerCards % 2 === 1;
     const rangeText = charts ? formatCivilRange(charts.from, charts.to) : '';
@@ -1133,6 +1186,33 @@ export default function Dashboard({
                             ) : (
                                 <NoData>
                                     Tidak ada batch yang mendekati ED.
+                                </NoData>
+                            )}
+                        </Card>
+                    )}
+
+                    {belowMin && (
+                        <Card
+                            title="Stok di bawah minimum"
+                            action={
+                                <Link
+                                    href="/stok/minimum?filter[below_min]=1"
+                                    className="text-sm font-medium text-primary hover:underline"
+                                >
+                                    Lihat semua
+                                </Link>
+                            }
+                            note={
+                                belowMin.total > belowMin.items.length
+                                    ? `${belowMin.items.length} terbawah dari ${belowMin.total} produk per lokasi.`
+                                    : 'Urut dari yang paling jauh di bawah minimum.'
+                            }
+                        >
+                            {belowMin.items.length > 0 ? (
+                                <BelowMinimumList data={belowMin} />
+                            ) : (
+                                <NoData>
+                                    Semua produk di atas stok minimum.
                                 </NoData>
                             )}
                         </Card>

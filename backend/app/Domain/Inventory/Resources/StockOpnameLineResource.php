@@ -4,6 +4,7 @@ namespace App\Domain\Inventory\Resources;
 
 use App\Domain\Inventory\Models\StockOpname;
 use App\Domain\Inventory\Models\StockOpnameLine;
+use App\Domain\Inventory\Support\InventoryFileUrls;
 use App\Support\Money\Qty;
 
 /**
@@ -39,6 +40,7 @@ final class StockOpnameLineResource
             'variance_reason' => $line->varianceReason?->name,
             'note' => $line->note,
             'has_photo' => $line->photo_path !== null,
+            'photo_url' => InventoryFileUrls::opnamePhoto($line),
         ];
         if ($opname->hidesSystemQty() || $variance === null) {
             return $row;

@@ -6,7 +6,12 @@ import { formatRupiah } from '@/lib/money';
 import { formatQty } from '@/lib/qty';
 import type { DisposalReportDetail } from './show';
 
-type Props = { report: DisposalReportDetail; company: string };
+type Props = {
+    report: DisposalReportDetail;
+    company: string;
+    /** Kolom nilai hanya untuk `stock.view_cost` (SEC-107). */
+    canViewCost: boolean;
+};
 
 const SIGNERS = ['Pelaksana', 'Saksi 1', 'Saksi 2', 'Kepala Gudang'];
 
@@ -14,7 +19,11 @@ const SIGNERS = ['Pelaksana', 'Saksi 1', 'Saksi 2', 'Kepala Gudang'];
  * Cetak berita acara (BR-163): daftar batch, jumlah, nilai, dan kolom tanda tangan saksi. Template
  * generik sampai prosedur resmi dinas & prinsipal dikonfirmasi (OQ-115). Tanpa NIK.
  */
-export default function DisposalReportPrint({ report, company }: Props) {
+export default function DisposalReportPrint({
+    report,
+    company,
+    canViewCost,
+}: Props) {
     return (
         <>
             <Head title={`Cetak ${report.number}`} />
@@ -50,7 +59,7 @@ export default function DisposalReportPrint({ report, company }: Props) {
                                 'Batch',
                                 'ED',
                                 'Qty',
-                                'Nilai',
+                                ...(canViewCost ? ['Nilai'] : []),
                             ].map((h) => (
                                 <th
                                     key={h}
@@ -82,27 +91,31 @@ export default function DisposalReportPrint({ report, company }: Props) {
                                     {formatQty(l.qty_base)}{' '}
                                     {l.unit.toLowerCase()}
                                 </td>
-                                <td className="border border-black px-2 py-1 text-right">
-                                    {formatRupiah(
-                                        String(
-                                            Number(l.qty_base) *
-                                                Number(l.unit_cost),
-                                        ),
-                                    )}
-                                </td>
+                                {canViewCost && (
+                                    <td className="border border-black px-2 py-1 text-right">
+                                        {formatRupiah(
+                                            String(
+                                                Number(l.qty_base) *
+                                                    Number(l.unit_cost ?? 0),
+                                            ),
+                                        )}
+                                    </td>
+                                )}
                             </tr>
                         ))}
-                        <tr>
-                            <td
-                                colSpan={5}
-                                className="border border-black px-2 py-1 text-right font-semibold"
-                            >
-                                Total
-                            </td>
-                            <td className="border border-black px-2 py-1 text-right font-semibold">
-                                {formatRupiah(report.total_cost)}
-                            </td>
-                        </tr>
+                        {canViewCost && report.total_cost !== undefined && (
+                            <tr>
+                                <td
+                                    colSpan={5}
+                                    className="border border-black px-2 py-1 text-right font-semibold"
+                                >
+                                    Total
+                                </td>
+                                <td className="border border-black px-2 py-1 text-right font-semibold">
+                                    {formatRupiah(report.total_cost)}
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
                 <p>

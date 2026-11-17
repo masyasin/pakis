@@ -25,6 +25,7 @@ use App\Http\Controllers\Admin\GoodsReceiptController;
 use App\Http\Controllers\Admin\HolidayController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\ImportProfileController;
+use App\Http\Controllers\Admin\InventoryFileController;
 use App\Http\Controllers\Admin\LocationController;
 use App\Http\Controllers\Admin\LookupController;
 use App\Http\Controllers\Admin\MasterImportController;
@@ -53,9 +54,12 @@ use App\Http\Controllers\Admin\SequenceController;
 use App\Http\Controllers\Admin\SerialNumberController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShiftController;
+use App\Http\Controllers\Admin\StockAuditReportController;
 use App\Http\Controllers\Admin\StockBinController;
+use App\Http\Controllers\Admin\StockLevelController;
 use App\Http\Controllers\Admin\StockLocationController;
 use App\Http\Controllers\Admin\StockOpnameController;
+use App\Http\Controllers\Admin\StockReportController;
 use App\Http\Controllers\Admin\StockTransferController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
@@ -653,6 +657,35 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
     });
     Route::get('opname/{opname}', [StockOpnameController::class, 'show'])->whereNumber('opname')
         ->middleware('can:stock_opnames.view')->name('stock-opnames.show');
+
+    // Laporan stok (15 §5 `admin.stock.index/export`, `admin.stock-movements.*`, `admin.stock.trace`,
+    // `admin.stock-levels.*`, FR-A30, T-087). Scope Stok di query (DataScope). Kolom HPP/biaya hanya bila
+    // `stock.view_cost` (SEC-107). Path statis `stok/...` didaftarkan sebelum rute karantina.
+    Route::middleware('can:stock.view')->group(function () {
+        Route::get('stok', [StockReportController::class, 'index'])->name('stock.index');
+        Route::get('stok/kartu', [StockReportController::class, 'movements'])->name('stock-movements.index');
+        Route::get('stok/telusur', [StockReportController::class, 'trace'])->name('stock.trace');
+        Route::get('stok/minimum', [StockLevelController::class, 'index'])->name('stock-levels.index');
+    });
+    Route::middleware('can:stock.export')->group(function () {
+        Route::get('stok/ekspor', [StockReportController::class, 'export'])->name('stock.export');
+        Route::get('stok/kartu/ekspor', [StockReportController::class, 'movementsExport'])->name('stock-movements.export');
+    });
+    Route::put('stok/minimum', [StockLevelController::class, 'upsert'])->middleware('can:stock_locations.manage')->name('stock-levels.upsert');
+    // Laporan Audit Stok (PA-72): pelanggaran FEFO (PA-64 b) & selisih per penghitung (PA-67 a).
+    Route::middleware('can:stock.audit_reports')->group(function () {
+        Route::get('stok/audit/fefo', [StockAuditReportController::class, 'fefo'])->name('stock-audit.fefo.index');
+        Route::get('stok/audit/penghitung', [StockAuditReportController::class, 'counters'])->name('stock-audit.counters.index');
+    });
+    // Berkas privat gudang: URL bertanda tangan 5 menit (SEC-108/109, PA-67 k, PA-69) + Policy ber-scope.
+    Route::middleware(['signed:relative', 'throttle:120,1'])->group(function () {
+        Route::get('opname/{opname}/baris/{line}/foto', [InventoryFileController::class, 'opnamePhoto'])->whereNumber(['opname', 'line'])
+            ->middleware('can:stock_opnames.view')->name('stock-opnames.lines.photo');
+        Route::get('pemusnahan/{report}/dokumen', [InventoryFileController::class, 'disposalDocument'])->whereNumber('report')
+            ->middleware('can:stock_disposals.manage')->name('disposal-reports.document');
+        Route::get('pemusnahan/{report}/foto/{index}', [InventoryFileController::class, 'disposalPhoto'])->whereNumber(['report', 'index'])
+            ->middleware('can:stock_disposals.manage')->name('disposal-reports.photo');
+    });
 
     // Karantina & pindah rak (15 §5 `admin.stock.quarantine` / `release` / `bin-move`, BR-164, T-084) +
     // halaman Karantina `admin.stock-batches.index` (PA-69). Batch di luar scope Stok → 404 di controller.

@@ -13,6 +13,7 @@ use App\Domain\Inventory\Enums\DisposalReportStatus;
 use App\Domain\Inventory\Listings\DisposalReportListing;
 use App\Domain\Inventory\Models\DisposalReport;
 use App\Domain\Inventory\Models\DisposalReportLine;
+use App\Domain\Inventory\Support\InventoryFileUrls;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
 use App\Http\Controllers\Controller;
@@ -47,7 +48,10 @@ class DisposalReportController extends Controller
     #[UsesListing(DisposalReportListing::class)]
     public function index(Request $request, DataScope $scope): Response
     {
-        $query = $scope->forStock(DisposalReport::query()->with(['stockLocation:id,name'])->withCount('lines'), self::user($request), 'disposal_reports.stock_location_id');
+        $user = self::user($request);
+        // SEC-107 (PA-72 keputusan 2): nilai HPP hanya untuk `stock.view_cost`; kepala gudang melihat qty.
+        $canCost = $user->can('stock.view_cost');
+        $query = $scope->forStock(DisposalReport::query()->with(['stockLocation:id,name'])->withCount('lines'), $user, 'disposal_reports.stock_location_id');
         $result = ListingQuery::apply($query, new DisposalReportListing, $request)
             ->through(fn (DisposalReport $r) => [
                 'id' => $r->id,
@@ -56,14 +60,14 @@ class DisposalReportController extends Controller
                 'method' => $r->method->value,
                 'method_label' => $r->method->label(),
                 'lines_count' => (int) $r->getAttribute('lines_count'),
-                'total_cost' => $r->total_cost,
+                ...($canCost ? ['total_cost' => $r->total_cost] : []),
                 'status' => $r->status->value,
                 'status_label' => $r->status->label(),
                 'planned_date' => $r->planned_date?->toDateString(),
                 'executed_at' => $r->executed_at?->toIso8601String(),
             ]);
 
-        return Inertia::render('disposal-reports/index', $result->toInertia());
+        return Inertia::render('disposal-reports/index', [...$result->toInertia(), 'canViewCost' => $canCost]);
     }
 
     public function create(): Response
@@ -84,11 +88,13 @@ class DisposalReportController extends Controller
 
     public function show(Request $request, DisposalReport $report): Response
     {
-        $gate = Gate::forUser(self::user($request));
+        $user = self::user($request);
+        $gate = Gate::forUser($user);
         abort_unless($gate->allows('view', $report), 404);
 
         return Inertia::render('disposal-reports/show', [
-            'report' => self::detail($report),
+            'report' => self::detail($report, $user->can('stock.view_cost')),
+            'canViewCost' => $user->can('stock.view_cost'),
             'history' => self::history($report),
             'purchaseReturn' => self::purchaseReturn($report),
             'returnReasons' => $report->method === DisposalMethod::ReturnToPrincipal ? self::reasons(ReferenceGroup::PurchaseReturnReason) : [],
@@ -134,16 +140,23 @@ class DisposalReportController extends Controller
     /** Cetak berita acara (HTML siap cetak; template generik sampai prosedur dinas OQ-115). */
     public function print(Request $request, DisposalReport $report): Response
     {
-        abort_unless(Gate::forUser(self::user($request))->allows('view', $report), 404);
+        $user = self::user($request);
+        abort_unless(Gate::forUser($user)->allows('view', $report), 404);
 
         return Inertia::render('disposal-reports/print', [
-            'report' => self::detail($report),
+            'report' => self::detail($report, $user->can('stock.view_cost')),
+            'canViewCost' => $user->can('stock.view_cost'),
             'company' => setting('general.company_name'),
         ]);
     }
 
-    /** @return array<string, mixed> */
-    private static function detail(DisposalReport $report): array
+    /**
+     * Kunci `total_cost` / `unit_cost` TIDAK dikirim tanpa `stock.view_cost` (SEC-107): menyembunyikan
+     * di React saja masih membocorkan nilai lewat props Inertia.
+     *
+     * @return array<string, mixed>
+     */
+    private static function detail(DisposalReport $report, bool $canCost): array
     {
         $report->loadMissing(['stockLocation:id,code,name', 'reason:id,name', 'creator:id,name',
             'lines.product:id,sku,name,base_unit_id', 'lines.product.baseUnit:id,name', 'lines.batch:id,batch_no,expiry_date,status']);
@@ -163,7 +176,9 @@ class DisposalReportController extends Controller
             'witnesses' => $report->witnesses ?? [],
             'has_document' => $report->document_path !== null,
             'photo_count' => count($report->photo_paths ?? []),
-            'total_cost' => $report->total_cost,
+            'document_url' => InventoryFileUrls::disposalDocument($report),
+            'photo_urls' => InventoryFileUrls::disposalPhotos($report),
+            ...($canCost ? ['total_cost' => $report->total_cost] : []),
             'approval_request_id' => $report->approval_request_id,
             'note' => $report->note,
             'created_by' => $report->creator?->name,
@@ -177,7 +192,7 @@ class DisposalReportController extends Controller
                 'expiry_date' => $l->batch->expiry_date?->toDateString(),
                 'batch_status' => $l->batch->status->value,
                 'qty_base' => $l->qty_base,
-                'unit_cost' => $l->unit_cost,
+                ...($canCost ? ['unit_cost' => $l->unit_cost] : []),
             ])->values(),
         ];
     }

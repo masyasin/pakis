@@ -1153,6 +1153,8 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.stock-movements.index` | GET | `/stok/kartu` | `stock.view` | Kartu stok |
 | `admin.stock-movements.export` | GET | `/stok/kartu/ekspor` | `stock.export` | Kolom biaya hanya bila `stock.view_cost` (SEC-107) |
 | `admin.stock.trace` | GET | `/stok/telusur` | `stock.view` | Input produk + batch → lokasi tersisa, mutasi, (Paket B: kios penerima) |
+| `admin.stock-audit.fefo.index` · `admin.stock-audit.counters.index` | GET | `/stok/audit/fefo` · `/stok/audit/penghitung` | `stock.audit_reports` | Laporan Audit Stok bertab: pelanggaran FEFO (PA-64 b) & selisih opname per penghitung (PA-67 a). Scope Stok (PA-72, T-087) |
+| `admin.stock-opnames.lines.photo` · `admin.disposal-reports.document` · `admin.disposal-reports.photo` | GET | `/opname/{opname}/baris/{line}/foto` · `/pemusnahan/{report}/dokumen` · `/pemusnahan/{report}/foto/{index}` | `stock_opnames.view` · `stock_disposals.manage` | Berkas privat lewat URL bertanda tangan 5 menit (`signed:relative`) + Policy ber-scope → 404 (SEC-108/109, PA-67 k, PA-69, PA-72) |
 | `admin.stock.quarantine` / `release` | POST | `/stok/karantina` · `/stok/karantina/{batch}/lepas` | `stock_quarantine.manage` | Lepas → approval `stock_quarantine_release` |
 | `admin.stock.bin-move` | POST | `/stok/pindah-rak` | `stock_quarantine.manage` | Pindah antar rak dalam lokasi yang sama |
 | `admin.stock-batches.index` | GET | `/stok/karantina` | `stock_quarantine.manage` | Halaman Karantina: daftar batch + aksi karantina/pindah rak/lepas (PA-69) |
@@ -1213,7 +1215,7 @@ Katalog di `app/Domain/Access/Support/PermissionCatalog.php`, matriks default di
 | Area & pelanggan | `sales_areas.view`, `sales_areas.manage`, `customers.view`, `customers.export`, `customers.manage`, `customers.verify`, `customers.merge`, `customers.change_phone`, `customers.change_phone_approve`, `credit_limits.set`, `credit_limits.set_high` |
 | Harga & promo | `prices.view`, `prices.manage`, `prices.publish`, `promotions.view`, `promotions.manage`, `promotions.approve` |
 | Pembelian | `purchase_orders.view`, `purchase_orders.create`, `purchase_orders.approve`, `purchase_orders.approve_high`, `goods_receipts.view`, `goods_receipts.create`, `goods_receipts.approve_short_shelf_life`, `purchase_returns.manage`, `purchase_returns.approve` |
-| Stok | `stock.view`, `stock.view_cost`, `stock.export`, `stock_transfers.view`, `stock_transfers.create`, `stock_transfers.receive`, `stock_transfers.approve_variance`, `stock_opnames.view`, `stock_opnames.manage`, `stock_opnames.approve_variance`, `stock_opnames.approve_variance_high`, `stock_quarantine.manage`, `stock_quarantine.release`, `stock_disposals.manage`, `stock_disposals.approve`, `serials.manage`, `serials.approve_swap` |
+| Stok | `stock.view`, `stock.view_cost`, `stock.export`, `stock.audit_reports`, `stock_transfers.view`, `stock_transfers.create`, `stock_transfers.receive`, `stock_transfers.approve_variance`, `stock_opnames.view`, `stock_opnames.manage`, `stock_opnames.approve_variance`, `stock_opnames.approve_variance_high`, `stock_quarantine.manage`, `stock_quarantine.release`, `stock_disposals.manage`, `stock_disposals.approve`, `serials.manage`, `serials.approve_swap` |
 | Impor master | `master_imports.manage` |
 
 ### 6.4 Matriks kewenangan (default seeder)
@@ -1262,6 +1264,7 @@ Katalog di `app/Domain/Access/Support/PermissionCatalog.php`, matriks default di
 | `stock.view` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ | ✅ | 🔸 | 🔸 | ✅ |
 | `stock.view_cost` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ✅ |
 | `stock.export` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | ❌ | ✅ |
+| `stock.audit_reports` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ |
 | `stock_transfers.view` | ✅ | ❌ | ✅ | 🔸 | ❌ | ❌ | ✅ | 🔸 | 🔸 | ✅ |
 | `stock_transfers.create` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
 | `stock_transfers.receive` | ✅ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | 🔸 | 🔸 | ❌ |
@@ -1291,7 +1294,7 @@ Catatan penting:
 |---|---|---|
 | — | Persetujuan (dengan angka menunggu) | `approvals.view`, atau ada permintaan yang menunggu keputusan pengguna (PA-27) |
 | Penjualan | Pelanggan · Verifikasi Kios · Area Penjualan · Daftar Harga · Promo | `customers.view` · `customers.verify` · `sales_areas.view` · `prices.view` · `promotions.view` |
-| Persediaan | Posisi Stok · Kartu Stok · Mutasi · Stock Opname · Pemusnahan · Nomor Seri · Telusur Batch | `stock.view` · `stock.view` · `stock_transfers.view` · `stock_opnames.view` · `stock_disposals.manage` · `stock.view` · `stock.view` |
+| Persediaan | Posisi Stok · Kartu Stok · Stok Minimum · Mutasi · Stock Opname · Karantina · Pemusnahan · Nomor Seri · Telusur Batch · Laporan Audit Stok | `stock.view` · `stock.view` · `stock.view` · `stock_transfers.view` · `stock_opnames.view` · `stock_quarantine.manage` · `stock_disposals.manage` · `stock.view` · `stock.view` · `stock.audit_reports` (PA-69, PA-72) |
 | Pembelian | Purchase Order · Penerimaan Barang · Retur ke Prinsipal · Supplier · Prinsipal | `purchase_orders.view` · `goods_receipts.view` · `purchase_returns.manage` · `suppliers.view` · `suppliers.view` |
 | Master | Produk · Kategori · Izin Edar · Lokasi Stok · Kendaraan · Impor Master | `products.view` · `products.view` · `products.view` · `stock_locations.view` · `vehicles.view` · `master_imports.manage` |
 | Sistem | Aturan Persetujuan | `approvals.configure` |
@@ -1488,6 +1491,8 @@ flowchart LR
 | `serial_numbers` | `admin.serials.index` | nomor seri (exact & prefix), SKU | `product_id`, `status`, `stock_location_id` | `created_at` desc | Stok |
 | `stock_levels` | `admin.stock-levels.index` | SKU, nama | `stock_location_id` (wajib), `category_id`, `below_min` (ya) | `product.name` | Stok |
 | `stock_batches_trace` | `admin.stock.trace` | — | `product_id` + `batch_no` (wajib) | `stock_location.code` | Stok (`all` untuk Owner) |
+| `stock_fefo_violations` | `admin.stock-audit.fefo.index` | nomor dokumen, SKU, batch | `stock_location_id` (asal), `product_id`, `created_at` (rentang) | `created_at` desc | Stok lokasi asal; izin `stock.audit_reports` (PA-72) |
+| `stock_opname_counters` | `admin.stock-audit.counters.index` | nomor opname | `stock_location_id`, `counted_by`, `frozen_at` (rentang) | `frozen_at` desc | Stok; izin `stock.audit_reports` (PA-72) |
 
 Total listing setelah Paket A: listing Fase 0 + 29 listing baru (jumlah Fase 0 bisa masih bertambah oleh T-041–T-045, jadi test tidak memakai angka total tetap). Ekspor (`.xlsx` via OpenSpout, di-queue bila > `export.sync_max_rows`) tersedia untuk `products`, `customers`, `price_list_items`, `stock_positions`, `stock_movements`, `purchase_orders`, `goods_receipts`, `serial_numbers` — semuanya lewat pola Fase 0 (listing `implements ExportableListing` + kunci `config/pakis.php` `exports` + `StartExport`, rute & izin di §5), dengan escape formula (SEC-051) dan masking sesuai izin.
 
@@ -1502,13 +1507,13 @@ Total listing setelah Paket A: listing Fase 0 + 29 listing baru (jumlah Fase 0 b
 | Mutasi belum diterima | `stock_transfers.receive` | Mutasi `shipped` > `inventory.transfer_receive_reminder_hours` |
 | PO terlambat | `purchase_orders.view` | PO `approved`/`partially_received` lewat `expected_date` |
 
+**Widget tambahan (T-087A, PA-73, keputusan Mas 18 Nov 2026):** saldo awal masih dibuka (Owner, selama `inventory.opening_balance_open`), batch di karantina, opname & BA tertunda, retur & penerimaan tertunda, kios menunggu verifikasi, batch kedaluwarsa masih ada stok, harga & promo perlu tindakan, impor tertunda/gagal, produk aktif tanpa harga, produk tanpa stok minimum. Rincian izin & isi di `TASKS_PAKET_A.md` T-087A; tiap kartu = jumlah halaman tujuan dengan filter yang sama, nilai rupiah hanya `stock.view_cost`.
+
 ## 8. Aturan Bisnis
 
 ### 8.1 Aturan konsep yang diimplementasikan di Paket A
 
 | ID | Aturan (konsep v1.4) | Implementasi wajib |
-**Widget tambahan (T-087A, PA-73, keputusan Mas 18 Nov 2026):** saldo awal masih dibuka (Owner, selama `inventory.opening_balance_open`), batch di karantina, opname & BA tertunda, retur & penerimaan tertunda, kios menunggu verifikasi, batch kedaluwarsa masih ada stok, harga & promo perlu tindakan, impor tertunda/gagal, produk aktif tanpa harga, produk tanpa stok minimum. Rincian izin & isi di `TASKS_PAKET_A.md` T-087A; tiap kartu = jumlah halaman tujuan dengan filter yang sama, nilai rupiah hanya `stock.view_cost`.
-
 |---|---|---|
 | BR-101 | Stok tidak boleh minus, reservasi atomik | Semua perubahan `qty_on_hand`/`qty_reserved` hanya lewat `StockLedger` di dalam transaksi DB dengan `SELECT … FOR UPDATE` pada baris `stock_batches` yang disentuh, dikunci **urut `id` naik** agar tidak deadlock. CHECK constraint DB sebagai lapis kedua. Deadlock (SQLSTATE 40001/1213) di-retry maks 3 kali dengan jeda acak 50–200 ms, lalu gagal `409 STATE_CONFLICT` |
 | BR-102 | FEFO; batch karantina/ED/izin habis tidak dialokasikan | `FefoAllocator::allocate(product, stockLocation, qtyBase, asOf)` mengembalikan daftar `(batch, qty)` dari batch `status='available'`, `expiry_date IS NULL OR expiry_date > asOf + inventory.min_sell_days_before_expiry`, urut `expiry_date` asc (NULL terakhir), `received_date` asc, `id` asc. Bila produk `requires_registration` dan tidak ada izin `active` pada `asOf` → `422 PRODUCT_REGISTRATION_INACTIVE`. Stok kurang → `422 INSUFFICIENT_STOCK` berisi qty tersedia |

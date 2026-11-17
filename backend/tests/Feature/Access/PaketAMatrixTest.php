@@ -61,23 +61,23 @@ function paketADocMatrix(): array
 
 dataset('paket_a_roles', fn () => array_keys(paketADocMatrix()['matrix']));
 
-test('T-067 tabel 15 §6.4: 55 baris = izin Paket A katalog (urutan sama), 10 kolom = role non-super_admin', function () {
+test('T-067 tabel 15 §6.4: 56 baris = izin Paket A katalog (urutan sama), 10 kolom = role non-super_admin', function () {
     $doc = paketADocMatrix();
 
-    expect($doc['rows'])->toHaveCount(55)
+    expect($doc['rows'])->toHaveCount(56)
         ->and($doc['rows'])->toBe(PermissionCatalog::paketANames())
         ->and(array_keys($doc['matrix']))->toEqualCanonicalizing(
             array_values(array_diff(array_column(RoleCatalog::roles(), 'name'), [RoleCatalog::SUPER_ADMIN])),
         );
 });
 
-test('T-067 15 §6.4 matriks Paket A per role = RoleCatalog = hasil RoleSeeder (55 sel)', function (string $role) {
+test('T-067 15 §6.4 matriks Paket A per role = RoleCatalog = hasil RoleSeeder (56 sel)', function (string $role) {
     $this->seed([PermissionSeeder::class, RoleSeeder::class]);
     $expected = paketADocMatrix()['matrix'][$role];
     $seeded = Role::findByName($role, 'web')->permissions->pluck('name')->all();
     $catalog = RoleCatalog::permissionsFor($role);
 
-    expect($expected)->toHaveCount(55);
+    expect($expected)->toHaveCount(56);
     foreach ($expected as $permission => $granted) {
         expect(in_array($permission, $catalog, true))->toBe($granted, "RoleCatalog {$role} · {$permission}")
             ->and(in_array($permission, $seeded, true))->toBe($granted, "RoleSeeder {$role} · {$permission}");
@@ -86,7 +86,7 @@ test('T-067 15 §6.4 matriks Paket A per role = RoleCatalog = hasil RoleSeeder (
         ->toEqualCanonicalizing(array_keys(array_filter($expected)));
 })->with('paket_a_roles');
 
-test('PA-10 owner & super_admin memegang semua 55 izin Paket A dan terkunci', function () {
+test('PA-10 owner & super_admin memegang semua 56 izin Paket A dan terkunci', function () {
     $this->seed([PermissionSeeder::class, RoleSeeder::class]);
 
     foreach (RoleCatalog::LOCKED as $role) {

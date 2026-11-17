@@ -124,6 +124,8 @@ final class PermissionCatalog
             'stock.view' => 'Lihat posisi & kartu stok',
             'stock.view_cost' => 'Lihat HPP / biaya stok',
             'stock.export' => 'Ekspor stok (dengan HPP)',
+            // T-087 (PA-72): laporan pelanggaran FEFO & selisih opname per penghitung, bawaan hanya Owner.
+            'stock.audit_reports' => 'Laporan audit stok (pelanggaran FEFO, selisih per penghitung)',
             'stock_transfers.view' => 'Lihat mutasi stok',
             'stock_transfers.create' => 'Buat mutasi stok',
             'stock_transfers.receive' => 'Terima mutasi stok',

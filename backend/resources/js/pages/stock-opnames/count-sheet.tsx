@@ -43,6 +43,8 @@ export type OpnameLineRow = {
     variance_reason: string | null;
     note: string | null;
     has_photo: boolean;
+    /** URL bertanda tangan 5 menit (SEC-108/109, PA-67 k). */
+    photo_url: string | null;
     /** Kunci di bawah TIDAK ada saat hitung buta & sedang dihitung (SEC-103). */
     qty_system_base?: string;
     qty_expected_base?: string;
@@ -190,10 +192,20 @@ function QtyCell({
                     )}
                 </Button>
             </div>
-            {(photo || row.has_photo) && mode === 'count' && (
+            {photo && mode === 'count' && (
                 <span className="text-xs text-muted-foreground">
-                    {photo ? 'Foto siap dikirim' : 'Foto terlampir'}
+                    Foto siap dikirim
                 </span>
+            )}
+            {!photo && row.photo_url && (
+                <a
+                    href={row.photo_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-xs font-medium text-primary hover:underline"
+                >
+                    Lihat foto
+                </a>
             )}
             <InputError message={error} />
         </form>

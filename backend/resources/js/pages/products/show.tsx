@@ -49,6 +49,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { formatDateTimeIn } from '@/lib/approval-format';
 import { formatDate } from '@/lib/listing-query';
+import { formatCivilDate } from '@/lib/local-date';
 import { formatRupiah } from '@/lib/money';
 import { formatQty } from '@/lib/qty';
 
@@ -117,6 +118,18 @@ type HistoryRow = {
     reason: string | null;
 };
 
+type StockRow = {
+    id: number;
+    location: string;
+    bin: string | null;
+    batch_no: string;
+    expiry_date: string | null;
+    status: string;
+    status_label: string;
+    qty_on_hand: string;
+    qty_available: string;
+};
+
 type Props = {
     product: Product;
     units: UnitRow[];
@@ -126,6 +139,8 @@ type Props = {
     history?: HistoryRow[];
     /** null = pengguna tanpa izin `prices.view` (tab Harga disembunyikan). */
     prices?: PriceRow[] | null;
+    /** null = pengguna tanpa izin `stock.view` (tab Stok disembunyikan). */
+    stock?: StockRow[] | null;
     can: { manage: boolean; manage_registrations: boolean };
 };
 
@@ -210,10 +225,15 @@ export default function ProductShow({
     registrationState,
     history,
     prices,
+    stock,
     can,
 }: Props) {
-    // Tab Harga hanya untuk pemegang prices.view (server mengirim prices = null bila tidak berhak).
-    const tabs = TABS.filter((t) => t.key !== 'harga' || prices !== null);
+    // Tab Harga/Stok hanya untuk pemegang prices.view/stock.view (server mengirim null bila tidak berhak).
+    const tabs = TABS.filter(
+        (t) =>
+            (t.key !== 'harga' || prices !== null) &&
+            (t.key !== 'stok' || stock !== null),
+    );
     const active = useQueryTab<TabKey>(
         tabs.map((t) => t.key),
         'data',
@@ -337,11 +357,11 @@ export default function ProductShow({
                 {active === 'harga' && prices !== null && (
                     <PricesTab rows={prices ?? []} />
                 )}
-                {active === 'stok' && (
-                    <EmptyPanel
-                        icon={Boxes}
-                        title="Stok belum tersedia"
-                        text="Saldo per lokasi dan batch tampil setelah modul stok aktif."
+                {active === 'stok' && stock !== null && (
+                    <StockTab
+                        rows={stock ?? []}
+                        unit={product.base_unit}
+                        productId={product.id}
                     />
                 )}
                 {active === 'riwayat' && <HistoryTab rows={history ?? []} />}
@@ -928,6 +948,97 @@ function HistoryTab({ rows }: { rows: HistoryRow[] }) {
 }
 
 /** Harga berlaku sekarang per daftar harga (T-075, hanya baca; ubah lewat menu Daftar Harga). */
+/** Batch bersaldo per lokasi dalam scope Stok (T-087), tanpa HPP (SEC-107). */
+function StockTab({
+    rows,
+    unit,
+    productId,
+}: {
+    rows: StockRow[];
+    unit: string;
+    productId: number;
+}) {
+    if (rows.length === 0) {
+        return (
+            <EmptyPanel
+                icon={Boxes}
+                title="Belum ada stok"
+                text="Produk ini belum bersaldo di lokasi stok yang bisa Anda lihat."
+            />
+        );
+    }
+    const u = unit.toLowerCase();
+
+    return (
+        <DetailCard
+            title="Stok per lokasi & batch"
+            icon={Boxes}
+            action={
+                <Link
+                    href={`/stok/kartu?filter[product_id][]=${productId}`}
+                    className="text-sm font-medium text-primary hover:underline"
+                >
+                    Kartu stok
+                </Link>
+            }
+        >
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="text-left text-xs text-muted-foreground">
+                        <tr className="border-b">
+                            <th className="py-2 pr-3 font-medium">Lokasi</th>
+                            <th className="py-2 pr-3 font-medium">Batch</th>
+                            <th className="py-2 pr-3 font-medium">Status</th>
+                            <th className="py-2 pr-3 text-right font-medium">
+                                Fisik
+                            </th>
+                            <th className="py-2 text-right font-medium">
+                                Tersedia
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {rows.map((r) => (
+                            <tr key={r.id} className="border-b last:border-0">
+                                <td className="py-2.5 pr-3">
+                                    <span className="block font-medium">
+                                        {r.location}
+                                    </span>
+                                    <span className="text-xs text-muted-foreground">
+                                        {r.bin ? `Rak ${r.bin}` : 'Tanpa rak'}
+                                    </span>
+                                </td>
+                                <td className="py-2.5 pr-3">
+                                    <span className="block font-mono">
+                                        {r.batch_no}
+                                    </span>
+                                    {r.expiry_date && (
+                                        <span className="text-xs text-muted-foreground">
+                                            ED {formatCivilDate(r.expiry_date)}
+                                        </span>
+                                    )}
+                                </td>
+                                <td className="py-2.5 pr-3">
+                                    <StatusBadge
+                                        status={`stock_batch.${r.status}`}
+                                        label={r.status_label}
+                                    />
+                                </td>
+                                <td className="py-2.5 pr-3 text-right tabular-nums">
+                                    {formatQty(r.qty_on_hand)} {u}
+                                </td>
+                                <td className="py-2.5 text-right tabular-nums">
+                                    {formatQty(r.qty_available)} {u}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </DetailCard>
+    );
+}
+
 function PricesTab({ rows }: { rows: PriceRow[] }) {
     if (rows.length === 0) {
         return (

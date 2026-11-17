@@ -40,7 +40,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
         'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'],
-        'Persediaan' => ['Mutasi Stok', 'Stock Opname', 'Karantina', 'Pemusnahan', 'Nomor Seri'],
+        'Persediaan' => ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Stock Opname', 'Karantina', 'Pemusnahan', 'Nomor Seri', 'Telusur Batch', 'Laporan Audit Stok'],
         'Pembelian' => ['Purchase Order', 'Penerimaan Barang', 'Retur ke Prinsipal', 'Supplier', 'Prinsipal'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan', 'Impor Master'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
@@ -64,11 +64,11 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan Umum, Penomoran, Audit', funct
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Persediaan' => ['Mutasi Stok', 'Stock Opname', 'Nomor Seri'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Persediaan' => ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Stock Opname', 'Nomor Seri', 'Telusur Batch'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'], 'Persediaan' => ['Mutasi Stok', 'Nomor Seri'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
+    expect(menuOf('supervisor'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'], 'Persediaan' => ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Nomor Seri', 'Telusur Batch'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Hari Libur', 'Tugas Luar Kota']]);
 });
 
 test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › Pelanggan & Area Penjualan (T-073) + Master › Produk (T-070), Izin Edar (T-071), Kategori (T-069), Lokasi Stok & Kendaraan (T-068), Impor Master (T-085, master_imports.manage)', function (string $role, array $top, array $sales, array $master) {
@@ -92,7 +92,7 @@ test('T-072/T-079/T-080/T-081 menu Pembelian › Purchase Order, Penerimaan Bara
     'supervisor' => ['supervisor', null],
 ]);
 
-test('T-080/T-082/T-083/T-084 menu Persediaan › Mutasi Stok, Stock Opname, Karantina (stock_quarantine.manage), Pemusnahan (stock_disposals.manage) & Nomor Seri (15 §6.5), sebelum Pembelian', function (string $role, ?array $expected) {
+test('T-080/T-082/T-083/T-084/T-087 menu Persediaan › Posisi Stok, Kartu Stok, Stok Minimum (stock.view), Mutasi Stok, Stock Opname, Karantina (stock_quarantine.manage), Pemusnahan (stock_disposals.manage), Nomor Seri, Telusur Batch & Laporan Audit Stok (stock.audit_reports, PA-72) (15 §6.5), sebelum Pembelian', function (string $role, ?array $expected) {
     $menu = menuOf($role);
     expect($menu['Persediaan'] ?? null)->toBe($expected);
     if ($expected !== null && isset($menu['Pembelian'])) {
@@ -100,11 +100,11 @@ test('T-080/T-082/T-083/T-084 menu Persediaan › Mutasi Stok, Stock Opname, Kar
         expect(array_search('Persediaan', $keys, true))->toBeLessThan(array_search('Pembelian', $keys, true));
     }
 })->with([
-    'owner' => ['owner', ['Mutasi Stok', 'Stock Opname', 'Karantina', 'Pemusnahan', 'Nomor Seri']],
-    'kepala_gudang' => ['kepala_gudang', ['Mutasi Stok', 'Stock Opname', 'Karantina', 'Pemusnahan', 'Nomor Seri']],
-    'staf_gudang' => ['staf_gudang', ['Mutasi Stok', 'Stock Opname', 'Karantina', 'Nomor Seri']],
-    'purchasing' => ['purchasing', ['Mutasi Stok', 'Stock Opname', 'Nomor Seri']],
-    'admin_penjualan' => ['admin_penjualan', ['Mutasi Stok', 'Nomor Seri']],
+    'owner' => ['owner', ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Stock Opname', 'Karantina', 'Pemusnahan', 'Nomor Seri', 'Telusur Batch', 'Laporan Audit Stok']],
+    'kepala_gudang' => ['kepala_gudang', ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Stock Opname', 'Karantina', 'Pemusnahan', 'Nomor Seri', 'Telusur Batch']],
+    'staf_gudang' => ['staf_gudang', ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Stock Opname', 'Karantina', 'Nomor Seri', 'Telusur Batch']],
+    'purchasing' => ['purchasing', ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Stock Opname', 'Nomor Seri', 'Telusur Batch']],
+    'admin_penjualan' => ['admin_penjualan', ['Posisi Stok', 'Kartu Stok', 'Stok Minimum', 'Mutasi Stok', 'Nomor Seri', 'Telusur Batch']],
     'hrd' => ['hrd', null],
 ]);
 
@@ -146,9 +146,9 @@ test('06 §8 setiap grup menu punya seksi sidebar (Distribusi / HRIS / Sistem), 
         });
 });
 
-test('auth.permissions: super_admin = 109 permission; tamu tanpa menu', function () {
+test('auth.permissions: super_admin = 110 permission; tamu tanpa menu', function () {
     $this->actingAs(User::factory()->withTwoFactor()->create()->assignRole('super_admin'))->get('/dasbor')
-        ->assertInertia(fn (Assert $page) => $page->has('auth.permissions', 109)->has('auth.menu'));
+        ->assertInertia(fn (Assert $page) => $page->has('auth.permissions', 110)->has('auth.menu'));
 
     app('auth')->forgetGuards();
     $this->post('/logout');

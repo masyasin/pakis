@@ -57,12 +57,18 @@ final class MenuBuilder
         ['Penjualan', 'Area Penjualan', 'sales_area', 'sales_areas.view', 'admin.sales-areas.index'],
         ['Penjualan', 'Daftar Harga', 'price_list', 'prices.view', 'admin.price-lists.index'],
         ['Penjualan', 'Promo', 'promotion', 'promotions.view', 'admin.promotions.index'],
-        // Persediaan (15 §6.5): Nomor Seri T-080; Mutasi Stok (T-082), opname, karantina menyusul di atasnya.
+        // Persediaan (15 §6.5): laporan stok T-087 (Posisi, Kartu, Stok Minimum, Telusur Batch) + Laporan
+        // Audit Stok khusus `stock.audit_reports` (PA-72); Mutasi T-082, opname T-083, karantina/pemusnahan T-084.
+        ['Persediaan', 'Posisi Stok', 'stock_position', 'stock.view', 'admin.stock.index'],
+        ['Persediaan', 'Kartu Stok', 'stock_card', 'stock.view', 'admin.stock-movements.index'],
+        ['Persediaan', 'Stok Minimum', 'stock_level', 'stock.view', 'admin.stock-levels.index'],
         ['Persediaan', 'Mutasi Stok', 'stock_transfer', 'stock_transfers.view', 'admin.stock-transfers.index'],
         ['Persediaan', 'Stock Opname', 'stock_opname', 'stock_opnames.view', 'admin.stock-opnames.index'],
         ['Persediaan', 'Karantina', 'quarantine', 'stock_quarantine.manage', 'admin.stock-batches.index'],
         ['Persediaan', 'Pemusnahan', 'disposal', 'stock_disposals.manage', 'admin.disposal-reports.index'],
         ['Persediaan', 'Nomor Seri', 'serial', 'stock.view', 'admin.serials.index'],
+        ['Persediaan', 'Telusur Batch', 'stock_trace', 'stock.view', 'admin.stock.trace'],
+        ['Persediaan', 'Laporan Audit Stok', 'stock_audit', 'stock.audit_reports', 'admin.stock-audit.fefo.index'],
         ['Pembelian', 'Purchase Order', 'purchase_order', 'purchase_orders.view', 'admin.purchase-orders.index'],
         ['Pembelian', 'Penerimaan Barang', 'goods_receipt', 'goods_receipts.view', 'admin.goods-receipts.index'],
         ['Pembelian', 'Retur ke Prinsipal', 'purchase_return', 'purchase_returns.manage', 'admin.purchase-returns.index'],

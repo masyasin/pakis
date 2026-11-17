@@ -19,6 +19,7 @@ use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Inventory\Listings\StockTransferListing;
 use App\Domain\Inventory\Models\StockTransfer;
+use App\Domain\Inventory\Queries\BelowMinimumSummary;
 use App\Domain\Inventory\Queries\NearExpirySummary;
 use App\Domain\Purchasing\Listings\PurchaseOrderListing;
 use App\Domain\Purchasing\Models\PurchaseOrder;
@@ -39,7 +40,7 @@ use Inertia\Response;
  */
 class DashboardController extends Controller
 {
-    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope, ApprovalVisibility $approvals, NearExpirySummary $nearExpiry): Response
+    public function __invoke(Request $request, TodaySummary $summary, AttendanceInsights $insights, DataScope $scope, ApprovalVisibility $approvals, NearExpirySummary $nearExpiry, BelowMinimumSummary $belowMin): Response
     {
         $user = $request->user();
         abort_unless($user instanceof User, 403);
@@ -130,6 +131,8 @@ class DashboardController extends Controller
             // Stok mendekati ED (15 §7.4, T-078): per lokasi stok dalam scope; nilai HPP hanya untuk
             // pemegang `stock.view_cost` (PA-64).
             'near_expiry' => $user->can('stock.view') ? $nearExpiry->for($user) : null,
+            // Stok di bawah minimum (15 §7.4, T-087): 10 produk × lokasi terbawah dalam scope Stok.
+            'below_min' => $user->can('stock.view') ? $belowMin->for($user) : null,
             'can' => ['view_attendance' => $user->can('attendance.view')],
         ]);
     }

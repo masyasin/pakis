@@ -4,6 +4,7 @@ use App\Domain\Accounting\Outbox\EventCode;
 use App\Domain\Accounting\Outbox\Models\AccountingEvent;
 use App\Domain\Approval\Actions\DecideApprovalStep;
 use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Inventory\Allocation\FefoAllocator;
 use App\Domain\Inventory\Enums\DisposalReportStatus;
 use App\Domain\Inventory\Enums\QuarantineReleaseStatus;
@@ -162,6 +163,8 @@ test('BR-164 lepas karantina lewat approval ke rak pilihan (tabel stock_quaranti
     karDecide($this->head, (int) $release->approval_request_id);
 
     expect($release->fresh()->status)->toBe(QuarantineReleaseStatus::Approved)
+        // SEC-110: lepas karantina tercatat audit (PaketAAuditTest).
+        ->and(AuditLog::query()->where('event', 'stock.released')->where('auditable_id', $release->id)->exists())->toBeTrue()
         ->and($q->fresh()->qty_on_hand)->toBe('4.000')
         ->and($this->batch->fresh()->qty_on_hand)->toBe('46.000')
         ->and($this->batch->fresh()->status)->toBe(StockBatchStatus::Available)
@@ -247,6 +250,8 @@ test('BR-163 eksekusi → qty 0, status disposed, outbox inventory.written_off s
     $event = karEvents($r)->sole();
 
     expect($r->status)->toBe(DisposalReportStatus::Executed)
+        // SEC-110: pemusnahan tercatat audit (PaketAAuditTest).
+        ->and(AuditLog::query()->where('event', 'disposal_report.executed')->where('auditable_id', $r->id)->exists())->toBeTrue()
         ->and($r->witnesses)->toHaveCount(2)
         ->and(array_keys($r->witnesses[0]))->toBe(['name', 'role', 'organization'])
         ->and($r->document_path)->not->toBeNull()

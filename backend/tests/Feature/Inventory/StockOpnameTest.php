@@ -4,6 +4,7 @@ use App\Domain\Accounting\Outbox\EventCode;
 use App\Domain\Accounting\Outbox\Models\AccountingEvent;
 use App\Domain\Approval\Actions\DecideApprovalStep;
 use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Inventory\Enums\StockOpnameStatus;
 use App\Domain\Inventory\Ledger\BatchKey;
 use App\Domain\Inventory\Ledger\MovementType;
@@ -150,6 +151,8 @@ test('BR-162(2) jual/mutasi 5 unit setelah freeze tidak muncul sebagai selisih; 
 
     expect($o->fresh()->status)->toBe(StockOpnameStatus::Posted)
         ->and($this->batch->fresh()->qty_on_hand)->toBe('45.000')
+        // SEC-110: posting opname tercatat audit (PaketAAuditTest).
+        ->and(AuditLog::query()->where('event', 'stock_opname.posted')->where('auditable_id', $o->id)->exists())->toBeTrue()
         ->and(opnEvents($o))->toHaveCount(0)
         ->and(StockMovement::query()->where('source_type', 'stock_opname')->count())->toBe(0);
 });

@@ -27,6 +27,8 @@ use App\Domain\Inventory\Approvables\TransferVarianceApproval;
 use App\Domain\Inventory\Imports\OpeningStockImportType;
 use App\Domain\Inventory\Imports\StockLevelImportType;
 use App\Domain\Inventory\Listings\SerialNumberListing;
+use App\Domain\Inventory\Listings\StockMovementListing;
+use App\Domain\Inventory\Listings\StockPositionListing;
 use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 use App\Domain\Organization\Listings\PositionListing;
@@ -91,6 +93,8 @@ return [
         'goods_receipts' => GoodsReceiptListing::class, // T-080 (15 §5, izin goods_receipts.view, scope Stok; tanpa kolom biaya, SEC-107)
         'serial_numbers' => SerialNumberListing::class, // T-080 (15 §5, izin stock.view, scope Stok lewat batch)
         'customers' => CustomerListing::class, // T-073 (15 §5, izin customers.export; HP selalu termasking, SEC-108)
+        'stock_positions' => StockPositionListing::class, // T-087 (15 §5, izin stock.export, scope Stok; HPP hanya stock.view_cost, SEC-107)
+        'stock_movements' => StockMovementListing::class, // T-087 (15 §5, izin stock.export, scope Stok; biaya hanya stock.view_cost, SEC-107)
     ],
 
     // Tipe impor (BR-170, T-085A): kunci = ImportType::key() => kelas. Kerangka ada di app/Support/Import.

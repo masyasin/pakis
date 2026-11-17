@@ -42,7 +42,8 @@ type Line = {
     expiry_date: string | null;
     batch_status: string;
     qty_base: string;
-    unit_cost: string;
+    /** Hanya ada bila `stock.view_cost` (SEC-107). */
+    unit_cost?: string;
 };
 
 type Witness = { name: string; role: string; organization: string };
@@ -62,7 +63,11 @@ export type DisposalReportDetail = {
     witnesses: Witness[];
     has_document: boolean;
     photo_count: number;
-    total_cost: string;
+    /** URL bertanda tangan 5 menit (SEC-108/109). */
+    document_url: string | null;
+    photo_urls: string[];
+    /** Hanya ada bila `stock.view_cost` (SEC-107). */
+    total_cost?: string;
     approval_request_id: number | null;
     note: string | null;
     created_by: string | null;
@@ -82,9 +87,10 @@ type Props = {
     purchaseReturn: { id: number; number: string } | null;
     returnReasons: Array<{ value: number; label: string }>;
     can: { submit: boolean; execute: boolean; cancel: boolean };
+    canViewCost: boolean;
 };
 
-export const DISPOSAL_COLUMNS: DocumentLineColumn<Line>[] = [
+const BASE_COLUMNS: DocumentLineColumn<Line>[] = [
     {
         key: 'product',
         header: 'Produk',
@@ -118,15 +124,23 @@ export const DISPOSAL_COLUMNS: DocumentLineColumn<Line>[] = [
         numeric: true,
         cell: (l) => `${formatQty(l.qty_base)} ${l.unit.toLowerCase()}`,
     },
-    {
-        key: 'value',
-        header: 'Nilai',
-        numeric: true,
-        emphasis: true,
-        cell: (l) =>
-            formatRupiah(String(Number(l.qty_base) * Number(l.unit_cost))),
-    },
 ];
+
+const VALUE_COLUMN: DocumentLineColumn<Line> = {
+    key: 'value',
+    header: 'Nilai',
+    numeric: true,
+    emphasis: true,
+    cell: (l) =>
+        formatRupiah(String(Number(l.qty_base) * Number(l.unit_cost ?? 0))),
+};
+
+/** Kolom nilai hanya untuk `stock.view_cost` (SEC-107); kepala gudang melihat qty saja. */
+export function disposalColumns(
+    canViewCost: boolean,
+): DocumentLineColumn<Line>[] {
+    return canViewCost ? [...BASE_COLUMNS, VALUE_COLUMN] : BASE_COLUMNS;
+}
 
 type Dialog = 'submit' | 'cancel' | 'execute' | null;
 
@@ -140,6 +154,7 @@ export default function DisposalReportShow({
     purchaseReturn,
     returnReasons,
     can,
+    canViewCost,
 }: Props) {
     const { timezone } = usePage<{ timezone: string }>().props;
     const [dialog, setDialog] = useState<Dialog>(null);
@@ -199,11 +214,15 @@ export default function DisposalReportShow({
                             label: 'Metode',
                             value: report.method_label,
                         },
-                        {
-                            icon: ClipboardList,
-                            label: 'Nilai (HPP)',
-                            value: formatRupiah(report.total_cost),
-                        },
+                        ...(report.total_cost !== undefined
+                            ? [
+                                  {
+                                      icon: ClipboardList,
+                                      label: 'Nilai (HPP)',
+                                      value: formatRupiah(report.total_cost),
+                                  },
+                              ]
+                            : []),
                     ]}
                     actions={
                         <>
@@ -235,15 +254,21 @@ export default function DisposalReportShow({
                         <DocumentLines
                             rows={report.lines}
                             rowKey={(l) => l.id}
-                            columns={DISPOSAL_COLUMNS}
+                            columns={disposalColumns(canViewCost)}
                             caption={`Batch berita acara ${report.number}`}
-                            totals={[
-                                {
-                                    label: 'Total nilai',
-                                    value: formatRupiah(report.total_cost),
-                                    emphasis: true,
-                                },
-                            ]}
+                            totals={
+                                report.total_cost !== undefined
+                                    ? [
+                                          {
+                                              label: 'Total nilai',
+                                              value: formatRupiah(
+                                                  report.total_cost,
+                                              ),
+                                              emphasis: true,
+                                          },
+                                      ]
+                                    : undefined
+                            }
                         />
                     </DetailCard>
                     <div className="space-y-5">
@@ -291,9 +316,15 @@ export default function DisposalReportShow({
                                 <Field
                                     label="Bukti"
                                     value={
-                                        report.has_document
-                                            ? `Scan BA + ${report.photo_count} foto`
-                                            : null
+                                        report.has_document ||
+                                        report.photo_urls.length > 0 ? (
+                                            <EvidenceLinks
+                                                documentUrl={
+                                                    report.document_url
+                                                }
+                                                photoUrls={report.photo_urls}
+                                            />
+                                        ) : null
                                     }
                                     wide
                                 />
@@ -414,8 +445,9 @@ function ConfirmDialog({
             }
         >
             <p className="text-sm">
-                <span className="font-mono font-medium">{report.number}</span> ·{' '}
-                {formatRupiah(report.total_cost)}
+                <span className="font-mono font-medium">{report.number}</span>
+                {report.total_cost !== undefined &&
+                    ` · ${formatRupiah(report.total_cost)}`}
             </p>
             {Object.values(form.errors as Record<string, string>).map((m) => (
                 <InputError key={m} message={m} />
@@ -677,3 +709,41 @@ function ExecuteDialog({
 DisposalReportShow.layout = {
     breadcrumbs: [{ title: 'Pemusnahan', href: '/pemusnahan' }],
 };
+
+/**
+ * Tautan scan BA & foto pemusnahan. URL bertanda tangan kedaluwarsa 5 menit (SEC-108): bila sudah
+ * lewat, muat ulang halaman untuk tautan baru.
+ */
+function EvidenceLinks({
+    documentUrl,
+    photoUrls,
+}: {
+    documentUrl: string | null;
+    photoUrls: string[];
+}) {
+    return (
+        <span className="flex flex-wrap gap-x-3 gap-y-1">
+            {documentUrl && (
+                <a
+                    href={documentUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-primary hover:underline"
+                >
+                    Scan BA
+                </a>
+            )}
+            {photoUrls.map((url, i) => (
+                <a
+                    key={url}
+                    href={url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="font-medium text-primary hover:underline"
+                >
+                    Foto {i + 1}
+                </a>
+            ))}
+        </span>
+    );
+}

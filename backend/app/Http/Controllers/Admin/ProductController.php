@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Domain\Access\DataScope;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Catalog\Actions\CreateProduct;
 use App\Domain\Catalog\Actions\UpdateProduct;
@@ -15,6 +16,7 @@ use App\Domain\Catalog\Models\ProductRegistration;
 use App\Domain\Catalog\Models\ProductUnit;
 use App\Domain\Catalog\Queries\ActiveRegistration;
 use App\Domain\Catalog\Support\RegistrationState;
+use App\Domain\Inventory\Models\StockBatch;
 use App\Domain\Pricing\Models\PriceList;
 use App\Domain\Pricing\Models\PriceListItem;
 use App\Domain\Pricing\PriceResolver;
@@ -41,6 +43,9 @@ use Symfony\Component\HttpFoundation\Response as HttpResponse;
  */
 class ProductController extends Controller
 {
+    /** Baris maksimum tab Stok; daftar lengkap lewat Posisi Stok. */
+    private const STOCK_TAB_LIMIT = 200;
+
     /** Event audit yang tampil di tab Riwayat produk. */
     private const HISTORY_EVENTS = [
         'product.created' => 'Produk dibuat',
@@ -140,6 +145,9 @@ class ProductController extends Controller
             // Tab Harga (T-075): harga berlaku sekarang di tiap daftar harga aktif, lazy (hanya saat tab dibuka).
             // Harga hanya untuk pemegang `prices.view` (staf gudang memegang products.view tanpa izin harga).
             'prices' => $user->can('prices.view') ? fn () => self::currentPrices($product) : null,
+            // Tab Stok (T-087): batch bersaldo per lokasi dalam scope Stok; null = tanpa `stock.view`.
+            // Tanpa kolom HPP (SEC-107): nilai stok dilihat di Posisi Stok.
+            'stock' => $user->can('stock.view') ? fn () => self::stockBatches($product, $user) : null,
             'registrationState' => RegistrationState::of($active?->valid_until->toDateString(), $registrations->isNotEmpty()),
             'history' => fn () => self::history($product, $units->map(fn (ProductUnit $u) => $u->id)->all(), $registrations->map(fn (ProductRegistration $r) => $r->id)->all()),
             'can' => ['manage' => $user->can('products.manage'), 'manage_registrations' => $user->can('product_registrations.manage')],
@@ -266,6 +274,33 @@ class ProductController extends Controller
                     default => null,
                 },
             ])->values()->all();
+    }
+
+    /**
+     * Batch bersaldo produk ini per lokasi stok dalam scope (tab Stok), maks STOCK_TAB_LIMIT baris.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function stockBatches(Product $product, User $user): array
+    {
+        $query = StockBatch::query()->where('stock_batches.product_id', $product->id)->where('stock_batches.qty_on_hand', '>', 0)
+            ->join('stock_locations', 'stock_locations.id', '=', 'stock_batches.stock_location_id')
+            ->select('stock_batches.*')->with(['stockLocation:id,code,name', 'bin:id,code'])
+            ->orderBy('stock_locations.code')->orderBy('stock_batches.expiry_date')->orderBy('stock_batches.id')
+            ->limit(self::STOCK_TAB_LIMIT);
+
+        return array_values(app(DataScope::class)->forStock($query, $user, 'stock_batches.stock_location_id')->get()
+            ->map(fn (StockBatch $b) => [
+                'id' => $b->id,
+                'location' => $b->stockLocation->name,
+                'bin' => $b->bin?->code,
+                'batch_no' => $b->batch_no,
+                'expiry_date' => $b->expiry_date?->toDateString(),
+                'status' => $b->status->value,
+                'status_label' => $b->status->label(),
+                'qty_on_hand' => $b->qty_on_hand,
+                'qty_available' => (string) $b->available(),
+            ])->all());
     }
 
     /**

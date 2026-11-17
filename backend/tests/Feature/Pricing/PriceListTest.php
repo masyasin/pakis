@@ -2,6 +2,7 @@
 
 use App\Domain\Approval\ApprovalEngine;
 use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Catalog\Models\Product;
 use App\Domain\Catalog\Models\ProductCategory;
 use App\Domain\Catalog\Models\ProductUnit;
@@ -251,7 +252,9 @@ test('BR-153 penerbitan: prices.publish langsung terbit; pengguna lain → appro
     $request2 = ApprovalRequest::query()->where('document_type', 'price_list_publish')->latest('id')->first();
     app(ApprovalEngine::class)->decide($this->owner, $request2->id, 1, true, null, true);
     expect($second->fresh()->status)->toBe(PriceVersionStatus::Published)
-        ->and($second->fresh()->published_by)->toBe($this->owner->id);
+        ->and($second->fresh()->published_by)->toBe($this->owner->id)
+        // SEC-110: terbit harga tercatat audit (PaketAAuditTest).
+        ->and(AuditLog::query()->where('event', 'price_version.published')->where('auditable_id', $second->id)->exists())->toBeTrue();
 });
 
 test('FR-A19 salin versi ±% dibulatkan pricing.rounding (ke atas)', function () {

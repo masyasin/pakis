@@ -103,7 +103,7 @@ const PENDING = [
     'purchase_orders.approve_high' => 'T-079', 'goods_receipts.view' => 'T-080', 'goods_receipts.create' => 'T-080',
     'goods_receipts.approve_short_shelf_life' => 'T-080', 'purchase_returns.manage' => 'T-081',
     'purchase_returns.approve' => 'T-081',
-    'stock.view' => 'T-077', 'stock.view_cost' => 'T-077', 'stock.export' => 'T-077',
+    'stock.view' => 'T-077', 'stock.view_cost' => 'T-077', 'stock.export' => 'T-077', 'stock.audit_reports' => 'T-087',
     'stock_transfers.view' => 'T-082', 'stock_transfers.create' => 'T-082', 'stock_transfers.receive' => 'T-082',
     'stock_transfers.approve_variance' => 'T-082', 'stock_opnames.view' => 'T-083', 'stock_opnames.manage' => 'T-083',
     'stock_opnames.approve_variance' => 'T-083', 'stock_opnames.approve_variance_high' => 'T-083',

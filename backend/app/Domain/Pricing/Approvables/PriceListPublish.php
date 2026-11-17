@@ -91,6 +91,20 @@ class PriceListPublish extends PriceListVersion implements Approvable
         if ($this->status !== PriceVersionStatus::PendingApproval) {
             throw new ApiError(ErrorCode::STATE_CONFLICT, ['status' => $this->status->value]);
         }
+        // BR-168 dicek ulang saat keputusan: persetujuan yang datang SETELAH tanggal berlaku akan
+        // membuat versi berlaku surut tanpa alasan, dan versi lain mungkin sudah terbit lebih akhir.
+        // Penyetuju diminta menolak; pengaju membuat versi baru dengan tanggal yang benar.
+        if ($this->effective_from->lessThanOrEqualTo(now())) {
+            throw new ApiError(ErrorCode::STATE_CONFLICT, ['effective_from' => $this->effective_from->toIso8601String()],
+                'Tanggal berlaku versi ini sudah lewat sehingga tidak bisa diterbitkan surut. Tolak permintaan ini lalu ajukan versi baru dengan tanggal yang akan datang.');
+        }
+        $newer = PriceListVersion::query()->where('price_list_id', $this->price_list_id)->where('id', '!=', $this->id)
+            ->whereIn('status', [PriceVersionStatus::Published, PriceVersionStatus::Superseded])
+            ->where('effective_from', '>=', $this->effective_from)->exists();
+        if ($newer) {
+            throw new ApiError(ErrorCode::STATE_CONFLICT, [],
+                'Sudah ada versi terbit dengan tanggal berlaku yang sama atau lebih akhir. Tolak permintaan ini.');
+        }
         // Penerbit = pemutus langkah terakhir (null bila disetujui otomatis tanpa aturan).
         $decider = $request?->steps()->whereNotNull('decided_by')->orderByDesc('step_order')->value('decided_by');
         app(PublishPriceVersion::class)->handle($this, $decider === null ? null : (int) $decider);

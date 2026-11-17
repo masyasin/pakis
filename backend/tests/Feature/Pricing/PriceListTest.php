@@ -307,3 +307,20 @@ test('06 tab Harga produk hanya untuk pemegang prices.view (staf gudang tidak me
     $this->actingAs($this->owner)->get("/produk/{$this->product->id}?tab=harga")->assertOk()
         ->assertInertia(fn ($p) => $p->has('prices', 1)->where('prices.0.price', '10000.00'));
 });
+
+test('BR-168 persetujuan yang datang setelah tanggal berlaku ditolak (tidak terbit surut); versi tetap menunggu', function () {
+    $list = priceList('DEFAULT', 'default');
+    $manager = User::factory()->withTwoFactor()->create()->givePermissionTo(['prices.view', 'prices.manage']);
+    $this->actingAs($manager)->post("/daftar-harga/{$list->id}/versi", ['mode' => 'empty', 'effective_from' => '2026-11-18T00:00'])->assertSessionHasNoErrors();
+    $version = PriceListVersion::query()->sole();
+    $this->actingAs($manager)->put("/daftar-harga/versi/{$version->id}/item", ['items' => [['product_unit_id' => $this->bottle->id, 'min_qty' => '1', 'price' => '10000']]]);
+    $this->actingAs($manager)->post("/daftar-harga/versi/{$version->id}/ajukan")->assertSessionHasNoErrors();
+    $request = ApprovalRequest::query()->sole();
+
+    // Penyetuju baru memutuskan dua hari kemudian.
+    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-11-19 03:00:00', 'UTC'));
+    expect(fn () => app(ApprovalEngine::class)->decide($this->owner, $request->id, 1, true, null, true))
+        ->toThrow(fn (ApiError $e) => expect($e->errorCode)->toBe(ErrorCode::STATE_CONFLICT));
+    expect($version->fresh()->status)->toBe(PriceVersionStatus::PendingApproval)
+        ->and(resolvePrice(null, $this->bottle))->toBe(ErrorCode::PRICE_NOT_FOUND);
+});

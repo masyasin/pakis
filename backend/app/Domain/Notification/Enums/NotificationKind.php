@@ -26,6 +26,7 @@ enum NotificationKind: string
     // Paket A (15 §9.1)
     case RegistrationExpiring = 'registration_expiring';
     case CustomerPhoneChanged = 'customer_phone_changed';
+    case StockReconcileMismatch = 'stock_reconcile_mismatch';
 
     public function label(): string
     {
@@ -46,6 +47,7 @@ enum NotificationKind: string
             self::ApprovalEscalated => 'Persetujuan tereskalasi',
             self::RegistrationExpiring => 'Izin edar akan habis',
             self::CustomerPhoneChanged => 'HP kios diganti',
+            self::StockReconcileMismatch => 'Selisih rekonsiliasi stok',
         };
     }
 

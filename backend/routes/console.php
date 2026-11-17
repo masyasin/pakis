@@ -83,6 +83,20 @@ Schedule::command('pricing:activate-versions')
     ->onOneServer()
     ->withoutOverlapping();
 
+// Buku stok (T-077, 15 §11.1). Rekonsiliasi 01.00 waktu LOKAL (BR-154): hanya membaca dan memberi
+// tahu Owner & super_admin bila saldo ≠ kartu stok. Reservasi lewat masa berlaku dilepas tiap 15
+// menit (BR-155); keduanya idempoten.
+Schedule::command('inventory:reconcile')
+    ->dailyAt('01:00')
+    ->timezone(DisplayTime::timezone())
+    ->onOneServer()
+    ->withoutOverlapping();
+
+Schedule::command('inventory:release-reservations')
+    ->everyFifteenMinutes()
+    ->onOneServer()
+    ->withoutOverlapping();
+
 // Promo (15 §11.1 EndPromotions, T-076): akhiri promo yang lewat waktu selesai/anggaran habis.
 // PromotionEngine sudah mengabaikannya, jadi jeda 15 menit hanya memengaruhi label status.
 Schedule::command('promotions:end')

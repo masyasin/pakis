@@ -10,7 +10,7 @@ use App\Domain\Inventory\Models\StockBin;
 use App\Domain\Inventory\Models\StockLocation;
 use App\Domain\Inventory\Policies\StockBinPolicy;
 use App\Domain\Inventory\Policies\StockLocationPolicy;
-use App\Domain\Inventory\Support\NoStockBalanceProbe;
+use App\Domain\Inventory\Support\LedgerStockBalanceProbe;
 use App\Domain\Inventory\Support\StockBalanceProbe;
 use App\Support\Lookup\LookupRegistry;
 use Illuminate\Support\Facades\Gate;
@@ -25,8 +25,8 @@ class InventoryServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // T-077 mengganti dengan pembaca saldo `stock_batches`.
-        $this->app->bind(StockBalanceProbe::class, NoStockBalanceProbe::class);
+        // Saldo nyata dari buku stok (T-077): lokasi/rak bersaldo tidak bisa dinonaktifkan.
+        $this->app->bind(StockBalanceProbe::class, LedgerStockBalanceProbe::class);
 
         $this->app->extend(LookupRegistry::class, function (LookupRegistry $registry) {
             $registry->register('stock_locations', StockLocationLookup::class);

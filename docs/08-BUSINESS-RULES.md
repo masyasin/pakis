@@ -122,6 +122,7 @@ Semua kunci di bawah bisa diubah dari layar **Pengaturan** oleh pemegang `settin
 | `notification.on_approval_escalated` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-067) | ❌ |
 | `notification.on_registration_expiring` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-071, BR-152) | ❌ |
 | `notification.on_customer_phone_changed` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-074, BR-166(4); penerima pemegang `customers.change_phone_approve`, bukan `super_admin`, nomor termasking) | ❌ |
+| `notification.on_stock_reconcile_mismatch` | multi enum | `[]` | subset `email`, `telegram`, `whatsapp` (T-077, BR-154; penerima Owner & `super_admin`) | ❌ |
 | `notification.whatsapp_daily_limit` | int | 300 | 0–10000 | ❌ |
 | `notification.whatsapp_hourly_per_user` | int | 5 | 1–50 | ❌ |
 | `notification.circuit_failures` | int | 5 | 3–20 | ❌ |
@@ -192,8 +193,10 @@ Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok
 | Kunci | Tipe | Default | Validasi | Publik |
 |---|---|---|---|---|
 | `inventory.registration_reminder_days` | int | 60 | 7–365 | ❌ |
+| `inventory.negative_stock_allowed` | bool | `false` | Penanda `locked`; hanya boleh `false` (BR-101, T-077) | ❌ |
+| `inventory.reservation_ttl_hours` | int | 72 | 1–720 | ❌ |
 
-Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`).
+Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`). `inventory.negative_stock_allowed` terkunci `false`: `StockLedger` menolak bekerja bila nilainya lain, dan layar Pengaturan menolak `true` (T-077). `inventory.reservation_ttl_hours` = masa berlaku reservasi batch bawaan; reservasi `active` yang lewat `expires_at` dilepas job tiap 15 menit (BR-155).
 
 ### 2.11 Harga
 

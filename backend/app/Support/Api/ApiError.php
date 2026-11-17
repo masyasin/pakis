@@ -10,8 +10,12 @@ use Throwable;
  *
  * Contoh di Action: `throw new ApiError(ErrorCode::ATTENDANCE_OUT_OF_RADIUS, details: [...])`.
  * `details` dan `publicMessage` dikirim apa adanya, jadi jangan isi dengan data sensitif.
+ *
+ * Tidak `final` sejak T-077: galat domain yang perlu ditangkap berdasarkan jenisnya (mis.
+ * `Inventory\Ledger\Exceptions\InsufficientStock`) menurunkan kelas ini, sehingga tetap dirender
+ * lewat jalur yang sama (renderer memeriksa `instanceof ApiError`).
  */
-final class ApiError extends RuntimeException
+class ApiError extends RuntimeException
 {
     /**
      * @param  array<string, mixed>  $details

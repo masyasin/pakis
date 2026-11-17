@@ -4,9 +4,14 @@ use App\Domain\Access\DataScope;
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Inventory\Enums\BinZone;
 use App\Domain\Inventory\Enums\StockLocationType;
+use App\Domain\Inventory\Ledger\BatchKey;
+use App\Domain\Inventory\Ledger\MovementType;
+use App\Domain\Inventory\Ledger\StockLedger;
 use App\Domain\Inventory\Models\StockBin;
 use App\Domain\Inventory\Models\StockLocation;
+use App\Domain\Inventory\Support\StockBalanceProbe;
 use App\Models\User;
+use App\Support\Money\Qty;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\ReferenceSeeder;
 use Database\Seeders\RoleSeeder;
@@ -17,6 +22,7 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\AssertsIdor;
 use Tests\Support\FakeOrgStructure;
+use Tests\Support\LedgerWorld;
 use Tests\Support\StockWorld;
 
 uses(AssertsIdor::class);
@@ -196,7 +202,23 @@ test('FR-A03 menonaktifkan lokasi stok yang masih bersaldo ditolak 409 STATE_CON
     expect($location->fresh()->is_active)->toBeTrue();
 });
 
-test('FR-A03 menonaktifkan lokasi stok bersaldo nyata (buku stok) ditolak')->todo('T-077: StockBalanceProbe membaca stock_batches');
+test('FR-A03 menonaktifkan lokasi stok/rak bersaldo nyata (buku stok) ditolak; stok karantina ikut dihitung', function () {
+    $location = StockWorld::stockLocation($this->undaan, 'GD-A');
+    $quarantine = $location->bins()->where('code', StockBin::QUARANTINE_CODE)->sole();
+    $bin = LedgerWorld::bin($location, 'A-01');
+    LedgerWorld::receive($location, LedgerWorld::product('P-LOC'), '1', key: new BatchKey('B-1', null, $quarantine->id));
+    $inBin = LedgerWorld::receive($location, LedgerWorld::product('P-BIN'), '1', key: new BatchKey('B-2', null, $bin->id));
+
+    $this->actingAs($this->admin)->from('/lokasi-stok')
+        ->put("/lokasi-stok/{$location->id}", validStockLocation(['code' => 'GD-A', 'is_active' => false]))
+        ->assertSessionHasErrors('form');
+    expect($location->fresh()->is_active)->toBeTrue();
+
+    $probe = app(StockBalanceProbe::class);
+    expect($probe->binHasStock($bin))->toBeTrue();
+    StockLedger::transaction(fn () => LedgerWorld::ledger()->issue($inBin, Qty::of(1), LedgerWorld::source('sales_invoice', 1), MovementType::Sale, LedgerWorld::DATE));
+    expect($probe->binHasStock($bin))->toBeFalse()->and($probe->locationHasStock($location))->toBeTrue();
+});
 
 test('FR-A03 daftar lokasi stok: cari, filter tipe & lokasi, sort, dan TRANSIT ikut tampil', function () {
     $jepara = StockWorld::location('GD-JEPARA');

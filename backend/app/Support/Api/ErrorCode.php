@@ -53,6 +53,9 @@ enum ErrorCode: string
     case UNIT_FACTOR_LOCKED = 'UNIT_FACTOR_LOCKED';
     case PRICE_VERSION_LOCKED = 'PRICE_VERSION_LOCKED';
     case PRICE_NOT_FOUND = 'PRICE_NOT_FOUND';
+    // Khusus web (05 §2.4a), buku stok (BR-101/102, T-077).
+    case INSUFFICIENT_STOCK = 'INSUFFICIENT_STOCK';
+    case BATCH_NOT_AVAILABLE = 'BATCH_NOT_AVAILABLE';
     // Khusus web (05 §2.4a), verifikasi & HP kios (BR-165/166, T-074).
     case CUSTOMER_PHONE_DUPLICATE = 'CUSTOMER_PHONE_DUPLICATE';
     case PHONE_BELONGS_TO_EMPLOYEE = 'PHONE_BELONGS_TO_EMPLOYEE';
@@ -88,6 +91,8 @@ enum ErrorCode: string
             self::UNIT_FACTOR_LOCKED => 409,
             self::PAYLOAD_TOO_LARGE => 413,
             self::VALIDATION_FAILED,
+            self::INSUFFICIENT_STOCK,
+            self::BATCH_NOT_AVAILABLE,
             self::ATTENDANCE_NO_SCHEDULE,
             self::ATTENDANCE_OUTSIDE_WINDOW,
             self::ATTENDANCE_OUT_OF_RADIUS,
@@ -150,6 +155,8 @@ enum ErrorCode: string
             self::SERVICE_UNAVAILABLE => 'Server sedang dalam perbaikan. Coba lagi beberapa saat lagi.',
             self::SERVER_ERROR => 'Terjadi kesalahan di server. Coba lagi atau hubungi admin dengan kode permintaan.',
             self::APPROVAL_RULE_MISSING => 'Belum ada aturan persetujuan yang cocok untuk dokumen ini. Hubungi admin.',
+            self::INSUFFICIENT_STOCK => 'Stok tersedia tidak cukup. Muat ulang untuk melihat stok terbaru.',
+            self::BATCH_NOT_AVAILABLE => 'Batch ini sedang karantina, kedaluwarsa, atau sudah dimusnahkan, jadi tidak bisa dipakai.',
             // SEC-101: maker-checker; pengaju/pembuat dokumen tidak boleh memutuskan sendiri.
             self::APPROVAL_SELF_DECISION => 'Anda tidak boleh memutuskan persetujuan atas dokumen yang Anda ajukan atau buat sendiri.',
             self::APPROVAL_ALREADY_PENDING => 'Dokumen ini sudah punya permintaan persetujuan yang masih berjalan.',

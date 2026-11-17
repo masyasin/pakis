@@ -3,14 +3,18 @@
 use App\Domain\Audit\Models\AuditLog;
 use App\Domain\Fleet\Models\Vehicle;
 use App\Domain\Inventory\Enums\StockLocationType;
+use App\Domain\Inventory\Ledger\MovementType;
+use App\Domain\Inventory\Ledger\StockLedger;
 use App\Domain\Inventory\Models\StockLocation;
 use App\Models\User;
+use App\Support\Money\Qty;
 use Database\Seeders\PermissionSeeder;
 use Database\Seeders\ReferenceSeeder;
 use Database\Seeders\RoleSeeder;
 use Inertia\Testing\AssertableInertia as Assert;
 use Tests\Support\AssertsIdor;
 use Tests\Support\FakeOrgStructure;
+use Tests\Support\LedgerWorld;
 use Tests\Support\StockWorld;
 
 uses(AssertsIdor::class);
@@ -131,7 +135,19 @@ test('FR-A05 kendaraan canvas bersaldo tidak bisa dinonaktifkan atau dicabut can
         ->and(canvasStockOf($vehicle)->is_active)->toBeTrue();
 });
 
-test('FR-A05 kendaraan canvas bersaldo nyata (buku stok) ditolak saat dinonaktifkan')->todo('T-077: StockBalanceProbe membaca stock_batches');
+test('FR-A05 kendaraan canvas bersaldo nyata (buku stok) ditolak saat dinonaktifkan; saldo habis → boleh', function () {
+    $vehicle = StockWorld::vehicle('K9021AB', $this->undaan);
+    $batch = LedgerWorld::receive(canvasStockOf($vehicle), LedgerWorld::product('P-CNV'), '2');
+
+    $this->actingAs($this->admin)->from("/kendaraan/{$vehicle->id}/ubah")
+        ->put("/kendaraan/{$vehicle->id}", validVehicle(['is_active' => false]))
+        ->assertSessionHasErrors('form');
+    expect($vehicle->fresh()->is_active)->toBeTrue()->and(canvasStockOf($vehicle)->is_active)->toBeTrue();
+
+    StockLedger::transaction(fn () => LedgerWorld::ledger()->issue($batch, Qty::of(2), LedgerWorld::source('canvas_settlement', 1), MovementType::Sale, LedgerWorld::DATE));
+    $this->actingAs($this->admin)->put("/kendaraan/{$vehicle->id}", validVehicle(['is_active' => false]))->assertSessionHasNoErrors();
+    expect(canvasStockOf($vehicle)->is_active)->toBeFalse();
+});
 
 test('FR-A05 ubah plat, nama, dan lokasi asal ikut ke lokasi stok canvas', function () {
     $vehicle = StockWorld::vehicle('K9021AB', $this->undaan);

@@ -9,8 +9,8 @@ use App\Domain\Inventory\Models\StockLocation;
  * Apakah lokasi stok / rak masih menyimpan barang. Lokasi atau rak bersaldo tidak boleh
  * dinonaktifkan (15 §4.3, kriteria T-068) karena stoknya jadi tidak terjangkau dokumen apa pun.
  *
- * Buku stok baru ada di T-077: sampai itu, implementasi bawaan `NoStockBalanceProbe` selalu
- * menjawab "kosong", dan T-077 mengganti binding-nya dengan pembaca `stock_batches`.
+ * Implementasi: `LedgerStockBalanceProbe` (pembaca `stock_batches`, T-077). Antarmuka dipertahankan
+ * agar test bisa memalsukan saldo tanpa menulis buku stok.
  */
 interface StockBalanceProbe
 {

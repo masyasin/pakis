@@ -102,6 +102,7 @@ const ICONS: Record<string, LucideIcon> = {
     category: Tags,
     product: Package,
     registration: FileBadge,
+    purchase_order: ClipboardList,
     supplier: Handshake,
     principal: Factory,
     warehouse: Warehouse,

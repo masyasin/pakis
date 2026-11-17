@@ -7,6 +7,7 @@ import {
     RefreshCw,
     Smartphone,
     Stamp,
+    Truck,
     UserX,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -61,6 +62,7 @@ type PendingItem = {
         | 'devices'
         | 'unscheduled'
         | 'registrations_expiring'
+        | 'po_overdue'
         | 'no_account';
     count: number;
     href: string;
@@ -103,6 +105,12 @@ const PENDING: Record<
         title: 'Izin edar akan habis',
         note: 'Produk yang perlu perpanjangan izin',
         icon: FileBadge,
+    },
+    // PO terlambat (15 §7.4, T-079).
+    po_overdue: {
+        title: 'PO terlambat',
+        note: 'Barang belum datang lewat perkiraan',
+        icon: Truck,
     },
     no_account: {
         title: 'Pegawai tanpa akun',
@@ -791,9 +799,12 @@ function NoData({ children }: { children: ReactNode }) {
 export default function Dashboard({
     attendance,
     charts,
-    pending,
+    pending: pendingItems,
     refresh_seconds: refreshSeconds,
 }: Props) {
+    // Item yang belum dikenal build frontend ini (server lebih baru dari aset) dilewati, bukan
+    // membuat seluruh dasbor gagal dirender.
+    const pending = pendingItems.filter((p) => Object.hasOwn(PENDING, p.key));
     const { auth, timezone } = usePage().props;
     const firstName = auth.user?.name.split(' ')[0] ?? '';
     const today = formatLongDate(new Date(), timezone);

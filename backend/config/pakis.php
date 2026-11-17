@@ -24,6 +24,8 @@ use App\Domain\Organization\Listings\PositionListing;
 use App\Domain\Pricing\Approvables\PriceListPublish;
 use App\Domain\Pricing\Approvables\PromotionActivate;
 use App\Domain\Pricing\Listings\PriceListItemListing;
+use App\Domain\Purchasing\Approvables\PurchaseOrderApproval;
+use App\Domain\Purchasing\Listings\PurchaseOrderListing;
 
 /*
  * Konfigurasi TEKNIS PAKIS ONE yang bukan secret dan bukan parameter bisnis.
@@ -72,6 +74,7 @@ return [
         'attendance_corrections' => AttendanceCorrectionListing::class,
         'products' => ProductListing::class, // T-070 (15 §5, izin products.view)
         'price_list_items' => PriceListItemListing::class, // T-075 (15 §5, izin prices.view)
+        'purchase_orders' => PurchaseOrderListing::class, // T-079 (15 §5, izin purchase_orders.view, scope Stok)
         'customers' => CustomerListing::class, // T-073 (15 §5, izin customers.export; HP selalu termasking, SEC-108)
     ],
 
@@ -89,7 +92,8 @@ return [
      * `conditions` = kunci `approval_rules.conditions` yang diizinkan untuk jenis itu.
      */
     'approvables' => [
-        'purchase_order' => ['label' => 'Purchase order', 'model' => null, 'conditions' => []],
+        // T-079: dokumen = baris purchase_orders (nominal = grand_total).
+        'purchase_order' => ['label' => 'Purchase order', 'model' => PurchaseOrderApproval::class, 'conditions' => []],
         'goods_receipt_short_shelf_life' => ['label' => 'Penerimaan sisa umur pendek', 'model' => null, 'conditions' => []],
         'stock_transfer_variance' => ['label' => 'Selisih mutasi stok', 'model' => null, 'conditions' => []],
         'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => null, 'conditions' => []],

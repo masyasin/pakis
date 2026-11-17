@@ -54,6 +54,7 @@ return [
     'price_lists', // T-075
     'price_list_items', // T-075
     'promotions', // T-076
+    'purchase_orders', // T-079
     'stock_locations', // T-068
     'stock_bins', // T-068
     'vehicles', // T-068

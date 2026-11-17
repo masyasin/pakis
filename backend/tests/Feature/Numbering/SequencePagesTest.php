@@ -76,12 +76,16 @@ test('cari kode/nama, filter periode reset, dan sort nama', function () {
         ->assertInertia(fn (Assert $page) => $page->has('rows', 1)->where('rows.0.code', 'employee'));
 
     $this->actingAs($this->user)->get('/pengaturan/penomoran?filter[reset_period][]=monthly')
-        ->assertInertia(fn (Assert $page) => $page->has('rows', 2)->where('rows.0.code', 'attendance_correction')->where('rows.1.code', 'field_trip'));
+        // Jumlah dari seeder (bertambah tiap modul baru bernomor bulanan, mis. PO T-079), bukan konstanta.
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('rows', DocumentSequence::query()->where('reset_period', ResetPeriod::Monthly->value)->count())
+            ->where('rows', fn ($rows) => collect($rows)->pluck('code')->intersect(['attendance_correction', 'field_trip', 'purchase_order'])->count() === 3));
 
     $this->actingAs($this->user)->get('/pengaturan/penomoran?sort=-name')
         ->assertInertia(fn (Assert $page) => $page
             ->where('rows.0.code', 'field_trip')
-            ->where('rows.1.name', $this->employee->name)
+            // Urutan nama turun, apa pun sequence yang ditambah modul berikutnya.
+            ->where('rows', fn ($rows) => ($names = collect($rows)->pluck('name')->all()) === collect($names)->sortDesc(SORT_NATURAL | SORT_FLAG_CASE)->values()->all())
             ->where('listing.state.sort', '-name'));
 });
 

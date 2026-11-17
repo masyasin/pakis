@@ -37,6 +37,7 @@ use App\Http\Controllers\Admin\ProductRegistrationController;
 use App\Http\Controllers\Admin\ProductUnitController;
 use App\Http\Controllers\Admin\ProfileController;
 use App\Http\Controllers\Admin\PromotionController;
+use App\Http\Controllers\Admin\PurchaseOrderController;
 use App\Http\Controllers\Admin\ReferenceController;
 use App\Http\Controllers\Admin\RegionController;
 use App\Http\Controllers\Admin\RoleController;
@@ -473,6 +474,27 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::put('promo/{promo}', [PromotionController::class, 'update'])->whereNumber('promo')->name('promotions.update');
         Route::post('promo/{promo}/ajukan', [PromotionController::class, 'submit'])->whereNumber('promo')->name('promotions.submit');
         Route::post('promo/{promo}/akhiri', [PromotionController::class, 'end'])->whereNumber('promo')->name('promotions.end');
+    });
+
+    // Purchase order (15 §5 `admin.purchase-orders.*`, FR-A24, BR-160, T-079). `baru` & `ekspor` sebelum
+    // `{po}`. Scope Stok gudang tujuan dicek controller (di luar scope → 404). `pdf` = halaman cetak HTML
+    // sampai ADR-114/OQ-109.
+    Route::middleware('can:purchase_orders.view')->group(function () {
+        Route::get('pembelian/po', [PurchaseOrderController::class, 'index'])->name('purchase-orders.index');
+        Route::get('pembelian/po/ekspor', [PurchaseOrderController::class, 'export'])->name('purchase-orders.export');
+    });
+    Route::middleware('can:purchase_orders.create')->group(function () {
+        Route::get('pembelian/po/baru', [PurchaseOrderController::class, 'create'])->name('purchase-orders.create');
+        Route::post('pembelian/po', [PurchaseOrderController::class, 'store'])->name('purchase-orders.store');
+        Route::get('pembelian/po/{po}/ubah', [PurchaseOrderController::class, 'edit'])->whereNumber('po')->name('purchase-orders.edit');
+        Route::put('pembelian/po/{po}', [PurchaseOrderController::class, 'update'])->whereNumber('po')->name('purchase-orders.update');
+        Route::post('pembelian/po/{po}/ajukan', [PurchaseOrderController::class, 'submit'])->whereNumber('po')->name('purchase-orders.submit');
+        Route::post('pembelian/po/{po}/batal', [PurchaseOrderController::class, 'cancel'])->whereNumber('po')->name('purchase-orders.cancel');
+        Route::post('pembelian/po/{po}/tutup', [PurchaseOrderController::class, 'close'])->whereNumber('po')->name('purchase-orders.close');
+    });
+    Route::middleware('can:purchase_orders.view')->group(function () {
+        Route::get('pembelian/po/{po}', [PurchaseOrderController::class, 'show'])->whereNumber('po')->name('purchase-orders.show');
+        Route::get('pembelian/po/{po}/pdf', [PurchaseOrderController::class, 'pdf'])->whereNumber('po')->name('purchase-orders.pdf');
     });
 
     // Area penjualan (15 §5 `admin.sales-areas.*`, FR-A12, T-073): tambah/ubah lewat dialog di halaman

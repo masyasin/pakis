@@ -17,6 +17,8 @@ use App\Domain\Device\Models\Device;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Purchasing\Listings\PurchaseOrderListing;
+use App\Domain\Purchasing\Models\PurchaseOrder;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Support\Listing\HasListing;
@@ -95,6 +97,15 @@ class DashboardController extends Controller
                     new ProductListing,
                     'admin.products.index',
                     ['filter' => ['registration_status' => 'expiring']],
+                ) : null,
+                // PO terlambat (15 §7.4, T-079): PO terbuka lewat perkiraan datang, scope Stok gudang tujuan
+                // (basis sama dengan PurchaseOrderController::index).
+                $user->can('purchase_orders.view') ? self::item(
+                    'po_overdue',
+                    $scope->forStock(PurchaseOrder::query(), $user, 'purchase_orders.stock_location_id'),
+                    new PurchaseOrderListing,
+                    'admin.purchase-orders.index',
+                    ['filter' => ['overdue' => '1']],
                 ) : null,
                 $user->can('employees.view') ? self::item(
                     'no_account',

@@ -218,6 +218,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | Distribusi | Penjualan | Area Penjualan (T-073; role Paket A: `15` §6.4) | `sales_areas.view` | ✅ | ✅ | ❌ | ❌ | ✅ |
 | Distribusi | Penjualan | Daftar Harga (T-075; role Paket A: `15` §6.4) | `prices.view` | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Distribusi | Penjualan | Promo (T-076; role Paket A: `15` §6.4) | `promotions.view` | ✅ | ❌ | ❌ | ❌ | ✅ |
+| Distribusi | Pembelian | Purchase Order (T-079; role Paket A: `15` §6.4, kepala gudang terbatas lokasinya) | `purchase_orders.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Pembelian | Supplier (T-072; role Paket A: `15` §6.4) | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Pembelian | Prinsipal (T-072; role Paket A: `15` §6.4) | `suppliers.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Master | Produk (T-070; role Paket A: `15` §6.4) | `products.view` | ✅ | ✅ | ❌ | ✅ | ✅ |

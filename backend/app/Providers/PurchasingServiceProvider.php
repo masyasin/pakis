@@ -5,8 +5,10 @@ namespace App\Providers;
 use App\Domain\Purchasing\Lookup\PrincipalLookup;
 use App\Domain\Purchasing\Lookup\SupplierLookup;
 use App\Domain\Purchasing\Models\Principal;
+use App\Domain\Purchasing\Models\PurchaseOrder;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Purchasing\Policies\PrincipalPolicy;
+use App\Domain\Purchasing\Policies\PurchaseOrderPolicy;
 use App\Domain\Purchasing\Policies\SupplierPolicy;
 use App\Support\Lookup\LookupRegistry;
 use Illuminate\Support\Facades\Gate;
@@ -32,5 +34,6 @@ class PurchasingServiceProvider extends ServiceProvider
     {
         Gate::policy(Principal::class, PrincipalPolicy::class);
         Gate::policy(Supplier::class, SupplierPolicy::class);
+        Gate::policy(PurchaseOrder::class, PurchaseOrderPolicy::class);
     }
 }

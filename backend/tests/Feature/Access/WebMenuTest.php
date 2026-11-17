@@ -40,7 +40,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
         'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'],
-        'Pembelian' => ['Supplier', 'Prinsipal'],
+        'Pembelian' => ['Purchase Order', 'Supplier', 'Prinsipal'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
         'Kepegawaian' => ['Pegawai', 'Penugasan', 'Impor Pegawai'],
@@ -80,12 +80,12 @@ test('T-067 role Paket A: Dasbor + Persetujuan (approvals.view) + Penjualan › 
     'purchasing' => ['purchasing', ['Dasbor', 'Persetujuan'], ['Daftar Harga', 'Promo'], ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok']],
 ]);
 
-test('T-072 menu Pembelian › Supplier & Prinsipal hanya untuk pemegang suppliers.view (15 §6.4)', function (string $role, ?array $expected) {
+test('T-072/T-079 menu Pembelian › Purchase Order, Supplier & Prinsipal sesuai izin (15 §6.4)', function (string $role, ?array $expected) {
     expect(menuOf($role)['Pembelian'] ?? null)->toBe($expected);
 })->with([
-    'owner' => ['owner', ['Supplier', 'Prinsipal']],
-    'purchasing' => ['purchasing', ['Supplier', 'Prinsipal']],
-    'kepala_gudang' => ['kepala_gudang', ['Supplier', 'Prinsipal']],
+    'owner' => ['owner', ['Purchase Order', 'Supplier', 'Prinsipal']],
+    'purchasing' => ['purchasing', ['Purchase Order', 'Supplier', 'Prinsipal']],
+    'kepala_gudang' => ['kepala_gudang', ['Purchase Order', 'Supplier', 'Prinsipal']],
     'admin_penjualan' => ['admin_penjualan', null],
     'staf_gudang' => ['staf_gudang', null],
     'supervisor' => ['supervisor', null],

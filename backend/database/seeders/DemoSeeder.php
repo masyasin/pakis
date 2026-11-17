@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Domain\Access\Support\RoleCatalog;
+use App\Domain\Approval\Models\ApprovalRule;
 use App\Domain\Attendance\Models\Holiday;
 use App\Domain\Attendance\Models\Shift;
 use App\Domain\Attendance\Models\ShiftPattern;
@@ -40,8 +41,12 @@ use App\Domain\Pricing\Models\PriceList;
 use App\Domain\Pricing\Models\Promotion;
 use App\Domain\Pricing\Support\PriceRounding;
 use App\Domain\Purchasing\Actions\SavePrincipal;
+use App\Domain\Purchasing\Actions\SavePurchaseOrder;
 use App\Domain\Purchasing\Actions\SaveSupplier;
+use App\Domain\Purchasing\Actions\SubmitPurchaseOrder;
+use App\Domain\Purchasing\Enums\PurchaseOrderStatus;
 use App\Domain\Purchasing\Models\Principal;
+use App\Domain\Purchasing\Models\PurchaseOrder;
 use App\Domain\Purchasing\Models\Supplier;
 use App\Domain\Reference\Enums\ReferenceGroup;
 use App\Domain\Reference\Models\ReferenceItem;
@@ -185,6 +190,7 @@ class DemoSeeder extends Seeder
         $this->seedPurchasing();
         $this->seedPricing();
         $this->seedPromotions();
+        $this->seedPurchaseOrders();
 
         // Tahun berjalan menurut zona kantor. Lokasi kosong = berlaku semua lokasi; selain itu contoh
         // libur khusus lokasi (BR-062). Pivot hanya diisi saat libur baru dibuat (tidak menimpa ubahan HRD).
@@ -603,6 +609,58 @@ class DemoSeeder extends Seeder
             ], null);
             if ($status === 'active') {
                 $promo->forceFill(['status' => PromotionStatus::Active])->save();
+            }
+        }
+    }
+
+    /**
+     * PO demo T-079 (fiktif) ke Gudang Utama Undaan, dibuat oleh admin demo: satu draf, satu diajukan
+     * (masuk antrean persetujuan sesuai nilainya), satu disetujui yang lewat perkiraan datang (contoh
+     * "PO terlambat" di dasbor). Lewati bila sudah ada PO (seeder dijalankan ulang).
+     */
+    private function seedPurchaseOrders(): void
+    {
+        $creator = User::query()->where('name', 'Dwi Lestari')->first();
+        $location = StockLocation::query()->where('code', 'GD-UNDAAN')->value('id');
+        $supplier = Supplier::query()->where('name', 'CV Distributor Tani Demo')->value('id');
+        if ($creator === null || $location === null || $supplier === null || PurchaseOrder::query()->exists()) {
+            return;
+        }
+
+        $unit = fn (string $sku) => ProductUnit::query()->whereHas('product', fn ($q) => $q->where('sku', $sku))
+            ->orderByDesc('is_base')->value('id');
+        $today = CarbonImmutable::now(DisplayTime::timezone());
+        $orders = [
+            // [tanggal mundur, perkiraan datang mundur/maju, nasib, baris [sku, qty, harga, diskon]]
+            [0, 4, 'draft', [['DM-INS-002', '24', '58000', '0'], ['DM-PER-001', '12', '29500', '0']]],
+            [1, 3, 'submit', [['DM-HER-001', '60', '72000', '2.5'], ['DM-FUN-001', '20', '126000', '0']]],
+            [9, -2, 'approved', [['DM-ROD-001', '100', '16500', '0'], ['DM-INS-002', '36', '57500', '1']]],
+        ];
+
+        foreach ($orders as [$back, $expected, $fate, $lines]) {
+            $rows = [];
+            foreach ($lines as [$sku, $qty, $price, $discount]) {
+                $unitId = $unit($sku);
+                if ($unitId !== null) {
+                    $rows[] = ['product_unit_id' => (int) $unitId, 'qty' => $qty, 'unit_price' => $price, 'discount_pct' => $discount, 'note' => null];
+                }
+            }
+            if ($rows === []) {
+                continue;
+            }
+            $order = app(SavePurchaseOrder::class)->handle(null, [
+                'supplier_id' => $supplier, 'stock_location_id' => $location,
+                'order_date' => $today->subDays($back)->toDateString(),
+                'expected_date' => $today->addDays($expected)->toDateString(),
+                'payment_term_days' => null, 'note' => 'Data demo',
+            ], $rows, $creator->id);
+
+            // Diajukan hanya bila aturan persetujuan PO sudah di-seed (ApprovalRuleSeeder); tanpa itu tetap draf.
+            if ($fate === 'submit' && ApprovalRule::query()->where('document_type', 'purchase_order')->where('is_active', true)->exists()) {
+                app(SubmitPurchaseOrder::class)->handle($order, $creator);
+            } elseif ($fate === 'approved') {
+                // Jalan pintas khusus demo (pola promo demo): langsung disetujui tanpa antrean.
+                $order->forceFill(['status' => PurchaseOrderStatus::Approved, 'submitted_at' => now(), 'approved_at' => now()])->save();
             }
         }
     }

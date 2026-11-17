@@ -103,6 +103,21 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     'bin_zone.quarantine': { label: 'Karantina', tone: 'info' },
     'vehicle.active': { label: 'Aktif', tone: 'success' },
     'vehicle.inactive': { label: 'Nonaktif', tone: 'muted' },
+    // Purchase order (T-079, 15 §6.6)
+    'purchase_order.draft': { label: 'Draf', tone: 'muted' },
+    'purchase_order.submitted': {
+        label: 'Menunggu persetujuan',
+        tone: 'warning',
+    },
+    'purchase_order.approved': { label: 'Disetujui', tone: 'info' },
+    'purchase_order.partially_received': {
+        label: 'Diterima sebagian',
+        tone: 'warning',
+    },
+    'purchase_order.received': { label: 'Diterima', tone: 'success' },
+    'purchase_order.closed': { label: 'Ditutup', tone: 'muted' },
+    'purchase_order.rejected': { label: 'Ditolak', tone: 'danger' },
+    'purchase_order.cancelled': { label: 'Dibatalkan', tone: 'muted' },
 };
 
 const TONE_CLASS: Record<StatusTone, string> = {

@@ -19,6 +19,9 @@ void createInertiaApp({
             // Halaman galat bisa tampil untuk tamu (tanpa auth.user), jadi tanpa layout aplikasi.
             case name === 'error':
                 return null;
+            // Halaman cetak dokumen (mis. `purchase-orders/print`) tampil polos tanpa menu.
+            case name.endsWith('/print'):
+                return null;
             case name.startsWith('auth/'):
                 return AuthLayout;
             case name.startsWith('profile/'):

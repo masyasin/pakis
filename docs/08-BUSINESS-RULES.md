@@ -209,6 +209,16 @@ Grup `pricing` (tab "Harga"), dipakai daftar harga berversi (T-075, `15` §9) da
 
 Catatan: `pricing.rounding` membulatkan ke atas harga hasil salin versi ±% (dan promo T-076) ke kelipatan nilai itu; `none` = dua desimal half-up. `pricing.allow_backdated_publish` mati = versi baru tidak boleh berlaku surut (BR-168); hidup = pemegang `prices.publish` boleh menerbitkan versi berlaku surut dengan alasan.
 
+### 2.12 Pembelian
+
+Grup `purchasing` (tab "Pembelian"), dipakai purchase order (T-079, `15` §9); kunci penerimaan barang ditambah T-080.
+
+| Kunci | Tipe | Default | Validasi | Publik |
+|---|---|---|---|---|
+| `purchasing.default_payment_term_days` | int | 30 | 0–365 | ❌ |
+
+Catatan: tempo PO baru diambil dari supplier (`suppliers.payment_term_days`); nilai ini dipakai bila supplier belum dipilih.
+
 ### 2.13 Akuntansi
 
 Grup `accounting` (tab "Akuntansi"), dipakai `PeriodGuard` untuk dokumen ber-outbox (T-077, `15` §9 & §11.4, ADR-115).

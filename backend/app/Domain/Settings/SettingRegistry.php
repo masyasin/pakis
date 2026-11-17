@@ -36,6 +36,7 @@ final class SettingRegistry
         'customer' => 'Pelanggan',
         'inventory' => 'Gudang & stok',
         'pricing' => 'Harga',
+        'purchasing' => 'Pembelian',
         'accounting' => 'Akuntansi',
     ];
 
@@ -257,6 +258,9 @@ final class SettingRegistry
             // 2.11 Harga (T-075, 15 §9, BR-168).
             $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),
             $t('pricing.allow_backdated_publish', SettingType::Bool, false, 'Izinkan versi harga berlaku surut', 'Bila aktif, pemegang izin terbit harga boleh menerbitkan versi yang mulai berlaku di masa lalu dengan alasan tertulis. Bawaan: tidak boleh.'),
+
+            // 2.12 Pembelian (T-079, 15 §9). Kunci penerimaan (`purchasing.*`) ditambah T-080.
+            $t('purchasing.default_payment_term_days', SettingType::Int, 30, 'Tempo bayar bawaan PO (hari)', 'Bawaan di form PO sebelum supplier dipilih. Bila dikosongkan, PO memakai tempo supplier. 0 = tunai.', min: 0, max: 365),
 
             // 2.13 Akuntansi (T-077, 15 §9, ADR-115). Terkunci selama Paket A; aksi ubah tanggal kunci
             // dengan aturan maju/mundur (BR-229, izin accounting.lock) menggantikannya di T-096.

@@ -1,0 +1,9 @@
+[
+    {
+        "advisory": "https://github.com/advisories/GHSA-fc5q-39xc-vjpf",
+        "package": "picomatch",
+        "reason": "ReDoS pada pola glob extglob; picomatch hanya dipakai alat build/dev (vite-plus, vitest, laravel-vite-plugin) untuk pola glob milik repo sendiri, tidak ada di bundle produksi dan tidak menerima input pengguna. Belum ada versi tambalan (advisory berlaku untuk semua versi). Keputusan Mas 18 Nov 2026, docs/12 SEC-066.",
+        "decided": "2026-11-18",
+        "review_by": "2026-12-18"
+    }
+]

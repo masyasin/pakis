@@ -194,5 +194,7 @@ jobs:
       - name: composer audit
         run: composer audit --locked --no-interaction
 
+      # Setara `npm audit --audit-level=high`, dengan pengecualian tertulis di npm-audit-allowlist.json
+      # (tanggal tinjau wajib; justifikasi di docs/12, SEC-066).
       - name: npm audit
-        run: npm audit --audit-level=high
+        run: node scripts/npm-audit.mjs

@@ -2,7 +2,10 @@
 
 namespace App\Domain\Inventory\Actions;
 
+use App\Domain\Approval\Enums\ApprovalStatus;
+use App\Domain\Approval\Models\ApprovalRequest;
 use App\Domain\Audit\AuditLogger;
+use App\Domain\Inventory\Approvables\OpnameVarianceApproval;
 use App\Domain\Inventory\Enums\StockOpnameStatus;
 use App\Domain\Inventory\Models\StockOpname;
 use App\Domain\Inventory\Models\StockOpnameLine;
@@ -28,6 +31,12 @@ final class RecordRecount
             if (! in_array($locked->status, [StockOpnameStatus::Counting, StockOpnameStatus::Review], true)) {
                 throw new ApiError(ErrorCode::STATE_CONFLICT, ['status' => $locked->status->value], 'Opname ini tidak sedang menerima hitung ulang.');
             }
+            // Saat tinjau angka sistem sudah terlihat: hitung ulang di sana bisa "menghapus" selisih tanpa
+            // approval. Karena itu hanya dibuka setelah selisih DITOLAK (keputusan Mas, PA-67 b).
+            if ($locked->status === StockOpnameStatus::Review && ! self::rejectedBefore($locked)) {
+                throw new ApiError(ErrorCode::STATE_CONFLICT, ['status' => $locked->status->value],
+                    'Hitung ulang saat tinjau hanya dibuka setelah selisih ditolak penyetuju.');
+            }
             $row = StockOpnameLine::query()->where('stock_opname_id', $locked->id)->lockForUpdate()->findOrFail($line->id);
             if ($row->qty_counted_base === null) {
                 throw ValidationException::withMessages(['qty' => 'Baris ini belum dihitung pertama kali.']);
@@ -48,5 +57,12 @@ final class RecordRecount
 
             return $row;
         });
+    }
+
+    /** Pernah ada permintaan approval selisih opname ini yang ditolak. */
+    public static function rejectedBefore(StockOpname $opname): bool
+    {
+        return ApprovalRequest::query()->where('document_type', OpnameVarianceApproval::DOCUMENT_TYPE)
+            ->where('document_id', $opname->id)->where('status', ApprovalStatus::Rejected)->exists();
     }
 }

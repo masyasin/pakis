@@ -4,6 +4,7 @@ namespace App\Domain\Inventory\Approvables;
 
 use App\Domain\Approval\Contracts\Approvable;
 use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Approval\Models\ApprovalStep;
 use App\Domain\Approval\Support\Rupiah;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Inventory\Actions\PostStockOpname;
@@ -101,7 +102,27 @@ class OpnameVarianceApproval extends StockOpname implements Approvable
         if ($this->status !== StockOpnameStatus::PendingApproval) {
             throw new ApiError(ErrorCode::STATE_CONFLICT, ['status' => $this->status->value]);
         }
-        app(PostStockOpname::class)->handle($this, DisplayTime::toLocal(now())->toDateString(), $this->updated_by);
+        if ($request !== null) {
+            $this->assertApproversDidNotCount($request);
+        }
+        app(PostStockOpname::class)->handle($this, DisplayTime::toLocal(now())->toDateString(), $this->updated_by,
+            $request === null ? null : $this->variance_value);
+    }
+
+    /**
+     * Pemisahan tugas (SEC-103, BR-153(4)): mesin hanya menolak pengaju; orang yang menghitung atau
+     * menghitung ulang baris selisih juga tidak boleh menyetujui selisih itu di langkah mana pun.
+     */
+    private function assertApproversDidNotCount(ApprovalRequest $request): void
+    {
+        $this->setRelation('lines', $this->lines()->get());
+        $variances = OpnameVariance::for($this);
+        $counters = $this->lines->filter(fn (StockOpnameLine $l) => OpnameVariance::hasVariance($variances[$l->id]))
+            ->flatMap(fn (StockOpnameLine $l) => [$l->counted_by, $l->recounted_by])->filter()->unique();
+        $approvers = ApprovalStep::query()->where('approval_request_id', $request->id)->whereNotNull('decided_by')->pluck('decided_by');
+        if ($approvers->intersect($counters)->isNotEmpty()) {
+            throw new ApiError(ErrorCode::APPROVAL_SELF_DECISION, publicMessage: 'Penghitung baris selisih tidak boleh menyetujui selisih opname ini.');
+        }
     }
 
     public function onRejected(ApprovalRequest $request): void

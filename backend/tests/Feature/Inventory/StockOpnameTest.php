@@ -325,3 +325,35 @@ test('listing stock_opname_lines: filter sudah dihitung, cari batch, batal mengo
     // Batch bebas lagi untuk opname baru.
     opnStarted();
 });
+
+test('SEC-103 saat tinjau hitung ulang ditolak sebelum selisih pernah ditolak (selisih tidak bisa dihapus tanpa approval)', function () {
+    $o = opnStarted();
+    opnPut($o, opnLine($o), ['mode' => 'count', 'qty' => '49'])->assertSessionHasNoErrors();
+    $this->actingAs($this->counter)->post("/opname/{$o->id}/ajukan")->assertSessionHasNoErrors();
+
+    opnPut($o, opnLine($o), ['mode' => 'recount', 'qty' => '50'], $this->counter2)->assertSessionHasErrors();
+
+    expect(opnLine($o)->qty_recount_base)->toBeNull();
+});
+
+test('BR-153 SEC-103 penghitung baris selisih tidak boleh menyetujui selisih opname itu', function () {
+    $o = opnStarted();
+    opnPut($o, opnLine($o), ['mode' => 'count', 'qty' => '49'], $this->head)->assertSessionHasNoErrors();
+    $this->actingAs($this->counter)->post("/opname/{$o->id}/ajukan")->assertSessionHasNoErrors();
+    opnPut($o, opnLine($o), ['mode' => 'reason', 'variance_reason_id' => opnReason()])->assertSessionHasNoErrors();
+    $this->actingAs($this->counter)->post("/opname/{$o->id}/posting")->assertSessionHasNoErrors();
+
+    expect(fn () => opnDecide($this->head, $o, true))->toThrow(fn (ApiError $e) => expect($e->errorCode)->toBe(ErrorCode::APPROVAL_SELF_DECISION));
+    expect($o->fresh()->status)->toBe(StockOpnameStatus::PendingApproval)
+        ->and($this->batch->fresh()->qty_on_hand)->toBe('50.000');
+});
+
+test('BR-162 selisih membesar selama approval (mutasi masuk) → posting ditolak, tidak memakai persetujuan nominal lama', function () {
+    $o = opnToSubmitted(opnStarted(), '49'); // disetujui untuk Rp 1.000
+    $this->travel(1)->seconds();
+    LedgerWorld::receive($this->gd, $this->product, '5', '1000', new BatchKey('B-001', '2027-12-31', $this->bin->id));
+
+    expect(fn () => opnDecide($this->head, $o, true))->toThrow(fn (ApiError $e) => expect($e->errorCode)->toBe(ErrorCode::STATE_CONFLICT));
+    expect($o->fresh()->status)->toBe(StockOpnameStatus::PendingApproval)
+        ->and(opnEvents($o))->toHaveCount(0);
+});

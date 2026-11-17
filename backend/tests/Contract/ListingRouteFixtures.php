@@ -8,6 +8,7 @@ use App\Domain\Device\Models\Device;
 use App\Domain\Device\Support\DeviceTokens;
 use App\Domain\Employee\Models\Employee;
 use App\Domain\Inventory\Actions\SaveStockLocation;
+use App\Domain\Inventory\Models\StockOpname;
 use App\Domain\Organization\Models\Location;
 use App\Domain\Pricing\Models\PriceList;
 use App\Domain\Pricing\Models\PriceListVersion;
@@ -60,6 +61,27 @@ final class ListingRouteFixtures
                 $version->save();
 
                 return $version->id;
+            })()],
+            // Opname draf tanpa baris (T-083): cukup untuk menguji bentuk lembar hitung.
+            'admin.stock-opnames.lines.index' => ['opname' => (function () {
+                $existing = StockOpname::query()->where('number', 'OPN-KONTRAK')->value('id');
+                if ($existing !== null) {
+                    return $existing;
+                }
+                $location = Location::query()->firstOrCreate(['code' => 'KONTRAK-OPN'], [
+                    'name' => 'Gudang Opname Kontrak',
+                    'location_type_id' => ReferenceItem::query()->firstOrCreate(['group_code' => 'location_type', 'code' => 'warehouse'], ['name' => 'Gudang'])->id,
+                ]);
+                $stock = app(SaveStockLocation::class)->handle(null, [
+                    'code' => 'KONTRAK-OPN', 'name' => 'Gudang Opname Kontrak', 'type' => 'warehouse',
+                    'location_id' => $location->id, 'is_sellable' => true, 'is_active' => true,
+                ], null);
+                $opname = (new StockOpname)->forceFill([
+                    'number' => 'OPN-KONTRAK', 'stock_location_id' => $stock->id, 'scope' => 'full', 'blind_count' => false, 'status' => 'review',
+                ]);
+                $opname->save();
+
+                return $opname->id;
             })()],
             default => [],
         };

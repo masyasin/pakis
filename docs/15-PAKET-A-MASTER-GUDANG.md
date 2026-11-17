@@ -1143,7 +1143,8 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.stock-opnames.index`/`create`/`store`/`show` | | `/opname/...` | `stock_opnames.view` / `.manage` | |
 | `admin.stock-opnames.start`/`submit`/`post`/`cancel` | POST | `/opname/{opname}/mulai` · `/ajukan` · `/posting` · `/batal` | `stock_opnames.manage` | Mulai = freeze snapshot |
 | `admin.stock-opnames.lines.index` | GET | `/opname/{opname}/baris` | `stock_opnames.view` | Lembar hitung. Kolom sistem disembunyikan bila blind |
-| `admin.stock-opnames.lines.count` | PUT | `/opname/{opname}/baris/{line}` | `stock_opnames.manage` | Hitung / hitung ulang |
+| `admin.stock-opnames.lines.count` | PUT | `/opname/{opname}/baris/{line}` | `stock_opnames.manage` | Hitung / hitung ulang / alasan selisih (`mode`) |
+| `admin.stock-opnames.lines.store` | POST | `/opname/{opname}/baris` | `stock_opnames.manage` | Batch ditemukan saat hitung (BR-162(7), PA-67) |
 | `admin.disposal-reports.index`/`create`/`store`/`show` | | `/pemusnahan/...` | `stock_disposals.manage` | |
 | `admin.disposal-reports.submit`/`execute` | POST | `/pemusnahan/{report}/ajukan` · `/laksanakan` | `stock_disposals.manage` | Laksanakan wajib unggah berita acara + foto |
 | `admin.serials.index` | GET | `/nomor-seri` | `stock.view` | |

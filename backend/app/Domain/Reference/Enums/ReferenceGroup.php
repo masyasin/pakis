@@ -19,6 +19,8 @@ enum ReferenceGroup: string
     case CustomerType = 'customer_type';
     // Paket A (15 §4.9, T-080): alasan barang ditolak saat penerimaan (klaim ke supplier, BR-158(7)).
     case ReceiptRejectReason = 'receipt_reject_reason';
+    // Paket A (15 §2, T-083): alasan selisih stock opname (BR-162(5)).
+    case OpnameVarianceReason = 'opname_variance_reason';
 
     public function label(): string
     {
@@ -31,6 +33,7 @@ enum ReferenceGroup: string
             self::Formulation => 'Formulasi',
             self::CustomerType => 'Jenis pelanggan',
             self::ReceiptRejectReason => 'Alasan tolak penerimaan',
+            self::OpnameVarianceReason => 'Alasan selisih opname',
         };
     }
 
@@ -51,6 +54,7 @@ enum ReferenceGroup: string
             self::Formulation => [['products', 'formulation_id']],
             self::CustomerType => [['customers', 'customer_type_id']],
             self::ReceiptRejectReason => [['goods_receipt_lines', 'reject_reason_id']],
+            self::OpnameVarianceReason => [['stock_opname_lines', 'variance_reason_id']],
         };
     }
 }

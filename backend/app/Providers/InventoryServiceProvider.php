@@ -9,9 +9,11 @@ use App\Domain\Inventory\Lookup\StockBinLookup;
 use App\Domain\Inventory\Lookup\StockLocationLookup;
 use App\Domain\Inventory\Models\StockBin;
 use App\Domain\Inventory\Models\StockLocation;
+use App\Domain\Inventory\Models\StockOpname;
 use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Policies\StockBinPolicy;
 use App\Domain\Inventory\Policies\StockLocationPolicy;
+use App\Domain\Inventory\Policies\StockOpnamePolicy;
 use App\Domain\Inventory\Policies\StockTransferPolicy;
 use App\Domain\Inventory\Support\LedgerStockBalanceProbe;
 use App\Domain\Inventory\Support\StockBalanceProbe;
@@ -47,5 +49,6 @@ class InventoryServiceProvider extends ServiceProvider
         Gate::policy(StockBin::class, StockBinPolicy::class);
         Gate::policy(Vehicle::class, VehiclePolicy::class);
         Gate::policy(StockTransfer::class, StockTransferPolicy::class);
+        Gate::policy(StockOpname::class, StockOpnamePolicy::class);
     }
 }

@@ -219,6 +219,7 @@ Menu tampil bila pengguna punya permission pada kolom "Syarat". Grup dikelompokk
 | Distribusi | Penjualan | Daftar Harga (T-075; role Paket A: `15` §6.4) | `prices.view` | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Distribusi | Penjualan | Promo (T-076; role Paket A: `15` §6.4) | `promotions.view` | ✅ | ❌ | ❌ | ❌ | ✅ |
 | Distribusi | Persediaan | Mutasi Stok (T-082; scope Stok asal **atau** tujuan; role Paket A: `15` §6.4) | `stock_transfers.view` | ✅ | ❌ | ❌ | ✅ | ✅ |
+| Distribusi | Persediaan | Stock Opname (T-083; scope Stok lokasi; role Paket A: `15` §6.4) | `stock_opnames.view` | ✅ | ❌ | ❌ | ✅ | ❌ |
 | Distribusi | Persediaan | Nomor Seri (T-080; hanya yang sudah masuk stok) | `stock.view` | ✅ | ❌ | ❌ | ✅ | ✅ |
 | Distribusi | Pembelian | Purchase Order (T-079; role Paket A: `15` §6.4, kepala gudang terbatas lokasinya) | `purchase_orders.view` | ✅ | ❌ | ❌ | ❌ | ❌ |
 | Distribusi | Pembelian | Penerimaan Barang (T-080; role Paket A: `15` §6.4, staf & kepala gudang terbatas lokasinya) | `goods_receipts.view` | ✅ | ❌ | ❌ | ❌ | ❌ |

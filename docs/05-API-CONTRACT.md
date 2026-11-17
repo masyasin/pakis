@@ -106,6 +106,8 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 | `SERIAL_DUPLICATE` | 422 | Nomor seri sudah tercatat untuk produk yang sama (`serial_product_no_unique`, BR-144) atau kembar dalam satu kiriman. `details.serials` = daftar nomor yang bentrok. Ditambah 17 Nov 2026 (T-080) |
 | `TRANSFER_SAME_PERSON` | 403 | Penerimaan mutasi dicatat oleh pengguna yang sama dengan pengirimnya (BR-161). Ditambah 17 Nov 2026 (T-082) |
 | `TRANSFER_OVER_RECEIPT` | 422 | Qty diterima (total hitung per baris) > qty dikirim (BR-161). `details["lines.<i>.qty_received"]` = pesan field yang menyebut qty maksimal. Ditambah 17 Nov 2026 (T-082) |
+| `OPNAME_BATCH_LOCKED` | 409 | Mulai opname saat sebagian batch di cakupannya ada di opname lain yang `counting`/`review`/`pending_approval` (BR-162(8)). `details.opnames` = nomor opname yang mengunci. Ditambah 17 Nov 2026 (T-083) |
+| `OPNAME_RECOUNT_REQUIRED` | 422 | Selesai hitung/ajukan posting saat baris dengan selisih ≥ ambang `inventory.opname_recount_threshold_*` (atau, setelah selisih ditolak, setiap baris selisih) belum dihitung ulang pengguna lain (BR-162(4), SEC-103). `details.lines` = id baris, tanpa angka sistem. Ditambah 17 Nov 2026 (T-083) |
 | `PERIOD_LOCKED` | 422 | Tanggal bisnis dokumen ber-outbox (penerimaan, retur prinsipal, mutasi & selisih mutasi, opname, pemusnahan, saldo awal) ≤ `accounting.lock_date` (ADR-115, `15` §11.4); dilempar `PeriodGuard::assertOpen()` sebelum mutasi ditulis, jadi transaksi batal utuh. Pesan menyebut tanggal kunci. Ditambah 17 Nov 2026 (T-077); task Paket B pertama yang mengembalikannya lewat API memindahkannya ke §2.3 + `api_error.dart` |
 
 ## 3. Standar Daftar (Listing) — Web & API

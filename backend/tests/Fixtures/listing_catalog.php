@@ -60,6 +60,8 @@ return [
     'stock_locations', // T-068
     'stock_bins', // T-068
     'stock_transfers', // T-082
+    'stock_opnames', // T-083
+    'stock_opname_lines', // T-083
     'vehicles', // T-068
     'sales_areas', // T-073
     'customers', // T-073

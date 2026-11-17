@@ -8,12 +8,12 @@ use Database\Seeders\ReferenceSeeder;
  * 04 §4.1 / 08 §3: item referensi sistem tersedia di semua lingkungan, seeder idempoten.
  */
 
-test('seeder mengisi 53 item sistem sesuai 08 §3 + 15 §4.1 (unit & formulation T-069, customer_type T-073, receipt_reject_reason T-080)', function () {
+test('seeder mengisi 58 item sistem sesuai 08 §3 + 15 §4.1 (unit & formulation T-069, customer_type T-073, receipt_reject_reason T-080, opname_variance_reason T-083)', function () {
     $this->seed(ReferenceSeeder::class);
 
     $codes = fn (ReferenceGroup $g) => ReferenceItem::query()->where('group_code', $g->value)->orderBy('sort_order')->pluck('code')->all();
 
-    expect(ReferenceItem::query()->count())->toBe(53)
+    expect(ReferenceItem::query()->count())->toBe(58)
         ->and(ReferenceItem::query()->where('is_system', false)->count())->toBe(0)
         ->and($codes(ReferenceGroup::LocationType))->toBe(['office', 'warehouse', 'store', 'other'])
         ->and($codes(ReferenceGroup::EmploymentStatus))->toBe(['permanent', 'contract', 'probation', 'daily'])
@@ -22,7 +22,8 @@ test('seeder mengisi 53 item sistem sesuai 08 §3 + 15 §4.1 (unit & formulation
         ->and($codes(ReferenceGroup::Unit))->toBe(['bottle', 'box', 'sachet', 'pcs', 'pack', 'kg', 'gram', 'liter', 'ml', 'sack', 'jerrycan', 'unit'])
         ->and($codes(ReferenceGroup::Formulation))->toBe(['ec', 'wp', 'sl', 'sc', 'wg', 'gr', 'od', 'cs', 'other'])
         ->and($codes(ReferenceGroup::CustomerType))->toBe(['kiosk', 'retail', 'farmer_group', 'project', 'other'])
-        ->and($codes(ReferenceGroup::ReceiptRejectReason))->toBe(['damaged', 'wrong_product', 'packaging', 'short_delivery', 'other']);
+        ->and($codes(ReferenceGroup::ReceiptRejectReason))->toBe(['damaged', 'wrong_product', 'packaging', 'short_delivery', 'other'])
+        ->and($codes(ReferenceGroup::OpnameVarianceReason))->toBe(['miscount', 'damaged', 'lost', 'unrecorded_transaction', 'other']);
 
     // BR-150: satuan hitungan hanya bilangan bulat; satuan berat/volume boleh pecahan.
     $integerOnly = ReferenceItem::query()->where('group_code', 'unit')->get()
@@ -36,13 +37,13 @@ test('seeder idempoten dan tidak menimpa nama yang sudah diubah admin', function
 
     $this->seed(ReferenceSeeder::class);
 
-    expect(ReferenceItem::query()->count())->toBe(53)
+    expect(ReferenceItem::query()->count())->toBe(58)
         ->and(ReferenceItem::query()->where('code', 'store')->value('name'))->toBe('Toko Pertanian');
 });
 
 test('setiap grup enum punya item sistem dan pemakai sesuai 08 §3', function () {
     expect(collect(ReferenceGroup::cases())->map->value->all())
-        ->toBe(['location_type', 'employment_status', 'correction_reason', 'offboarding_reason', 'unit', 'formulation', 'customer_type', 'receipt_reject_reason'])
+        ->toBe(['location_type', 'employment_status', 'correction_reason', 'offboarding_reason', 'unit', 'formulation', 'customer_type', 'receipt_reject_reason', 'opname_variance_reason'])
         ->and(ReferenceGroup::LocationType->usages())->toBe([['locations', 'location_type_id']])
         ->and(ReferenceGroup::EmploymentStatus->usages())->toBe([['employees', 'employment_status_id']])
         ->and(ReferenceGroup::CorrectionReason->usages())->toBe([['attendance_corrections', 'reason_id']])
@@ -51,5 +52,6 @@ test('setiap grup enum punya item sistem dan pemakai sesuai 08 §3', function ()
         ->and(ReferenceGroup::Unit->usages())->toBe([['product_units', 'unit_id'], ['products', 'base_unit_id']])
         ->and(ReferenceGroup::Formulation->usages())->toBe([['products', 'formulation_id']])
         ->and(ReferenceGroup::CustomerType->usages())->toBe([['customers', 'customer_type_id']])
-        ->and(ReferenceGroup::ReceiptRejectReason->usages())->toBe([['goods_receipt_lines', 'reject_reason_id']]);
+        ->and(ReferenceGroup::ReceiptRejectReason->usages())->toBe([['goods_receipt_lines', 'reject_reason_id']])
+        ->and(ReferenceGroup::OpnameVarianceReason->usages())->toBe([['stock_opname_lines', 'variance_reason_id']]);
 });

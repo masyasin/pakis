@@ -202,6 +202,9 @@ Grup `inventory` (tab "Gudang & stok"), dipakai izin edar (T-071) dan modul stok
 | `inventory.min_sell_days_before_expiry` | int | 0 | 0–365 (T-078, BR-102) | ❌ |
 | `inventory.min_shelf_life_months` | int | 6 | 0–60 (T-080, BR-103; produk boleh menetapkan `min_shelf_life_months` sendiri) | ❌ |
 | `inventory.transfer_receive_reminder_hours` | int | 24 | 1–168 (T-082, BR-161; ambang pengingat terima, filter "terlambat", widget "Mutasi belum diterima") | ❌ |
+| `inventory.opname_blind_count_default` | bool | `true` | — (T-083, BR-162(3); bawaan per opname) | ❌ |
+| `inventory.opname_recount_threshold_pct` | decimal | 5 | 0–100 (T-083, BR-162(4); selisih ≥ persen ini dari jumlah sistem wajib dihitung ulang orang lain) | ❌ |
+| `inventory.opname_recount_threshold_amount` | money | 500000 | ≥ 0 (T-083, BR-162(4); 0 = hanya ambang persen) | ❌ |
 
 Catatan: izin `active` dengan `valid_until` ≤ hari ini + nilai ini ditampilkan "akan habis" (BR-152); pengingat dikirim pada ambang nilai ini, H-30, H-7, dan H-0 (ambang di atas nilai ini dilewati), sekali per izin per ambang (`reminder_logs`). `inventory.negative_stock_allowed` terkunci `false`: `StockLedger` menolak bekerja bila nilainya lain, dan layar Pengaturan menolak `true` (T-077). `inventory.reservation_ttl_hours` = masa berlaku reservasi batch bawaan; reservasi `active` yang lewat `expires_at` dilepas job tiap 15 menit (BR-155). `inventory.near_expiry_days` = ambang peringatan mendekati ED (job 06.00, satu notifikasi per batch per ambang lewat `reminder_logs` kunci `ed<hari>`); ambang terbesar juga batas label oranye "mendekati ED" dan kolom widget dasbor. `inventory.min_sell_days_before_expiry` = batch ber-ED ≤ tanggal alokasi + nilai ini tidak dialokasikan FEFO maupun ditawarkan lookup `available_batches` (BR-102).
 

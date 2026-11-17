@@ -369,13 +369,13 @@ Jalur kritis: T-069 → T-070 → T-077 → T-080 → T-081 → T-087. T-067, T-
 - File: migrations; sequence `stock_opname`; foto opname lewat `app/Support/Upload/` (T-070); `app/Domain/Inventory/{Models/{StockOpname,StockOpnameLine},Enums/StockOpnameStatus,Actions/{CreateStockOpname,StartStockOpname,RecordCount,RecordRecount,FinishCounting,SubmitStockOpname,PostStockOpname,CancelStockOpname},Approvables/OpnameVarianceApproval,Listings/{StockOpnameListing,StockOpnameLineListing},Resources/StockOpnameLineResource}`; controller; pages `Inventory/Opnames/{Index,Form,Show,CountSheet}.tsx`; tests
 - Deskripsi: Lembar hitung ramah tablet + scan. Resource baris tidak menyertakan `qty_system_base`/selisih saat blind & `counting`. Selisih dihitung dengan memperhitungkan mutasi setelah `frozen_at` (BR-162(2)).
 - Kriteria penerimaan:
-  - [ ] Respons JSON lembar hitung blind tidak memuat `qty_system_base` (SEC-103)
-  - [ ] Penjualan/mutasi 5 unit setelah freeze tidak muncul sebagai selisih
-  - [ ] Baris selisih ≥ ambang tidak bisa `review` sebelum hitung ulang oleh pengguna lain (`OPNAME_RECOUNT_REQUIRED`)
-  - [ ] Batch yang sedang di opname lain → `OPNAME_BATCH_LOCKED`
-  - [ ] Selisih Rp 1,2 jt → rantai 2 langkah; posting menulis `adjustment_*` dan outbox `inventory.adjusted` seimbang
-  - [ ] `PostStockOpname` memanggil `PeriodGuard` dengan tanggal bisnis posting; batch temuan memakai `inventory.adjusted`, bukan `inventory.goods_received`/`inventory.opening_balance`; payload membawa `stock_location_id` & `product_id` per baris (**15** §11.4)
-  - [ ] Ditolak → kembali `review` (bukan `cancelled`)
+  - [x] Respons JSON lembar hitung blind tidak memuat `qty_system_base` (SEC-103)
+  - [x] Penjualan/mutasi 5 unit setelah freeze tidak muncul sebagai selisih
+  - [x] Baris selisih ≥ ambang tidak bisa `review` sebelum hitung ulang oleh pengguna lain (`OPNAME_RECOUNT_REQUIRED`)
+  - [x] Batch yang sedang di opname lain → `OPNAME_BATCH_LOCKED`
+  - [x] Selisih Rp 1,2 jt → rantai 2 langkah; posting menulis `adjustment_*` dan outbox `inventory.adjusted` seimbang
+  - [x] `PostStockOpname` memanggil `PeriodGuard` dengan tanggal bisnis posting; batch temuan memakai `inventory.adjusted`, bukan `inventory.goods_received`/`inventory.opening_balance`; payload membawa `stock_location_id` & `product_id` per baris (**15** §11.4)
+  - [x] Ditolak → kembali `review` (bukan `cancelled`)
 - Verifikasi: `php artisan test --filter=StockOpname`
 - Di luar lingkup: opname canvas (Paket C)
 

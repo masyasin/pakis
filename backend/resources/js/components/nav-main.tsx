@@ -107,6 +107,7 @@ const ICONS: Record<string, LucideIcon> = {
     registration: FileBadge,
     purchase_order: ClipboardList,
     stock_transfer: ArrowLeftRight,
+    stock_opname: ClipboardCheck,
     goods_receipt: PackageCheck,
     serial: ScanBarcode,
     supplier: Handshake,

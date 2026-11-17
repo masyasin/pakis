@@ -76,6 +76,9 @@ enum ErrorCode: string
     // T-082 mutasi antar lokasi (BR-161).
     case TRANSFER_OVER_RECEIPT = 'TRANSFER_OVER_RECEIPT';
     case TRANSFER_SAME_PERSON = 'TRANSFER_SAME_PERSON';
+    // T-083 stock opname (BR-162).
+    case OPNAME_BATCH_LOCKED = 'OPNAME_BATCH_LOCKED';
+    case OPNAME_RECOUNT_REQUIRED = 'OPNAME_RECOUNT_REQUIRED';
 
     public function status(): int
     {
@@ -102,7 +105,8 @@ enum ErrorCode: string
             self::CORRECTION_DUPLICATE_PENDING,
             self::APPROVAL_ALREADY_PENDING,
             self::PRICE_VERSION_LOCKED,
-            self::UNIT_FACTOR_LOCKED => 409,
+            self::UNIT_FACTOR_LOCKED,
+            self::OPNAME_BATCH_LOCKED => 409,
             self::PAYLOAD_TOO_LARGE => 413,
             self::VALIDATION_FAILED,
             self::INSUFFICIENT_STOCK,
@@ -129,7 +133,8 @@ enum ErrorCode: string
             self::PO_NOT_APPROVED,
             self::SERIAL_COUNT_MISMATCH,
             self::SERIAL_DUPLICATE,
-            self::TRANSFER_OVER_RECEIPT => 422,
+            self::TRANSFER_OVER_RECEIPT,
+            self::OPNAME_RECOUNT_REQUIRED => 422,
             self::ACCOUNT_LOCKED => 423,
             self::APP_UPDATE_REQUIRED => 426,
             self::RATE_LIMITED => 429,
@@ -203,6 +208,9 @@ enum ErrorCode: string
             self::TRANSFER_OVER_RECEIPT => 'Jumlah diterima melebihi jumlah yang dikirim. Hitung ulang barangnya.',
             // BR-161: dua orang berbeda di dua ujung mutasi.
             self::TRANSFER_SAME_PERSON => 'Penerimaan harus dicatat orang lain, bukan pengirim mutasi ini.',
+            self::OPNAME_BATCH_LOCKED => 'Sebagian batch di cakupan ini sedang dihitung di opname lain. Selesaikan atau batalkan opname itu dulu.',
+            // SEC-103: pesan tidak menyebut angka sistem; baris yang wajib dihitung ulang ada di `details.lines`.
+            self::OPNAME_RECOUNT_REQUIRED => 'Ada baris yang wajib dihitung ulang oleh orang lain sebelum opname bisa dilanjutkan.',
         };
     }
 }

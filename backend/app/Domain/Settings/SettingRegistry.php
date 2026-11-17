@@ -266,6 +266,10 @@ final class SettingRegistry
             $t('inventory.min_sell_days_before_expiry', SettingType::Int, 0, 'Sisa umur minimal untuk dialokasikan (hari)', 'Batch yang ED-nya dalam jumlah hari ini (atau sudah lewat) tidak dipilih FEFO untuk jual/mutasi. 0 = batch boleh keluar sampai sehari sebelum ED.', min: 0, max: 365),
             // T-082 mutasi (BR-161): ambang pengingat terima, juga batas filter "terlambat" & widget dasbor.
             $t('inventory.transfer_receive_reminder_hours', SettingType::Int, 24, 'Pengingat terima mutasi (jam)', 'Mutasi yang dikirim lebih lama dari ini dan belum diterima diingatkan ke penerima di lokasi tujuan, sekali per hari, dan ditandai terlambat.', min: 1, max: 168),
+            // T-083 opname (BR-162(3)(4)): hitung buta bawaan & ambang wajib hitung ulang oleh orang lain.
+            $t('inventory.opname_blind_count_default', SettingType::Bool, true, 'Opname hitung buta (bawaan)', 'Opname baru menyembunyikan jumlah sistem dari penghitung sampai selesai dihitung. Bisa diubah per opname.'),
+            $t('inventory.opname_recount_threshold_pct', SettingType::Decimal, '5', 'Ambang hitung ulang opname (%)', 'Baris yang selisihnya sebesar persen ini dari jumlah sistem (atau lebih) wajib dihitung ulang orang lain sebelum ditinjau.', min: 0, max: 100),
+            $t('inventory.opname_recount_threshold_amount', SettingType::Money, '500000', 'Ambang hitung ulang opname (Rp)', 'Baris yang nilai selisihnya sebesar ini (atau lebih) wajib dihitung ulang orang lain. 0 = hanya ambang persen.', min: 0),
 
             // 2.11 Harga (T-075, 15 §9, BR-168).
             $t('pricing.rounding', SettingType::Enum, 'none', 'Pembulatan harga hasil salin ±%/promo', 'Dibulatkan ke atas ke kelipatan ini. Tanpa pembulatan = dua desimal biasa.', options: ['none', '100', '500', '1000']),

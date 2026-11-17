@@ -53,6 +53,14 @@ class ReferenceSeeder extends Seeder
             'short_delivery' => 'Jumlah kurang dari surat jalan',
             'other' => 'Lainnya',
         ],
+        // Paket A (15 §2, T-083): alasan selisih stock opname (BR-162(5)).
+        'opname_variance_reason' => [
+            'miscount' => 'Salah hitung sebelumnya',
+            'damaged' => 'Rusak tak tercatat',
+            'lost' => 'Hilang',
+            'unrecorded_transaction' => 'Transaksi belum dicatat',
+            'other' => 'Lainnya',
+        ],
         // Paket A (15 §4.1, T-069).
         'unit' => [
             'bottle' => 'Botol',

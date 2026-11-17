@@ -40,7 +40,7 @@ test('06 §8 owner melihat semua menu yang modulnya sudah ada', function () {
     expect(menuOf('owner'))->toBe([
         '' => ['Dasbor', 'Persetujuan'],
         'Penjualan' => ['Pelanggan', 'Verifikasi Kios', 'Area Penjualan', 'Daftar Harga', 'Promo'],
-        'Persediaan' => ['Mutasi Stok', 'Nomor Seri'],
+        'Persediaan' => ['Mutasi Stok', 'Stock Opname', 'Nomor Seri'],
         'Pembelian' => ['Purchase Order', 'Penerimaan Barang', 'Supplier', 'Prinsipal'],
         'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'],
         'Unit Kerja' => ['Lokasi', 'Departemen', 'Jabatan'],
@@ -64,7 +64,7 @@ test('06 §8 HRD: Pengguna tanpa Role, Pengaturan Umum, Penomoran, Audit', funct
 });
 
 test('06 §8 kepala lokasi: Dasbor + Jadwal (T-035) + Shift (T-033) + Hari Libur (T-034) + Lokasi (T-021) + Perangkat (T-031) sampai modul presensi/pegawai dibangun', function () {
-    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Persediaan' => ['Mutasi Stok', 'Nomor Seri'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
+    expect(menuOf('kepala_lokasi'))->toBe(['' => ['Dasbor', 'Persetujuan'], 'Persediaan' => ['Mutasi Stok', 'Stock Opname', 'Nomor Seri'], 'Master' => ['Produk', 'Izin Edar', 'Kategori', 'Lokasi Stok', 'Kendaraan'], 'Unit Kerja' => ['Lokasi'], 'Kepegawaian' => ['Pegawai', 'Penugasan'], 'Presensi' => ['Presensi Harian', 'Rekap Bulanan', 'Koreksi Presensi', 'Jadwal', 'Shift', 'Hari Libur', 'Tugas Luar Kota', 'Perangkat']]);
 });
 
 test('06 §8 supervisor: Dasbor + Jadwal (T-035) + Hari Libur (T-034) sampai modul presensi/pegawai dibangun', function () {
@@ -92,7 +92,7 @@ test('T-072/T-079/T-080 menu Pembelian › Purchase Order, Penerimaan Barang, Su
     'supervisor' => ['supervisor', null],
 ]);
 
-test('T-080/T-082 menu Persediaan › Mutasi Stok (stock_transfers.view) & Nomor Seri (stock.view) (15 §6.5), sebelum Pembelian', function (string $role, ?array $expected) {
+test('T-080/T-082/T-083 menu Persediaan › Mutasi Stok (stock_transfers.view), Stock Opname (stock_opnames.view) & Nomor Seri (stock.view) (15 §6.5), sebelum Pembelian', function (string $role, ?array $expected) {
     $menu = menuOf($role);
     expect($menu['Persediaan'] ?? null)->toBe($expected);
     if ($expected !== null && isset($menu['Pembelian'])) {
@@ -100,10 +100,10 @@ test('T-080/T-082 menu Persediaan › Mutasi Stok (stock_transfers.view) & Nomor
         expect(array_search('Persediaan', $keys, true))->toBeLessThan(array_search('Pembelian', $keys, true));
     }
 })->with([
-    'owner' => ['owner', ['Mutasi Stok', 'Nomor Seri']],
-    'kepala_gudang' => ['kepala_gudang', ['Mutasi Stok', 'Nomor Seri']],
-    'staf_gudang' => ['staf_gudang', ['Mutasi Stok', 'Nomor Seri']],
-    'purchasing' => ['purchasing', ['Mutasi Stok', 'Nomor Seri']],
+    'owner' => ['owner', ['Mutasi Stok', 'Stock Opname', 'Nomor Seri']],
+    'kepala_gudang' => ['kepala_gudang', ['Mutasi Stok', 'Stock Opname', 'Nomor Seri']],
+    'staf_gudang' => ['staf_gudang', ['Mutasi Stok', 'Stock Opname', 'Nomor Seri']],
+    'purchasing' => ['purchasing', ['Mutasi Stok', 'Stock Opname', 'Nomor Seri']],
     'admin_penjualan' => ['admin_penjualan', ['Mutasi Stok', 'Nomor Seri']],
     'hrd' => ['hrd', null],
 ]);

@@ -137,6 +137,16 @@ export const STATUS_MAP: Record<string, StatusDefinition> = {
     },
     'stock_transfer.closed': { label: 'Selesai', tone: 'muted' },
     'stock_transfer.cancelled': { label: 'Dibatalkan', tone: 'muted' },
+    // Stock opname (T-083, 15 §6.6)
+    'stock_opname.draft': { label: 'Draf', tone: 'muted' },
+    'stock_opname.counting': { label: 'Sedang dihitung', tone: 'info' },
+    'stock_opname.review': { label: 'Tinjau selisih', tone: 'warning' },
+    'stock_opname.pending_approval': {
+        label: 'Menunggu persetujuan',
+        tone: 'warning',
+    },
+    'stock_opname.posted': { label: 'Diposting', tone: 'success' },
+    'stock_opname.cancelled': { label: 'Dibatalkan', tone: 'muted' },
     // Penerimaan barang, baris penerimaan, nomor seri (T-080, 15 §6.6)
     'goods_receipt.draft': { label: 'Draf', tone: 'muted' },
     'goods_receipt.checked': { label: 'Diperiksa', tone: 'info' },

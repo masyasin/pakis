@@ -18,6 +18,7 @@ use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Listings\AssignmentListing;
 use App\Domain\Employee\Listings\EmployeeListing;
+use App\Domain\Inventory\Approvables\OpnameVarianceApproval;
 use App\Domain\Inventory\Approvables\TransferVarianceApproval;
 use App\Domain\Inventory\Listings\SerialNumberListing;
 use App\Domain\Organization\Listings\DepartmentListing;
@@ -104,7 +105,8 @@ return [
         'goods_receipt_short_shelf_life' => ['label' => 'Penerimaan sisa umur pendek', 'model' => ShortShelfLifeApproval::class, 'conditions' => []],
         // T-082: dokumen = baris stock_transfers (nominal = Σ selisih × HPP rata-rata, BR-161).
         'stock_transfer_variance' => ['label' => 'Selisih mutasi stok', 'model' => TransferVarianceApproval::class, 'conditions' => []],
-        'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => null, 'conditions' => []],
+        // T-083: dokumen = baris stock_opnames (nominal = variance_value Σ |selisih| × HPP, BR-162).
+        'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => OpnameVarianceApproval::class, 'conditions' => []],
         'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => null, 'conditions' => []],
         'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => null, 'conditions' => []],
         'purchase_return' => ['label' => 'Retur ke prinsipal', 'model' => null, 'conditions' => []],

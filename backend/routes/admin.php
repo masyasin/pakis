@@ -52,6 +52,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\StockBinController;
 use App\Http\Controllers\Admin\StockLocationController;
+use App\Http\Controllers\Admin\StockOpnameController;
 use App\Http\Controllers\Admin\StockTransferController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
@@ -613,6 +614,26 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         ->middleware('can:stock_transfers.receive')->name('stock-transfers.receive');
     Route::get('mutasi/{transfer}', [StockTransferController::class, 'show'])->whereNumber('transfer')
         ->middleware('can:stock_transfers.view')->name('stock-transfers.show');
+
+    // Stock opname (15 §5 `admin.stock-opnames.*`, FR-A28, BR-162, T-083). `baru` sebelum `{opname}`.
+    // Scope Stok lokasi dicek controller (di luar → 404). `ajukan` = selesai hitung, `posting` = ajukan
+    // posting (PA-67); POST `baris` = batch temuan (BR-162(7)).
+    Route::middleware('can:stock_opnames.view')->group(function () {
+        Route::get('opname', [StockOpnameController::class, 'index'])->name('stock-opnames.index');
+        Route::get('opname/{opname}/baris', [StockOpnameController::class, 'lines'])->whereNumber('opname')->name('stock-opnames.lines.index');
+    });
+    Route::middleware('can:stock_opnames.manage')->group(function () {
+        Route::get('opname/baru', [StockOpnameController::class, 'create'])->name('stock-opnames.create');
+        Route::post('opname', [StockOpnameController::class, 'store'])->name('stock-opnames.store');
+        Route::post('opname/{opname}/mulai', [StockOpnameController::class, 'start'])->whereNumber('opname')->name('stock-opnames.start');
+        Route::post('opname/{opname}/ajukan', [StockOpnameController::class, 'submit'])->whereNumber('opname')->name('stock-opnames.submit');
+        Route::post('opname/{opname}/posting', [StockOpnameController::class, 'post'])->whereNumber('opname')->name('stock-opnames.post');
+        Route::post('opname/{opname}/batal', [StockOpnameController::class, 'cancel'])->whereNumber('opname')->name('stock-opnames.cancel');
+        Route::post('opname/{opname}/baris', [StockOpnameController::class, 'storeLine'])->whereNumber('opname')->name('stock-opnames.lines.store');
+        Route::put('opname/{opname}/baris/{line}', [StockOpnameController::class, 'count'])->whereNumber(['opname', 'line'])->name('stock-opnames.lines.count');
+    });
+    Route::get('opname/{opname}', [StockOpnameController::class, 'show'])->whereNumber('opname')
+        ->middleware('can:stock_opnames.view')->name('stock-opnames.show');
 
     // Kendaraan minimal (15 §5 `admin.vehicles.*`, FR-A05, T-068). Centang canvas → lokasi stok
     // `vehicle` otomatis. Di luar scope lokasi asal → 404.

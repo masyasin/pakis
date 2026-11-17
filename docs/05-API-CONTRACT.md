@@ -98,6 +98,8 @@ Kode untuk rute **web** (Paket A dan seterusnya, yang belum punya API mobile). F
 | `INSUFFICIENT_STOCK` | 422 | Stok tersedia batch (`qty_on_hand − qty_reserved`) kurang dari yang diminta (BR-101). `details.available_base` = qty tersedia satuan dasar (string desimal), `details.stock_batch_id`. Ditambah 17 Nov 2026 (T-077) |
 | `BATCH_NOT_AVAILABLE` | 422 | Batch karantina/kedaluwarsa/dimusnahkan dipakai untuk jual, kirim, muat canvas, atau reservasi (BR-102). `details.stock_batch_id`. Ditambah 17 Nov 2026 (T-077) |
 | `PRODUCT_REGISTRATION_INACTIVE` | 422 | Produk `requires_registration` tanpa izin edar `active` pada tanggal alokasi, sehingga tidak bisa dialokasikan FEFO untuk jual/mutasi ke toko (BR-102, BR-152). `details.product_id`. Ditambah 17 Nov 2026 (T-078) |
+| `TRANSFER_SAME_PERSON` | 403 | Penerimaan mutasi dicatat oleh pengguna yang sama dengan pengirimnya (BR-161). Ditambah 17 Nov 2026 (T-082) |
+| `TRANSFER_OVER_RECEIPT` | 422 | Qty diterima (total hitung per baris) > qty dikirim (BR-161). `details["lines.<i>.qty_received"]` = pesan field yang menyebut qty maksimal. Ditambah 17 Nov 2026 (T-082) |
 | `PERIOD_LOCKED` | 422 | Tanggal bisnis dokumen ber-outbox (penerimaan, retur prinsipal, mutasi & selisih mutasi, opname, pemusnahan, saldo awal) ≤ `accounting.lock_date` (ADR-115, `15` §11.4); dilempar `PeriodGuard::assertOpen()` sebelum mutasi ditulis, jadi transaksi batal utuh. Pesan menyebut tanggal kunci. Ditambah 17 Nov 2026 (T-077); task Paket B pertama yang mengembalikannya lewat API memindahkannya ke §2.3 + `api_error.dart` |
 
 ## 3. Standar Daftar (Listing) — Web & API

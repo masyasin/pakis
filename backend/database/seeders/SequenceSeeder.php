@@ -24,6 +24,8 @@ class SequenceSeeder extends Seeder
             ['code' => 'supplier', 'name' => 'Kode supplier', 'pattern' => 'SUP-{SEQ:4}', 'reset_period' => ResetPeriod::Never],
             // Paket A (14 §8): nomor purchase order, reset bulanan (T-079).
             ['code' => 'purchase_order', 'name' => 'Nomor purchase order', 'pattern' => 'PO-{YY}{MM}-{SEQ:4}', 'reset_period' => ResetPeriod::Monthly],
+            // Paket A (14 §8): nomor mutasi stok antar lokasi, reset bulanan (T-082).
+            ['code' => 'stock_transfer', 'name' => 'Nomor mutasi stok', 'pattern' => 'MUT-{YY}{MM}-{SEQ:4}', 'reset_period' => ResetPeriod::Monthly],
             // Paket A (14 §8): kode kios bila `customer.code_mode = auto` (T-073).
             ['code' => 'customer', 'name' => 'Kode pelanggan (kios)', 'pattern' => 'KIO-{SEQ:5}', 'reset_period' => ResetPeriod::Never],
         ];

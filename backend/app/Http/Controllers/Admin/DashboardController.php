@@ -17,6 +17,8 @@ use App\Domain\Device\Models\Device;
 use App\Domain\Employee\Enums\EmployeeStatus;
 use App\Domain\Employee\Listings\EmployeeListing;
 use App\Domain\Employee\Models\Employee;
+use App\Domain\Inventory\Listings\StockTransferListing;
+use App\Domain\Inventory\Models\StockTransfer;
 use App\Domain\Inventory\Queries\NearExpirySummary;
 use App\Domain\Purchasing\Listings\PurchaseOrderListing;
 use App\Domain\Purchasing\Models\PurchaseOrder;
@@ -106,6 +108,15 @@ class DashboardController extends Controller
                     $scope->forStock(PurchaseOrder::query(), $user, 'purchase_orders.stock_location_id'),
                     new PurchaseOrderListing,
                     'admin.purchase-orders.index',
+                    ['filter' => ['overdue' => '1']],
+                ) : null,
+                // Mutasi belum diterima (15 §7.4, T-082): `shipped` lewat `inventory.transfer_receive_reminder_hours`,
+                // hanya mutasi yang TUJUAN-nya dalam scope Stok penerima (yang bisa ia terima).
+                $user->can('stock_transfers.receive') ? self::item(
+                    'transfers_unreceived',
+                    $scope->forStock(StockTransfer::query(), $user, 'stock_transfers.to_stock_location_id'),
+                    new StockTransferListing,
+                    'admin.stock-transfers.index',
                     ['filter' => ['overdue' => '1']],
                 ) : null,
                 $user->can('employees.view') ? self::item(

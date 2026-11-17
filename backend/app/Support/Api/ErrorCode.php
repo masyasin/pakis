@@ -66,6 +66,9 @@ enum ErrorCode: string
     case OTP_EXPIRED = 'OTP_EXPIRED';
     // Khusus web (05 §2.4a), tanggal kunci akuntansi dokumen ber-outbox (ADR-115, T-077).
     case PERIOD_LOCKED = 'PERIOD_LOCKED';
+    // T-082 mutasi antar lokasi (BR-161).
+    case TRANSFER_OVER_RECEIPT = 'TRANSFER_OVER_RECEIPT';
+    case TRANSFER_SAME_PERSON = 'TRANSFER_SAME_PERSON';
 
     public function status(): int
     {
@@ -81,7 +84,8 @@ enum ErrorCode: string
             self::DEVICE_PENDING,
             self::FORBIDDEN,
             self::CORRECTION_SELF_APPROVAL,
-            self::APPROVAL_SELF_DECISION => 403,
+            self::APPROVAL_SELF_DECISION,
+            self::TRANSFER_SAME_PERSON => 403,
             self::NOT_FOUND => 404,
             self::METHOD_NOT_ALLOWED => 405,
             self::STATE_CONFLICT,
@@ -111,7 +115,8 @@ enum ErrorCode: string
             self::CUSTOMER_NOT_VERIFIED,
             self::OTP_INVALID,
             self::OTP_EXPIRED,
-            self::PERIOD_LOCKED => 422,
+            self::PERIOD_LOCKED,
+            self::TRANSFER_OVER_RECEIPT => 422,
             self::ACCOUNT_LOCKED => 423,
             self::APP_UPDATE_REQUIRED => 426,
             self::RATE_LIMITED => 429,
@@ -176,6 +181,9 @@ enum ErrorCode: string
             self::OTP_EXPIRED => 'Kode OTP sudah tidak berlaku. Kirim ulang kode.',
             // PeriodGuard mengirim pesan yang menyebut tanggal; ini cadangan generiknya.
             self::PERIOD_LOCKED => 'Tanggal dokumen masuk periode akuntansi yang sudah dikunci. Pakai tanggal sesudah tanggal kunci.',
+            self::TRANSFER_OVER_RECEIPT => 'Jumlah diterima melebihi jumlah yang dikirim. Hitung ulang barangnya.',
+            // BR-161: dua orang berbeda di dua ujung mutasi.
+            self::TRANSFER_SAME_PERSON => 'Penerimaan harus dicatat orang lain, bukan pengirim mutasi ini.',
         };
     }
 }

@@ -50,6 +50,7 @@ use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\ShiftController;
 use App\Http\Controllers\Admin\StockBinController;
 use App\Http\Controllers\Admin\StockLocationController;
+use App\Http\Controllers\Admin\StockTransferController;
 use App\Http\Controllers\Admin\SupplierController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Admin\VehicleController;
@@ -570,6 +571,23 @@ Route::middleware(['auth', 'web.access'])->name('admin.')->group(function () {
         Route::get('lokasi-stok/{stockLocation}/ubah', [StockLocationController::class, 'edit'])->whereNumber('stockLocation')->name('stock-locations.edit');
         Route::put('lokasi-stok/{stockLocation}', [StockLocationController::class, 'update'])->whereNumber('stockLocation')->name('stock-locations.update');
     });
+
+    // Mutasi antar lokasi (15 §5 `admin.stock-transfers.*`, FR-A27, BR-161, T-082). `baru` sebelum
+    // `{transfer}`. Scope Stok asal ATAU tujuan dicek controller (di luar scope → 404). Ubah draf
+    // (`ubah`/PUT) melengkapi daftar 15 §5 sesuai rencana T-082 (PA-66).
+    Route::get('mutasi', [StockTransferController::class, 'index'])->middleware('can:stock_transfers.view')->name('stock-transfers.index');
+    Route::middleware('can:stock_transfers.create')->group(function () {
+        Route::get('mutasi/baru', [StockTransferController::class, 'create'])->name('stock-transfers.create');
+        Route::post('mutasi', [StockTransferController::class, 'store'])->name('stock-transfers.store');
+        Route::get('mutasi/{transfer}/ubah', [StockTransferController::class, 'edit'])->whereNumber('transfer')->name('stock-transfers.edit');
+        Route::put('mutasi/{transfer}', [StockTransferController::class, 'update'])->whereNumber('transfer')->name('stock-transfers.update');
+        Route::post('mutasi/{transfer}/kirim', [StockTransferController::class, 'ship'])->whereNumber('transfer')->name('stock-transfers.ship');
+        Route::post('mutasi/{transfer}/batal', [StockTransferController::class, 'cancel'])->whereNumber('transfer')->name('stock-transfers.cancel');
+    });
+    Route::post('mutasi/{transfer}/terima', [StockTransferController::class, 'receive'])->whereNumber('transfer')
+        ->middleware('can:stock_transfers.receive')->name('stock-transfers.receive');
+    Route::get('mutasi/{transfer}', [StockTransferController::class, 'show'])->whereNumber('transfer')
+        ->middleware('can:stock_transfers.view')->name('stock-transfers.show');
 
     // Kendaraan minimal (15 §5 `admin.vehicles.*`, FR-A05, T-068). Centang canvas → lokasi stok
     // `vehicle` otomatis. Di luar scope lokasi asal → 404.

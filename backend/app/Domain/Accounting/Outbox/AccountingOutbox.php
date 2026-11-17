@@ -73,6 +73,21 @@ final class AccountingOutbox
     }
 
     /**
+     * Revisi berikutnya untuk kode + dokumen (1 bila belum ada). Untuk dokumen yang sah memancarkan
+     * event yang sama lebih dari sekali, mis. penerimaan tambahan mutasi setelah hitung ulang (T-082,
+     * PA-66). Di sini, bukan di pemanggil, karena hanya domain Accounting yang membaca
+     * `accounting_events` (ADR-104). Pemanggil wajib sudah mengunci dokumennya agar dua transaksi
+     * tidak mendapat revisi sama (bila terjadi, UNIQUE → STATE_CONFLICT di record()).
+     */
+    public static function nextRevision(EventCode $code, EventSource $source): int
+    {
+        $max = AccountingEvent::query()->where('event_code', $code->value)
+            ->where('source_type', $source->type)->where('source_id', $source->id)->max('revision');
+
+        return ((int) $max) + 1;
+    }
+
+    /**
      * Validasi kontrak payload tanpa menulis apa pun (dipakai record() dan test kontrak per event).
      *
      * @param  array<string, mixed>  $payload

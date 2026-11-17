@@ -112,6 +112,13 @@ Schedule::command('inventory:near-expiry-alerts')
     ->onOneServer()
     ->withoutOverlapping();
 
+// Mutasi belum diterima (15 §11.1 TransferReceiveReminders, BR-161, T-082): tiap jam, sekali per
+// mutasi per hari lokal lewat reminder_logs, jadi run berulang/terlambat tidak mengirim ganda.
+Schedule::command('inventory:transfer-reminders')
+    ->hourly()
+    ->onOneServer()
+    ->withoutOverlapping();
+
 // Promo (15 §11.1 EndPromotions, T-076): akhiri promo yang lewat waktu selesai/anggaran habis.
 // PromotionEngine sudah mengabaikannya, jadi jeda 15 menit hanya memengaruhi label status.
 Schedule::command('promotions:end')

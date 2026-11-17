@@ -1138,6 +1138,7 @@ Konvensi `05` §1. Semua route `*.index` = daftar standar (`05` §3, katalog §7
 | `admin.stock.quarantine` / `release` | POST | `/stok/karantina` · `/stok/karantina/{batch}/lepas` | `stock_quarantine.manage` | Lepas → approval `stock_quarantine_release` |
 | `admin.stock.bin-move` | POST | `/stok/pindah-rak` | `stock_quarantine.manage` | Pindah antar rak dalam lokasi yang sama |
 | `admin.stock-transfers.index`/`create`/`store`/`show` | | `/mutasi/...` | `stock_transfers.view` / `.create` | |
+| `admin.stock-transfers.edit` / `update` | GET · PUT | `/mutasi/{transfer}/ubah` · `/mutasi/{transfer}` | `.create` | Hanya draf (PA-66) |
 | `admin.stock-transfers.ship` / `receive` / `cancel` | POST | `/mutasi/{transfer}/kirim` · `/terima` · `/batal` | `.create` / `.receive` | Penerima ≠ pengirim |
 | `admin.stock-opnames.index`/`create`/`store`/`show` | | `/opname/...` | `stock_opnames.view` / `.manage` | |
 | `admin.stock-opnames.start`/`submit`/`post`/`cancel` | POST | `/opname/{opname}/mulai` · `/ajukan` · `/posting` · `/batal` | `stock_opnames.manage` | Mulai = freeze snapshot |

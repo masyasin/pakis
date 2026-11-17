@@ -29,6 +29,7 @@ enum NotificationKind: string
     case StockReconcileMismatch = 'stock_reconcile_mismatch';
     case BatchNearExpiry = 'batch_near_expiry';
     case BatchExpired = 'batch_expired';
+    case TransferNotReceived = 'transfer_not_received';
 
     public function label(): string
     {
@@ -52,6 +53,7 @@ enum NotificationKind: string
             self::StockReconcileMismatch => 'Selisih rekonsiliasi stok',
             self::BatchNearExpiry => 'Batch mendekati ED',
             self::BatchExpired => 'Batch kedaluwarsa',
+            self::TransferNotReceived => 'Mutasi belum diterima',
         };
     }
 

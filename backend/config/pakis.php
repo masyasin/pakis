@@ -18,6 +18,7 @@ use App\Domain\Device\Listings\DeviceListing;
 use App\Domain\Employee\Import\EmployeeImportType;
 use App\Domain\Employee\Listings\AssignmentListing;
 use App\Domain\Employee\Listings\EmployeeListing;
+use App\Domain\Inventory\Approvables\TransferVarianceApproval;
 use App\Domain\Organization\Listings\DepartmentListing;
 use App\Domain\Organization\Listings\LocationListing;
 use App\Domain\Organization\Listings\PositionListing;
@@ -95,7 +96,8 @@ return [
         // T-079: dokumen = baris purchase_orders (nominal = grand_total).
         'purchase_order' => ['label' => 'Purchase order', 'model' => PurchaseOrderApproval::class, 'conditions' => []],
         'goods_receipt_short_shelf_life' => ['label' => 'Penerimaan sisa umur pendek', 'model' => null, 'conditions' => []],
-        'stock_transfer_variance' => ['label' => 'Selisih mutasi stok', 'model' => null, 'conditions' => []],
+        // T-082: dokumen = baris stock_transfers (nominal = Σ selisih × HPP rata-rata, BR-161).
+        'stock_transfer_variance' => ['label' => 'Selisih mutasi stok', 'model' => TransferVarianceApproval::class, 'conditions' => []],
         'stock_opname_variance' => ['label' => 'Selisih stock opname', 'model' => null, 'conditions' => []],
         'stock_disposal' => ['label' => 'Pemusnahan stok', 'model' => null, 'conditions' => []],
         'stock_quarantine_release' => ['label' => 'Lepas karantina', 'model' => null, 'conditions' => []],

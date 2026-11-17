@@ -377,3 +377,4 @@ Hasil §0 `21`: S-1 tidak bisa dicek (butuh data produksi; T-160 masih terblokir
 | 18 Nov 2026 | **T-087A** baru: 10 kartu dasbor tambahan Paket A setelah T-087 (PA-73) | Mas |
 | 18 Nov 2026 | **T-087A**: kunci `pricing.promo_ending_days`, kartu 0 disembunyikan, stok minimum per lokasi, + 3 grafik stok (PA-73) | Mas |
 | 18 Nov 2026 | **T-087A**: index baru `smov_date_loc_idx` untuk grafik mutasi dasbor setelah uji volume 1 juta mutasi (PA-73 e) | Mas |
+| 18 Nov 2026 | **Gerbang Paket B dibuka lebih awal**: UAT-A01–A21 & checklist `15` §10.2 ditunda (produk dikembangkan sendiri, UAT menyusul); Paket B boleh mulai setelah penyelarasan `16` §0 | Mas |

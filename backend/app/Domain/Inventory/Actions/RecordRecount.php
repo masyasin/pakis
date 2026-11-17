@@ -4,6 +4,7 @@ namespace App\Domain\Inventory\Actions;
 
 use App\Domain\Approval\Enums\ApprovalStatus;
 use App\Domain\Approval\Models\ApprovalRequest;
+use App\Domain\Approval\Models\ApprovalStep;
 use App\Domain\Audit\AuditLogger;
 use App\Domain\Inventory\Approvables\OpnameVarianceApproval;
 use App\Domain\Inventory\Enums\StockOpnameStatus;
@@ -44,6 +45,11 @@ final class RecordRecount
             if ($row->counted_by === $userId) {
                 throw ValidationException::withMessages(['qty' => 'Hitung ulang harus dilakukan orang lain, bukan penghitung pertama.']);
             }
+            // Penyetuju yang menolak (termasuk yang diwakili) tidak boleh lalu "menghapus" selisih lewat
+            // hitung ulangnya sendiri: hitung ulang setelah ditolak harus orang ketiga (SEC-103).
+            if ($locked->status === StockOpnameStatus::Review && in_array($userId, self::rejectedDeciders($locked), true)) {
+                throw ValidationException::withMessages(['qty' => 'Penyetuju yang menolak selisih ini tidak boleh menghitung ulang.']);
+            }
 
             $before = ['line_id' => $row->id, 'qty_recount_base' => $row->qty_recount_base, 'recounted_by' => $row->recounted_by];
             $row->forceFill([
@@ -57,6 +63,20 @@ final class RecordRecount
 
             return $row;
         });
+    }
+
+    /**
+     * Pengguna yang memutuskan (atau diwakili) di permintaan selisih yang DITOLAK.
+     *
+     * @return list<int>
+     */
+    public static function rejectedDeciders(StockOpname $opname): array
+    {
+        $requests = ApprovalRequest::query()->where('document_type', OpnameVarianceApproval::DOCUMENT_TYPE)
+            ->where('document_id', $opname->id)->where('status', ApprovalStatus::Rejected)->pluck('id');
+
+        return array_values(array_unique(ApprovalStep::query()->whereIn('approval_request_id', $requests)->get(['decided_by', 'acting_for_user_id'])
+            ->flatMap(fn (ApprovalStep $s) => array_filter([$s->decided_by, $s->acting_for_user_id], fn (?int $id) => $id !== null))->all()));
     }
 
     /** Pernah ada permintaan approval selisih opname ini yang ditolak. */

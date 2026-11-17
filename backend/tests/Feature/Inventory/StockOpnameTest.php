@@ -357,3 +357,13 @@ test('BR-162 selisih membesar selama approval (mutasi masuk) → posting ditolak
     expect($o->fresh()->status)->toBe(StockOpnameStatus::PendingApproval)
         ->and(opnEvents($o))->toHaveCount(0);
 });
+
+test('SEC-103 penyetuju yang menolak selisih tidak boleh menghitung ulang baris itu sendiri', function () {
+    $o = opnToSubmitted(opnStarted(), '49');
+    opnDecide($this->head, $o, false);
+
+    opnPut($o, opnLine($o), ['mode' => 'recount', 'qty' => '50'], $this->head)->assertSessionHasErrors('qty');
+    expect(opnLine($o)->qty_recount_base)->toBeNull();
+
+    opnPut($o, opnLine($o), ['mode' => 'recount', 'qty' => '50'], $this->counter2)->assertSessionHasNoErrors();
+});

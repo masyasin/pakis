@@ -119,7 +119,9 @@ class OpnameVarianceApproval extends StockOpname implements Approvable
         $variances = OpnameVariance::for($this);
         $counters = $this->lines->filter(fn (StockOpnameLine $l) => OpnameVariance::hasVariance($variances[$l->id]))
             ->flatMap(fn (StockOpnameLine $l) => [$l->counted_by, $l->recounted_by])->filter()->unique();
-        $approvers = ApprovalStep::query()->where('approval_request_id', $request->id)->whereNotNull('decided_by')->pluck('decided_by');
+        // Delegasi: yang memutuskan atas nama orang lain dan orang yang diwakili sama-sama dihitung.
+        $approvers = ApprovalStep::query()->where('approval_request_id', $request->id)->get(['decided_by', 'acting_for_user_id'])
+            ->flatMap(fn (ApprovalStep $s) => [$s->decided_by, $s->acting_for_user_id])->filter();
         if ($approvers->intersect($counters)->isNotEmpty()) {
             throw new ApiError(ErrorCode::APPROVAL_SELF_DECISION, publicMessage: 'Penghitung baris selisih tidak boleh menyetujui selisih opname ini.');
         }

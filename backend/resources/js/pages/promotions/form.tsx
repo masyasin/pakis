@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 import { rememberLabels } from '@/lib/lookup';
 import type { LookupOption } from '@/lib/lookup';
+import { cn } from '@/lib/utils';
 import { PROMO_TONE } from './index';
 
 type Option = { value: string; label: string };
@@ -386,44 +387,84 @@ export default function PromotionForm({
                                 <InputError message={err.ends_at} />
                             </div>
                         </div>
-                        <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
-                            <span className="text-sm font-medium">Kanal:</span>
-                            {channels.map((c) => (
-                                <label
-                                    key={c.value}
-                                    className="flex items-center gap-2 text-sm"
-                                >
-                                    <Checkbox
-                                        checked={data.channels.includes(
-                                            c.value,
-                                        )}
-                                        onCheckedChange={(v) =>
-                                            setData(
-                                                'channels',
-                                                v === true
-                                                    ? [
-                                                          ...data.channels,
-                                                          c.value,
-                                                      ]
-                                                    : data.channels.filter(
-                                                          (x) => x !== c.value,
-                                                      ),
-                                            )
-                                        }
-                                    />
-                                    {c.label}
-                                </label>
-                            ))}
-                        </div>
-                        <InputError message={err.channels} />
-                        <label className="flex items-center gap-2 text-sm">
+                        {/* Kanal & penggabungan dikelompokkan sebagai pilihan berbingkai agar sejajar
+                            dengan field di atasnya (pola form pengaturan), bukan baris checkbox lepas. */}
+                        <fieldset className="mt-5 grid gap-2">
+                            <legend className="mb-1 text-sm font-medium">
+                                Kanal penjualan
+                            </legend>
+                            <p className="text-xs text-muted-foreground">
+                                Promo hanya dihitung di kanal yang dicentang.
+                            </p>
+                            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                                {channels.map((c) => {
+                                    const checked = data.channels.includes(
+                                        c.value,
+                                    );
+
+                                    return (
+                                        <label
+                                            key={c.value}
+                                            className={cn(
+                                                'flex cursor-pointer items-center gap-3 rounded-lg border px-3 py-2.5 text-sm transition-colors',
+                                                checked
+                                                    ? 'border-primary/60 bg-primary/5 font-medium'
+                                                    : 'hover:bg-muted/50',
+                                            )}
+                                        >
+                                            <Checkbox
+                                                checked={checked}
+                                                onCheckedChange={(v) =>
+                                                    setData(
+                                                        'channels',
+                                                        v === true
+                                                            ? [
+                                                                  ...data.channels,
+                                                                  c.value,
+                                                              ]
+                                                            : data.channels.filter(
+                                                                  (x) =>
+                                                                      x !==
+                                                                      c.value,
+                                                              ),
+                                                    )
+                                                }
+                                            />
+                                            {c.label}
+                                        </label>
+                                    );
+                                })}
+                            </div>
+                            <InputError message={err.channels} />
+                        </fieldset>
+                        <label
+                            className={cn(
+                                'mt-4 flex cursor-pointer items-start gap-3 rounded-lg border px-3 py-3 transition-colors',
+                                data.is_stackable
+                                    ? 'border-primary/60 bg-primary/5'
+                                    : 'hover:bg-muted/50',
+                            )}
+                        >
                             <Checkbox
+                                className="mt-0.5"
                                 checked={data.is_stackable}
                                 onCheckedChange={(v) =>
                                     setData('is_stackable', v === true)
                                 }
                             />
-                            Bisa digabung dengan promo lain
+                            <span className="grid gap-0.5">
+                                <span className="text-sm font-medium">
+                                    Bisa digabung dengan promo lain
+                                </span>
+                                <span className="text-xs text-muted-foreground">
+                                    Bila dicentang, promo ini ikut dihitung
+                                    setelah promo lain yang lebih dulu
+                                    (prioritas lebih kecil). Bila tidak, barang
+                                    yang sudah kena promo lain dilewati, dan
+                                    barang yang kena promo ini tidak bisa kena
+                                    promo berikutnya.
+                                </span>
+                            </span>
                         </label>
                     </SettingsSection>
 

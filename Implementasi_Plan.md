@@ -109,17 +109,17 @@ Total ±270 jam efektif ≈ **8–9 minggu kerja** (±6,5 jam efektif/hari). Bel
 | 0,5 | 14 | 13 | 1 | 0 |
 | H | 3 | 0 | 0 | 0 |
 | HR | 18 | 0 | 0 | 0 |
-| A | 22 | 10 | 1 | 0 |
+| A | 22 | 11 | 1 | 0 |
 | B | 26 | 0 | 0 | 0 |
 | C | 27 | 0 | 0 | 0 |
 | D | 13 | 0 | 0 | 0 |
 | E (pelengkap) | 8 | 0 | 0 | 0 |
 | F | 20 | 0 | 0 | 0 |
 | G | 14 | 0 | 0 | 0 |
-| **Total** | **197** | **55** | **2** | **0** |
+| **Total** | **197** | **56** | **2** | **0** |
 
 ### 6.2 Sedang dikerjakan
-- **Paket A per 17 Nov 2026.** Selesai: T-067, T-085A, T-068, T-069, T-070, T-071, T-072, T-073 (008e291 + 872112b + b209d4b + data demo d91a13c), T-075, T-076 (pakis-28). Sedang: T-074 (bagian 1 backend selesai 230d768; bagian 2 backend B + bagian 3 UI — pakis-eb). Berikutnya jalur 2: T-079 PO (menunggu T-077 jalur 1 untuk penerimaan) (pakis-28).
+- **Paket A per 17 Nov 2026.** Selesai: T-067, T-085A, T-068, T-069, T-070, T-071, T-072, T-073 (008e291 + 872112b + b209d4b + data demo d91a13c), T-074 (230d768 + b5e4e32 + 0f41cda + cb2ece9 + 10492fc), T-075, T-076 (pakis-28). Sedang: T-079 PO (pakis-28; penerimaan T-080 menunggu T-077 + T-078). Berikutnya jalur 1: T-077 inti stok (pakis-eb, rencana menunggu persetujuan Mas). Susulan: field `price_list_id` di form kios (CustomerRequest belum menerimanya; FK dari T-075 sudah ada) belum dikerjakan; satu run CI cb2ece9 sempat merah 16 test (403/"session missing errors") yang tidak terulang di run berikutnya maupun lokal — pantau bila muncul lagi.
 - **Pembagian sisa Paket A dua jalur paralel (disetujui Mas 16 Nov 2026):**
   - **Jalur 1 Gudang & Stok (sesi pakis-eb, ±63 jam):** T-068 → T-073 → T-074 → T-077 → T-078 → T-082 → T-083 → T-084.
   - **Jalur 2 Produk & Komersial (sesi pakis-28, ±78 jam):** T-069 → T-070 → T-071 → T-072 → T-075 → T-076 → T-079 → T-080 → T-081 → T-085 → T-086.

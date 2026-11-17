@@ -25,9 +25,9 @@ test('BR-166(1) PhoneNormalizer satu-satunya di app/: kelas lama di Domain\Emplo
 test('SEC-108 PhoneNormalizer::mask: 4 digit awal + 5 titik + 3 digit akhir, panjang asli tidak terbaca', function (?string $input, ?string $expected) {
     expect(PhoneNormalizer::mask($input))->toBe($expected);
 })->with([
-    'nomor 12 digit' => ['628123456789', '6281•••••789'],
-    'nomor 13 digit' => ['6281234567890', '6281•••••890'],
-    'nomor 10 digit' => ['6281234567', '6281•••••567'],
+    'nomor 12 digit' => ['628123456789', '0812•••••789'],
+    'nomor 13 digit' => ['6281234567890', '0812•••••890'],
+    'nomor 10 digit' => ['6281234567', '0812•••••567'],
     'data lama pendek' => ['0812345', '•••••'],
     'kosong' => ['', null],
     'null' => [null, null],

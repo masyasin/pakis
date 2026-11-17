@@ -153,13 +153,13 @@ test('SEC-108 HP penuh untuk customers.manage, termasking untuk yang hanya melih
     $this->actingAs($this->apj)->get('/pelanggan')
         ->assertInertia(fn (Assert $page) => $page->where('rows.0.owner_phone', '628123456789')->where('phoneMasked', false));
     $this->actingAs($viewer)->get('/pelanggan')
-        ->assertInertia(fn (Assert $page) => $page->where('rows.0.owner_phone', '6281•••••789')->where('phoneMasked', true));
+        ->assertInertia(fn (Assert $page) => $page->where('rows.0.owner_phone', '0812•••••789')->where('phoneMasked', true));
     $this->actingAs($viewer)->get("/pelanggan/{$customer->id}")
-        ->assertInertia(fn (Assert $page) => $page->component('customers/show')->where('customer.owner_phone', '6281•••••789'));
+        ->assertInertia(fn (Assert $page) => $page->component('customers/show')->where('customer.owner_phone', '0812•••••789'));
 
     $columns = (new CustomerListing)->exportColumns();
     $row = array_combine($columns->headers(), $columns->values($customer->fresh()));
-    expect($row['HP pemilik'])->toBe('6281•••••789')
+    expect($row['HP pemilik'])->toBe('0812•••••789')
         ->and(json_encode($row))->not->toContain('628123456789');
 });
 

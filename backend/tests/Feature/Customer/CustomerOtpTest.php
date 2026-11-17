@@ -79,7 +79,7 @@ test('BR-165 SEC-105 kirim OTP: WhatsApp ke HP pemilik, panjang auth.otp_length,
     setSetting('customer.otp_minutes', 7);
 
     ($this->send)()->assertOk()
-        ->assertJsonPath('data.phone', '6281•••••001')
+        ->assertJsonPath('data.phone', '0812•••••001')
         ->assertJsonPath('data.length', 4)
         ->assertJsonMissingPath('data.code');
 
@@ -160,7 +160,7 @@ test('SEC-105 kode OTP tidak pernah muncul di log aplikasi, audit_logs, security
         expect($text)->not->toContain($code);
     }
     // Log aplikasi hanya memuat nomor termasking.
-    expect(implode("\n", $logs))->toContain('6281•••••001')->not->toContain('6281234567001');
+    expect(implode("\n", $logs))->toContain('0812•••••001')->not->toContain('6281234567001');
 });
 
 test('SEC-105 pengiriman gagal → kode hangus & 503 (jalur telepon kantor)', function () {
